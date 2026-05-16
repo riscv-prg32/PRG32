@@ -28,6 +28,18 @@ The C6 game code does not change. It reads the same PRG32 button bitmask.
 | `PRG32_BTN_B` | Back / secondary action | East button, often B/Circle |
 | `PRG32_BTN_START` | Pause / start | Start/Menu button |
 
+Player 2 uses the same layout shifted to bits 8-14:
+
+| PRG32 bit | Meaning |
+|---|---|
+| `PRG32_P2_BTN_LEFT` | Player 2 left |
+| `PRG32_P2_BTN_RIGHT` | Player 2 right |
+| `PRG32_P2_BTN_UP` | Player 2 up |
+| `PRG32_P2_BTN_DOWN` | Player 2 down |
+| `PRG32_P2_BTN_A` | Player 2 confirm/action |
+| `PRG32_P2_BTN_B` | Player 2 back/secondary action |
+| `PRG32_P2_BTN_START` | Player 2 start |
+
 ## UART bridge packet
 
 The bridge sends a compact packet to the ESP32-C6:
@@ -43,6 +55,12 @@ Example: LEFT + A = `0x0001 | 0x0010 = 0x0011`, so the packet is:
 
 ```text
 'U' 'G' 0x11 0x00
+```
+
+Example: player 2 LEFT is bit 8, so the packet is:
+
+```text
+'U' 'G' 0x00 0x01
 ```
 
 ## Framework configuration

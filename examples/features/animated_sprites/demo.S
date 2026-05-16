@@ -1,0 +1,99 @@
+/*
+ * PRG32 animated sprite feature demo.
+ *
+ * The sprite sheet stores two 8x8 RGB565 frames. White pixels are transparent.
+ */
+.option norelax
+
+.section .data
+animated_sprites_x:     .word 0
+animated_sprites_frame: .word 0
+
+.section .rodata
+animated_sprites_title: .asciz "ANIMATED SPRITES"
+
+.balign 2
+animated_sprites_frames:
+    .half 0xffff,0xffff,0xf800,0xf800,0xf800,0xf800,0xffff,0xffff
+    .half 0xffff,0xf800,0x07e0,0x07e0,0x07e0,0x07e0,0xf800,0xffff
+    .half 0xf800,0x07e0,0x07e0,0xffff,0xffff,0x07e0,0x07e0,0xf800
+    .half 0xf800,0x07e0,0x07e0,0x07e0,0x07e0,0x07e0,0x07e0,0xf800
+    .half 0xffff,0xffff,0x001f,0x001f,0x001f,0x001f,0xffff,0xffff
+    .half 0xffff,0xffff,0x001f,0xffff,0xffff,0x001f,0xffff,0xffff
+    .half 0xffff,0x001f,0xffff,0xffff,0xffff,0xffff,0x001f,0xffff
+    .half 0x001f,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0x001f
+
+    .half 0xffff,0xffff,0xffe0,0xffe0,0xffe0,0xffe0,0xffff,0xffff
+    .half 0xffff,0xffe0,0xf800,0xf800,0xf800,0xf800,0xffe0,0xffff
+    .half 0xffe0,0xf800,0xf800,0xffff,0xffff,0xf800,0xf800,0xffe0
+    .half 0xffe0,0xf800,0xf800,0xf800,0xf800,0xf800,0xf800,0xffe0
+    .half 0xffff,0x07ff,0xffff,0xffff,0xffff,0xffff,0x07ff,0xffff
+    .half 0x07ff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0x07ff
+    .half 0xffff,0xffff,0x07ff,0xffff,0xffff,0x07ff,0xffff,0xffff
+    .half 0xffff,0xffff,0xffff,0x07ff,0x07ff,0xffff,0xffff,0xffff
+
+.section .text
+.global animated_sprites_init
+.global animated_sprites_update
+.global animated_sprites_draw
+
+animated_sprites_init:
+    la t0, animated_sprites_x
+    sw zero, 0(t0)
+    la t0, animated_sprites_frame
+    sw zero, 0(t0)
+    ret
+
+animated_sprites_update:
+    addi sp, sp, -16
+    sw ra, 12(sp)
+    sw s0, 8(sp)
+
+    call prg32_ticks_ms
+    mv s0, a0
+
+    mv a0, s0
+    li a1, 2
+    li a2, 160
+    call prg32_sprite_anim_frame
+    la t0, animated_sprites_frame
+    sw a0, 0(t0)
+
+    srli t1, s0, 3
+    andi t1, t1, 255
+    la t0, animated_sprites_x
+    sw t1, 0(t0)
+
+    lw s0, 8(sp)
+    lw ra, 12(sp)
+    addi sp, sp, 16
+    ret
+
+animated_sprites_draw:
+    addi sp, sp, -16
+    sw ra, 12(sp)
+
+    li a0, 0
+    call prg32_gfx_clear
+
+    li a0, 8
+    li a1, 8
+    la a2, animated_sprites_title
+    li a3, 0xffff
+    li a4, 0
+    call prg32_gfx_text8
+
+    la t0, animated_sprites_x
+    lw a0, 0(t0)
+    li a1, 88
+    li a2, 8
+    li a3, 8
+    la a4, animated_sprites_frames
+    la t0, animated_sprites_frame
+    lw a5, 0(t0)
+    li a6, 0xffff
+    call prg32_sprite_draw_frame
+
+    lw ra, 12(sp)
+    addi sp, sp, 16
+    ret

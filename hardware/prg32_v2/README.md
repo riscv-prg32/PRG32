@@ -6,7 +6,10 @@ This directory is the starting point for the next reference board and enclosure.
 
 - ESP32-C6 as the main RISC-V teaching CPU.
 - ILI9341 SPI display header.
-- Six local buttons and passive buzzer.
+- One 5-way digital joystick module for player 1.
+- Optional second 5-way digital joystick module for two-player games.
+- Setup button or joystick push switch for Wi-Fi setup mode.
+- Passive buzzer.
 - UART header for USB-HID bridge input.
 - USB-C power and programming through the development board or carrier.
 - Exposed test pads for UART, SPI, reset, boot, and buzzer PWM.
@@ -31,4 +34,5 @@ ESP32-C6 PRG32 firmware
 - `PRG32_v2.kicad_pro`: KiCad project placeholder.
 - `enclosure.scad`: OpenSCAD starter enclosure.
 
-The board is intentionally scaffolded rather than finalized so students can inspect and extend the design during hardware labs.
+The board is intentionally scaffolded rather than finalized so students can
+inspect and extend the design during hardware labs.

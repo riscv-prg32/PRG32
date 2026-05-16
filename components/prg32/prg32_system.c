@@ -12,7 +12,11 @@ void prg32_init(void) {
     prg32_audio_init();
     prg32_abi_exports_keep();
     prg32_cart_init();
-    prg32_wifi_scores_init();
+    if (prg32_wifi_setup_requested()) {
+        prg32_wifi_setup_run();
+    } else {
+        prg32_wifi_scores_init();
+    }
     prg32_scores_api_start();
     prg32_set_mode(PRG32_DEFAULT_MODE);
     prg32_console_clear();

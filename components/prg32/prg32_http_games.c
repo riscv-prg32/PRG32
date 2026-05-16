@@ -63,8 +63,24 @@ static esp_err_t send_runtime(httpd_req_t *req) {
     cJSON *imports = cJSON_AddObjectToObject(root, "imports");
     add_import(imports, "prg32_ticks_ms", (uintptr_t)prg32_ticks_ms);
     add_import(imports, "prg32_input_read", (uintptr_t)prg32_input_read);
+    add_import(imports, "prg32_input_read_player",
+               (uintptr_t)prg32_input_read_player);
     add_import(imports, "prg32_controller_read", (uintptr_t)prg32_controller_read);
     add_import(imports, "prg32_audio_beep", (uintptr_t)prg32_audio_beep);
+    add_import(imports, "prg32_audio_tone", (uintptr_t)prg32_audio_tone);
+    add_import(imports, "prg32_audio_note", (uintptr_t)prg32_audio_note);
+    add_import(imports, "prg32_audio_play_notes",
+               (uintptr_t)prg32_audio_play_notes);
+    add_import(imports, "prg32_audio_sample_u8",
+               (uintptr_t)prg32_audio_sample_u8);
+    add_import(imports, "prg32_wifi_start_mode",
+               (uintptr_t)prg32_wifi_start_mode);
+    add_import(imports, "prg32_wifi_current_mode",
+               (uintptr_t)prg32_wifi_current_mode);
+    add_import(imports, "prg32_wifi_setup_requested",
+               (uintptr_t)prg32_wifi_setup_requested);
+    add_import(imports, "prg32_wifi_setup_run",
+               (uintptr_t)prg32_wifi_setup_run);
     add_import(imports, "prg32_console_clear", (uintptr_t)prg32_console_clear);
     add_import(imports, "prg32_console_putc", (uintptr_t)prg32_console_putc);
     add_import(imports, "prg32_console_write", (uintptr_t)prg32_console_write);
@@ -75,13 +91,58 @@ static esp_err_t send_runtime(httpd_req_t *req) {
     add_import(imports, "prg32_gfx_rect", (uintptr_t)prg32_gfx_rect);
     add_import(imports, "prg32_gfx_text8", (uintptr_t)prg32_gfx_text8);
     add_import(imports, "prg32_debug_overlay_draw", (uintptr_t)prg32_debug_overlay_draw);
+    add_import(imports, "prg32_keyboard_init", (uintptr_t)prg32_keyboard_init);
+    add_import(imports, "prg32_keyboard_update", (uintptr_t)prg32_keyboard_update);
+    add_import(imports, "prg32_keyboard_draw", (uintptr_t)prg32_keyboard_draw);
+    add_import(imports, "prg32_text_input", (uintptr_t)prg32_text_input);
     add_import(imports, "prg32_tile_clear", (uintptr_t)prg32_tile_clear);
     add_import(imports, "prg32_tile_define", (uintptr_t)prg32_tile_define);
     add_import(imports, "prg32_tile_put", (uintptr_t)prg32_tile_put);
     add_import(imports, "prg32_tile_present", (uintptr_t)prg32_tile_present);
+    add_import(imports, "prg32_playfield_clear", (uintptr_t)prg32_playfield_clear);
+    add_import(imports, "prg32_playfield_put", (uintptr_t)prg32_playfield_put);
+    add_import(imports, "prg32_playfield_get", (uintptr_t)prg32_playfield_get);
+    add_import(imports, "prg32_playfield_scroll", (uintptr_t)prg32_playfield_scroll);
+    add_import(imports, "prg32_playfield_scroll_by",
+               (uintptr_t)prg32_playfield_scroll_by);
+    add_import(imports, "prg32_playfield_parallax",
+               (uintptr_t)prg32_playfield_parallax);
+    add_import(imports, "prg32_playfield_camera", (uintptr_t)prg32_playfield_camera);
+    add_import(imports, "prg32_playfield_camera_x",
+               (uintptr_t)prg32_playfield_camera_x);
+    add_import(imports, "prg32_playfield_camera_y",
+               (uintptr_t)prg32_playfield_camera_y);
+    add_import(imports, "prg32_playfield_draw", (uintptr_t)prg32_playfield_draw);
+    add_import(imports, "prg32_playfield_draw_dual",
+               (uintptr_t)prg32_playfield_draw_dual);
+    add_import(imports, "prg32_playfield_present", (uintptr_t)prg32_playfield_present);
+    add_import(imports, "prg32_platform_tile_flags",
+               (uintptr_t)prg32_platform_tile_flags);
+    add_import(imports, "prg32_platform_tile_flags_get",
+               (uintptr_t)prg32_platform_tile_flags_get);
+    add_import(imports, "prg32_platform_tile_at",
+               (uintptr_t)prg32_platform_tile_at);
+    add_import(imports, "prg32_platform_solid_at",
+               (uintptr_t)prg32_platform_solid_at);
+    add_import(imports, "prg32_platform_actor_init",
+               (uintptr_t)prg32_platform_actor_init);
+    add_import(imports, "prg32_platform_actor_move",
+               (uintptr_t)prg32_platform_actor_move);
+    add_import(imports, "prg32_platform_actor_step",
+               (uintptr_t)prg32_platform_actor_step);
+    add_import(imports, "prg32_platform_camera_follow",
+               (uintptr_t)prg32_platform_camera_follow);
     add_import(imports, "prg32_sprite_hitbox", (uintptr_t)prg32_sprite_hitbox);
     add_import(imports, "prg32_sprite_draw_8x8", (uintptr_t)prg32_sprite_draw_8x8);
     add_import(imports, "prg32_sprite_draw_16x16", (uintptr_t)prg32_sprite_draw_16x16);
+    add_import(imports, "prg32_sprite_anim_frame",
+               (uintptr_t)prg32_sprite_anim_frame);
+    add_import(imports, "prg32_sprite_draw_frame",
+               (uintptr_t)prg32_sprite_draw_frame);
+    add_import(imports, "prg32_sprite_anim_init", (uintptr_t)prg32_sprite_anim_init);
+    add_import(imports, "prg32_sprite_anim_update",
+               (uintptr_t)prg32_sprite_anim_update);
+    add_import(imports, "prg32_sprite_anim_draw", (uintptr_t)prg32_sprite_anim_draw);
     add_import(imports, "prg32_score_submit", (uintptr_t)prg32_score_submit);
 
     char *json = cJSON_PrintUnformatted(root);

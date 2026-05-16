@@ -14,6 +14,17 @@
 #define PRG32_GAME_PACMAN_GRAPHICS     8
 #define PRG32_GAME_ASTEROIDS_ASCII     9
 #define PRG32_GAME_ASTEROIDS_GRAPHICS  10
+#define PRG32_GAME_TETRIS_ASCII        11
+#define PRG32_GAME_TETRIS_GRAPHICS     12
+#define PRG32_GAME_TETRIS_C            13
+#define PRG32_GAME_PLATFORMER_ASCII    14
+#define PRG32_GAME_PLATFORMER_GRAPHICS 15
+#define PRG32_GAME_PLATFORMER_C        16
+#define PRG32_GAME_PONG_C              17
+#define PRG32_GAME_BREAKOUT_C          18
+#define PRG32_GAME_INVADERS_C          19
+#define PRG32_GAME_PACMAN_C            20
+#define PRG32_GAME_ASTEROIDS_C         21
 
 /* Runtime console mode. */
 #define PRG32_MODE_UART_ONLY       0
@@ -43,6 +54,14 @@
 #define PRG32_PIN_BTN_A      -1
 #define PRG32_PIN_BTN_B      -1
 #define PRG32_PIN_BTN_START  -1
+#define PRG32_PIN_P2_LEFT    -1
+#define PRG32_PIN_P2_RIGHT   -1
+#define PRG32_PIN_P2_UP      -1
+#define PRG32_PIN_P2_DOWN    -1
+#define PRG32_PIN_P2_A       -1
+#define PRG32_PIN_P2_B       -1
+#define PRG32_PIN_P2_START   -1
+#define PRG32_PIN_SETUP      -1
 #define PRG32_PIN_BUZZER     -1
 
 #define PRG32_CONTROLLER_BRIDGE_ENABLE 0
@@ -70,6 +89,15 @@
 #define PRG32_PIN_BTN_B      8
 /* Optional START button pin; set to -1 when not wired. */
 #define PRG32_PIN_BTN_START  -1
+#define PRG32_PIN_SETUP      14
+/* Optional second digital joystick. Leave pins at -1 when not mounted. */
+#define PRG32_PIN_P2_LEFT    -1
+#define PRG32_PIN_P2_RIGHT   -1
+#define PRG32_PIN_P2_UP      -1
+#define PRG32_PIN_P2_DOWN    -1
+#define PRG32_PIN_P2_A       -1
+#define PRG32_PIN_P2_B       -1
+#define PRG32_PIN_P2_START   -1
 #define PRG32_PIN_BUZZER     9
 
 /* Optional USB-controller support via an external USB HID host bridge. */

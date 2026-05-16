@@ -64,6 +64,25 @@ not-a-symbol
         self.assertIn("PROVIDE(prg32_ticks_ms = 0x40000000);", text)
         self.assertIn("PROVIDE(prg32_score_submit =", text)
 
+    def test_imports_include_platform_tile_helpers(self) -> None:
+        self.assertIn("prg32_playfield_draw_dual", prg32_game.IMPORT_NAMES)
+        self.assertIn("prg32_platform_actor_step", prg32_game.IMPORT_NAMES)
+        self.assertIn("prg32_platform_camera_follow", prg32_game.IMPORT_NAMES)
+
+    def test_detect_entries_accepts_c_prefix(self) -> None:
+        entries = prg32_game.detect_entries(
+            {
+                "platformer_c_init": 0,
+                "platformer_c_update": 4,
+                "platformer_c_draw": 8,
+            },
+            "platformer_c",
+        )
+        self.assertEqual(
+            entries,
+            ("platformer_c_init", "platformer_c_update", "platformer_c_draw"),
+        )
+
 
 class QemuUploadTests(unittest.TestCase):
     def test_upload_qemu_stages_cartridge_at_partition_offset(self) -> None:

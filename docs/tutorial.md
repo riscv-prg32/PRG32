@@ -192,3 +192,15 @@ Useful questions:
 - Did a branch skip the code that updates memory?
 
 The debugging labs in `docs/labs` turn these questions into exercises.
+
+## 12. Explore Rendering Features
+
+Feature demos under `examples/features` isolate advanced graphics ideas:
+
+- scrolling and parallax playfields
+- animated sprites
+- dual playfields
+
+Use these demos before combining the ideas in a full game. They are intentionally
+shorter than game examples, so each register and memory variable is easier to
+trace.

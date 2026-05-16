@@ -9,6 +9,8 @@ available, then validate final wiring, buttons, and sound on physical hardware.
 
 ## Sequence
 
+Use this sequence for Computing Architecture / RISC-V assembly classes:
+
 1. `lab_01_hello_world.md`: build, flash, and change console output.
 2. `lab_02_input.md`: read GPIO buttons and controller bits.
 3. `lab_03_graphics.md`: draw and move a rectangle.
@@ -17,6 +19,10 @@ available, then validate final wiring, buttons, and sound on physical hardware.
    controller bridge.
 6. Optional cartridge workflow: build and upload games without reflashing; see
    `docs/cartridges.md`.
+
+For C programming classes, start with `docs/tutorial_c_game.md`, then reuse the
+same labs as design prompts while students implement their solutions under
+`examples/games/<name>/c/`.
 
 ## Debugging
 

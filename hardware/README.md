@@ -4,7 +4,9 @@
 
 - ESP32-C6 development board
 - ILI9341 2.8 inch SPI TFT, 320x240
-- 6 tactile buttons
+- one 5-way digital joystick module for player 1
+- optional second 5-way digital joystick module for player 2 games such as Pong
+- one setup button, or use the joystick push switch when the wiring allows it
 - Passive buzzer
 - Jumper wires and breadboard
 
@@ -46,13 +48,25 @@ CH559/CH554, or a PC-side serial helper during labs.
 | GPIO11 | TFT DC |
 | GPIO12 | TFT RST |
 | GPIO13 | TFT BL |
-| GPIO0 | Left button to GND |
-| GPIO1 | Right button to GND |
-| GPIO2 | Up button to GND |
-| GPIO3 | Down button to GND |
-| GPIO4 | A button to GND |
-| GPIO8 | B button to GND |
+| GPIO0 | P1 joystick LEFT to GND |
+| GPIO1 | P1 joystick RIGHT to GND |
+| GPIO2 | P1 joystick UP to GND |
+| GPIO3 | P1 joystick DOWN to GND |
+| GPIO4 | P1 joystick SELECT/A to GND |
+| GPIO8 | P1 optional B/back button to GND |
+| GPIO14 | Setup button to GND |
 | GPIO9 | Passive buzzer |
+
+The previous six-tactile-button layout is replaced by a digital joystick module
+such as the user-provided reference part:
+<https://www.amazon.it/dp/B07HBPW3DF?ref=ppx_yo2ov_dt_b_fed_asin_title>.
+Wire each joystick direction as a normally-open switch to ground; PRG32 enables
+internal pull-ups.
+
+For two-player games, mount a second joystick and assign its pins through
+`PRG32_PIN_P2_LEFT`, `PRG32_PIN_P2_RIGHT`, `PRG32_PIN_P2_UP`,
+`PRG32_PIN_P2_DOWN`, `PRG32_PIN_P2_A`, `PRG32_PIN_P2_B`, and
+`PRG32_PIN_P2_START` in `main/prg32_config.h`.
 
 The `kicad` directory contains starter placeholders for a KiCad production
 board. The `case` directory contains a simple OpenSCAD enclosure starter. The

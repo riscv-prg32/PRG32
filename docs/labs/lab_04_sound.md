@@ -2,7 +2,8 @@
 
 ## Goal
 
-Add a short beep for an event without making the game feel stuck.
+Add short tones, note sequences, or samples for events without making the game
+feel stuck.
 
 ## Steps
 
@@ -18,10 +19,14 @@ call prg32_audio_beep
 
 4. Try `200 ms` and observe how it changes responsiveness.
 5. Move the beep so it triggers only once per collision.
+6. In C, try `prg32_audio_note(69, 80)` for an A4 note.
+7. Use `tools/prg32_audio_convert.py` to prepare a short WAV effect.
 
 ## Checkpoint
 
-The game should make a sound on collision and continue moving smoothly.
+The game should make a sound on collision and continue moving smoothly. Advanced
+students can compare `prg32_audio_beep`, `prg32_audio_play_notes`, and
+`prg32_audio_sample_u8`.
 
 QEMU can verify that the code path reaches `prg32_audio_beep`, but final sound
 behavior must be checked on hardware with the passive buzzer.

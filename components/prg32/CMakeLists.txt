@@ -33,6 +33,8 @@ idf_component_register(
         "prg32_http_scores.c"
         ${PRG32_DISPLAY_SRC}
         "prg32_input.c"
+        "prg32_keyboard.c"
+        "prg32_platform.c"
         "prg32_sprite.c"
         "prg32_system.c"
         "prg32_tile.c"

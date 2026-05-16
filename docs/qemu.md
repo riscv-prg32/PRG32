@@ -16,6 +16,8 @@ The assembly ABI does not change. A game still calls:
 - `prg32_gfx_rect`
 - `prg32_gfx_text8`
 - `prg32_gfx_present`
+- `prg32_playfield_draw_dual`
+- `prg32_sprite_draw_frame`
 
 Only the display backend changes.
 
@@ -170,6 +172,12 @@ The PRG32 input ABI remains the same:
 
 This makes it possible to add a host-side keyboard/gamepad bridge later without
 changing student games.
+
+Player 2 uses the same mask shifted into `PRG32_P2_*` bits. Framework code can
+also call `prg32_diag_set_input_state()` to inject player 1 or player 2 bits in
+QEMU-oriented tests. The Pong C example keeps the second paddle active with a
+fallback AI when no P2 input is available, so the two-player screen path remains
+visible in desktop runs.
 
 ## Troubleshooting
 

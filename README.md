@@ -1,6 +1,6 @@
 # PRG32
 
-PRG32 is an educational runtime for RISC-V assembly games.
+PRG32 is an educational runtime for RISC-V assembly and C games.
 
 ## Academic Profile
 
@@ -101,6 +101,8 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 - Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target
   ESP32-C3 for desktop graphics/testing.
 - Games are distributed as cartridges (`.prg32`) loaded by the runtime.
+- Input supports one or two digital joystick modules through the same PRG32
+  bitmask used by QEMU and cartridge tests.
 
 Flow:
 
@@ -125,14 +127,60 @@ Flow:
 
 1. Build and flash the resident firmware.
 2. Run the Hello World app on the serial monitor and display.
-3. Read `docs/tutorial.md` to learn the PRG32 ABI.
+3. Read `docs/tutorial.md` for assembly or `docs/tutorial_c_game.md` for C.
 4. Complete the labs in `docs/labs`.
 5. Modify one example game under `examples/games`.
-6. Package it as a `.prg32` cartridge and upload it over Wi-Fi or stage it into
+6. Try a focused rendering demo under `examples/features`.
+7. Package it as a `.prg32` cartridge and upload it over Wi-Fi or stage it into
    the QEMU flash image.
 
 The intended student rhythm is small and visible: change one thing, run it,
 observe the result, and write down what changed.
+
+## Feature Demos
+
+The `examples/features` directory contains focused demos for framework features:
+
+- scrolling and parallax playfields
+- animated sprites
+- dual playfield rendering
+- joystick-driven on-screen keyboard input
+- Wi-Fi setup mode
+- audio synthesis and sample playback
+- player 2 input
+
+Use these before building a full game when the lesson is about one graphics
+technique rather than game rules.
+
+## Example Games
+
+The `examples/games` directory includes ASCII assembly, graphics assembly, and
+C versions of:
+
+- `pong`
+- `breakout`
+- `space_invaders`
+- `pacman`
+- `asteroids`
+- `tetris`
+- `platformer`
+
+See [examples/games/README.md](examples/games/README.md) for step-by-step
+instructions to run each game embedded in firmware or as an uploadable
+cartridge on hardware and QEMU.
+
+## Teaching Tracks
+
+PRG32 supports two classroom tracks over the same runtime:
+
+- Computing Architecture: RISC-V assembly examples under `examples/games/*/ascii`
+  and `examples/games/*/graphics`.
+- C Programming: C examples under `examples/games/*/c` and
+  `examples/features/*/c`.
+
+See [docs/teaching_with_prg32.md](docs/teaching_with_prg32.md) for trainer notes,
+lab sequencing, and how to compare assembly and C versions of the same example.
+The C programming tutorial is [docs/tutorial_c_game.md](docs/tutorial_c_game.md).
 
 ## Runtime APIs
 
@@ -141,6 +189,14 @@ observe the result, and write down what changed.
 - Optional scores: `GET /api/scores`, `POST /api/scores`
 
 `/api/runtime` includes firmware version, cartridge state, frame count, and last input state.
+
+## Asset Tools
+
+- `tools/prg32_image_convert.py`: convert PNG/JPEG/GIF assets to C or assembly.
+- `tools/prg32_image_prepare.py`: interactive terminal preparation helper.
+- `tools/prg32_audio_convert.py`: convert WAV samples or MIDI tracks.
+
+See [docs/assets.md](docs/assets.md).
 
 ## Developer Tools
 
@@ -197,8 +253,11 @@ See `docs/images/README.md` for capture instructions.
 
 - `components/prg32`: runtime implementation
 - `main`: default firmware app
-- `examples/games`: assembly demos
+- `examples/games`: assembly and C game demos
+- `examples/features`: focused firmware feature demos
 - `tools/prg32_game.py`: cartridge tooling
+- `tools/prg32_image_convert.py`: image and animation converter
+- `tools/prg32_audio_convert.py`: sample and MIDI converter
 - `docs`: tutorials, labs, API docs
 - `.github/workflows/ci.yml`: GitHub Actions smoke and firmware build workflow
 - `tests`: host-side unit tests for tooling and documentation hygiene
@@ -207,7 +266,8 @@ See `docs/images/README.md` for capture instructions.
 
 - `components/prg32`: framework API/ABI and hardware abstraction layer
 - `main`: reference runtime firmware app (minimal and teachable baseline)
-- `examples/games`: course demos in RISC-V assembly (`ascii` + `graphics`)
+- `examples/games`: course demos in RISC-V assembly and C
+- `examples/features`: focused rendering demos in RISC-V assembly and C
 - `docs/labs`: lab handouts, debugging assignments, and assessment-friendly exercises
 - `tools`: reproducible developer tooling (cartridge builder, QEMU scripts, score server)
 - `hardware`: architecture notes and board integration scaffold

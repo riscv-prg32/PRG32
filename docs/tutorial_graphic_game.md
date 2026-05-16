@@ -19,6 +19,11 @@ on the physical ILI9341 display and on the QEMU virtual RGB screen.
 - `prg32_gfx_text8(x, y, text, fg, bg)`
 - `prg32_gfx_present()`
 - `prg32_sprite_hitbox(ax, ay, aw, ah, bx, by, bw, bh)`
+- `prg32_sprite_anim_frame(now_ms, frame_count, frame_ms)`
+- `prg32_sprite_draw_frame(x, y, w, h, frames, frame, transparent)`
+- `prg32_playfield_scroll(layer, x, y)`
+- `prg32_playfield_parallax(layer, x_q8, y_q8)`
+- `prg32_playfield_draw_dual()`
 
 The framework internally tracks dirty rectangles, so students can draw only
 changed objects when they are ready for optimization exercises.
@@ -172,6 +177,21 @@ QEMU is best for:
 
 Physical hardware is still required for LCD wiring, real buttons, buzzer output,
 and Wi-Fi upload validation.
+
+## 8. Try Framework Feature Demos
+
+Before building a full scrolling game, run the focused feature demos:
+
+- `examples/features/scrolling_parallax/demo.S`
+- `examples/features/animated_sprites/demo.S`
+- `examples/features/dual_playfield/demo.S`
+
+C versions are available under each demo's `c/demo.c` path for programming
+classes that want the same rendering concept without register-level tracing.
+
+Each demo exports `init`, `update`, and `draw` symbols with its directory prefix.
+Build them exactly like a game example, either embedded in firmware or as a
+`.prg32` cartridge.
 
 ## Break and Fix Exercise
 

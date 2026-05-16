@@ -63,8 +63,8 @@ Password: prg32game
 URL:      http://192.168.4.1
 ```
 
-Build a cartridge from an assembly example. This example uses the firmware ELF
-from the local build to obtain the runtime addresses:
+Build a cartridge from an assembly or C example. This example uses the firmware
+ELF from the local build to obtain the runtime addresses:
 
 ```bash
 python3 tools/prg32_game.py build \
@@ -205,6 +205,31 @@ call prg32_gfx_clear
 call prg32_input_read
 call prg32_audio_beep
 ```
+
+## Cartridge C Rules
+
+C examples use the same entry shape and the same PRG32 ABI:
+
+```c
+void platformer_c_init(void);
+void platformer_c_update(void);
+void platformer_c_draw(void);
+```
+
+Build them with the same tool. The builder detects `.c` sources and compiles
+them as small freestanding C modules:
+
+```bash
+python3 tools/prg32_game.py build \
+  examples/games/platformer/c/game.c \
+  --firmware-elf build/PRG32.elf \
+  --entry-prefix platformer_c \
+  --name platformer-c \
+  --out build/platformer-c.prg32
+```
+
+Keep C cartridges small and avoid standard-library calls. Use the helpers in
+`prg32.h` for display, input, audio, sprites, playfields, and platform physics.
 
 ## Limits
 

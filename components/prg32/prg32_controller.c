@@ -106,12 +106,34 @@ static uint32_t read_gpio_buttons(void) {
     if (PRG32_PIN_BTN_START >= 0 && !gpio_get_level(PRG32_PIN_BTN_START)) {
         v |= PRG32_BTN_START;
     }
+    if (PRG32_PIN_P2_LEFT >= 0 && !gpio_get_level(PRG32_PIN_P2_LEFT)) {
+        v |= PRG32_P2_BTN_LEFT;
+    }
+    if (PRG32_PIN_P2_RIGHT >= 0 && !gpio_get_level(PRG32_PIN_P2_RIGHT)) {
+        v |= PRG32_P2_BTN_RIGHT;
+    }
+    if (PRG32_PIN_P2_UP >= 0 && !gpio_get_level(PRG32_PIN_P2_UP)) {
+        v |= PRG32_P2_BTN_UP;
+    }
+    if (PRG32_PIN_P2_DOWN >= 0 && !gpio_get_level(PRG32_PIN_P2_DOWN)) {
+        v |= PRG32_P2_BTN_DOWN;
+    }
+    if (PRG32_PIN_P2_A >= 0 && !gpio_get_level(PRG32_PIN_P2_A)) {
+        v |= PRG32_P2_BTN_A;
+    }
+    if (PRG32_PIN_P2_B >= 0 && !gpio_get_level(PRG32_PIN_P2_B)) {
+        v |= PRG32_P2_BTN_B;
+    }
+    if (PRG32_PIN_P2_START >= 0 && !gpio_get_level(PRG32_PIN_P2_START)) {
+        v |= PRG32_P2_BTN_START;
+    }
     return v;
 }
 
 uint32_t prg32_controller_read(void) {
     uint32_t v = read_gpio_buttons();
     v |= read_bridge();
+    v |= prg32_diag_input_state();
     return v;
 }
 
@@ -124,6 +146,13 @@ const char *prg32_controller_name(uint32_t bit) {
         case PRG32_BTN_A: return "A / FIRE / SELECT";
         case PRG32_BTN_B: return "B / BACK";
         case PRG32_BTN_START: return "START / PAUSE";
+        case PRG32_P2_BTN_LEFT: return "P2 LEFT";
+        case PRG32_P2_BTN_RIGHT: return "P2 RIGHT";
+        case PRG32_P2_BTN_UP: return "P2 UP";
+        case PRG32_P2_BTN_DOWN: return "P2 DOWN";
+        case PRG32_P2_BTN_A: return "P2 A";
+        case PRG32_P2_BTN_B: return "P2 B";
+        case PRG32_P2_BTN_START: return "P2 START";
         default: return "UNKNOWN";
     }
 }

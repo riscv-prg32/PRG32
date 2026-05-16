@@ -110,6 +110,7 @@ firmware or QEMU build passed unless it actually ran.
 - Keep `main` as a minimal resident firmware app unless the task explicitly
   changes the default firmware behavior.
 - Keep example games in `examples/games`; do not move them into the default app.
+- Keep focused rendering demonstrations in `examples/features`.
 - Do not reintroduce legacy `urg32` paths or symbols.
 - Keep generated files, local databases, build outputs, and `.prg32` cartridges
   out of commits.
@@ -127,6 +128,17 @@ new student can trace them by hand.
 - Use `t0` to `t6` for temporary values that do not survive C calls.
 - Save and restore `s0` to `s11` if you use them.
 - Avoid assuming `a` or `t` registers survive a function call.
+
+## C Example Guidelines
+
+C examples are teaching material for programming classes. Keep them direct,
+small, and comparable with the matching assembly examples.
+
+- Export `<name>_c_init`, `<name>_c_update`, and `<name>_c_draw`.
+- Keep state in simple globals or small structs.
+- Prefer the PRG32 API in `prg32.h` over standard-library calls.
+- Avoid heap allocation in examples unless a lab explicitly teaches it.
+- Update `examples/games/README.md` when adding or renaming C examples.
 
 ## Pull Request Process
 

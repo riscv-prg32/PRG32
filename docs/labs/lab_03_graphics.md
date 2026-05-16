@@ -45,6 +45,9 @@ idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphi
 Optional extension: build your rectangle game as a `.prg32` cartridge and upload
 it without reflashing the resident firmware. Use `docs/cartridges.md`.
 
+Feature extension: run one demo under `examples/features` and identify which
+helper implements scrolling, animation, or dual playfields.
+
 ## Reflection
 
 Explain why clearing every frame is simple but not always efficient.

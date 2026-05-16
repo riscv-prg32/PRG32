@@ -32,10 +32,13 @@ Named contributor metadata used across project docs:
 - Display: ILI9341 SPI TFT on hardware, QEMU RGB panel on desktop, 320x200 game viewport.
 - Framework component: `components/prg32`.
 - Default firmware app: `main`, a minimal PRG32 Hello World smoke test.
-- Assembly game examples: `examples/games`.
+- Game examples in RISC-V assembly and C: `examples/games`.
+- Focused firmware feature demos: `examples/features`.
 - Course materials: `docs`, especially `docs/labs`.
 - Optional score server: `tools/prg32_score_server`.
 - Uploadable game cartridge tool: `tools/prg32_game.py`.
+- Media conversion tools: `tools/prg32_image_convert.py`,
+  `tools/prg32_image_prepare.py`, and `tools/prg32_audio_convert.py`.
 - Student VS Code setup: `.vscode` and `PRG32.code-workspace`.
 - Hardware notes and v2 scaffold: `hardware`.
 
@@ -54,7 +57,8 @@ Named contributor metadata used across project docs:
 |   |-- prg32_config.h              Board pins and feature flags
 |   `-- CMakeLists.txt
 |-- partitions_prg32.csv            Resident firmware + cartridge slots
-|-- examples/games/                 External assembly demos, not default build
+|-- examples/games/                 External assembly/C demos, not default build
+|-- examples/features/              Focused rendering/firmware feature demos
 |-- docs/                           Manuals, tutorial, labs, debugging exercises
 |-- docs/cartridges.md              Flash-once uploadable game workflow
 |-- docs/qemu.md                    QEMU virtual screen workflow
@@ -62,6 +66,8 @@ Named contributor metadata used across project docs:
 |-- tools/qemu.sh                   macOS/Linux QEMU screen shortcut
 |-- tools/qemu.ps1                  Windows PowerShell QEMU screen shortcut
 |-- tools/prg32_game.py             Cartridge build/upload/staging tool
+|-- tools/prg32_image_convert.py    Image/GIF/sprite/tile conversion
+|-- tools/prg32_audio_convert.py    WAV/MIDI conversion
 |-- tools/prg32_score_server/       Flask + SQLite REST score service
 |-- .vscode/                        Student-ready VS Code tasks/settings
 `-- PRG32.code-workspace
@@ -189,6 +195,11 @@ Important implementation details:
 'U' 'G' <low byte> <high byte>
 ```
 
+- Player 2 uses the same packet through bits 8-14 (`PRG32_P2_*`).
+- Joystick text input lives in `prg32_keyboard.c` and should stay usable from
+  games as well as setup screens.
+- Wi-Fi setup mode is entered by holding `PRG32_PIN_SETUP` low at boot.
+
 ## Assembly Example Guidelines
 
 Example assembly is teaching material. It should be verbose and heavily
@@ -200,17 +211,20 @@ Every example game directory should contain:
 examples/games/<name>/
 |-- README.md
 |-- ascii/game.S
-`-- graphics/game.S
+|-- graphics/game.S
+`-- c/game.c
 ```
 
 When adding a game:
 
 1. Add both `ascii/game.S` and `graphics/game.S` unless the user asks for only one.
-2. Add a local `README.md` with controls and learning goals.
-3. Update `examples/games/README.md`.
-4. Update the example list in `README.md`.
-5. Add `PRG32_GAME_<NAME>_ASCII` and `PRG32_GAME_<NAME>_GRAPHICS` identifiers in
+2. Add a `c/game.c` version when the game is part of the standard teaching set.
+3. Add a local `README.md` with controls and learning goals.
+4. Update `examples/games/README.md`.
+5. Update the example list in `README.md`.
+6. Add `PRG32_GAME_<NAME>_ASCII` and `PRG32_GAME_<NAME>_GRAPHICS` identifiers in
    `main/prg32_config.h` if the examples list uses selection constants.
+7. Add `PRG32_GAME_<NAME>_C` when a C version is provided.
 
 Assembly conventions:
 
@@ -225,6 +239,32 @@ Assembly conventions:
 - Do not make the examples too feature-rich; each one should demonstrate a few
   concepts clearly: input bitmasking, memory variables, drawing, sound, and calls.
 
+## Feature Demo Guidelines
+
+Focused demos live in `examples/features/<name>/`.
+
+Use them for framework mechanics that are bigger than one API call but smaller
+than a full game:
+
+- scrolling and parallax playfields
+- animated sprites
+- dual playfields
+
+Each feature demo should contain a `README.md`, one assembly source such as
+`demo.S`, and a C source under `c/demo.c` when it belongs to the standard
+student demo set. Export game-like symbols with a feature-specific prefix:
+
+```text
+<feature>_init
+<feature>_update
+<feature>_draw
+```
+
+Use the `_c` suffix for C demo prefixes, for example `dual_playfield_c_init`.
+
+Keep feature demos shorter than games. They should isolate the API behavior
+students are meant to inspect.
+
 ## Documentation Guidelines
 
 Docs are part of the teaching product. Keep them current when changing APIs,
@@ -234,6 +274,7 @@ Core docs:
 
 - `README.md`: top-level orientation.
 - `docs/tutorial.md`: end-to-end tutorial.
+- `docs/tutorial_c_game.md`: C programming tutorial.
 - `docs/framework_manual.md`: PRG32 API and ABI overview.
 - `docs/qemu.md`: macOS, Windows, and Linux virtual screen workflow.
 - `docs/cartridges.md`: flash-once cartridge upload workflow.

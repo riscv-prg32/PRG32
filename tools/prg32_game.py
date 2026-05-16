@@ -34,8 +34,17 @@ FALLBACK_CART_RAM_SIZE = 32 * 1024
 IMPORT_NAMES = [
     "prg32_ticks_ms",
     "prg32_input_read",
+    "prg32_input_read_player",
     "prg32_controller_read",
     "prg32_audio_beep",
+    "prg32_audio_tone",
+    "prg32_audio_note",
+    "prg32_audio_play_notes",
+    "prg32_audio_sample_u8",
+    "prg32_wifi_start_mode",
+    "prg32_wifi_current_mode",
+    "prg32_wifi_setup_requested",
+    "prg32_wifi_setup_run",
     "prg32_console_clear",
     "prg32_console_putc",
     "prg32_console_write",
@@ -46,13 +55,42 @@ IMPORT_NAMES = [
     "prg32_gfx_rect",
     "prg32_gfx_text8",
     "prg32_debug_overlay_draw",
+    "prg32_keyboard_init",
+    "prg32_keyboard_update",
+    "prg32_keyboard_draw",
+    "prg32_text_input",
     "prg32_tile_clear",
     "prg32_tile_define",
     "prg32_tile_put",
     "prg32_tile_present",
+    "prg32_playfield_clear",
+    "prg32_playfield_put",
+    "prg32_playfield_get",
+    "prg32_playfield_scroll",
+    "prg32_playfield_scroll_by",
+    "prg32_playfield_parallax",
+    "prg32_playfield_camera",
+    "prg32_playfield_camera_x",
+    "prg32_playfield_camera_y",
+    "prg32_playfield_draw",
+    "prg32_playfield_draw_dual",
+    "prg32_playfield_present",
+    "prg32_platform_tile_flags",
+    "prg32_platform_tile_flags_get",
+    "prg32_platform_tile_at",
+    "prg32_platform_solid_at",
+    "prg32_platform_actor_init",
+    "prg32_platform_actor_move",
+    "prg32_platform_actor_step",
+    "prg32_platform_camera_follow",
     "prg32_sprite_hitbox",
     "prg32_sprite_draw_8x8",
     "prg32_sprite_draw_16x16",
+    "prg32_sprite_anim_frame",
+    "prg32_sprite_draw_frame",
+    "prg32_sprite_anim_init",
+    "prg32_sprite_anim_update",
+    "prg32_sprite_anim_draw",
     "prg32_score_submit",
 ]
 
@@ -288,17 +326,27 @@ def build(args: argparse.Namespace) -> None:
         imports_ld = tmp / "imports.ld"
         linker_ld = tmp / "cart.ld"
 
-        # Compile once so nm can infer the entry prefix before final linking.
-        run([
+        compile_cmd = [
             args.tool_prefix + "gcc",
-            "-x", "assembler-with-cpp",
             "-march=" + args.march,
             "-mabi=" + args.mabi,
             "-I", str(ROOT / "components/prg32/include"),
             "-I", str(ROOT / "main"),
             "-c", str(source),
             "-o", str(obj),
-        ])
+        ]
+        if source.suffix.lower() == ".c":
+            compile_cmd[1:1] = [
+                "-std=c99",
+                "-ffreestanding",
+                "-fno-builtin",
+                "-Os",
+            ]
+        else:
+            compile_cmd[1:1] = ["-x", "assembler-with-cpp"]
+
+        # Compile once so nm can infer the entry prefix before final linking.
+        run(compile_cmd)
         obj_symbols = parse_nm(run([args.tool_prefix + "nm", "--defined-only", str(obj)]))
         init_sym, update_sym, draw_sym = detect_entries(obj_symbols, args.entry_prefix)
 
@@ -472,7 +520,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--firmware-elf")
     p.set_defaults(func=runtime)
 
-    p = sub.add_parser("build", help="build a .prg32 cartridge from assembly")
+    p = sub.add_parser("build", help="build a .prg32 cartridge from assembly or C")
     p.add_argument("source")
     p.add_argument("--out", required=True)
     p.add_argument("--name")
