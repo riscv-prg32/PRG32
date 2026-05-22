@@ -12,9 +12,31 @@
 
 static const char *TAG = "prg32_main";
 
+#define PRG32_FRAME_MS 33
+
 #ifndef PRG32_BOOT_SIGNAL_ENABLE
 #define PRG32_BOOT_SIGNAL_ENABLE 0
 #endif
+
+static void prg32_wait_for_frame_target(uint32_t *next_ms) {
+    uint32_t now = prg32_ticks_ms();
+    if (!next_ms) {
+        return;
+    }
+    if (*next_ms == 0) {
+        *next_ms = now;
+    }
+    int32_t late_ms = (int32_t)(now - *next_ms);
+    if (late_ms > (int32_t)(PRG32_FRAME_MS * 4u)) {
+        *next_ms = now;
+    } else {
+        *next_ms += PRG32_FRAME_MS;
+    }
+    now = prg32_ticks_ms();
+    if ((int32_t)(*next_ms - now) > 0) {
+        vTaskDelay(pdMS_TO_TICKS(*next_ms - now));
+    }
+}
 
 #if PRG32_BOOT_SIGNAL_ENABLE
 static void prg32_boot_signal(void) {
@@ -58,6 +80,7 @@ void app_main(void) {
 
     uint32_t cart_generation = 0;
     uint32_t last_idle_log_ms = 0;
+    uint32_t next_frame_ms = prg32_ticks_ms();
     while (1) {
         uint32_t input_snapshot = prg32_controller_read();
         prg32_diag_set_input_state(input_snapshot);
@@ -76,7 +99,7 @@ void app_main(void) {
 #endif
             prg32_gfx_present();
             prg32_diag_increment_frame();
-            vTaskDelay(pdMS_TO_TICKS(33));
+            prg32_wait_for_frame_target(&next_frame_ms);
         } else {
             uint32_t now_ms = prg32_ticks_ms();
             if (now_ms - last_idle_log_ms >= PRG32_IDLE_HEARTBEAT_MS) {

@@ -48,4 +48,5 @@ Feature demos live under `examples/features` and isolate one framework topic:
 
 The setup-launched device demo is not a cartridge example, but it is useful for
 trainers: it checks framework capabilities and includes small 320x200 sketches
-inspired by Pong, Breakout, Space Invaders, Pacman, Tetris, and Pole Position.
+inspired by Pong, Breakout, Space Invaders, Pacman, Tetris, Pole Position, and
+Asteroids.

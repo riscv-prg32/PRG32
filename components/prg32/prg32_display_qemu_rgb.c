@@ -234,7 +234,6 @@ static void draw_band_overlays(void) {
         return;
     }
     uint32_t now = prg32_ticks_ms();
-    prg32_band_note_frame(now);
     for (uint8_t band = PRG32_BAND_TOP; band <= PRG32_BAND_BOTTOM; ++band) {
         int y = band == PRG32_BAND_TOP ? 0 : PRG32_VIEWPORT_Y + PRG32_GAME_H;
         if (!prg32_band_visible(band)) {
@@ -391,6 +390,7 @@ void prg32_gfx_present(void) {
     }
     draw_band_overlays();
     if (g_dirty_x1 < g_dirty_x0 || !g_panel) {
+        prg32_band_note_frame(prg32_ticks_ms());
         return;
     }
     if (g_dirty_x0 == 0 && g_dirty_x1 == PRG32_LCD_W - 1) {
@@ -410,6 +410,7 @@ void prg32_gfx_present(void) {
                                                   g_fb));
     }
     dirty_reset();
+    prg32_band_note_frame(prg32_ticks_ms());
 }
 
 void prg32_gfx_set_fullscreen(int enabled) {

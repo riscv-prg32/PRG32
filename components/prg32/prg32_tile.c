@@ -61,20 +61,29 @@ static void draw_tile_pixels(uint8_t id,
     }
 
     tile_t *tile = &g_tiles[id];
+    prg32_gfx_rect(x, y, PRG32_TILE_W, PRG32_TILE_H, tile->bg);
+    if (tile->fg == tile->bg) {
+        return;
+    }
+
     for (int row = 0; row < PRG32_TILE_H; ++row) {
         int py = y + row;
         if ((unsigned)py >= PRG32_GAME_H) {
             continue;
         }
-        for (int col = 0; col < PRG32_TILE_W; ++col) {
-            int px = x + col;
-            if ((unsigned)px >= PRG32_GAME_W) {
-                continue;
+        uint8_t bits = tile->bits[row];
+        int col = 0;
+        while (col < PRG32_TILE_W) {
+            while (col < PRG32_TILE_W && !(bits & (1u << (7 - col)))) {
+                col++;
             }
-            uint16_t color = (tile->bits[row] & (1u << (7 - col)))
-                ? tile->fg
-                : tile->bg;
-            prg32_gfx_pixel(px, py, color);
+            int start = col;
+            while (col < PRG32_TILE_W && (bits & (1u << (7 - col)))) {
+                col++;
+            }
+            if (col > start) {
+                prg32_gfx_rect(x + start, py, col - start, 1, tile->fg);
+            }
         }
     }
 }

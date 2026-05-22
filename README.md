@@ -208,7 +208,7 @@ open the developer status-band menu, show the about screen, or launch the
 device demo. Setup screens show the active Wi-Fi mode and current IP address,
 and either joystick can navigate them with SELECT/B to confirm and A to go
 back. The device demo includes 320x200 sketches inspired by Pong, Breakout,
-Space Invaders, Pacman, Tetris, and Pole Position. When the audio
+Space Invaders, Pacman, Tetris, Pole Position, and Asteroids. When the audio
 configuration is usable for the current board, the splash plays a short welcome
 sound; otherwise it falls back to the passive buzzer when configured.
 
