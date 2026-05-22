@@ -10,7 +10,7 @@ for the hardware directory map and board scaffolds.
 | 1 | ESP32-C6 development board | PRG32 RISC-V host |
 | 1 | ILI9341 SPI TFT or supported display | video output |
 | 1 | digital joystick module | player 1 input |
-| 1 | setup button | Wi-Fi setup mode |
+| 1 | optional setup button | force setup mode without holding A+B |
 | 1 | optional second joystick | player 2 games |
 
 ## Reference Display And Input Wiring
@@ -34,12 +34,15 @@ They are the same display wiring used by the Arduino/Adafruit validation sketch.
 |---|---|
 | GPIO18 | P1 LEFT |
 | GPIO19 | P1 RIGHT |
-| GPIO4 | P1 UP |
+| GPIO3 | P1 UP |
 | GPIO13 | P1 DOWN |
-| GPIO14 | P1 START |
-| GPIO21 | P1 A / joystick select |
-| GPIO22 | P1 B / back |
+| GPIO20 | P1 SELECT |
+| GPIO21 | P1 A |
+| GPIO22 | P1 B |
 | GPIO15 | passive buzzer |
+
+GPIO14 is still accepted by the firmware as an older START/SELECT wiring
+alias, but new classroom harnesses should use GPIO20 for SELECT.
 
 The LCD backlight defaults to active-high. If a specific breakout uses an
 active-low backlight transistor, set `PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL` to `0`

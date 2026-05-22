@@ -1,8 +1,9 @@
 /*
  * PRG32 splash screen feature demo.
  *
- * The init step shows a blocking game splash. The draw step demonstrates the
- * non-blocking draw helper that a game can use in its own title state.
+ * The init step shows a blocking 320x200 game splash. The draw step
+ * demonstrates the non-blocking draw helper that a game can use in its own
+ * title state.
  */
 .option norelax
 
@@ -29,7 +30,7 @@ splash_screen_init:
     li a3, 0x0000
     li a4, 0xffff
     li a5, 0x07ff
-    call prg32_splash_show
+    call prg32_splash_show_game
 
     lw ra, 12(sp)
     addi sp, sp, 16
@@ -57,7 +58,7 @@ splash_screen_draw:
     li a2, 0x0000
     li a3, 0xffff
     li a4, 0xffe0
-    call prg32_splash_draw
+    call prg32_splash_draw_game
 
     la t0, splash_screen_frame
     lw t1, 0(t0)

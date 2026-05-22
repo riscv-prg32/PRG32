@@ -29,9 +29,11 @@ Named contributor metadata used across project docs:
 ## Project Snapshot
 
 - Target board: ESP32-C6.
-- Display: ILI9341 SPI TFT on hardware, QEMU RGB panel on desktop, 320x200 game viewport.
+- Display: ILI9341 SPI TFT on hardware, QEMU RGB panel on desktop, 320x240
+  physical screen with a centered 320x200 game viewport.
 - Framework component: `components/prg32`.
-- Default firmware app: `main`, a minimal PRG32 Hello World smoke test.
+- Default firmware app: `main`, the resident PRG32 runtime, setup menu, and
+  cartridge launcher.
 - Game examples in RISC-V assembly and C: `examples/games`.
 - Focused firmware feature demos: `examples/features`.
 - Course materials: `docs`, especially `docs/labs`.
@@ -53,7 +55,7 @@ Named contributor metadata used across project docs:
 |   |-- idf_component.yml           External component dependencies
 |   `-- CMakeLists.txt              Component registration
 |-- main/                           Minimal firmware app and config
-|   |-- main.c                      Default Hello World app
+|   |-- main.c                      Resident runtime app
 |   |-- prg32_config.h              Board pins and feature flags
 |   `-- CMakeLists.txt
 |-- partitions_prg32.csv            Resident firmware + cartridge slots
@@ -93,17 +95,20 @@ unless a lab explicitly asks students to create a wrapper.
 
 ## Build Model
 
-The default app is intentionally small:
+The default app is intentionally small and should remain a resident runtime
+wrapper rather than embedding an example game:
 
 ```c
 #include "prg32.h"
 
 void app_main(void) {
     prg32_init();
-    prg32_console_clear();
-    prg32_console_write("PRG32 Hello World\n");
     while (1) {
-        prg32_gfx_present();
+        if (prg32_cart_is_loaded()) {
+            prg32_cart_call_update();
+            prg32_cart_call_draw();
+            prg32_gfx_present();
+        }
     }
 }
 ```
@@ -175,6 +180,18 @@ Important implementation details:
 - QEMU RGB receives RGB565 framebuffer data directly; do not apply ILI9341 wire
   byte swapping in `prg32_display_qemu_rgb.c`.
 - The game viewport is `PRG32_GAME_W` x `PRG32_GAME_H` = 320x200.
+- Splash screens, setup, and framework-owned menus use the full
+  `PRG32_LCD_W` x `PRG32_LCD_H` = 320x240 display. Game APIs stay centered in
+  the 320x200 viewport; if no explicit band color is set, the top/bottom bands
+  should match the latest game background clear color.
+- Game and feature-demo splash/title screens should use
+  `prg32_splash_show_game` / `prg32_splash_draw_game` or normal game drawing
+  calls so they stay inside the 320x200 viewport. Reserve
+  `prg32_splash_show` / `prg32_splash_draw` for framework-owned full-screen
+  UI.
+- The status-band ABI (`prg32_band_*`) renders optional FPS, Wi-Fi, game, debug,
+  or custom text in the physical top/bottom bands without changing the 320x200
+  game coordinate system.
 - Physical builds default to `CONFIG_PRG32_DISPLAY_ILI9341`.
 - QEMU builds use `sdkconfig.defaults.qemu` and `CONFIG_PRG32_DISPLAY_QEMU_RGB`.
 - `main/prg32_config.h` disables physical pins, buzzer, and controller bridge
@@ -198,7 +215,14 @@ Important implementation details:
 - Player 2 uses the same packet through bits 8-14 (`PRG32_P2_*`).
 - Joystick text input lives in `prg32_keyboard.c` and should stay usable from
   games as well as setup screens.
-- Wi-Fi setup mode is entered by holding `PRG32_PIN_SETUP` low at boot.
+- Setup mode is entered by holding A+B at boot, by holding `PRG32_PIN_SETUP`
+  low when that optional pin is wired, when no cartridge is present, or when
+  multiple cartridges exist without a saved default cartridge.
+- Keep `prg32_device_demo_run()` current whenever framework capabilities are
+  added or changed. The setup-launched device demo should remain a quick
+  hardware/classroom smoke test covering display, input, audio, Wi-Fi status,
+  cartridge state, sprites, scrolling/playfields, status bands, arcade-inspired
+  viewport sketches, and any new framework feature.
 
 ## Assembly Example Guidelines
 

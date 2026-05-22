@@ -3,6 +3,24 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "esp_err.h"
+#include "esp_system.h"
+
+#ifndef PRG32_RESTART_HOTKEY_ENABLE
+#define PRG32_RESTART_HOTKEY_ENABLE 1
+#endif
+
+#ifndef PRG32_PIN_BTN_SELECT
+#define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
+#endif
+
+#ifndef PRG32_PIN_P2_SELECT
+#define PRG32_PIN_P2_SELECT PRG32_PIN_P2_START
+#endif
+
+#define PRG32_RESTART_HOTKEY_P1 \
+    (PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_DOWN)
+#define PRG32_RESTART_HOTKEY_P2 \
+    (PRG32_P2_BTN_A | PRG32_P2_BTN_B | PRG32_P2_BTN_DOWN)
 
 /*
  * PRG32 controller layer.
@@ -14,7 +32,7 @@
  *   2. A USB-HID-host bridge, e.g. RP2040/CH559/ESP32-S3, connected by UART.
  *   3. A host-terminal keyboard/debug mode through the same UART protocol.
  *
- * The game sees only the stable PRG32 bitmask: LEFT/RIGHT/UP/DOWN/A/B/START.
+ * The game sees only the stable PRG32 bitmask: LEFT/RIGHT/UP/DOWN/SELECT/A/B.
  * This is intentionally similar to memory-mapped input registers on 1980s
  * consoles, which makes it a useful Computer Architecture teaching example.
  */
@@ -104,7 +122,10 @@ static uint32_t read_gpio_buttons(void) {
         v |= PRG32_BTN_B;
     }
     if (PRG32_PIN_BTN_START >= 0 && !gpio_get_level(PRG32_PIN_BTN_START)) {
-        v |= PRG32_BTN_START;
+        v |= PRG32_BTN_SELECT;
+    }
+    if (PRG32_PIN_BTN_SELECT >= 0 && !gpio_get_level(PRG32_PIN_BTN_SELECT)) {
+        v |= PRG32_BTN_SELECT;
     }
     if (PRG32_PIN_P2_LEFT >= 0 && !gpio_get_level(PRG32_PIN_P2_LEFT)) {
         v |= PRG32_P2_BTN_LEFT;
@@ -125,7 +146,10 @@ static uint32_t read_gpio_buttons(void) {
         v |= PRG32_P2_BTN_B;
     }
     if (PRG32_PIN_P2_START >= 0 && !gpio_get_level(PRG32_PIN_P2_START)) {
-        v |= PRG32_P2_BTN_START;
+        v |= PRG32_P2_BTN_SELECT;
+    }
+    if (PRG32_PIN_P2_SELECT >= 0 && !gpio_get_level(PRG32_PIN_P2_SELECT)) {
+        v |= PRG32_P2_BTN_SELECT;
     }
     return v;
 }
@@ -134,6 +158,12 @@ uint32_t prg32_controller_read(void) {
     uint32_t v = read_gpio_buttons();
     v |= read_bridge();
     v |= prg32_diag_input_state();
+#if PRG32_RESTART_HOTKEY_ENABLE
+    if ((v & PRG32_RESTART_HOTKEY_P1) == PRG32_RESTART_HOTKEY_P1 ||
+        (v & PRG32_RESTART_HOTKEY_P2) == PRG32_RESTART_HOTKEY_P2) {
+        esp_restart();
+    }
+#endif
     return v;
 }
 
@@ -143,16 +173,16 @@ const char *prg32_controller_name(uint32_t bit) {
         case PRG32_BTN_RIGHT: return "RIGHT";
         case PRG32_BTN_UP: return "UP";
         case PRG32_BTN_DOWN: return "DOWN";
-        case PRG32_BTN_A: return "A / FIRE / SELECT";
+        case PRG32_BTN_A: return "A";
         case PRG32_BTN_B: return "B / BACK";
-        case PRG32_BTN_START: return "START / PAUSE";
+        case PRG32_BTN_START: return "SELECT";
         case PRG32_P2_BTN_LEFT: return "P2 LEFT";
         case PRG32_P2_BTN_RIGHT: return "P2 RIGHT";
         case PRG32_P2_BTN_UP: return "P2 UP";
         case PRG32_P2_BTN_DOWN: return "P2 DOWN";
         case PRG32_P2_BTN_A: return "P2 A";
         case PRG32_P2_BTN_B: return "P2 B";
-        case PRG32_P2_BTN_START: return "P2 START";
+        case PRG32_P2_BTN_START: return "P2 SELECT";
         default: return "UNKNOWN";
     }
 }

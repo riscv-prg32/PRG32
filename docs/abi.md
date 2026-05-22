@@ -85,11 +85,24 @@ Splash helpers are exported for cartridges and examples:
 
 | Symbol | Purpose |
 |---|---|
-| `prg32_splash_draw` | draw a splash/title screen without delaying |
-| `prg32_splash_show` | draw, present, and wait for a duration |
+| `prg32_splash_draw_game` | draw a 320x200 game title screen without delaying |
+| `prg32_splash_show_game` | draw a 320x200 game title screen, present, and wait |
+| `prg32_splash_draw` | draw a full 320x240 framework splash/title screen without delaying |
+| `prg32_splash_show` | draw a full 320x240 framework splash, present, and wait |
 | `prg32_splash_show_default` | show the built-in PRG32 startup splash |
+| `prg32_gfx_set_fullscreen` | use 320x240 coordinates for framework/title screens |
+| `prg32_gfx_fullscreen_enabled` | return whether full-screen drawing is active |
+| `prg32_gfx_set_band_color` | set a custom top/bottom band color for games |
+| `prg32_gfx_use_background_bands` | make game bands follow `prg32_gfx_clear` again |
+| `prg32_band_set_mode` | choose what status data a band renders |
+| `prg32_band_mode` | read the current mode for a band |
+| `prg32_band_set_text` | set custom band text |
+| `prg32_band_set_game_info` | set game status text |
+| `prg32_band_log` | set debug/status log text |
+| `prg32_band_set_colors` | set foreground/background colors for one band |
+| `prg32_band_use_default_colors` | make a band use the game background color again |
 
-`prg32_splash_show` arguments:
+`prg32_splash_show_game` and `prg32_splash_show` arguments:
 
 | Register | Value |
 |---|---|
@@ -109,5 +122,44 @@ Example:
     li a3, 0x0000
     li a4, 0xffff
     li a5, 0x07ff
-    call prg32_splash_show
+    call prg32_splash_show_game
 ```
+
+Band identifiers:
+
+| Constant | Value |
+|---|---:|
+| `PRG32_BAND_TOP` | 0 |
+| `PRG32_BAND_BOTTOM` | 1 |
+
+Band modes:
+
+| Constant | Meaning |
+|---|---|
+| `PRG32_BAND_MODE_NONE` | hide band text |
+| `PRG32_BAND_MODE_FPS` | show measured frame rate |
+| `PRG32_BAND_MODE_WIFI` | show current SSID and IP |
+| `PRG32_BAND_MODE_GAME` | show cartridge/game info |
+| `PRG32_BAND_MODE_DEBUG` | show the last debug message |
+| `PRG32_BAND_MODE_CUSTOM` | show text set with `prg32_band_set_text` |
+
+## Input And Setup ABI Calls
+
+Setup screens and cartridge programs use the same button bitmasks:
+
+| Symbol | Purpose |
+|---|---|
+| `prg32_input_read` | read the full player 1/player 2 bitmask |
+| `prg32_input_read_player` | read player 1 or player 2 normalized to low bits |
+| `prg32_input_read_menu` | merge joystick 1 and joystick 2 for setup/menu navigation |
+| `prg32_input_wait_released` | wait until selected menu bits are released |
+| `prg32_wifi_current_mode` | return the active Wi-Fi mode enum |
+| `prg32_wifi_current_ip` | return the current IP display string |
+| `prg32_wifi_current_ssid` | return the current AP or infrastructure SSID |
+| `prg32_cart_default_slot` | return the saved default cartridge slot, or `-1` |
+| `prg32_cart_set_default_slot` | save a default cartridge slot, or clear with `-1` |
+| `prg32_cart_select_default` | load the saved default cartridge |
+| `prg32_device_demo_run` | run the firmware-owned device demo from setup or a lab |
+
+`PRG32_BTN_SELECT` is the classroom-facing name for the select button.
+`PRG32_BTN_START` remains an alias for existing code.

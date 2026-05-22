@@ -41,6 +41,14 @@
 #define CONFIG_PRG32_AUDIO_I2S_SD_GPIO -1
 #endif
 
+#ifndef PRG32_PIN_BTN_SELECT
+#define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
+#endif
+
+#ifndef PRG32_PIN_P2_SELECT
+#define PRG32_PIN_P2_SELECT PRG32_PIN_P2_START
+#endif
+
 #define PRG32_SPLASH_LOGO_W 320
 #define PRG32_SPLASH_LOGO_H 200
 #define PRG32_SPLASH_WELCOME_SAMPLE_ID 63
@@ -63,17 +71,20 @@ static int text_center_x(const char *text) {
         }
     }
     int width = (int)len * 8;
-    if (width >= PRG32_GAME_W) {
+    if (width >= PRG32_LCD_W) {
         return 0;
     }
-    return (PRG32_GAME_W - width) / 2;
+    return (PRG32_LCD_W - width) / 2;
 }
 
 static void prg32_splash_draw_logo(void) {
+    prg32_gfx_set_fullscreen(1);
+    prg32_gfx_clear(PRG32_COLOR_BLACK);
+    const int y0 = (PRG32_LCD_H - PRG32_SPLASH_LOGO_H) / 2;
     for (int y = 0; y < PRG32_SPLASH_LOGO_H; ++y) {
         for (int x = 0; x < PRG32_SPLASH_LOGO_W; ++x) {
             uint16_t color = prg32_splash_logo[y * PRG32_SPLASH_LOGO_W + x];
-            prg32_gfx_pixel(x, y, color);
+            prg32_gfx_pixel(x, y0 + y, color);
         }
     }
 }
@@ -106,6 +117,7 @@ static int splash_i2s_pins_safe(void) {
         PRG32_PIN_BTN_A,
         PRG32_PIN_BTN_B,
         PRG32_PIN_BTN_START,
+        PRG32_PIN_BTN_SELECT,
         PRG32_PIN_SETUP,
         PRG32_PIN_P2_LEFT,
         PRG32_PIN_P2_RIGHT,
@@ -114,6 +126,7 @@ static int splash_i2s_pins_safe(void) {
         PRG32_PIN_P2_A,
         PRG32_PIN_P2_B,
         PRG32_PIN_P2_START,
+        PRG32_PIN_P2_SELECT,
     };
 
     if (CONFIG_PRG32_DISPLAY_QEMU_RGB) {
@@ -231,9 +244,10 @@ void prg32_splash_draw(const char *title,
         subtitle = "";
     }
 
+    prg32_gfx_set_fullscreen(1);
     prg32_gfx_clear(bg);
-    prg32_gfx_rect(0, 0, PRG32_GAME_W, 6, accent);
-    prg32_gfx_rect(0, PRG32_GAME_H - 6, PRG32_GAME_W, 6, accent);
+    prg32_gfx_rect(0, 0, PRG32_LCD_W, 6, accent);
+    prg32_gfx_rect(0, PRG32_LCD_H - 6, PRG32_LCD_W, 6, accent);
     prg32_gfx_rect(34, 54, 252, 2, accent);
     prg32_gfx_rect(34, 138, 252, 2, accent);
 
@@ -256,17 +270,68 @@ void prg32_splash_show(const char *title,
                        uint16_t bg,
                        uint16_t fg,
                        uint16_t accent) {
+    int was_fullscreen = prg32_gfx_fullscreen_enabled();
     prg32_splash_draw(title, subtitle, bg, fg, accent);
     prg32_gfx_present();
     if (duration_ms > 0) {
         vTaskDelay(pdMS_TO_TICKS(duration_ms));
     }
+    prg32_gfx_set_fullscreen(was_fullscreen);
+}
+
+void prg32_splash_draw_game(const char *title,
+                            const char *subtitle,
+                            uint16_t bg,
+                            uint16_t fg,
+                            uint16_t accent) {
+    if (!title) {
+        title = "PRG32";
+    }
+    if (!subtitle) {
+        subtitle = "";
+    }
+
+    prg32_gfx_set_fullscreen(0);
+    prg32_gfx_clear(bg);
+    prg32_gfx_rect(0, 0, PRG32_GAME_W, 6, accent);
+    prg32_gfx_rect(0, PRG32_GAME_H - 6, PRG32_GAME_W, 6, accent);
+    prg32_gfx_rect(34, 42, 252, 2, accent);
+    prg32_gfx_rect(34, 126, 252, 2, accent);
+
+    for (int i = 0; i < 5; ++i) {
+        int x = 72 + i * 36;
+        prg32_gfx_rect(x, 60, 20, 20, accent);
+        prg32_gfx_rect(x + 4, 64, 12, 12, bg);
+    }
+
+    int title_x = text_center_x(title);
+    int subtitle_x = text_center_x(subtitle);
+    prg32_gfx_text8(title_x + 1, 86 + 1, title, accent, bg);
+    prg32_gfx_text8(title_x, 86, title, fg, bg);
+    prg32_gfx_text8(subtitle_x, 104, subtitle, fg, bg);
+}
+
+void prg32_splash_show_game(const char *title,
+                            const char *subtitle,
+                            uint32_t duration_ms,
+                            uint16_t bg,
+                            uint16_t fg,
+                            uint16_t accent) {
+    int was_fullscreen = prg32_gfx_fullscreen_enabled();
+    prg32_splash_draw_game(title, subtitle, bg, fg, accent);
+    prg32_gfx_present();
+    if (duration_ms > 0) {
+        vTaskDelay(pdMS_TO_TICKS(duration_ms));
+    }
+    prg32_gfx_set_fullscreen(was_fullscreen);
 }
 
 void prg32_splash_show_default(void) {
 #if CONFIG_PRG32_SPLASH_ENABLED
+    int was_fullscreen = prg32_gfx_fullscreen_enabled();
     prg32_splash_draw_logo();
     prg32_gfx_present();
     prg32_splash_play_welcome(CONFIG_PRG32_SPLASH_DURATION_MS);
+    prg32_gfx_set_fullscreen(was_fullscreen);
 #endif
 }

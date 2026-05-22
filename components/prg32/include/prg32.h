@@ -53,6 +53,7 @@ extern "C" {
 #define PRG32_BTN_A     (1u << 4)
 #define PRG32_BTN_B     (1u << 5)
 #define PRG32_BTN_START (1u << 6)
+#define PRG32_BTN_SELECT PRG32_BTN_START
 
 #define PRG32_P2_BTN_LEFT  (1u << 8)
 #define PRG32_P2_BTN_RIGHT (1u << 9)
@@ -61,6 +62,7 @@ extern "C" {
 #define PRG32_P2_BTN_A     (1u << 12)
 #define PRG32_P2_BTN_B     (1u << 13)
 #define PRG32_P2_BTN_START (1u << 14)
+#define PRG32_P2_BTN_SELECT PRG32_P2_BTN_START
 
 #define PRG32_COLOR_BLACK   0x0000
 #define PRG32_COLOR_WHITE   0xffff
@@ -71,12 +73,16 @@ extern "C" {
 #define PRG32_COLOR_CYAN    0x07ff
 #define PRG32_COLOR_MAGENTA 0xf81f
 
+#define PRG32_BAND_TOP 0
+#define PRG32_BAND_BOTTOM 1
+
 #define PRG32_CART_MAGIC "PRG2"
 #define PRG32_CART_ABI_MAJOR 1
 #define PRG32_CART_ABI_MINOR 0
 #define PRG32_CART_FLAG_AUDIO_BLOCK (1u << 0)
 #define PRG32_CART_RAM_SIZE (32u * 1024u)
 #define PRG32_CART_NAME_LEN 32
+#define PRG32_CART_SLOT_COUNT 2
 #ifndef PRG32_FIRMWARE_VERSION
 #define PRG32_FIRMWARE_VERSION "dev"
 #endif
@@ -98,12 +104,14 @@ typedef struct __attribute__((packed)) {
 } prg32_cart_header_t;
 
 typedef struct {
+    char slot_name[8];
     char name[PRG32_CART_NAME_LEN];
     uint32_t load_addr;
     uint32_t code_size;
     uint32_t mem_size;
     uint32_t audio_size;
     uint32_t generation;
+    uint8_t slot;
     uint8_t loaded;
     uint8_t stored;
     uint8_t audio;
@@ -139,6 +147,15 @@ typedef enum {
     PRG32_WIFI_MODE_APSTA = 3,
 } prg32_wifi_mode_t;
 
+typedef enum {
+    PRG32_BAND_MODE_NONE = 0,
+    PRG32_BAND_MODE_FPS = 1,
+    PRG32_BAND_MODE_WIFI = 2,
+    PRG32_BAND_MODE_GAME = 3,
+    PRG32_BAND_MODE_DEBUG = 4,
+    PRG32_BAND_MODE_CUSTOM = 5,
+} prg32_band_mode_t;
+
 typedef struct {
     prg32_wifi_mode_t mode;
     char ssid[32];
@@ -152,7 +169,10 @@ typedef struct {
     size_t capacity;
     size_t length;
     uint8_t cursor;
+    uint8_t page;
+    uint8_t shift;
     uint8_t done;
+    uint8_t cancelled;
     uint32_t last_input;
 } prg32_keyboard_t;
 
@@ -166,6 +186,8 @@ void prg32_set_mode(uint32_t mode);
 uint32_t prg32_ticks_ms(void);
 uint32_t prg32_input_read(void);
 uint32_t prg32_input_read_player(uint8_t player);
+uint32_t prg32_input_read_menu(void);
+void prg32_input_wait_released(uint32_t mask);
 uint32_t prg32_controller_read(void);
 const char *prg32_controller_name(uint32_t bit);
 void prg32_diag_set_input_state(uint32_t input_state);
@@ -188,6 +210,8 @@ typedef struct {
 void prg32_wifi_scores_init(void);
 int prg32_wifi_start_mode(const prg32_wifi_config_t *config);
 prg32_wifi_mode_t prg32_wifi_current_mode(void);
+const char *prg32_wifi_current_ip(void);
+const char *prg32_wifi_current_ssid(void);
 int prg32_wifi_setup_requested(void);
 int prg32_wifi_setup_run(void);
 void prg32_scores_api_start(void);
@@ -204,7 +228,17 @@ uint32_t prg32_cart_generation(void);
 int prg32_cart_is_loaded(void);
 int prg32_cart_load_stored(void);
 int prg32_cart_install(const void *image, size_t image_size, int persist);
+int prg32_cart_install_slot(uint8_t slot,
+                            const void *image,
+                            size_t image_size,
+                            int persist);
 int prg32_cart_select_stored(void);
+int prg32_cart_select_slot(uint8_t slot);
+int prg32_cart_default_slot(void);
+int prg32_cart_set_default_slot(int slot);
+int prg32_cart_select_default(void);
+int prg32_cart_stored_count(void);
+int prg32_cart_get_slot_info(uint8_t slot, prg32_cart_info_t *info);
 int prg32_cart_get_info(prg32_cart_info_t *info);
 int prg32_cart_call_init(void);
 int prg32_cart_call_update(void);
@@ -218,6 +252,20 @@ void prg32_console_hex32(uint32_t value);
 
 void prg32_gfx_clear(uint16_t color);
 void prg32_gfx_present(void);
+void prg32_gfx_set_fullscreen(int enabled);
+int prg32_gfx_fullscreen_enabled(void);
+void prg32_gfx_set_band_color(uint16_t color);
+void prg32_gfx_use_background_bands(void);
+void prg32_band_set_mode(uint8_t band, prg32_band_mode_t mode);
+prg32_band_mode_t prg32_band_mode(uint8_t band);
+const char *prg32_band_mode_name(prg32_band_mode_t mode);
+void prg32_band_set_text(uint8_t band, const char *text);
+void prg32_band_set_game_info(const char *text);
+void prg32_band_log(const char *message);
+void prg32_band_set_colors(uint8_t band, uint16_t fg, uint16_t bg);
+void prg32_band_use_default_colors(uint8_t band);
+void prg32_band_load_config(void);
+void prg32_band_save_config(void);
 void prg32_gfx_pixel(int x, int y, uint16_t color);
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color);
 void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg);
@@ -232,12 +280,24 @@ void prg32_splash_show(const char *title,
                        uint16_t bg,
                        uint16_t fg,
                        uint16_t accent);
+void prg32_splash_draw_game(const char *title,
+                            const char *subtitle,
+                            uint16_t bg,
+                            uint16_t fg,
+                            uint16_t accent);
+void prg32_splash_show_game(const char *title,
+                            const char *subtitle,
+                            uint32_t duration_ms,
+                            uint16_t bg,
+                            uint16_t fg,
+                            uint16_t accent);
 void prg32_splash_show_default(void);
 void prg32_debug_overlay_draw(int enabled,
                               int x,
                               int y,
                               uint32_t input_mask,
                               uint32_t frame);
+void prg32_device_demo_run(void);
 
 void prg32_keyboard_init(prg32_keyboard_t *keyboard,
                          char *buffer,

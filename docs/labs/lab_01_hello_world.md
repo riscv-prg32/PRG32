@@ -1,8 +1,8 @@
-# Lab 01 - Hello World on PRG32
+# Lab 01 - Resident Firmware on PRG32
 
 ## Goal
 
-Build, flash, and edit the minimal PRG32 app.
+Build, flash, and inspect the resident PRG32 runtime.
 
 ## Steps
 
@@ -10,9 +10,9 @@ Build, flash, and edit the minimal PRG32 app.
 2. Run task `PRG32: set target esp32c6`.
 3. Run task `PRG32: build`.
 4. Run task `PRG32: flash monitor`.
-5. Confirm the monitor prints `PRG32 Hello World`.
-6. Edit `main/main.c` and change the message to include your name.
-7. Build and flash again.
+5. Confirm the monitor reaches `PRG32 runtime initialized`.
+6. Hold A+B while resetting the board and confirm setup mode appears.
+7. Run `DEVICE DEMO` from setup.
 
 ## Checkpoint
 
@@ -25,8 +25,8 @@ If no board is available, run:
 1. `PRG32: qemu set target esp32c3`
 2. `PRG32: qemu screen`
 
-The QEMU monitor should print `PRG32 Hello World`, and the virtual screen should
-show the framework console text.
+The QEMU monitor should reach the PRG32 runtime, and the virtual screen should
+show the 320x240 setup/device-demo display.
 
 ## Reflection
 

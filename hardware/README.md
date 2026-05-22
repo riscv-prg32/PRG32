@@ -53,12 +53,15 @@ CH559/CH554, or a PC-side serial helper during labs.
 | GPIO5 | TFT BL |
 | GPIO18 | P1 joystick LEFT to GND |
 | GPIO19 | P1 joystick RIGHT to GND |
-| GPIO4 | P1 joystick UP to GND |
+| GPIO3 | P1 joystick UP to GND |
 | GPIO13 | P1 joystick DOWN to GND |
-| GPIO14 | P1 START to GND |
-| GPIO21 | P1 A / joystick select to GND |
-| GPIO22 | P1 B / back to GND |
+| GPIO20 | P1 SELECT to GND |
+| GPIO21 | P1 A to GND |
+| GPIO22 | P1 B to GND |
 | GPIO15 | Passive buzzer |
+
+GPIO14 remains supported as an older START/SELECT alias in firmware, but new
+student wiring should use GPIO20 for SELECT.
 
 ## MAX98357A audio wiring
 
@@ -93,7 +96,7 @@ internal pull-ups.
 For two-player games, mount a second joystick and assign its pins through
 `PRG32_PIN_P2_LEFT`, `PRG32_PIN_P2_RIGHT`, `PRG32_PIN_P2_UP`,
 `PRG32_PIN_P2_DOWN`, `PRG32_PIN_P2_A`, `PRG32_PIN_P2_B`, and
-`PRG32_PIN_P2_START` in `main/prg32_config.h`.
+`PRG32_PIN_P2_SELECT` / `PRG32_PIN_P2_START` in `main/prg32_config.h`.
 
 The `kicad` directory contains starter placeholders for a KiCad production
 board. The `case` directory contains a simple OpenSCAD enclosure starter. The

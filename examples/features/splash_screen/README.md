@@ -1,11 +1,11 @@
 # PRG32 Splash Screen Feature Demo
 
-This demo shows the reusable splash screen API for graphic games.
+This demo shows the reusable 320x200 splash screen API for graphic games.
 
 Learning goals:
 
-- show a blocking splash with `prg32_splash_show`
-- draw a splash state every frame with `prg32_splash_draw`
+- show a blocking game splash with `prg32_splash_show_game`
+- draw a game splash state every frame with `prg32_splash_draw_game`
 - call the same API from C and RISC-V assembly
 
 ## Sources
@@ -47,8 +47,9 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build flash monitor
 ```
 
-Checkpoint: the first splash pauses briefly, then the draw helper keeps a title
-screen visible with a moving green bar.
+Checkpoint: the first splash pauses briefly, then the draw helper keeps a
+320x200 title screen visible with a moving green bar. The top and bottom
+physical-display bands remain outside the game viewport.
 
 ## Run As A Cartridge
 

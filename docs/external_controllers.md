@@ -24,9 +24,9 @@ The C6 game code does not change. It reads the same PRG32 button bitmask.
 | `PRG32_BTN_RIGHT` | Move right | D-pad right / left stick X positive |
 | `PRG32_BTN_UP` | Move up | D-pad up / left stick Y negative |
 | `PRG32_BTN_DOWN` | Move down | D-pad down / left stick Y positive |
-| `PRG32_BTN_A` | Fire / select / confirm | South button, often A/Cross |
+| `PRG32_BTN_A` | Primary action | South button, often A/Cross |
 | `PRG32_BTN_B` | Back / secondary action | East button, often B/Circle |
-| `PRG32_BTN_START` | Pause / start | Start/Menu button |
+| `PRG32_BTN_SELECT` / `PRG32_BTN_START` | Select / pause | Start/Menu button |
 
 Player 2 uses the same layout shifted to bits 8-14:
 
@@ -38,7 +38,7 @@ Player 2 uses the same layout shifted to bits 8-14:
 | `PRG32_P2_BTN_DOWN` | Player 2 down |
 | `PRG32_P2_BTN_A` | Player 2 confirm/action |
 | `PRG32_P2_BTN_B` | Player 2 back/secondary action |
-| `PRG32_P2_BTN_START` | Player 2 start |
+| `PRG32_P2_BTN_SELECT` / `PRG32_P2_BTN_START` | Player 2 select |
 
 ## UART bridge packet
 

@@ -111,6 +111,7 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 - Games are distributed as cartridges (`.prg32`) loaded by the runtime.
 - Input supports one or two digital joystick modules through the same PRG32
   bitmask used by QEMU and cartridge tests.
+- Hold A + B + DOWN on either joystick to restart the PRG32 firmware.
 - Audio supports mandatory mono I2S output and optional stereo PRG32 Audio Plus
   using MAX98357A amplifier breakouts.
 
@@ -151,7 +152,7 @@ Flow:
 ## Learning Path
 
 1. Build and flash the resident firmware.
-2. Run the Hello World app on the serial monitor and display.
+2. Open setup with A+B at boot, run the device demo, and upload a cartridge.
 3. Read `docs/tutorial.md` for assembly or `docs/tutorial_c_game.md` for C.
 4. Complete the labs in `docs/labs`.
 5. Modify one example game under `examples/games`.
@@ -169,8 +170,9 @@ The `examples/features` directory contains focused demos for framework features:
 - scrolling and parallax playfields
 - animated sprites
 - dual playfield rendering
-- startup and game title splash screens
-- joystick-driven on-screen keyboard input
+- full-screen firmware splash and 320x200 game title splash screens
+- upper/lower status bands for FPS, Wi-Fi, game info, and debug text
+- joystick-driven on-screen keyboard input with printable ASCII support
 - Wi-Fi setup mode
 - audio synthesis and sample playback
 - player 2 input
@@ -198,9 +200,15 @@ Start with:
 See [docs/audio.md](docs/audio.md) for wiring, API, cartridge AUDIO blocks, and
 troubleshooting.
 
-The resident firmware also shows a logo splash screen on boot. Physical
-ESP32-C6 builds then enter Wi-Fi setup mode so students can choose the PRG32
-upload access point or connect the board to an existing network. When the audio
+The resident firmware also shows a full 320x240 logo splash screen on boot.
+Physical ESP32-C6 builds enter setup when A+B are held during boot, when no
+cartridge is stored, or when multiple cartridges exist without a default. The
+setup menu can run a cartridge, set the default boot cartridge, configure Wi-Fi,
+open the developer status-band menu, show the about screen, or launch the
+device demo. Setup screens show the active Wi-Fi mode and current IP address,
+and either joystick can navigate them with SELECT/B to confirm and A to go
+back. The device demo includes 320x200 sketches inspired by Pong, Breakout,
+Space Invaders, Pacman, Tetris, and Pole Position. When the audio
 configuration is usable for the current board, the splash plays a short welcome
 sound; otherwise it falls back to the passive buzzer when configured.
 
@@ -237,7 +245,7 @@ The C programming tutorial is [docs/tutorial_c_game.md](docs/tutorial_c_game.md)
 ## Runtime APIs
 
 - Runtime/diagnostics: `GET /api/runtime`
-- Games: `GET /api/games`, `POST /api/games`, `POST /api/games/select`
+- Games: `GET /api/games`, `POST /api/games?slot=cart0`, `POST /api/games/select?slot=cart0`
 - Optional scores: `GET /api/scores`, `POST /api/scores`
 
 `/api/runtime` includes firmware version, cartridge state, frame count, and last input state.

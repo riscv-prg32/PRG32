@@ -1,11 +1,22 @@
 #include "prg32.h"
 #include "prg32_config.h"
 #include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#ifndef PRG32_PIN_BTN_SELECT
+#define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
+#endif
+
+#ifndef PRG32_PIN_P2_SELECT
+#define PRG32_PIN_P2_SELECT PRG32_PIN_P2_START
+#endif
 
 static void pin_in(int p) {
     if (p < 0) {
         return;
     }
+    gpio_reset_pin(p);
     gpio_set_direction(p, GPIO_MODE_INPUT);
     gpio_set_pull_mode(p, GPIO_PULLUP_ONLY);
 }
@@ -15,10 +26,10 @@ void prg32_controller_bridge_init(void);
 void prg32_input_init(void) {
     pin_in(PRG32_PIN_BTN_LEFT); pin_in(PRG32_PIN_BTN_RIGHT); pin_in(PRG32_PIN_BTN_UP);
     pin_in(PRG32_PIN_BTN_DOWN); pin_in(PRG32_PIN_BTN_A); pin_in(PRG32_PIN_BTN_B);
-    pin_in(PRG32_PIN_BTN_START);
+    pin_in(PRG32_PIN_BTN_START); pin_in(PRG32_PIN_BTN_SELECT);
     pin_in(PRG32_PIN_P2_LEFT); pin_in(PRG32_PIN_P2_RIGHT); pin_in(PRG32_PIN_P2_UP);
     pin_in(PRG32_PIN_P2_DOWN); pin_in(PRG32_PIN_P2_A); pin_in(PRG32_PIN_P2_B);
-    pin_in(PRG32_PIN_P2_START); pin_in(PRG32_PIN_SETUP);
+    pin_in(PRG32_PIN_P2_START); pin_in(PRG32_PIN_P2_SELECT); pin_in(PRG32_PIN_SETUP);
     prg32_controller_bridge_init();
 }
 
@@ -32,4 +43,21 @@ uint32_t prg32_input_read_player(uint8_t player) {
         return (input >> 8) & 0x7fu;
     }
     return input & 0x7fu;
+}
+
+uint32_t prg32_input_read_menu(void) {
+    uint32_t input = prg32_input_read();
+    return (input & 0x7fu) | ((input >> 8) & 0x7fu);
+}
+
+void prg32_input_wait_released(uint32_t mask) {
+    int stable = 0;
+    while (stable < 2) {
+        if ((prg32_input_read_menu() & mask) == 0) {
+            stable++;
+        } else {
+            stable = 0;
+        }
+        vTaskDelay(pdMS_TO_TICKS(25));
+    }
 }

@@ -40,7 +40,7 @@ curl http://192.168.4.1/api/runtime
 ## Checkpoint
 
 Show one score in `/api/scores`, one controller movement through the bridge, and
-one uploaded cartridge listed by `/api/games`.
+at least one uploaded cartridge slot listed by `/api/games`.
 
 Use the physical board for bridge wiring. QEMU can still run the score server
 portion and can be extended later with a host-side UART packet sender.

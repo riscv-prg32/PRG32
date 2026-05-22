@@ -37,6 +37,7 @@ IMPORT_NAMES = [
     "prg32_ticks_ms",
     "prg32_input_read",
     "prg32_input_read_player",
+    "prg32_input_read_menu",
     "prg32_controller_read",
     "prg32_audio_beep",
     "prg32_audio_tone",
@@ -61,8 +62,13 @@ IMPORT_NAMES = [
     "prg32_audio_set_channel_pan",
     "prg32_wifi_start_mode",
     "prg32_wifi_current_mode",
+    "prg32_wifi_current_ip",
+    "prg32_wifi_current_ssid",
     "prg32_wifi_setup_requested",
     "prg32_wifi_setup_run",
+    "prg32_cart_stored_count",
+    "prg32_cart_get_slot_info",
+    "prg32_cart_select_slot",
     "prg32_console_clear",
     "prg32_console_putc",
     "prg32_console_write",
@@ -445,7 +451,7 @@ def build(args: argparse.Namespace) -> None:
 
 def upload(args: argparse.Namespace) -> None:
     data = Path(args.cartridge).read_bytes()
-    endpoint = args.url.rstrip("/") + "/api/games"
+    endpoint = args.url.rstrip("/") + "/api/games?slot=" + args.slot
     request = urllib.request.Request(
         endpoint,
         data=data,
@@ -575,6 +581,7 @@ def main(argv: list[str]) -> int:
     p = sub.add_parser("upload", help="upload a cartridge to hardware over HTTP")
     p.add_argument("cartridge")
     p.add_argument("--url", default="http://192.168.4.1")
+    p.add_argument("--slot", default=DEFAULT_CART_SLOT)
     p.set_defaults(func=upload)
 
     p = sub.add_parser("upload-qemu", help="stage a cartridge into QEMU flash")

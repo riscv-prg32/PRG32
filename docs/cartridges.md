@@ -16,7 +16,8 @@ PRG32 firmware
 |-- display, input, audio, score APIs
 |-- cartridge loader
 |-- executable cartridge RAM
-`-- cart0 flash partition
+|-- cart0 flash partition
+`-- cart1 flash partition
 
 game.prg32
 |-- PRG32 cartridge header
@@ -26,9 +27,9 @@ game.prg32
 
 The firmware exports the PRG32 API addresses and the cartridge RAM address.
 `tools/prg32_game.py` links a game against those addresses and creates a
-`.prg32` package. The firmware validates the package, persists it in `cart0`,
-loads any optional AUDIO block, copies code into executable cartridge RAM, and
-calls:
+`.prg32` package. The firmware validates the package, persists it in the chosen
+slot, loads any optional AUDIO block, copies code into executable cartridge RAM,
+and calls:
 
 - `<game>_init`
 - `<game>_update`
@@ -40,12 +41,26 @@ calls:
 
 ```text
 factory: resident PRG32 firmware
-cart0:   active uploaded cartridge
-cart1:   reserved for future rollback or classroom experiments
+cart0:   uploaded cartridge slot 0
+cart1:   uploaded cartridge slot 1
 ```
 
 This partition table is selected by `sdkconfig.defaults` and
 `sdkconfig.defaults.qemu`.
+
+## Slot Count
+
+The checked-in classroom firmware supports two persistent slots:
+`cart0` and `cart1`. Only one cartridge is loaded into executable RAM at a time,
+so additional slots cost flash space, not runtime RAM.
+
+With the current 4 MB flash image layout, a third 512 KiB slot can fit after
+`cart1` if the partition table and loader slot metadata are extended. On an
+8 MB ESP32-C6 module, the same 512 KiB slot size can support about eleven total
+slots after updating the ESP-IDF flash size, `partitions_prg32.csv`,
+`PRG32_CART_SLOT_COUNT`, the slot labels/subtypes in the cartridge loader, and
+the host tooling/docs. Keep fewer slots for labs unless the course explicitly
+needs a cartridge library; two slots are easier for students to reason about.
 
 ## Hardware Workflow
 
@@ -57,7 +72,7 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
 ```
 
-The default physical build starts a small Wi-Fi access point:
+The setup screen can start a small Wi-Fi access point:
 
 ```text
 SSID:     PRG32
@@ -83,8 +98,17 @@ Upload it to the board:
 python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
 ```
 
-The firmware stores the cartridge in `cart0` and starts running it from the main
-loop. The cartridge remains selected after reset.
+The firmware stores the cartridge in `cart0` by default and starts running it
+from the main loop. Upload to `cart1` with:
+
+```bash
+python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
+```
+
+After reset, one stored cartridge starts automatically. When both slots contain
+games, PRG32 enters setup unless a default cartridge has been saved. Use
+`DEFAULT CARTRIDGE` in setup to choose the slot that should boot automatically,
+or `RUN CARTRIDGE` to launch a slot immediately.
 
 ## Runtime Query Workflow
 
@@ -144,8 +168,8 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 ```
 
 QEMU does not emulate the classroom Wi-Fi upload path. Instead, it uses the same
-cartridge package and writes it into the same `cart0` partition inside
-`qemu_flash.bin`.
+cartridge package and writes it into `cart0` by default, or `cart1` when
+`upload-qemu --slot cart1` is used.
 
 ## HTTP API
 
@@ -169,26 +193,27 @@ Returns:
 GET /api/games
 ```
 
-Returns the current `cart0` cartridge state.
+Returns the `cart0` and `cart1` cartridge states.
 
 ### Upload Game
 
 ```http
-POST /api/games
+POST /api/games?slot=cart0
 Content-Type: application/octet-stream
 
 <game.prg32 bytes>
 ```
 
-Validates, stores, and starts the cartridge.
+Validates, stores, and starts the cartridge. Use `slot=cart1` for the second
+slot.
 
 ### Select Stored Game
 
 ```http
-POST /api/games/select
+POST /api/games/select?slot=cart0
 ```
 
-Reloads the stored `cart0` cartridge.
+Reloads the stored cartridge in the selected slot.
 
 ## Cartridge Assembly Rules
 
@@ -271,5 +296,6 @@ This is intentionally a classroom loader, not a general dynamic linker.
 - Cartridge RAM is 32 KiB.
 - AUDIO blocks are stored after the code payload and count against cartridge
   partition size, not cartridge executable RAM.
-- Only one active cartridge slot is currently used.
+- Two flash slots, `cart0` and `cart1`, are available. Only one cartridge is
+  loaded into executable RAM at a time.
 - QEMU staging requires QEMU to be stopped before patching `qemu_flash.bin`.

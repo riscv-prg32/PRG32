@@ -3,12 +3,17 @@
 These demos isolate framework rendering features without full game rules. Use
 them when teaching one graphics concept at a time.
 
+The resident firmware also includes a setup-launched `DEVICE DEMO` that checks
+the physical display, joystick input, audio beep, Wi-Fi status, cartridge state,
+sprites, scrolling, status bands, dual playfields, and arcade-inspired 320x200
+sketches without rebuilding a cartridge.
+
 | Demo | Assembly source | C source | Entry prefixes | Shows |
 |---|---|---|---|---|
 | Scrolling/parallax | `scrolling_parallax/demo.S` | `scrolling_parallax/c/demo.c` | `scrolling_parallax` / `_c` | scroll and parallax |
 | Animated sprites | `animated_sprites/demo.S` | `animated_sprites/c/demo.c` | `animated_sprites` / `_c` | sprite frames |
 | Dual playfield | `dual_playfield/demo.S` | `dual_playfield/c/demo.c` | `dual_playfield` / `_c` | background plus foreground |
-| Splash screen | `splash_screen/demo.S` | `splash_screen/c/demo.c` | `splash_screen` / `_c` | startup and game title splash |
+| Splash screen | `splash_screen/demo.S` | `splash_screen/c/demo.c` | `splash_screen` / `_c` | 320x200 game title splash |
 | Joystick keyboard | - | `keyboard_input/c/demo.c` | `keyboard_input_c` | alphanumeric text input |
 | Wi-Fi setup | - | `wifi_setup/c/demo.c` | `wifi_setup_c` | setup mode and AP/STA choice |
 | Audio synth | - | `audio_synth/c/demo.c` | `audio_synth_c` | notes and samples |
@@ -21,6 +26,10 @@ Each demo exports:
 <prefix>_update
 <prefix>_draw
 ```
+
+Feature demos and games draw into the 320x200 viewport. The firmware splash,
+setup, Wi-Fi setup, developer menu, and about menu are the framework-owned
+screens that use the full 320x240 display.
 
 ## Run Embedded in Firmware
 

@@ -26,7 +26,7 @@ low bits:
 - `PRG32_BTN_DOWN`
 - `PRG32_BTN_A`
 - `PRG32_BTN_B`
-- `PRG32_BTN_START`
+- `PRG32_BTN_SELECT` (`PRG32_BTN_START` is kept as an alias)
 
 Player 2 uses the same layout shifted into the `PRG32_P2_*` bits. Games can use
 `prg32_input_read_player(1)` or `prg32_input_read_player(2)` to get a normalized
@@ -36,6 +36,14 @@ in both C and assembly.
 QEMU and host-driven tests can inject the same bitmask through
 `prg32_diag_set_input_state()`, so two-player logic can be tested without the
 physical second joystick mounted.
+
+Menu/setup helpers can call `prg32_input_read_menu()` to merge joystick 1 and
+joystick 2 into the same normalized low-bit mask.
+
+System hotkey:
+
+- A + B + DOWN on joystick 1 or joystick 2: restart the ESP32-C6 firmware from
+  anywhere in the PRG32 input path.
 
 ## Joystick Text Input
 
@@ -52,20 +60,29 @@ Useful calls:
 Controls:
 
 - D-pad: move around the key grid.
-- A: select key.
-- B: delete.
-- START: finish.
+- SELECT: select the highlighted on-screen key.
+- A: escape back to the previous state.
+- B: confirm, equivalent to selecting the on-screen `return` key.
+
+The keyboard uses a QWERTY layout with explicit `delete`, `shift`, and `return`
+keys. `shift` toggles between lower-case and upper-case/symbol labels. The
+`ascii` key opens a printable ASCII page covering characters 0x20 through 0x7e.
+The LCD and QEMU text renderers include distinct glyphs for the full printable
+ASCII range; console output also treats tab and DEL/backspace as text controls.
 
 ## Graphics model
 
-The physical display is 320x240, but the game viewport is 320x200. The extra
-vertical area is reserved for border, status, or debugging. The ILI9341 renderer
-tracks dirty rectangles and sends only changed areas over SPI using ESP-IDF SPI
-DMA.
+The physical display is 320x240, while the normal game viewport remains
+320x200. The firmware splash, setup, Wi-Fi setup, developer menu, and about
+screen use the full display. Game and feature-demo drawing calls use the
+centered 320x200 viewport so cartridges keep the same coordinate system and
+the retro frame. Unless a program sets a band color explicitly, the upper and
+lower horizontal bands are filled with the same color passed to
+`prg32_gfx_clear`.
 
-The QEMU renderer exposes the same 320x200 PRG32 viewport through Espressif's
-virtual RGB panel. Student assembly code does not change; only the selected
-display backend changes.
+The QEMU renderer exposes the same 320x240 physical screen and centers the
+320x200 PRG32 game viewport inside it. Student assembly code does not change;
+only the selected display backend changes.
 
 For classroom debugging, optional helper `prg32_debug_overlay_draw` can print
 `x`, `y`, input mask, frame, and tick info on the top scanline.
@@ -99,16 +116,49 @@ I2S audio subsystem only when the configured audio pins do not conflict with the
 reference display/input wiring. Otherwise it uses the passive buzzer when one
 is configured.
 
-Graphic games can reuse the same helper API:
+Graphic games can reuse the 320x200 game splash helpers:
+
+- `prg32_splash_show_game(title, subtitle, duration_ms, bg, fg, accent)`:
+  draw a game title screen, present it, and wait.
+- `prg32_splash_draw_game(title, subtitle, bg, fg, accent)`: draw a game title
+  screen without delaying, useful inside a title-state loop.
+
+Framework-owned full-screen splash helpers remain available:
 
 - `prg32_splash_show(title, subtitle, duration_ms, bg, fg, accent)`: draw,
-  present, and wait.
+  present, and wait on the full 320x240 display.
 - `prg32_splash_draw(title, subtitle, bg, fg, accent)`: draw a splash/title
-  screen without delaying, useful inside a game state.
+  screen without delaying on the full 320x240 display.
 - `prg32_splash_show_default()`: show the firmware-style PRG32 splash.
+- `prg32_gfx_set_fullscreen(enabled)`: switch between full-screen framework
+  drawing and the centered game viewport.
+- `prg32_gfx_set_band_color(color)`: set a custom color for the game viewport
+  bands.
+- `prg32_gfx_use_background_bands()`: return to automatic background-colored
+  bands.
 
 Assembly programs pass C strings in `a0` and `a1`, duration in `a2`, and RGB565
 colors in `a3` to `a5`.
+
+## Status Bands
+
+When the viewport is active, PRG32 owns the 20-pixel band above the game and
+the 20-pixel band below it. By default they follow the game background color.
+Games can opt in to status text without changing the 320x200 play area:
+
+- `prg32_band_set_mode(PRG32_BAND_TOP, mode)`
+- `prg32_band_set_mode(PRG32_BAND_BOTTOM, mode)`
+- `prg32_band_set_text(band, text)`
+- `prg32_band_set_game_info(text)`
+- `prg32_band_log(message)`
+- `prg32_band_set_colors(band, fg, bg)`
+- `prg32_band_use_default_colors(band)`
+
+Available modes are `PRG32_BAND_MODE_NONE`, `PRG32_BAND_MODE_FPS`,
+`PRG32_BAND_MODE_WIFI`, `PRG32_BAND_MODE_GAME`,
+`PRG32_BAND_MODE_DEBUG`, and `PRG32_BAND_MODE_CUSTOM`. The setup developer
+menu lets a trainer choose what appears in the top and bottom bands and stores
+that choice in NVS.
 
 ## Cartridge runtime
 
@@ -120,11 +170,19 @@ Important constants:
 - `PRG32_CART_MAGIC`: `.prg32` package magic.
 - `PRG32_CART_ABI_MAJOR` / `PRG32_CART_ABI_MINOR`: loader ABI version.
 - `PRG32_CART_RAM_SIZE`: executable cartridge RAM window, currently 32 KiB.
+- `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
 Important functions:
 
 - `prg32_cart_load_addr()`: runtime address used by the host linker.
 - `prg32_cart_install(image, size, persist)`: validate, load, and optionally store.
+- `prg32_cart_install_slot(slot, image, size, persist)`: install to `cart0` or `cart1`.
+- `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot.
+- `prg32_cart_default_slot()`: read the saved default boot cartridge.
+- `prg32_cart_set_default_slot(slot)`: save a default slot, or pass `-1` to clear it.
+- `prg32_cart_select_default()`: load the saved default slot.
+- `prg32_cart_stored_count()`: count valid stored cartridges.
+- `prg32_cart_get_slot_info(slot, info)`: inspect one persistent slot.
 - `prg32_cart_call_init()`
 - `prg32_cart_call_update()`
 - `prg32_cart_call_draw()`
@@ -140,14 +198,31 @@ PRG32 supports three Wi-Fi runtime modes:
 - `PRG32_WIFI_MODE_AP`: create the PRG32 access point.
 - `PRG32_WIFI_MODE_APSTA`: keep the upload AP while also connecting as station.
 
-The resident ESP32-C6 firmware enters setup mode after the startup splash by
-default when Wi-Fi is enabled. The setup screen lets the user choose
-access-point mode or station mode, then uses the joystick keyboard for SSID and
-password input.
+After the startup splash, the resident ESP32-C6 firmware enters setup mode when
+A and B are held during boot, whenever no stored cartridge is available, or
+when multiple cartridges are available but no default cartridge has been saved.
+If one cartridge is available, it starts automatically. If a default cartridge
+has been saved, that cartridge starts automatically even when multiple slots are
+filled.
 
-This boot behavior is controlled by `PRG32_BOOT_SETUP_MODE` in
-`main/prg32_config.h`. If it is disabled for a custom build, the setup GPIO
-`PRG32_PIN_SETUP` can still be held low during boot to force setup mode.
+The setup main menu contains cartridge launch, default cartridge selection,
+Wi-Fi setup, the developer band menu, the device demo, the about screen, and
+exit. Use UP/DOWN to choose, SELECT or B to confirm, and A to cancel/back. The
+device demo is a firmware-owned smoke test for display, input, audio, Wi-Fi
+status, cartridges, sprites, scrolling, playfield rendering, status bands, and
+small sketches inspired by Pong, Breakout, Space Invaders, Pacman, Tetris, and
+Pole Position.
+
+The Wi-Fi setup screen lets the user choose access-point mode or infrastructure
+mode. Infrastructure mode scans for nearby SSIDs, lists them on screen, and
+uses UP/DOWN plus SELECT or B to select. A cancels back. Joystick 1 and
+joystick 2 work the same way in setup. The setup UI also shows the active Wi-Fi
+mode and IP address; AP mode shows the AP SSID, while
+infrastructure mode shows the selected/connected SSID.
+
+`PRG32_BOOT_SETUP_MODE` in `main/prg32_config.h` can still force setup on every
+boot for custom classroom images. If `PRG32_PIN_SETUP` is wired, holding it low
+during boot also forces setup mode.
 
 Useful calls:
 
@@ -155,6 +230,8 @@ Useful calls:
 - `prg32_wifi_setup_run()`
 - `prg32_wifi_start_mode(config)`
 - `prg32_wifi_current_mode()`
+- `prg32_wifi_current_ip()`
+- `prg32_wifi_current_ssid()`
 
 The chosen settings are stored in NVS under the `prg32wifi` namespace. QEMU
 builds keep physical Wi-Fi disabled by default, but games can still compile

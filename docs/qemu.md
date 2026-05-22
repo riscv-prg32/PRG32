@@ -1,8 +1,10 @@
 # PRG32 QEMU Screen Emulator
 
-PRG32 can run on a desktop with Espressif QEMU and show the 320x200 game
-viewport in a virtual RGB framebuffer window. This is intended for students who
-want to compile and test game graphics before flashing real ESP32-C6 hardware.
+PRG32 can run on a desktop with Espressif QEMU and show the 320x240 PRG32
+screen in a virtual RGB framebuffer window. Framework screens use the full
+resolution; game code still draws into the centered 320x200 viewport. This is
+intended for students who want to compile and test graphics before flashing real
+ESP32-C6 hardware.
 
 The QEMU build uses ESP32-C3 as the emulator target because Espressif documents
 the maintained RISC-V QEMU graphics path for ESP32-C3. PRG32 student games still

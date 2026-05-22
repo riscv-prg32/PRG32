@@ -38,9 +38,14 @@ Feature demos live under `examples/features` and isolate one framework topic:
 - scrolling and parallax
 - animated sprites
 - dual playfield rendering
-- splash screens
+- 320x200 game splash screens
+- status-band overlays
 - tile/platform helpers
 - joystick keyboard input
 - Wi-Fi setup
 - player 2 input
 - audio synthesis
+
+The setup-launched device demo is not a cartridge example, but it is useful for
+trainers: it checks framework capabilities and includes small 320x200 sketches
+inspired by Pong, Breakout, Space Invaders, Pacman, Tetris, and Pole Position.

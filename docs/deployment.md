@@ -30,17 +30,21 @@ ILI9341 pins before the splash screen is drawn.
 ## Default app
 
 The default firmware is a resident PRG32 runtime. On the physical ESP32-C6
-build it shows the splash screen and then enters Wi-Fi setup mode. Choose
-access-point mode for the standard cartridge upload workflow, or station mode
-when a lesson needs the board on an existing network.
+build it shows the full 320x240 splash screen, samples the joystick, and enters
+setup mode when A and B are held or when no cartridge is stored. If one
+cartridge is stored, it starts automatically. If both `cart0` and `cart1`
+contain cartridges, setup lets the user run one immediately or save a default
+boot cartridge.
 
-With no cartridge installed, the runtime prints `PRG32 Hello World` after setup
-completes. When a cartridge is uploaded, the same firmware loads the stored game
-from `cart0` and calls its `init`, `update`, and `draw` entries.
+In setup mode, choose access-point mode for the standard cartridge upload
+workflow, or infrastructure mode to scan nearby SSIDs and connect the board to
+an existing network. The same setup menu can launch the developer band menu,
+the about screen, and the device demo. With no cartridge installed, the
+firmware starts the upload AP and waits in setup.
 
 ## Flash once, upload games
 
-The physical build starts a Wi-Fi AP for cartridge upload:
+The physical build can start a Wi-Fi AP for cartridge upload:
 
 ```text
 SSID: PRG32
@@ -59,6 +63,12 @@ python3 tools/prg32_game.py build \
   --out build-esp32c6/asteroids.prg32
 
 python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
+```
+
+Use `--slot cart1` to upload a second cartridge:
+
+```bash
+python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
 ```
 
 See `docs/cartridges.md`.
@@ -91,8 +101,9 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 ```
 
 The QEMU build selects `CONFIG_PRG32_DISPLAY_QEMU_RGB` and renders the PRG32
-320x200 game viewport with Espressif's virtual RGB panel. The normal hardware
-build keeps the ESP32-C6 target and ILI9341 SPI display backend.
+320x240 screen with Espressif's virtual RGB panel. Game APIs remain centered in
+the 320x200 viewport. The normal hardware build keeps the ESP32-C6 target and
+ILI9341 SPI display backend.
 
 QEMU cartridge testing uses the same `.prg32` package but stages it into
 `build-qemu/qemu_flash.bin`:

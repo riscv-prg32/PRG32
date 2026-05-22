@@ -47,8 +47,10 @@ void app_main(void) {
 #endif
 
     prg32_init();
-    prg32_console_clear();
-    prg32_console_write("PRG32: Platform for Risc-V Game programming\n");
+    if (!prg32_cart_is_loaded()) {
+        prg32_console_clear();
+        prg32_console_write("PRG32 READY: use setup to upload a cartridge\n");
+    }
     ESP_LOGI(TAG, "PRG32 runtime initialized");
 #if PRG32_DEBUG
     prg32_console_write("PRG32 DEBUG enabled\n");

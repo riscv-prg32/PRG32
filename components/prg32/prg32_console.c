@@ -51,6 +51,9 @@ void prg32_console_clear(void) {
 }
 
 void prg32_console_putc(int ch) {
+    if (ch == 127) {
+        ch = '\b';
+    }
     if (g_mode == PRG32_MODE_UART_ONLY || g_mode == PRG32_MODE_UART_LCD_MIRROR) {
         fputc(ch, stdout);
     }
@@ -58,6 +61,13 @@ void prg32_console_putc(int ch) {
     if (ch == '\r') { g_cx = 0; return; }
     if (ch == '\n') { g_cx = 0; g_cy++; if (g_cy >= PRG32_TEXT_ROWS) console_scroll(); return; }
     if (ch == '\b') { if (g_cx > 0) g_cx--; g_text[g_cy][g_cx] = ' '; console_redraw_char(g_cx, g_cy); return; }
+    if (ch == '\t') {
+        int spaces = 4 - (g_cx & 3);
+        while (spaces-- > 0) {
+            prg32_console_putc(' ');
+        }
+        return;
+    }
     if (ch < 32 || ch > 126) ch = '?';
     g_text[g_cy][g_cx] = (char)ch;
     console_redraw_char(g_cx, g_cy);

@@ -27,16 +27,15 @@ PRG32 boot: app_main entered
 I (...) prg32_main: starting PRG32 runtime
 I (...) prg32_lcd: ILI9341 SPI2 MOSI=7 MISO=2 SCLK=6 CS=10 DC=8 RST=9 BL=5 ...
 I (...) prg32_lcd: ILI9341 initialization complete
-PRG32 Hello World
+I (...) prg32_main: PRG32 runtime initialized
 ```
 
 Checkpoint:
 
 - The firmware builds without errors.
 - The monitor logs the configured ILI9341 pins.
-- The board shows the PRG32 Hello World message.
-- The serial monitor prints boot logs and the app message when USB
-  secondary-console output is visible.
+- The board shows the PRG32 splash, then either setup or a cartridge.
+- The serial monitor prints boot logs and reaches `PRG32 runtime initialized`.
 
 To run without hardware, use the QEMU tasks instead:
 
@@ -44,7 +43,8 @@ To run without hardware, use the QEMU tasks instead:
 2. `PRG32: qemu build`
 3. `PRG32: qemu screen`
 
-The QEMU screen task opens a virtual 320x200 PRG32 display window.
+The QEMU screen task opens a virtual 320x240 PRG32 display window. Games still
+draw into the centered 320x200 viewport.
 
 If QEMU is your first target, remember that it does not emulate the physical
 GPIO buttons. Use QEMU for graphics, timing, register tracing, and memory
