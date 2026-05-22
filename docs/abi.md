@@ -40,6 +40,9 @@ The audio ABI is the C API exposed to cartridges:
 | `prg32_audio_set_master_volume` | set global volume | none |
 | `prg32_audio_set_channel_volume` | set one voice volume | none |
 | `prg32_audio_set_channel_pan` | set one voice pan | none |
+| `prg32_audio_led_vu_enable` | allow audio helpers to drive the RGB LED VU meter | none |
+| `prg32_audio_led_vu_enabled` | read the RGB LED VU meter flag | `int` |
+| `prg32_audio_led_vu_level` | update the RGB LED VU level if enabled | none |
 
 Pan uses signed values:
 
@@ -49,6 +52,19 @@ Pan uses signed values:
 
 Mono builds accept pan calls but mix to one output. Stereo-only programs should
 check `prg32_audio_get_mode()` before making a wiring assumption.
+
+## RGB LED ABI Calls
+
+The onboard RGB LED API is optional because many classroom display harnesses use
+the same GPIO as the board LED. Check availability before depending on it.
+
+| Symbol | Purpose | Return |
+|---|---|---|
+| `prg32_rgb_led_init` | initialize an addressable RGB LED on a GPIO | `0` or negative |
+| `prg32_rgb_led_available` | report whether the LED is ready | `int` |
+| `prg32_rgb_led_set` | set red, green, blue intensity | none |
+| `prg32_rgb_led_off` | turn the LED off | none |
+| `prg32_rgb_led_vu` | map a 0-255 level to spectrum color | none |
 
 ## Error Values
 

@@ -174,6 +174,8 @@ The `examples/features` directory contains focused demos for framework features:
 - upper/lower status bands for FPS, Wi-Fi, game info, and debug text
 - joystick-driven on-screen keyboard input with printable ASCII support
 - Wi-Fi setup mode
+- setup audio menu with output detection, volume, and test tune
+- configurable onboard RGB LED API and optional audio VU meter
 - audio synthesis and sample playback
 - player 2 input
 
@@ -204,14 +206,15 @@ The resident firmware also shows a full 320x240 logo splash screen on boot.
 Physical ESP32-C6 builds enter setup when A+B are held during boot, when no
 cartridge is stored, or when multiple cartridges exist without a default. The
 setup menu can run a cartridge, set the default boot cartridge, configure Wi-Fi,
-open the developer status-band menu, show the about screen, or launch the
-device demo. Setup screens show the active Wi-Fi mode and current IP address,
+open the audio setup menu, open the developer status-band menu, show the about
+screen, or launch the device demo. Setup screens show the active Wi-Fi mode and current IP address,
 and either joystick can navigate them with SELECT/B to confirm and A to go
 back. The device demo includes 320x200 sketches inspired by Pong, Breakout,
 Space Invaders, Pacman, Tetris, Pole Position, Asteroids, a side-scrolling
-platform game, and a Doom-style raycaster. When the audio configuration is
-usable for the current board, the splash plays a short welcome sound; otherwise
-it falls back to the passive buzzer when configured.
+platform game, a Doom-style raycaster, and a space cockpit that demonstrates
+dual playfields. When the audio configuration is usable for the current board,
+the splash plays a short welcome sound; otherwise it falls back to the passive
+buzzer when configured.
 
 ## Example Games
 
@@ -226,6 +229,7 @@ C versions of:
 - `tetris`
 - `platformer`
 - `raycaster`
+- `wing_commander`
 
 See [examples/games/README.md](examples/games/README.md) for step-by-step
 instructions to run each game embedded in firmware or as an uploadable

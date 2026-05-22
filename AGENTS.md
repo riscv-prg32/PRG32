@@ -221,8 +221,10 @@ Important implementation details:
 - Keep `prg32_device_demo_run()` current whenever framework capabilities are
   added or changed. The setup-launched device demo should remain a quick
   hardware/classroom smoke test covering display, input, audio, Wi-Fi status,
-  cartridge state, sprites, scrolling/playfields, status bands, arcade-inspired
-  viewport sketches, and any new framework feature.
+  cartridge state, sprites, scrolling/playfields, status bands, RGB LED/audio
+  VU behavior, arcade-inspired viewport sketches, the tile-engine platformer,
+  the fixed-point raycaster, the dual-playfield space cockpit, and any new
+  framework feature.
 
 ## Assembly Example Guidelines
 

@@ -206,13 +206,14 @@ has been saved, that cartridge starts automatically even when multiple slots are
 filled.
 
 The setup main menu contains cartridge launch, default cartridge selection,
-Wi-Fi setup, the developer band menu, the device demo, the about screen, and
-exit. Use UP/DOWN to choose, SELECT or B to confirm, and A to cancel/back. The
+Wi-Fi setup, audio setup, the developer band menu, the device demo, the about
+screen, and exit. Use UP/DOWN to choose, SELECT or B to confirm, and A to cancel/back. The
 device demo is a firmware-owned smoke test for display, input, audio, Wi-Fi
 status, cartridges, sprites, scrolling, playfield rendering, status bands, and
 small sketches inspired by Pong, Breakout, Space Invaders, Pacman, Tetris,
 Pole Position, Asteroids, a tile-engine platformer, and a Doom-style
-raycaster.
+raycaster. It also includes a space-cockpit sketch where the starfield and
+cockpit are separate playfields.
 
 The Wi-Fi setup screen lets the user choose access-point mode or infrastructure
 mode. Infrastructure mode scans for nearby SSIDs, lists them on screen, and
@@ -370,3 +371,31 @@ Pitch `1024` means natural sample speed. Volumes use `0..255`. Pan uses
 `-64..+63`; mono mode accepts pan calls but outputs mono.
 
 See `docs/audio.md` for wiring, examples, and the cartridge AUDIO block format.
+
+The setup audio menu auto-detects the active output path:
+
+- none
+- PWM buzzer
+- mono I2S
+- stereo I2S
+
+It lets trainers set the test volume, play a short tune, and toggle the
+onboard RGB LED as a spectrum-style VU meter when the LED GPIO is available.
+
+## Onboard RGB LED
+
+PRG32 exposes a small addressable RGB LED API:
+
+- `prg32_rgb_led_init(gpio)`: initialize the board LED on a free GPIO.
+- `prg32_rgb_led_available()`: return whether the LED is ready.
+- `prg32_rgb_led_set(red, green, blue)`: set 8-bit RGB intensity.
+- `prg32_rgb_led_off()`: turn the LED off.
+- `prg32_rgb_led_vu(level)`: map a 0-255 level to a blue/green/yellow/red
+  spectrum color.
+- `prg32_audio_led_vu_enable(enabled)`: let the audio test and PWM helpers
+  drive the LED as a VU meter.
+
+The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
+boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
+to `-1` in `main/prg32_config.h`. Set it only when the LED pin is free on the
+chosen board wiring.

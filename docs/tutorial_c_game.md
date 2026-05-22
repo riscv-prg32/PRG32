@@ -165,6 +165,10 @@ Use `examples/games/raycaster/c/game.c` to discuss fixed-point arithmetic,
 table-driven direction vectors, and why a small Doom-style renderer can run on
 the same RISC-V runtime used for assembly exercises.
 
+Use `examples/games/wing_commander/c/game.c` when the course reaches layered
+rendering. It keeps the starfield and cockpit in separate playfields, then adds
+enemies, laser input, score, and shield state in C.
+
 ## Break and Fix Exercise
 
 Break it:

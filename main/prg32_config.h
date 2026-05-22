@@ -28,6 +28,9 @@
 #define PRG32_GAME_RAYCASTER_ASCII     22
 #define PRG32_GAME_RAYCASTER_GRAPHICS  23
 #define PRG32_GAME_RAYCASTER_C         24
+#define PRG32_GAME_WING_ASCII          25
+#define PRG32_GAME_WING_GRAPHICS       26
+#define PRG32_GAME_WING_C              27
 
 /* Runtime console mode. */
 #define PRG32_MODE_UART_ONLY       0
@@ -73,6 +76,7 @@
 #define PRG32_CONTROLLER_BRIDGE_BAUD 115200
 #define PRG32_PIN_CONTROLLER_TX -1
 #define PRG32_PIN_CONTROLLER_RX -1
+#define PRG32_PIN_RGB_LED -1
 
 #define PRG32_GAME_UPLOAD_ENABLE 0
 #else
@@ -121,6 +125,14 @@
 #define PRG32_CONTROLLER_BRIDGE_BAUD 115200
 #define PRG32_PIN_CONTROLLER_TX 16
 #define PRG32_PIN_CONTROLLER_RX 17
+
+/*
+ * Many ESP32-C6 boards route the onboard addressable RGB LED to GPIO8. The
+ * reference PRG32 ILI9341 harness also uses GPIO8 for LCD D/C, so the RGB LED
+ * is disabled by default. Set this to the board LED GPIO only when that pin is
+ * free in your hardware variant.
+ */
+#define PRG32_PIN_RGB_LED -1
 #endif
 
 /*

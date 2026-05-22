@@ -16,6 +16,26 @@ void prg32_device_demo_run(void);
 #define PRG32_BOOT_SETUP_MODE 0
 #endif
 
+#ifndef CONFIG_PRG32_AUDIO_ENABLED
+#define CONFIG_PRG32_AUDIO_ENABLED 0
+#endif
+
+#ifndef CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO
+#define CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO -1
+#endif
+
+#ifndef CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO
+#define CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO -1
+#endif
+
+#ifndef CONFIG_PRG32_AUDIO_I2S_DATA_GPIO
+#define CONFIG_PRG32_AUDIO_I2S_DATA_GPIO -1
+#endif
+
+#ifndef CONFIG_PRG32_AUDIO_I2S_SD_GPIO
+#define CONFIG_PRG32_AUDIO_I2S_SD_GPIO -1
+#endif
+
 #define SETUP_ACCEPT (PRG32_BTN_SELECT | PRG32_BTN_B)
 #define SETUP_CANCEL PRG32_BTN_A
 #define SETUP_NAV (PRG32_BTN_UP | PRG32_BTN_DOWN)
@@ -26,6 +46,7 @@ typedef enum {
     SETUP_OPTION_RUN_CART,
     SETUP_OPTION_DEFAULT_CART,
     SETUP_OPTION_WIFI,
+    SETUP_OPTION_AUDIO,
     SETUP_OPTION_DEVELOPER,
     SETUP_OPTION_DEMO,
     SETUP_OPTION_ABOUT,
@@ -271,6 +292,243 @@ static int autoload_cartridge(void) {
     return -1;
 }
 
+typedef enum {
+    SETUP_AUDIO_NONE,
+    SETUP_AUDIO_PWM,
+    SETUP_AUDIO_I2S_MONO,
+    SETUP_AUDIO_I2S_STEREO,
+} setup_audio_output_t;
+
+static uint8_t g_setup_audio_volume = 192;
+static setup_audio_output_t g_setup_audio_output = SETUP_AUDIO_NONE;
+static int g_setup_audio_detected;
+
+static const uint8_t setup_audio_wave[] = {
+    128, 176, 218, 245, 255, 245, 218, 176,
+    128, 80, 38, 11, 1, 11, 38, 80,
+    128, 176, 218, 245, 255, 245, 218, 176,
+    128, 80, 38, 11, 1, 11, 38, 80,
+};
+
+static const char *audio_output_name(setup_audio_output_t output) {
+    if (output == SETUP_AUDIO_I2S_STEREO) {
+        return "STEREO I2S";
+    }
+    if (output == SETUP_AUDIO_I2S_MONO) {
+        return "MONO I2S";
+    }
+    if (output == SETUP_AUDIO_PWM) {
+        return "PWM BUZZER";
+    }
+    return "NONE";
+}
+
+static int setup_pin_matches(int gpio, int pin) {
+    return gpio >= 0 && pin >= 0 && gpio == pin;
+}
+
+static int setup_audio_pin_conflicts(int gpio) {
+    if (gpio < 0) {
+        return 0;
+    }
+    return setup_pin_matches(gpio, PRG32_PIN_LCD_MOSI) ||
+           setup_pin_matches(gpio, PRG32_PIN_LCD_MISO) ||
+           setup_pin_matches(gpio, PRG32_PIN_LCD_SCLK) ||
+           setup_pin_matches(gpio, PRG32_PIN_LCD_CS) ||
+           setup_pin_matches(gpio, PRG32_PIN_LCD_DC) ||
+           setup_pin_matches(gpio, PRG32_PIN_LCD_RST) ||
+           setup_pin_matches(gpio, PRG32_PIN_LCD_BL) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_LEFT) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_RIGHT) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_UP) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_DOWN) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_A) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_B) ||
+           setup_pin_matches(gpio, PRG32_PIN_BTN_SELECT) ||
+           setup_pin_matches(gpio, PRG32_PIN_BUZZER);
+}
+
+static int setup_i2s_pins_safe(void) {
+    if (CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO < 0 ||
+        CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO < 0 ||
+        CONFIG_PRG32_AUDIO_I2S_DATA_GPIO < 0) {
+        return 0;
+    }
+    return !setup_audio_pin_conflicts(CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO) &&
+           !setup_audio_pin_conflicts(CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO) &&
+           !setup_audio_pin_conflicts(CONFIG_PRG32_AUDIO_I2S_DATA_GPIO) &&
+           !setup_audio_pin_conflicts(CONFIG_PRG32_AUDIO_I2S_SD_GPIO);
+}
+
+static setup_audio_output_t detect_audio_output(void) {
+    if (g_setup_audio_detected) {
+        return g_setup_audio_output;
+    }
+    g_setup_audio_detected = 1;
+    g_setup_audio_output = SETUP_AUDIO_NONE;
+
+#if CONFIG_PRG32_AUDIO_ENABLED
+    if (setup_i2s_pins_safe() && prg32_audio_init(NULL)) {
+        prg32_audio_set_master_volume(g_setup_audio_volume);
+        g_setup_audio_output =
+            prg32_audio_get_mode() == PRG32_AUDIO_MODE_STEREO
+                ? SETUP_AUDIO_I2S_STEREO
+                : SETUP_AUDIO_I2S_MONO;
+        return g_setup_audio_output;
+    }
+    prg32_audio_shutdown();
+#endif
+
+    if (PRG32_PIN_BUZZER >= 0) {
+        g_setup_audio_output = SETUP_AUDIO_PWM;
+    }
+    return g_setup_audio_output;
+}
+
+static void setup_audio_prepare_i2s_test(void) {
+    prg32_instrument_desc_t inst = {
+        .sample_id = 63,
+        .default_volume = g_setup_audio_volume,
+        .default_pan = PRG32_AUDIO_PAN_CENTER,
+        .attack = 0,
+        .decay = 0,
+        .sustain = 255,
+        .release = 0,
+    };
+    prg32_audio_register_sample(63,
+                                setup_audio_wave,
+                                sizeof(setup_audio_wave),
+                                60,
+                                PRG32_AUDIO_SAMPLE_LOOP,
+                                0,
+                                sizeof(setup_audio_wave));
+    prg32_audio_register_instrument(31, &inst);
+}
+
+static void play_audio_test_tune(setup_audio_output_t output) {
+    static const uint16_t freq[] = { 262, 330, 392, 523 };
+    static const uint8_t notes[] = { 60, 64, 67, 72 };
+    uint16_t duty = (uint16_t)((512u * g_setup_audio_volume) / 255u);
+    if (duty == 0) {
+        duty = 1;
+    }
+
+    if (output == SETUP_AUDIO_I2S_MONO || output == SETUP_AUDIO_I2S_STEREO) {
+        setup_audio_prepare_i2s_test();
+        for (size_t i = 0; i < sizeof(notes); ++i) {
+            prg32_audio_led_vu_level((uint8_t)(72 + i * 48));
+            prg32_audio_note_on(0, 31, notes[i], g_setup_audio_volume);
+            vTaskDelay(pdMS_TO_TICKS(130));
+            prg32_audio_note_off(0);
+            vTaskDelay(pdMS_TO_TICKS(35));
+        }
+        prg32_audio_led_vu_level(0);
+        return;
+    }
+
+    if (output == SETUP_AUDIO_PWM) {
+        for (size_t i = 0; i < sizeof(freq) / sizeof(freq[0]); ++i) {
+            prg32_audio_led_vu_level((uint8_t)(72 + i * 48));
+            prg32_audio_tone(freq[i], 110, duty);
+            vTaskDelay(pdMS_TO_TICKS(35));
+        }
+        prg32_audio_led_vu_level(0);
+    }
+}
+
+static void draw_volume_bar(int x, int y, uint8_t volume) {
+    int width = (int)volume * 120 / 255;
+    prg32_gfx_rect(x, y, 124, 12, PRG32_COLOR_BLUE);
+    prg32_gfx_rect(x + 2, y + 2, width, 8, PRG32_COLOR_GREEN);
+}
+
+static void audio_menu(void) {
+    int choice = 0;
+    const int rows = 4;
+    setup_audio_output_t output = detect_audio_output();
+    prg32_input_wait_released(SETUP_KEYS);
+    uint32_t last = 0;
+    while (1) {
+        uint32_t input = prg32_input_read_menu();
+        if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
+            choice--;
+        }
+        if ((input & PRG32_BTN_DOWN) &&
+            !(last & PRG32_BTN_DOWN) &&
+            choice + 1 < rows) {
+            choice++;
+        }
+        if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+            prg32_input_wait_released(SETUP_CANCEL);
+            return;
+        }
+        if ((input & PRG32_BTN_LEFT) && !(last & PRG32_BTN_LEFT) &&
+            choice == 0 && g_setup_audio_volume >= 8) {
+            g_setup_audio_volume -= 8;
+            prg32_audio_set_master_volume(g_setup_audio_volume);
+        }
+        if ((input & PRG32_BTN_RIGHT) && !(last & PRG32_BTN_RIGHT) &&
+            choice == 0 && g_setup_audio_volume <= 247) {
+            g_setup_audio_volume += 8;
+            prg32_audio_set_master_volume(g_setup_audio_volume);
+        }
+        if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
+            ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+            if (choice == 1 && prg32_rgb_led_available()) {
+                prg32_audio_led_vu_enable(!prg32_audio_led_vu_enabled());
+            } else if (choice == 2) {
+                play_audio_test_tune(output);
+            } else if (choice == 3) {
+                prg32_input_wait_released(SETUP_ACCEPT);
+                return;
+            }
+            prg32_input_wait_released(SETUP_ACCEPT);
+        }
+
+        char line[72];
+        prg32_gfx_clear(PRG32_COLOR_BLACK);
+        prg32_gfx_text8(8, 8, "AUDIO MENU", PRG32_COLOR_WHITE, 0);
+        snprintf(line, sizeof(line), "OUTPUT: %s", audio_output_name(output));
+        prg32_gfx_text8(8, 36, line, PRG32_COLOR_CYAN, 0);
+        if (output == SETUP_AUDIO_I2S_MONO || output == SETUP_AUDIO_I2S_STEREO) {
+            snprintf(line,
+                     sizeof(line),
+                     "I2S BCLK=%d LRCLK=%d DATA=%d",
+                     CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO,
+                     CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO,
+                     CONFIG_PRG32_AUDIO_I2S_DATA_GPIO);
+            prg32_gfx_text8(8, 52, line, PRG32_COLOR_CYAN, 0);
+        } else if (output == SETUP_AUDIO_PWM) {
+            snprintf(line, sizeof(line), "BUZZER GPIO=%d", PRG32_PIN_BUZZER);
+            prg32_gfx_text8(8, 52, line, PRG32_COLOR_CYAN, 0);
+        } else {
+            prg32_gfx_text8(8, 52, "NO AUDIO OUTPUT DETECTED", PRG32_COLOR_YELLOW, 0);
+        }
+
+        snprintf(line, sizeof(line), "VOLUME: %u", g_setup_audio_volume);
+        prg32_gfx_text8(8, 82, choice == 0 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+        prg32_gfx_text8(24, 82, line, PRG32_COLOR_WHITE, 0);
+        draw_volume_bar(168, 82, g_setup_audio_volume);
+
+        snprintf(line,
+                 sizeof(line),
+                 "RGB V-METER: %s%s",
+                 prg32_audio_led_vu_enabled() ? "ON" : "OFF",
+                 prg32_rgb_led_available() ? "" : " (NO LED)");
+        prg32_gfx_text8(8, 110, choice == 1 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+        prg32_gfx_text8(24, 110, line, PRG32_COLOR_WHITE, 0);
+
+        prg32_gfx_text8(8, 138, choice == 2 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+        prg32_gfx_text8(24, 138, "PLAY TEST TUNE", PRG32_COLOR_WHITE, 0);
+        prg32_gfx_text8(8, 166, choice == 3 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+        prg32_gfx_text8(24, 166, "BACK", PRG32_COLOR_WHITE, 0);
+        prg32_gfx_text8(8, 216, "LEFT/RIGHT VOLUME  SELECT/B OK  A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_present();
+        last = input;
+        vTaskDelay(pdMS_TO_TICKS(80));
+    }
+}
+
 static prg32_band_mode_t next_band_mode(prg32_band_mode_t mode, int delta) {
     int next = (int)mode + delta;
     if (next < (int)PRG32_BAND_MODE_NONE) {
@@ -404,7 +662,7 @@ static int setup_menu(void) {
     int choice = 0;
     prg32_input_wait_released(SETUP_KEYS);
     while (1) {
-        setup_option_t options[7];
+        setup_option_t options[8];
         int option_count = 0;
         int cart_count = prg32_cart_stored_count();
         if (cart_count > 0) {
@@ -420,6 +678,10 @@ static int setup_menu(void) {
         options[option_count++] = (setup_option_t){
             SETUP_OPTION_WIFI,
             "WIFI SETUP",
+        };
+        options[option_count++] = (setup_option_t){
+            SETUP_OPTION_AUDIO,
+            "AUDIO SETUP",
         };
         options[option_count++] = (setup_option_t){
             SETUP_OPTION_DEVELOPER,
@@ -478,6 +740,10 @@ static int setup_menu(void) {
                     prg32_scores_api_start();
                     break;
                 }
+                if (selected == SETUP_OPTION_AUDIO) {
+                    audio_menu();
+                    break;
+                }
                 if (selected == SETUP_OPTION_DEVELOPER) {
                     developer_menu();
                     break;
@@ -521,6 +787,7 @@ static int setup_menu(void) {
 
 void prg32_init(void) {
     prg32_display_init();
+    prg32_rgb_led_init(PRG32_PIN_RGB_LED);
     prg32_audio_pwm_init();
     prg32_splash_show_default();
     prg32_input_init();

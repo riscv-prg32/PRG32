@@ -260,6 +260,9 @@ Keep C cartridges small and avoid standard-library calls. Use the helpers in
 For a fuller C cartridge, build `examples/games/raycaster/c/game.c` with
 `--entry-prefix raycaster_c`; it uses fixed-point tables and direct PRG32
 drawing calls instead of libc or floating-point helpers.
+For layered graphics, build `examples/games/wing_commander/c/game.c` with
+`--entry-prefix wing_commander_c`; it demonstrates dual playfields in a
+playable cockpit game.
 
 ## Cartridge AUDIO Blocks
 

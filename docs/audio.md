@@ -4,6 +4,11 @@ PRG32 audio is a small retro-style digital audio runtime for classroom games.
 It keeps the first steps as simple as a buzzer command, while giving students a
 path toward PCM samples, tracker-like music, and stereo panning.
 
+The setup menu includes an audio page that auto-detects the currently usable
+output path: none, PWM buzzer, mono I2S, or stereo I2S. Trainers can adjust the
+test volume, play a short tune, and enable the onboard RGB LED as a
+spectrum-style VU meter when the LED GPIO is available.
+
 ## Overview
 
 The audio stack has four pieces:
@@ -198,6 +203,14 @@ Core calls:
 - `prg32_audio_note_off(channel)`: stop a voice.
 - `prg32_audio_play_track(track_id)`: start a tracker event stream.
 - `prg32_audio_set_master_volume(volume)`: set global volume.
+- `prg32_audio_led_vu_enable(enabled)`: let audio tests and PWM helpers drive
+  the RGB LED VU meter.
+
+RGB LED helpers:
+
+- `prg32_rgb_led_init(gpio)`: initialize the board LED on a free GPIO.
+- `prg32_rgb_led_set(red, green, blue)`: set the LED color.
+- `prg32_rgb_led_vu(level)`: map a 0-255 level to blue/green/yellow/red.
 
 Pitch uses `1024` as the natural sample speed. Volumes use `0..255`.
 

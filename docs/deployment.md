@@ -38,9 +38,9 @@ boot cartridge.
 
 In setup mode, choose access-point mode for the standard cartridge upload
 workflow, or infrastructure mode to scan nearby SSIDs and connect the board to
-an existing network. The same setup menu can launch the developer band menu,
-the about screen, and the device demo. With no cartridge installed, the
-firmware starts the upload AP and waits in setup.
+an existing network. The same setup menu can launch the audio setup page, the
+developer band menu, the about screen, and the device demo. With no cartridge
+installed, the firmware starts the upload AP and waits in setup.
 
 ## Flash once, upload games
 

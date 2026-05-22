@@ -78,6 +78,18 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                (uintptr_t)prg32_audio_play_notes);
     add_import(imports, "prg32_audio_sample_u8",
                (uintptr_t)prg32_audio_sample_u8);
+    add_import(imports, "prg32_rgb_led_init", (uintptr_t)prg32_rgb_led_init);
+    add_import(imports, "prg32_rgb_led_available",
+               (uintptr_t)prg32_rgb_led_available);
+    add_import(imports, "prg32_rgb_led_set", (uintptr_t)prg32_rgb_led_set);
+    add_import(imports, "prg32_rgb_led_off", (uintptr_t)prg32_rgb_led_off);
+    add_import(imports, "prg32_rgb_led_vu", (uintptr_t)prg32_rgb_led_vu);
+    add_import(imports, "prg32_audio_led_vu_enable",
+               (uintptr_t)prg32_audio_led_vu_enable);
+    add_import(imports, "prg32_audio_led_vu_enabled",
+               (uintptr_t)prg32_audio_led_vu_enabled);
+    add_import(imports, "prg32_audio_led_vu_level",
+               (uintptr_t)prg32_audio_led_vu_level);
     add_import(imports, "prg32_audio_init", (uintptr_t)prg32_audio_init);
     add_import(imports, "prg32_audio_shutdown", (uintptr_t)prg32_audio_shutdown);
     add_import(imports, "prg32_audio_get_mode", (uintptr_t)prg32_audio_get_mode);

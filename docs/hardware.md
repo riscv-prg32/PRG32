@@ -48,6 +48,22 @@ The LCD backlight defaults to active-high. If a specific breakout uses an
 active-low backlight transistor, set `PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL` to `0`
 in `main/prg32_config.h`.
 
+## Onboard RGB LED
+
+PRG32 can drive a WS2812-style onboard RGB LED through:
+
+```c
+prg32_rgb_led_init(gpio);
+prg32_rgb_led_set(red, green, blue);
+```
+
+Many ESP32-C6 development boards wire the onboard RGB LED to GPIO8. The
+reference PRG32 display harness already uses GPIO8 for LCD D/C, so
+`PRG32_PIN_RGB_LED` defaults to `-1` and the LED is disabled. Enable it only
+when your board exposes the LED on a free GPIO or your display wiring has been
+changed accordingly. The setup audio menu can use the LED as a spectrum-style
+VU meter.
+
 ## Mono Audio
 
 | ESP32-C6 | MAX98357A |

@@ -26,6 +26,7 @@ examples/games/<game>/
 | `tetris` | `tetris_ascii` | `tetris_graphics` | `tetris_c` |
 | `platformer` | `platformer_ascii` | `platformer_graphics` | `platformer_c` |
 | `raycaster` | `raycaster_ascii` | `raycaster_graphics` | `raycaster_c` |
+| `wing_commander` | `wing_commander_ascii` | `wing_commander_graphics` | `wing_commander_c` |
 
 Use the prefix to find the three exported symbols:
 
@@ -64,7 +65,8 @@ C versions are best for:
 - comparing assembly and C implementations
 - showing that PRG32 is a small API, not an assembly-only runtime
 - playing the fuller versions of the device-demo game ideas, especially the
-  platformer tile-engine course and the fixed-point raycaster
+  platformer tile-engine course, the fixed-point raycaster, and the
+  dual-playfield space cockpit
 
 The same source can be used in two ways:
 
@@ -267,7 +269,9 @@ For ASCII mode, use `examples/games/tetris/ascii/game.S`,
 
 For C mode, use `examples/games/platformer/c/game.c` with
 `--entry-prefix platformer_c`, or `examples/games/raycaster/c/game.c` with
-`--entry-prefix raycaster_c`, and choose a matching C output file name.
+`--entry-prefix raycaster_c`, or `examples/games/wing_commander/c/game.c`
+with `--entry-prefix wing_commander_c`, and choose a matching C output file
+name.
 
 ### 4. Stage the Cartridge into QEMU Flash
 
@@ -316,3 +320,4 @@ Examples:
 - Tetris graphics cartridge: `tetris`, `graphics`, `tetris_graphics`
 - Platformer C cartridge: `platformer`, `c`, `platformer_c`
 - Raycaster C cartridge: `raycaster`, `c`, `raycaster_c`
+- Wing Commander C cartridge: `wing_commander`, `c`, `wing_commander_c`

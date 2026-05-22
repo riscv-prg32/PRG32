@@ -37,6 +37,7 @@ idf_component_register(
         ${PRG32_DISPLAY_SRC}
         "prg32_input.c"
         "prg32_keyboard.c"
+        "prg32_led.c"
         "prg32_platform.c"
         "prg32_sprite.c"
         "prg32_splash.c"

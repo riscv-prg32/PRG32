@@ -161,6 +161,8 @@ assembly lessons to:
   coins, and a goal.
 - `examples/games/raycaster/c/game.c` for a Doom-style fixed-point wall
   renderer on RISC-V.
+- `examples/games/wing_commander/c/game.c` for a playable dual-playfield
+  cockpit with starfield, enemies, shield, and score.
 
 Suggested order:
 

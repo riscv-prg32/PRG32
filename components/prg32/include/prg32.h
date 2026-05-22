@@ -201,6 +201,14 @@ void prg32_audio_play_notes(const prg32_note_t *notes, size_t count);
 void prg32_audio_sample_u8(const uint8_t *samples,
                            size_t count,
                            uint32_t sample_rate);
+int prg32_rgb_led_init(int gpio);
+int prg32_rgb_led_available(void);
+void prg32_rgb_led_set(uint8_t red, uint8_t green, uint8_t blue);
+void prg32_rgb_led_off(void);
+void prg32_rgb_led_vu(uint8_t level);
+void prg32_audio_led_vu_enable(int enabled);
+int prg32_audio_led_vu_enabled(void);
+void prg32_audio_led_vu_level(uint8_t level);
 
 typedef struct {
     char game[24];

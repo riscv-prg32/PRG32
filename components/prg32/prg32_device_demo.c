@@ -3,7 +3,7 @@
 #include "freertos/task.h"
 #include <stdio.h>
 
-#define DEMO_PAGE_COUNT 12
+#define DEMO_PAGE_COUNT 13
 #define DEMO_FIELD_TOP 40
 #define DEMO_FIELD_BOTTOM 184
 #define DEMO_FRAME_MS 33
@@ -38,6 +38,18 @@ static const uint8_t tile_coin_bits[8] = {
 
 static const uint8_t tile_pipe_bits[8] = {
     0xff, 0x99, 0xff, 0x81, 0xbd, 0xbd, 0xbd, 0xff,
+};
+
+static const uint8_t tile_star_bits[8] = {
+    0x00, 0x10, 0x38, 0x10, 0x00, 0x00, 0x00, 0x00,
+};
+
+static const uint8_t tile_cockpit_panel[8] = {
+    0xff, 0xbd, 0x81, 0xa5, 0x81, 0xbd, 0x81, 0xff,
+};
+
+static const uint8_t tile_cockpit_edge[8] = {
+    0x18, 0x3c, 0x7e, 0xff, 0xff, 0x7e, 0x3c, 0x18,
 };
 
 static void demo_prepare_playfields(void) {
@@ -974,7 +986,7 @@ static void draw_pole_position(uint32_t frame) {
         prg32_gfx_rect(left, y, right - left, 2, 0x7bef);
         prg32_gfx_rect(left - 4, y, 4, 2, (y / 8) & 1 ? PRG32_COLOR_RED : PRG32_COLOR_WHITE);
         prg32_gfx_rect(right, y, 4, 2, (y / 8) & 1 ? PRG32_COLOR_RED : PRG32_COLOR_WHITE);
-        if (((y + (int)(frame * 2u)) / 14) & 1) {
+        if (((y - (int)(frame * 2u)) / 14) & 1) {
             int lane_w = 3 + t / 18;
             prg32_gfx_rect(center - lane_w / 2, y, lane_w, 2, PRG32_COLOR_YELLOW);
         }
@@ -1437,6 +1449,127 @@ static void draw_raycaster(uint32_t frame) {
     draw_footer();
 }
 
+#define WING_TILE_STAR 40
+#define WING_TILE_PANEL 41
+#define WING_TILE_EDGE 42
+
+typedef struct {
+    int initialized;
+    int cross_x;
+    int cross_y;
+    int enemy_x;
+    int enemy_y;
+    int enemy_dx;
+    int score;
+    int shot_timer;
+} wing_demo_t;
+
+static wing_demo_t wing_demo;
+
+static void reset_wing_demo(void) {
+    wing_demo.initialized = 1;
+    wing_demo.cross_x = 160;
+    wing_demo.cross_y = 96;
+    wing_demo.enemy_x = 258;
+    wing_demo.enemy_y = 72;
+    wing_demo.enemy_dx = -3;
+    wing_demo.score = 0;
+    wing_demo.shot_timer = 0;
+
+    prg32_tile_define(0, NULL, PRG32_COLOR_BLACK, PRG32_COLOR_BLACK);
+    prg32_tile_define(WING_TILE_STAR, tile_star_bits, PRG32_COLOR_WHITE, PRG32_COLOR_BLACK);
+    prg32_tile_define(WING_TILE_PANEL, tile_cockpit_panel, 0x7bef, 0x2104);
+    prg32_tile_define(WING_TILE_EDGE, tile_cockpit_edge, PRG32_COLOR_CYAN, 0x2104);
+    prg32_playfield_clear(0, 0);
+    prg32_playfield_clear(1, 0);
+    prg32_playfield_parallax(0, PRG32_PARALLAX_1X, PRG32_PARALLAX_1X);
+    prg32_playfield_parallax(1, 0, 0);
+
+    for (uint8_t i = 0; i < 70; ++i) {
+        uint8_t x = (uint8_t)((i * 17u + 5u) % PRG32_PLAYFIELD_COLS);
+        uint8_t y = (uint8_t)((i * 23u + 3u) % PRG32_PLAYFIELD_ROWS);
+        prg32_playfield_put(0, x, y, WING_TILE_STAR);
+    }
+
+    for (uint8_t x = 0; x < PRG32_PLAYFIELD_COLS; ++x) {
+        if (x < 7 || x > 32) {
+            prg32_playfield_put(1, x, 7, WING_TILE_EDGE);
+        }
+        for (uint8_t y = 22; y < PRG32_PLAYFIELD_ROWS; ++y) {
+            prg32_playfield_put(1, x, y, WING_TILE_PANEL);
+        }
+    }
+    for (uint8_t y = 8; y < 22; ++y) {
+        for (uint8_t x = 0; x < 4; ++x) {
+            prg32_playfield_put(1, x, y, WING_TILE_PANEL);
+            prg32_playfield_put(1, 39 - x, y, WING_TILE_PANEL);
+        }
+    }
+    prg32_playfield_put(1, 4, 8, WING_TILE_EDGE);
+    prg32_playfield_put(1, 35, 8, WING_TILE_EDGE);
+}
+
+static void draw_wing_enemy(int x, int y, uint16_t color) {
+    draw_line(x, y + 10, x + 18, y, color);
+    draw_line(x + 18, y, x + 36, y + 10, color);
+    draw_line(x + 36, y + 10, x + 18, y + 20, color);
+    draw_line(x + 18, y + 20, x, y + 10, color);
+    prg32_gfx_rect(x + 14, y + 8, 8, 5, PRG32_COLOR_RED);
+}
+
+static void draw_wing_commander(uint32_t frame) {
+    if (!wing_demo.initialized) {
+        reset_wing_demo();
+    }
+
+    wing_demo.cross_x = 86 + tri_wave(frame, 112, 150);
+    wing_demo.cross_y = 64 + tri_wave(frame + 31u, 84, 60);
+    wing_demo.enemy_x += wing_demo.enemy_dx;
+    if (wing_demo.enemy_x < 60 || wing_demo.enemy_x > 260) {
+        wing_demo.enemy_dx = -wing_demo.enemy_dx;
+        wing_demo.enemy_y = 58 + (int)((frame * 7u) % 64u);
+    }
+    if ((frame % 44u) == 4u) {
+        wing_demo.shot_timer = 8;
+        if (demo_abs(wing_demo.cross_x - (wing_demo.enemy_x + 18)) < 28 &&
+            demo_abs(wing_demo.cross_y - (wing_demo.enemy_y + 10)) < 20) {
+            wing_demo.score++;
+            wing_demo.enemy_x = 240;
+            wing_demo.enemy_y = 54 + (int)((frame * 11u) % 72u);
+        }
+    }
+    if (wing_demo.shot_timer > 0) {
+        wing_demo.shot_timer--;
+    }
+
+    prg32_playfield_scroll(0, 0, -(int)(frame * 3u));
+    prg32_playfield_scroll(1, 0, 0);
+    prg32_playfield_draw_dual();
+    draw_title("SPACE COCKPIT DEMO", "DUAL PLAYFIELD: STARS + DASH");
+
+    for (int i = 0; i < 8; ++i) {
+        int sx = 36 + (int)((frame * (uint32_t)(i + 3) + (uint32_t)i * 47u) % 248u);
+        int sy = 48 + (int)(((frame * 4u) + (uint32_t)i * 19u) % 82u);
+        prg32_gfx_rect(sx, sy, 2 + i / 3, 1, PRG32_COLOR_WHITE);
+    }
+
+    draw_wing_enemy(wing_demo.enemy_x, wing_demo.enemy_y, PRG32_COLOR_MAGENTA);
+    if (wing_demo.shot_timer > 0) {
+        draw_line(160, 168, wing_demo.cross_x, wing_demo.cross_y, PRG32_COLOR_YELLOW);
+        draw_line(162, 168, wing_demo.cross_x, wing_demo.cross_y, PRG32_COLOR_YELLOW);
+    }
+    draw_line(wing_demo.cross_x - 12, wing_demo.cross_y, wing_demo.cross_x - 4, wing_demo.cross_y, PRG32_COLOR_GREEN);
+    draw_line(wing_demo.cross_x + 4, wing_demo.cross_y, wing_demo.cross_x + 12, wing_demo.cross_y, PRG32_COLOR_GREEN);
+    draw_line(wing_demo.cross_x, wing_demo.cross_y - 12, wing_demo.cross_x, wing_demo.cross_y - 4, PRG32_COLOR_GREEN);
+    draw_line(wing_demo.cross_x, wing_demo.cross_y + 4, wing_demo.cross_x, wing_demo.cross_y + 12, PRG32_COLOR_GREEN);
+
+    char line[40];
+    snprintf(line, sizeof(line), "SCORE %02d", wing_demo.score % 100);
+    prg32_gfx_text8(24, 176, line, PRG32_COLOR_YELLOW, PRG32_COLOR_BLACK);
+    prg32_gfx_text8(190, 176, "SHIELD 100", PRG32_COLOR_CYAN, PRG32_COLOR_BLACK);
+    draw_footer();
+}
+
 static void reset_demo_page(int page) {
     if (page == 1) demo_prepare_playfields();
     if (page == 3) reset_pong_demo();
@@ -1447,6 +1580,7 @@ static void reset_demo_page(int page) {
     if (page == 9) reset_asteroids_demo();
     if (page == 10) reset_platform_demo();
     if (page == 11) reset_raycaster_demo();
+    if (page == 12) reset_wing_demo();
 }
 
 void prg32_device_demo_run(void) {
@@ -1493,7 +1627,8 @@ void prg32_device_demo_run(void) {
             case 8: draw_pole_position(frame); break;
             case 9: draw_asteroids(frame); break;
             case 10: draw_platformer(frame); break;
-            default: draw_raycaster(frame); break;
+            case 11: draw_raycaster(frame); break;
+            default: draw_wing_commander(frame); break;
         }
 
         char band[56];

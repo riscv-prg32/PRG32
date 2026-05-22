@@ -42,12 +42,14 @@ void prg32_audio_tone(uint32_t hz, uint32_t ms, uint16_t duty) {
     if (duty > 1023) {
         duty = 1023;
     }
+    prg32_audio_led_vu_level((uint8_t)(duty / 4u));
     ledc_set_freq(LEDC_LOW_SPEED_MODE, LEDC_TIMER_0, hz);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
     vTaskDelay(pdMS_TO_TICKS(ms));
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+    prg32_audio_led_vu_level(0);
 }
 
 void prg32_audio_note(uint8_t midi_note, uint32_t ms) {

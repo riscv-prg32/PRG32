@@ -126,5 +126,9 @@ systems-programming discussion. The assembly version keeps the corridor display
 small for register tracing, while `raycaster/c/game.c` is the playable
 fixed-point renderer with movement, strafing, wall detection, and a minimap.
 
+Use `wing_commander/graphics/game.S` and `wing_commander/c/game.c` for the
+dual-playfield lesson: the starfield is one scrolling playfield, the cockpit is
+a fixed foreground playfield, and the C version adds playable targeting.
+
 The shared API keeps the cognitive load on language and architecture, not on
 different engines.

@@ -199,6 +199,8 @@ After the focused demos, try the fuller game examples:
 - `examples/games/raycaster/graphics/game.S` for a compact Doom-style corridor
   renderer in assembly.
 - `examples/games/raycaster/c/game.c` for the playable fixed-point raycaster.
+- `examples/games/wing_commander/graphics/game.S` for a dual-playfield cockpit
+  with a scrolling starfield and fixed foreground dashboard.
 
 ## Break and Fix Exercise
 
