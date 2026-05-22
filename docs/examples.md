@@ -31,6 +31,10 @@ examples/games/<name>/
 
 Use these for Computing Architecture and C Programming classes.
 
+The platformer and raycaster C examples are the fuller playable companions to
+the setup-launched demo pages. The assembly versions remain compact so students
+can trace registers, stack frames, and ABI calls without losing the main idea.
+
 ## Feature Examples
 
 Feature demos live under `examples/features` and isolate one framework topic:
@@ -49,4 +53,5 @@ Feature demos live under `examples/features` and isolate one framework topic:
 The setup-launched device demo is not a cartridge example, but it is useful for
 trainers: it checks framework capabilities and includes small 320x200 sketches
 inspired by Pong, Breakout, Space Invaders, Pacman, Tetris, Pole Position, and
-Asteroids.
+Asteroids, plus a tile-engine platformer and a Doom-style fixed-point
+raycaster.

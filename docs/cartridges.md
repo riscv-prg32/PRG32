@@ -257,6 +257,9 @@ python3 tools/prg32_game.py build \
 
 Keep C cartridges small and avoid standard-library calls. Use the helpers in
 `prg32.h` for display, input, audio, sprites, playfields, and platform physics.
+For a fuller C cartridge, build `examples/games/raycaster/c/game.c` with
+`--entry-prefix raycaster_c`; it uses fixed-point tables and direct PRG32
+drawing calls instead of libc or floating-point helpers.
 
 ## Cartridge AUDIO Blocks
 

@@ -154,6 +154,17 @@ Use `examples/games/platformer/c/game.c` when the course reaches:
 - reusable helper functions
 - state updated once per frame
 
+The raycaster C example is the next step for advanced classes:
+
+```c
+int hx = player_x + (dir_q8[angle][0] * dist) / 256;
+int hy = player_y + (dir_q8[angle][1] * dist) / 256;
+```
+
+Use `examples/games/raycaster/c/game.c` to discuss fixed-point arithmetic,
+table-driven direction vectors, and why a small Doom-style renderer can run on
+the same RISC-V runtime used for assembly exercises.
+
 ## Break and Fix Exercise
 
 Break it:

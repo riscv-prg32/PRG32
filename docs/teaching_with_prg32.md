@@ -121,5 +121,10 @@ Use the platformer examples as a side-by-side activity:
 | Drawing | register arguments | function arguments |
 | Camera | `prg32_platform_camera_follow` | same helper |
 
+Use the raycaster examples after that when the class is ready for a richer
+systems-programming discussion. The assembly version keeps the corridor display
+small for register tracing, while `raycaster/c/game.c` is the playable
+fixed-point renderer with movement, strafing, wall detection, and a minimap.
+
 The shared API keeps the cognitive load on language and architecture, not on
 different engines.

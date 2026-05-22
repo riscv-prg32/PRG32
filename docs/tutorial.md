@@ -154,6 +154,14 @@ Keep the first version small: one moving object, one collision, one score counte
 You can test the same game on the QEMU screen first, then build and flash the
 physical ILI9341 version when it behaves correctly.
 
+When students are ready for complete, playable examples, move from the small
+assembly lessons to:
+
+- `examples/games/platformer/c/game.c` for tile flags, scrolling, gravity,
+  coins, and a goal.
+- `examples/games/raycaster/c/game.c` for a Doom-style fixed-point wall
+  renderer on RISC-V.
+
 Suggested order:
 
 1. Start with `init`, `update`, and `draw` labels that return immediately.

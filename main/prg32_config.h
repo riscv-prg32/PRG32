@@ -25,6 +25,9 @@
 #define PRG32_GAME_INVADERS_C          19
 #define PRG32_GAME_PACMAN_C            20
 #define PRG32_GAME_ASTEROIDS_C         21
+#define PRG32_GAME_RAYCASTER_ASCII     22
+#define PRG32_GAME_RAYCASTER_GRAPHICS  23
+#define PRG32_GAME_RAYCASTER_C         24
 
 /* Runtime console mode. */
 #define PRG32_MODE_UART_ONLY       0

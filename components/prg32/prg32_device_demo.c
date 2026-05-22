@@ -3,7 +3,7 @@
 #include "freertos/task.h"
 #include <stdio.h>
 
-#define DEMO_PAGE_COUNT 10
+#define DEMO_PAGE_COUNT 12
 #define DEMO_FIELD_TOP 40
 #define DEMO_FIELD_BOTTOM 184
 #define DEMO_FRAME_MS 33
@@ -18,6 +18,26 @@ static const uint8_t tile_diag[8] = {
 
 static const uint8_t sprite_bits[8] = {
     0x18, 0x3c, 0x7e, 0xdb, 0xff, 0x24, 0x5a, 0xa5,
+};
+
+static const uint8_t tile_cloud_small[8] = {
+    0x00, 0x18, 0x3c, 0x7e, 0xff, 0x7e, 0x3c, 0x00,
+};
+
+static const uint8_t tile_grass_top[8] = {
+    0xff, 0xff, 0x81, 0xbd, 0xa5, 0xbd, 0x81, 0xff,
+};
+
+static const uint8_t tile_dirt_block[8] = {
+    0xff, 0x81, 0xbd, 0xa5, 0xa5, 0xbd, 0x81, 0xff,
+};
+
+static const uint8_t tile_coin_bits[8] = {
+    0x18, 0x3c, 0x66, 0x5a, 0x5a, 0x66, 0x3c, 0x18,
+};
+
+static const uint8_t tile_pipe_bits[8] = {
+    0xff, 0x99, 0xff, 0x81, 0xbd, 0xbd, 0xbd, 0xff,
 };
 
 static void demo_prepare_playfields(void) {
@@ -1119,13 +1139,314 @@ static void draw_asteroids(uint32_t frame) {
     draw_footer();
 }
 
+#define PLATFORM_TILE_CLOUD 20
+#define PLATFORM_TILE_GRASS 21
+#define PLATFORM_TILE_DIRT 22
+#define PLATFORM_TILE_COIN 23
+#define PLATFORM_TILE_PIPE 24
+
+typedef struct {
+    int initialized;
+    prg32_platform_actor_t player;
+    int coins;
+    int finish_x;
+} platform_demo_t;
+
+static platform_demo_t platform_demo;
+
+static void platform_put_run(uint8_t layer, uint8_t x0, uint8_t x1, uint8_t y, uint8_t tile) {
+    for (uint8_t x = x0; x <= x1 && x < PRG32_PLAYFIELD_COLS; ++x) {
+        prg32_playfield_put(layer, x, y, tile);
+    }
+}
+
+static void platform_put_column(uint8_t x, uint8_t y0, uint8_t y1, uint8_t tile) {
+    for (uint8_t y = y0; y <= y1 && y < PRG32_PLAYFIELD_ROWS; ++y) {
+        prg32_playfield_put(1, x, y, tile);
+    }
+}
+
+static void reset_platform_demo(void) {
+    platform_demo.initialized = 1;
+    platform_demo.coins = 0;
+    platform_demo.finish_x = 448;
+
+    prg32_tile_define(0, NULL, PRG32_COLOR_BLACK, PRG32_COLOR_BLACK);
+    prg32_tile_define(PLATFORM_TILE_CLOUD, tile_cloud_small, PRG32_COLOR_WHITE, PRG32_COLOR_CYAN);
+    prg32_tile_define(PLATFORM_TILE_GRASS, tile_grass_top, PRG32_COLOR_WHITE, PRG32_COLOR_GREEN);
+    prg32_tile_define(PLATFORM_TILE_DIRT, tile_dirt_block, 0x9a60, 0x52a0);
+    prg32_tile_define(PLATFORM_TILE_COIN, tile_coin_bits, PRG32_COLOR_YELLOW, PRG32_COLOR_BLACK);
+    prg32_tile_define(PLATFORM_TILE_PIPE, tile_pipe_bits, PRG32_COLOR_GREEN, 0x03c0);
+
+    prg32_platform_tile_flags(0, 0);
+    prg32_platform_tile_flags(PLATFORM_TILE_CLOUD, 0);
+    prg32_platform_tile_flags(PLATFORM_TILE_GRASS, PRG32_TILE_FLAG_SOLID);
+    prg32_platform_tile_flags(PLATFORM_TILE_DIRT, PRG32_TILE_FLAG_SOLID);
+    prg32_platform_tile_flags(PLATFORM_TILE_COIN, PRG32_TILE_FLAG_COLLECT);
+    prg32_platform_tile_flags(PLATFORM_TILE_PIPE, PRG32_TILE_FLAG_SOLID);
+
+    prg32_playfield_clear(0, 0);
+    prg32_playfield_clear(1, 0);
+    prg32_playfield_parallax(0, PRG32_PARALLAX_1X / 3, PRG32_PARALLAX_1X / 2);
+    prg32_playfield_camera(0, 0);
+
+    for (uint8_t x = 3; x < PRG32_PLAYFIELD_COLS; x += 9) {
+        prg32_playfield_put(0, x, 5 + (x & 3), PLATFORM_TILE_CLOUD);
+    }
+
+    for (uint8_t x = 0; x < 60; ++x) {
+        if ((x >= 15 && x <= 17) || (x >= 35 && x <= 37) || (x >= 51 && x <= 52)) {
+            continue;
+        }
+        prg32_playfield_put(1, x, 22, PLATFORM_TILE_GRASS);
+        prg32_playfield_put(1, x, 23, PLATFORM_TILE_DIRT);
+        prg32_playfield_put(1, x, 24, PLATFORM_TILE_DIRT);
+    }
+
+    platform_put_run(1, 7, 13, 17, PLATFORM_TILE_GRASS);
+    platform_put_run(1, 21, 27, 15, PLATFORM_TILE_GRASS);
+    platform_put_run(1, 40, 46, 18, PLATFORM_TILE_GRASS);
+    platform_put_run(1, 55, 60, 14, PLATFORM_TILE_GRASS);
+    platform_put_column(31, 19, 22, PLATFORM_TILE_PIPE);
+    platform_put_column(32, 19, 22, PLATFORM_TILE_PIPE);
+    platform_put_column(47, 17, 22, PLATFORM_TILE_PIPE);
+    platform_put_column(48, 17, 22, PLATFORM_TILE_PIPE);
+
+    for (uint8_t x = 8; x <= 58; x += 5) {
+        uint8_t y = (x & 1) ? 12 : 14;
+        prg32_playfield_put(1, x, y, PLATFORM_TILE_COIN);
+    }
+
+    prg32_platform_actor_init(&platform_demo.player, 1, 24, 128, 12, 16);
+}
+
+static void platform_collect_overlaps(void) {
+    int x0 = platform_demo.player.x / PRG32_TILE_W;
+    int y0 = platform_demo.player.y / PRG32_TILE_H;
+    int x1 = (platform_demo.player.x + (int)platform_demo.player.w - 1) / PRG32_TILE_W;
+    int y1 = (platform_demo.player.y + (int)platform_demo.player.h - 1) / PRG32_TILE_H;
+
+    for (int y = y0; y <= y1; ++y) {
+        for (int x = x0; x <= x1; ++x) {
+            if (x < 0 || y < 0 ||
+                x >= PRG32_PLAYFIELD_COLS ||
+                y >= PRG32_PLAYFIELD_ROWS) {
+                continue;
+            }
+            if (prg32_playfield_get(1, (uint8_t)x, (uint8_t)y) == PLATFORM_TILE_COIN) {
+                prg32_playfield_put(1, (uint8_t)x, (uint8_t)y, 0);
+                platform_demo.coins++;
+            }
+        }
+    }
+}
+
+static void draw_platform_player(int x, int y, uint32_t frame) {
+    prg32_gfx_rect(x + 3, y, 6, 5, PRG32_COLOR_RED);
+    prg32_gfx_rect(x + 2, y + 5, 8, 7, PRG32_COLOR_BLUE);
+    prg32_gfx_rect(x, y + 7, 3, 4, 0xffde);
+    prg32_gfx_rect(x + 9, y + 7, 3, 4, 0xffde);
+    if ((frame / 6u) & 1u) {
+        prg32_gfx_rect(x + 2, y + 12, 3, 4, PRG32_COLOR_WHITE);
+        prg32_gfx_rect(x + 8, y + 12, 3, 4, PRG32_COLOR_WHITE);
+    } else {
+        prg32_gfx_rect(x, y + 12, 4, 4, PRG32_COLOR_WHITE);
+        prg32_gfx_rect(x + 8, y + 12, 4, 4, PRG32_COLOR_WHITE);
+    }
+}
+
+static void draw_platformer(uint32_t frame) {
+    if (!platform_demo.initialized) {
+        reset_platform_demo();
+    }
+
+    uint32_t demo_input = PRG32_BTN_RIGHT;
+    int ahead_x = platform_demo.player.x + 22;
+    int foot_y = platform_demo.player.y + (int)platform_demo.player.h + 5;
+    if ((platform_demo.player.state & PRG32_PLATFORM_ON_GROUND) &&
+        ((frame % 58u) == 4u ||
+         !prg32_platform_solid_at(1, ahead_x, foot_y) ||
+         prg32_platform_solid_at(1, ahead_x, platform_demo.player.y + 4))) {
+        demo_input |= PRG32_BTN_A;
+    }
+    prg32_platform_actor_step(&platform_demo.player, demo_input, 3, -10, 1, 7);
+    platform_collect_overlaps();
+
+    if (platform_demo.player.y > 210 || platform_demo.player.x > platform_demo.finish_x) {
+        reset_platform_demo();
+    }
+    prg32_platform_camera_follow(&platform_demo.player, 88, 42);
+
+    int camera_x = prg32_playfield_camera_x();
+    int camera_y = prg32_playfield_camera_y();
+    char line[40];
+
+    prg32_gfx_clear(PRG32_COLOR_CYAN);
+    prg32_playfield_draw(0, 1);
+    prg32_playfield_draw(1, 1);
+    draw_platform_player(platform_demo.player.x - camera_x,
+                         platform_demo.player.y - camera_y,
+                         frame);
+    draw_title("PLATFORM TILE DEMO", "SCROLLING MAP, COINS, COLLISION");
+    snprintf(line, sizeof(line), "COINS %02d", platform_demo.coins % 100);
+    prg32_gfx_text8(226, 8, line, PRG32_COLOR_YELLOW, PRG32_COLOR_BLACK);
+    draw_footer();
+}
+
+#define RAY_MAP_W 16
+#define RAY_MAP_H 12
+#define RAY_CELL 64
+#define RAY_STRIPS 40
+
+typedef struct {
+    int initialized;
+    int x;
+    int y;
+    int angle;
+} raycaster_demo_t;
+
+static const char ray_map[RAY_MAP_H][RAY_MAP_W + 1] = {
+    "1111111111111111",
+    "1000000000000001",
+    "1022200011110201",
+    "1000200000010001",
+    "1000202200010001",
+    "1000000000010001",
+    "1110111020010001",
+    "1000100000010001",
+    "1000102222010001",
+    "1000000000000001",
+    "1000001111000001",
+    "1111111111111111",
+};
+
+static const int16_t ray_dir[32][2] = {
+    {256,0},{251,50},{237,98},{213,142},{181,181},{142,213},{98,237},{50,251},
+    {0,256},{-50,251},{-98,237},{-142,213},{-181,181},{-213,142},{-237,98},{-251,50},
+    {-256,0},{-251,-50},{-237,-98},{-213,-142},{-181,-181},{-142,-213},{-98,-237},{-50,-251},
+    {0,-256},{50,-251},{98,-237},{142,-213},{181,-181},{213,-142},{237,-98},{251,-50},
+};
+
+static raycaster_demo_t raycaster_demo;
+
+static void reset_raycaster_demo(void) {
+    raycaster_demo.initialized = 1;
+    raycaster_demo.x = RAY_CELL * 2 + RAY_CELL / 2;
+    raycaster_demo.y = RAY_CELL * 8 + RAY_CELL / 2;
+    raycaster_demo.angle = 30;
+}
+
+static int ray_cell_at(int x, int y) {
+    if (x < 0 || y < 0) {
+        return '1';
+    }
+    int tx = x / RAY_CELL;
+    int ty = y / RAY_CELL;
+    if (tx < 0 || ty < 0 || tx >= RAY_MAP_W || ty >= RAY_MAP_H) {
+        return '1';
+    }
+    return ray_map[ty][tx];
+}
+
+static void ray_try_move(int dx, int dy) {
+    int nx = raycaster_demo.x + dx;
+    int ny = raycaster_demo.y + dy;
+    if (ray_cell_at(nx, raycaster_demo.y) == '0') {
+        raycaster_demo.x = nx;
+    }
+    if (ray_cell_at(raycaster_demo.x, ny) == '0') {
+        raycaster_demo.y = ny;
+    }
+}
+
+static uint16_t ray_color_for_cell(int cell, int dist) {
+    if (dist > 360) {
+        return cell == '2' ? 0x780f : 0x528a;
+    }
+    if (dist > 220) {
+        return cell == '2' ? 0xb81f : 0x7bef;
+    }
+    return cell == '2' ? PRG32_COLOR_MAGENTA : PRG32_COLOR_CYAN;
+}
+
+static void ray_update_auto(uint32_t frame) {
+    if ((frame % 96u) > 62u) {
+        raycaster_demo.angle = (raycaster_demo.angle + 1) & 31;
+        return;
+    }
+
+    int dx = (ray_dir[raycaster_demo.angle][0] * 7) / 256;
+    int dy = (ray_dir[raycaster_demo.angle][1] * 7) / 256;
+    if (ray_cell_at(raycaster_demo.x + dx * 5, raycaster_demo.y + dy * 5) != '0') {
+        raycaster_demo.angle = (raycaster_demo.angle + 5) & 31;
+    } else {
+        ray_try_move(dx, dy);
+    }
+}
+
+static void draw_ray_minimap(void) {
+    int ox = 8;
+    int oy = 52;
+    for (int y = 0; y < RAY_MAP_H; ++y) {
+        for (int x = 0; x < RAY_MAP_W; ++x) {
+            uint16_t color = ray_map[y][x] == '0' ? 0x2104 : PRG32_COLOR_WHITE;
+            prg32_gfx_rect(ox + x * 4, oy + y * 4, 3, 3, color);
+        }
+    }
+    prg32_gfx_rect(ox + (raycaster_demo.x / RAY_CELL) * 4,
+                   oy + (raycaster_demo.y / RAY_CELL) * 4,
+                   4,
+                   4,
+                   PRG32_COLOR_YELLOW);
+}
+
+static void draw_raycaster(uint32_t frame) {
+    if (!raycaster_demo.initialized) {
+        reset_raycaster_demo();
+    }
+    ray_update_auto(frame);
+
+    prg32_gfx_rect(0, 0, PRG32_GAME_W, PRG32_GAME_H / 2, 0x18e3);
+    prg32_gfx_rect(0, PRG32_GAME_H / 2, PRG32_GAME_W, PRG32_GAME_H / 2, 0x4208);
+
+    for (int strip = 0; strip < RAY_STRIPS; ++strip) {
+        int angle = (raycaster_demo.angle + 32 + (strip - RAY_STRIPS / 2) / 3) & 31;
+        int dist = 8;
+        int hit = '1';
+        for (; dist < 640; dist += 8) {
+            int hx = raycaster_demo.x + (ray_dir[angle][0] * dist) / 256;
+            int hy = raycaster_demo.y + (ray_dir[angle][1] * dist) / 256;
+            hit = ray_cell_at(hx, hy);
+            if (hit != '0') {
+                break;
+            }
+        }
+        int height = 9800 / demo_clamp(dist, 24, 640);
+        height = demo_clamp(height, 10, 136);
+        int y = demo_clamp(102 - height / 2, 40, 184 - height);
+        uint16_t color = ray_color_for_cell(hit, dist);
+        prg32_gfx_rect(strip * 8, y, 8, height, color);
+        if ((strip & 1) == 0) {
+            prg32_gfx_rect(strip * 8, y, 1, height, 0x2104);
+        }
+    }
+
+    draw_ray_minimap();
+    draw_title("DOOM-INSPIRED RAYCASTER", "FIXED-POINT WALL CASTING");
+    prg32_gfx_text8(8, 104, "RUNS ON RISC-V", PRG32_COLOR_YELLOW, PRG32_COLOR_BLACK);
+    draw_footer();
+}
+
 static void reset_demo_page(int page) {
+    if (page == 1) demo_prepare_playfields();
     if (page == 3) reset_pong_demo();
     if (page == 4) reset_breakout_demo();
     if (page == 5) reset_invaders_demo();
     if (page == 6) reset_pac_demo();
     if (page == 7) reset_tetris_demo();
     if (page == 9) reset_asteroids_demo();
+    if (page == 10) reset_platform_demo();
+    if (page == 11) reset_raycaster_demo();
 }
 
 void prg32_device_demo_run(void) {
@@ -1170,7 +1491,9 @@ void prg32_device_demo_run(void) {
             case 6: draw_pacman(frame); break;
             case 7: draw_tetris(frame); break;
             case 8: draw_pole_position(frame); break;
-            default: draw_asteroids(frame); break;
+            case 9: draw_asteroids(frame); break;
+            case 10: draw_platformer(frame); break;
+            default: draw_raycaster(frame); break;
         }
 
         char band[56];

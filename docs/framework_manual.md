@@ -211,7 +211,8 @@ exit. Use UP/DOWN to choose, SELECT or B to confirm, and A to cancel/back. The
 device demo is a firmware-owned smoke test for display, input, audio, Wi-Fi
 status, cartridges, sprites, scrolling, playfield rendering, status bands, and
 small sketches inspired by Pong, Breakout, Space Invaders, Pacman, Tetris,
-Pole Position, and Asteroids.
+Pole Position, Asteroids, a tile-engine platformer, and a Doom-style
+raycaster.
 
 The Wi-Fi setup screen lets the user choose access-point mode or infrastructure
 mode. Infrastructure mode scans for nearby SSIDs, lists them on screen, and

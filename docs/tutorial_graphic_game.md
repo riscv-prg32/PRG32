@@ -193,6 +193,13 @@ Each demo exports `init`, `update`, and `draw` symbols with its directory prefix
 Build them exactly like a game example, either embedded in firmware or as a
 `.prg32` cartridge.
 
+After the focused demos, try the fuller game examples:
+
+- `examples/games/platformer/graphics/game.S` for tile-engine movement.
+- `examples/games/raycaster/graphics/game.S` for a compact Doom-style corridor
+  renderer in assembly.
+- `examples/games/raycaster/c/game.c` for the playable fixed-point raycaster.
+
 ## Break and Fix Exercise
 
 Break it:
