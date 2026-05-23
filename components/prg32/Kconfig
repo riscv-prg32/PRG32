@@ -56,4 +56,56 @@ config PRG32_SPLASH_SOUND_ENABLED
         When the PRG32 I2S audio subsystem is enabled, initialize it and play a
         short welcome tone sequence while the firmware splash is visible.
 
+menu "Performance metrics"
+
+config PRG32_METRICS_ENABLE
+    bool "Enable buffered performance metrics upload"
+    default n
+    help
+        Collect frame timing, heap, and input samples in a small ring buffer and
+        upload batches to the PRG32 metrics server. Leave this disabled for
+        normal classroom gameplay unless a lab explicitly measures performance.
+
+config PRG32_METRICS_SERVER_URL
+    string "Metrics server URL"
+    depends on PRG32_METRICS_ENABLE
+    default "http://192.168.4.2:8080"
+    help
+        Base URL for tools/prg32_metrics_server/app.py.
+
+config PRG32_METRICS_BOARD_ID
+    string "Metrics board identifier"
+    depends on PRG32_METRICS_ENABLE
+    default "prg32-board"
+    help
+        Human-readable board identifier stored with each metrics run.
+
+config PRG32_METRICS_SAMPLE_PERIOD_FRAMES
+    int "Metrics sample period in frames"
+    depends on PRG32_METRICS_ENABLE
+    default 1
+    range 1 3600
+    help
+        Record one sample every N frames. Use higher values when measuring long
+        runs on slow or unreliable networks.
+
+config PRG32_METRICS_UPLOAD_PERIOD_MS
+    int "Metrics upload period in milliseconds"
+    depends on PRG32_METRICS_ENABLE
+    default 5000
+    range 250 60000
+    help
+        Background upload task period. Recording never waits for this upload.
+
+config PRG32_METRICS_QUEUE_LEN
+    int "Metrics upload queue length"
+    depends on PRG32_METRICS_ENABLE
+    default 512
+    range 8 4096
+    help
+        Number of samples kept in RAM before upload. If the queue fills, PRG32
+        drops new samples and reports the drop count with the next batch.
+
+endmenu
+
 endmenu

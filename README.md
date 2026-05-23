@@ -81,6 +81,134 @@ Common pitfalls:
 - `idf.py` missing: ESP-IDF not sourced.
 - `riscv32-esp-elf-gcc` missing: ESP-IDF toolchain not installed/sourced.
 
+## Windows Setup
+
+Recommended classroom path:
+
+1. Install Git for Windows.
+2. Install Visual Studio Code.
+3. Install the Espressif ESP-IDF extension for VS Code.
+4. Install the PlatformIO extension for VS Code.
+5. Install the Microsoft C/C++ and Python extensions.
+
+Standalone ESP-IDF path:
+
+1. Download and run the Espressif ESP-IDF Tools Installer for Windows.
+2. Select an ESP-IDF 5.3 or newer release.
+3. Include support for `esp32c3` and `esp32c6`.
+4. Open the "ESP-IDF PowerShell" shortcut created by the installer.
+5. Clone and build PRG32 from that shell:
+
+```powershell
+cd $HOME\Documents
+git clone https://github.com/raffmont/PRG32.git
+cd PRG32
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6\sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6\sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6\sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
+```
+
+PlatformIO path:
+
+```powershell
+cd $HOME\Documents\PRG32
+pio run
+pio run -t upload
+pio device monitor -b 115200
+```
+
+QEMU path:
+
+```powershell
+idf.py -B build-qemu -D SDKCONFIG=build-qemu\sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG=build-qemu\sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
+idf.py -B build-qemu -D SDKCONFIG=build-qemu\sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+```
+
+Windows notes:
+
+- Use the ESP-IDF PowerShell or ESP-IDF Command Prompt, not a plain terminal
+  where `idf.py` has not been exported.
+- If flashing fails, check Device Manager for the ESP32-C6 serial port and pass
+  it explicitly with `-p COMx`.
+- If PlatformIO Monitor cannot open the port, close Arduino Serial Monitor,
+  ESP-IDF Monitor, and every other terminal using the same COM port.
+- Use the checked-in `PRG32.code-workspace` for student labs; paths are
+  workspace-relative.
+
+## Linux Setup
+
+The commands below target Debian/Ubuntu. On Fedora, Arch, and other
+distributions, install the equivalent packages.
+
+```bash
+sudo apt update
+sudo apt install -y \
+  git wget flex bison gperf python3 python3-venv python3-pip \
+  cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
+  libusb-1.0-0
+```
+
+Install ESP-IDF:
+
+```bash
+cd $HOME
+git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32c3,esp32c6
+. ./export.sh
+```
+
+Build and flash PRG32:
+
+```bash
+cd $HOME
+git clone https://github.com/raffmont/PRG32.git
+cd PRG32
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
+```
+
+Linux serial permissions:
+
+```bash
+sudo usermod -aG dialout "$USER"
+```
+
+Log out and back in after changing group membership. ESP32-C6 boards usually
+appear as `/dev/ttyACM0`; USB bridge boards may appear as `/dev/ttyUSB0`.
+
+PlatformIO CLI path:
+
+```bash
+python3 -m venv .venv-platformio
+. .venv-platformio/bin/activate
+python3 -m pip install platformio
+pio run
+pio run -t upload
+pio device monitor -b 115200
+```
+
+QEMU path:
+
+```bash
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+```
+
+Linux notes:
+
+- Run `. $HOME/esp-idf/export.sh` in every new shell before using `idf.py`.
+- If the board is visible but flashing fails, check `dialout` membership and
+  reconnect the USB cable after logging in again.
+- Keep build directories separate: `build-esp32c6` for hardware and
+  `build-qemu` for desktop graphics testing.
+- For reproducible scientific measurements, use
+  `sdkconfig.defaults;sdkconfig.defaults.metrics` as described in
+  `docs/scientific_measurement_tutorial.md`.
+
 ## PlatformIO Quick Start
 
 Open the repository root in PlatformIO. The checked-in `platformio.ini` default
@@ -114,6 +242,8 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 - Hold A + B + DOWN on either joystick to restart the PRG32 firmware.
 - Audio supports mandatory mono I2S output and optional stereo PRG32 Audio Plus
   using MAX98357A amplifier breakouts.
+- Optional performance metrics can upload buffered frame timing samples to a
+  local Flask/SQLite server for labs and regression checks.
 
 Flow:
 
@@ -159,6 +289,8 @@ Flow:
 6. Try a focused rendering demo under `examples/features`.
 7. Package it as a `.prg32` cartridge and upload it over Wi-Fi or stage it into
    the QEMU flash image.
+8. For research-style measurements, follow
+   [docs/scientific_measurement_tutorial.md](docs/scientific_measurement_tutorial.md).
 
 The intended student rhythm is small and visible: change one thing, run it,
 observe the result, and write down what changed.
@@ -254,9 +386,16 @@ The C programming tutorial is [docs/tutorial_c_game.md](docs/tutorial_c_game.md)
 - Games: `GET /api/games`, `POST /api/games?slot=cart0`, `POST /api/games/select?slot=cart0`
 - Screenshot: `GET /api/screenshot.bmp`
 - Optional scores: `GET /api/scores`, `POST /api/scores`
+- Optional metrics server: `POST /api/runs`, `POST /api/metrics/batch`,
+  `GET /api/runs/<run_id>/report.md`
 
 `/api/runtime` includes firmware version, cartridge state, frame count, and last input state.
 `/api/screenshot.bmp` returns the current 320x240 framebuffer as a BMP image.
+
+See [docs/metrics_api.md](docs/metrics_api.md) for the opt-in firmware metrics
+configuration and the `tools/prg32_metrics_server` reporting workflow. See
+[docs/scientific_measurement_tutorial.md](docs/scientific_measurement_tutorial.md)
+for a step-by-step scientific-paper measurement workflow with screenshots.
 
 ## Asset Tools
 

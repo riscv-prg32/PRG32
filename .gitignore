@@ -78,3 +78,6 @@ Testing/
 __pycache__/
 tools/prg32_score_server/*.db
 tools/prg32_score_server/*.db-*
+tools/prg32_metrics_server/*.db
+tools/prg32_metrics_server/*.db-*
+metrics_export/

@@ -7,8 +7,11 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_rom_sys.h"
+#include "esp_system.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "sdkconfig.h"
 
 static const char *TAG = "prg32_main";
 
@@ -17,6 +20,40 @@ static const char *TAG = "prg32_main";
 #ifndef PRG32_BOOT_SIGNAL_ENABLE
 #define PRG32_BOOT_SIGNAL_ENABLE 0
 #endif
+
+#ifndef CONFIG_PRG32_METRICS_ENABLE
+#define CONFIG_PRG32_METRICS_ENABLE 0
+#endif
+
+#ifndef CONFIG_PRG32_METRICS_SERVER_URL
+#define CONFIG_PRG32_METRICS_SERVER_URL "http://192.168.4.2:8080"
+#endif
+
+#ifndef CONFIG_PRG32_METRICS_BOARD_ID
+#define CONFIG_PRG32_METRICS_BOARD_ID "prg32-board"
+#endif
+
+#ifndef CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES
+#define CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES 1
+#endif
+
+#ifndef CONFIG_PRG32_METRICS_UPLOAD_PERIOD_MS
+#define CONFIG_PRG32_METRICS_UPLOAD_PERIOD_MS 5000
+#endif
+
+#ifndef CONFIG_IDF_TARGET
+#define CONFIG_IDF_TARGET "unknown"
+#endif
+
+#if CONFIG_PRG32_DISPLAY_QEMU_RGB
+#define PRG32_DISPLAY_BACKEND_NAME "qemu-rgb"
+#else
+#define PRG32_DISPLAY_BACKEND_NAME "ili9341"
+#endif
+
+static char g_metrics_game_name[PRG32_CART_NAME_LEN] = "idle";
+static prg32_metrics_config_t g_metrics_config;
+static int g_metrics_run_active;
 
 static void prg32_wait_for_frame_target(uint32_t *next_ms) {
     uint32_t now = prg32_ticks_ms();
@@ -36,6 +73,83 @@ static void prg32_wait_for_frame_target(uint32_t *next_ms) {
     if ((int32_t)(*next_ms - now) > 0) {
         vTaskDelay(pdMS_TO_TICKS(*next_ms - now));
     }
+}
+
+static void prg32_configure_metrics(const char *game_name) {
+    snprintf(g_metrics_game_name,
+             sizeof(g_metrics_game_name),
+             "%s",
+             game_name && game_name[0] ? game_name : "idle");
+    g_metrics_config = (prg32_metrics_config_t){
+        .enabled = CONFIG_PRG32_METRICS_ENABLE,
+        .server_url = CONFIG_PRG32_METRICS_SERVER_URL,
+        .board_id = CONFIG_PRG32_METRICS_BOARD_ID,
+        .target = CONFIG_IDF_TARGET,
+        .display_backend = PRG32_DISPLAY_BACKEND_NAME,
+        .firmware_version = PRG32_FIRMWARE_VERSION,
+        .firmware_git_sha = "unknown",
+        .game_name = g_metrics_game_name,
+        .sample_period_frames = CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES,
+        .upload_period_ms = CONFIG_PRG32_METRICS_UPLOAD_PERIOD_MS,
+    };
+    prg32_metrics_init(&g_metrics_config);
+}
+
+static void prg32_start_metrics_for_loaded_cart(void) {
+    prg32_cart_info_t info;
+    const char *game_name = "cartridge";
+    if (prg32_cart_get_info(&info) == 0 && info.name[0]) {
+        game_name = info.name;
+    }
+    prg32_configure_metrics(game_name);
+    prg32_metrics_start_run();
+    g_metrics_run_active = 1;
+}
+
+static void prg32_stop_metrics_run(void) {
+    if (g_metrics_run_active) {
+        prg32_metrics_stop_run();
+        g_metrics_run_active = 0;
+    }
+}
+
+static uint16_t prg32_metric_fps_x100(uint32_t frame_us) {
+    if (frame_us == 0) {
+        return 0;
+    }
+    uint32_t fps_x100 = (uint32_t)(100000000ULL / frame_us);
+    return fps_x100 > UINT16_MAX ? UINT16_MAX : (uint16_t)fps_x100;
+}
+
+static void prg32_record_frame_metric(uint32_t frame,
+                                      uint32_t input_snapshot,
+                                      int64_t frame_start_us,
+                                      int64_t update_start_us,
+                                      int64_t update_end_us,
+                                      int64_t draw_start_us,
+                                      int64_t draw_end_us,
+                                      int64_t present_start_us,
+                                      int64_t present_end_us) {
+    uint32_t update_us = (uint32_t)(update_end_us - update_start_us);
+    uint32_t draw_us = (uint32_t)(draw_end_us - draw_start_us);
+    uint32_t present_us = (uint32_t)(present_end_us - present_start_us);
+    uint32_t frame_us = (uint32_t)(present_end_us - frame_start_us);
+    prg32_metric_sample_t sample = {
+        .frame = frame,
+        .timestamp_ms = prg32_ticks_ms(),
+        .update_us = update_us,
+        .draw_us = draw_us,
+        .present_us = present_us,
+        .frame_us = frame_us,
+        .heap_free = esp_get_free_heap_size(),
+        .heap_min_free = esp_get_minimum_free_heap_size(),
+        .input_mask = input_snapshot,
+        .fps_x100 = prg32_metric_fps_x100(frame_us),
+        .upload_queue_depth = 0,
+        .deadline_missed = frame_us > (PRG32_FRAME_MS * 1000u),
+        .reserved = 0,
+    };
+    prg32_metrics_record(&sample);
 }
 
 #if PRG32_BOOT_SIGNAL_ENABLE
@@ -69,6 +183,7 @@ void app_main(void) {
 #endif
 
     prg32_init();
+    prg32_configure_metrics("idle");
     if (!prg32_cart_is_loaded()) {
         prg32_console_clear();
         prg32_console_write("PRG32 READY: use setup to upload a cartridge\n");
@@ -90,19 +205,49 @@ void app_main(void) {
             if (current_generation != cart_generation) {
                 cart_generation = current_generation;
                 prg32_console_clear();
+                prg32_stop_metrics_run();
                 prg32_cart_call_init();
+                prg32_start_metrics_for_loaded_cart();
             }
-            prg32_gfx_lock();
-            prg32_cart_call_update();
-            prg32_cart_call_draw();
+            if (prg32_metrics_is_enabled()) {
+                int64_t frame_start_us = esp_timer_get_time();
+                prg32_gfx_lock();
+                int64_t update_start_us = esp_timer_get_time();
+                prg32_cart_call_update();
+                int64_t update_end_us = esp_timer_get_time();
+                int64_t draw_start_us = update_end_us;
+                prg32_cart_call_draw();
+                int64_t draw_end_us = esp_timer_get_time();
 #if PRG32_DEBUG
-            prg32_debug_overlay_draw(1, 0, 0, input_snapshot, prg32_diag_frame_count());
+                prg32_debug_overlay_draw(1, 0, 0, input_snapshot, prg32_diag_frame_count());
 #endif
-            prg32_gfx_present();
-            prg32_gfx_unlock();
+                int64_t present_start_us = esp_timer_get_time();
+                prg32_gfx_present();
+                int64_t present_end_us = esp_timer_get_time();
+                prg32_gfx_unlock();
+                prg32_record_frame_metric(prg32_diag_frame_count(),
+                                          input_snapshot,
+                                          frame_start_us,
+                                          update_start_us,
+                                          update_end_us,
+                                          draw_start_us,
+                                          draw_end_us,
+                                          present_start_us,
+                                          present_end_us);
+            } else {
+                prg32_gfx_lock();
+                prg32_cart_call_update();
+                prg32_cart_call_draw();
+#if PRG32_DEBUG
+                prg32_debug_overlay_draw(1, 0, 0, input_snapshot, prg32_diag_frame_count());
+#endif
+                prg32_gfx_present();
+                prg32_gfx_unlock();
+            }
             prg32_diag_increment_frame();
             prg32_wait_for_frame_target(&next_frame_ms);
         } else {
+            prg32_stop_metrics_run();
             uint32_t now_ms = prg32_ticks_ms();
             if (now_ms - last_idle_log_ms >= PRG32_IDLE_HEARTBEAT_MS) {
                 last_idle_log_ms = now_ms;

@@ -90,6 +90,15 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                (uintptr_t)prg32_audio_led_vu_enabled);
     add_import(imports, "prg32_audio_led_vu_level",
                (uintptr_t)prg32_audio_led_vu_level);
+    add_import(imports, "prg32_metrics_init", (uintptr_t)prg32_metrics_init);
+    add_import(imports, "prg32_metrics_start_run",
+               (uintptr_t)prg32_metrics_start_run);
+    add_import(imports, "prg32_metrics_stop_run",
+               (uintptr_t)prg32_metrics_stop_run);
+    add_import(imports, "prg32_metrics_is_enabled",
+               (uintptr_t)prg32_metrics_is_enabled);
+    add_import(imports, "prg32_metrics_record", (uintptr_t)prg32_metrics_record);
+    add_import(imports, "prg32_metrics_run_id", (uintptr_t)prg32_metrics_run_id);
     add_import(imports, "prg32_audio_init", (uintptr_t)prg32_audio_init);
     add_import(imports, "prg32_audio_shutdown", (uintptr_t)prg32_audio_shutdown);
     add_import(imports, "prg32_audio_get_mode", (uintptr_t)prg32_audio_get_mode);

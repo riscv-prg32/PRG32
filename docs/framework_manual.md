@@ -179,6 +179,34 @@ The encoder holds the recursive graphics lock while it streams rows. This keeps
 the BMP internally consistent without allocating a complete second framebuffer
 in ESP32 RAM.
 
+## Performance Metrics
+
+Optional performance metrics record update, draw, present, heap, input, FPS, and
+deadline information while a cartridge is running. The feature is disabled by
+default and controlled through Kconfig:
+
+- `CONFIG_PRG32_METRICS_ENABLE`
+- `CONFIG_PRG32_METRICS_SERVER_URL`
+- `CONFIG_PRG32_METRICS_BOARD_ID`
+- `CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES`
+- `CONFIG_PRG32_METRICS_UPLOAD_PERIOD_MS`
+- `CONFIG_PRG32_METRICS_QUEUE_LEN`
+
+The public API is in `prg32_metrics.h`:
+
+- `prg32_metrics_init(config)`
+- `prg32_metrics_start_run()`
+- `prg32_metrics_stop_run()`
+- `prg32_metrics_is_enabled()`
+- `prg32_metrics_record(sample)`
+- `prg32_metrics_run_id()`
+
+The resident firmware instruments the cartridge update/draw/present loop when
+metrics are enabled. `prg32_metrics_record` only copies into a ring buffer; HTTP
+upload is handled asynchronously so the measured frame code does not wait for
+the network. See `docs/metrics_api.md` for the server, export workflow, and lab
+exercise.
+
 ## Cartridge runtime
 
 The resident firmware includes a cartridge loader so games can be replaced

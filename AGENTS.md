@@ -38,6 +38,7 @@ Named contributor metadata used across project docs:
 - Focused firmware feature demos: `examples/features`.
 - Course materials: `docs`, especially `docs/labs`.
 - Optional score server: `tools/prg32_score_server`.
+- Optional metrics server and report/export tooling: `tools/prg32_metrics_server`.
 - Uploadable game cartridge tool: `tools/prg32_game.py`.
 - Media conversion tools: `tools/prg32_image_convert.py`,
   `tools/prg32_image_prepare.py`, and `tools/prg32_audio_convert.py`.
@@ -71,6 +72,7 @@ Named contributor metadata used across project docs:
 |-- tools/prg32_image_convert.py    Image/GIF/sprite/tile conversion
 |-- tools/prg32_audio_convert.py    WAV/MIDI conversion
 |-- tools/prg32_score_server/       Flask + SQLite REST score service
+|-- tools/prg32_metrics_server/     Flask + SQLite performance metrics service
 |-- .vscode/                        Student-ready VS Code tasks/settings
 `-- PRG32.code-workspace
 ```
@@ -151,6 +153,7 @@ Useful checks:
 ```bash
 git diff --check
 python3 -m py_compile tools/prg32_score_server/app.py
+python3 -m py_compile tools/prg32_metrics_server/app.py
 ```
 
 This environment may not have `idf.py`, `IDF_PATH`, or `riscv32-esp-elf-gcc` on
@@ -204,6 +207,9 @@ Important implementation details:
   runtime address. Rebuild cartridges whenever the resident firmware changes.
 - Keep `PRG32_CART_RAM_SIZE` small enough for classroom examples unless the
   partition/RAM plan is intentionally revised.
+- Keep `prg32_metrics_record()` non-blocking. Metrics collection must copy into
+  a small queue and leave HTTP upload to the background task so profiling does
+  not become the main source of frame-time jitter.
 - Keep `partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`
   in sync when changing cartridge slots.
 - The controller UART packet is:

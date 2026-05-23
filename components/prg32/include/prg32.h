@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "prg32_audio.h"
+#include "prg32_metrics.h"
 
 #ifdef __cplusplus
 extern "C" {

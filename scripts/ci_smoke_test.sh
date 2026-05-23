@@ -12,7 +12,10 @@ git diff --check
 echo "[CI] Compiling Python tools"
 python3 -m py_compile \
   tools/prg32_game.py \
-  tools/prg32_score_server/app.py
+  tools/prg32_score_server/app.py \
+  tools/prg32_metrics_server/app.py \
+  tools/prg32_metrics_server/export_run.py \
+  tools/prg32_metrics_server/report.py
 
 echo "[CI] Running unit tests"
 python3 -m unittest discover -s tests
