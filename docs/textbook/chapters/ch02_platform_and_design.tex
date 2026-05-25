@@ -1,0 +1,375 @@
+\chapter{Game Design Principles and the \prg Framework}
+\label{ch:platform}
+
+This is the one chapter that belongs to both tracks. Whether you are here for
+assembly or for C, you need a shared mental model of two things: how a small game
+is structured as a program, and how the \prg framework turns that structure into
+something you can see and hear. Read it once now; you will return to it often.
+
+\section{What a game actually is}
+
+Strip away the graphics and a game is a very old idea: a loop that never ends
+until you tell it to. Each turn around the loop is called a \emph{frame}. In a
+single frame the machine does three things, always in the same order. It
+\emph{reads} the state of the world---which buttons are pressed, how much time has
+passed. It \emph{updates} an internal model of the game---moves the ball, checks
+for collisions, adjusts the score. And it \emph{draws} the new state to the
+screen. Then it does it again, fast enough that the eye perceives motion rather
+than a slideshow.
+
+\begin{prgconcept}
+A game is a loop over frames. In each frame the program reads input, updates its
+state, and draws the result. ``State'' is simply the set of variables that
+describe the game right now: positions, velocities, scores, lives. Everything
+interesting a game does is a rule for turning this frame's state into next
+frame's state.
+\end{prgconcept}
+
+It is worth dwelling on the discipline this imposes, because it is the discipline
+\prg enforces. Update and draw are kept separate on purpose. Update is allowed to
+change state but should not draw; draw is allowed to read state and put pixels on
+the screen but should not change the game's logic. A beginner who mixes the two
+ends up with games where, for instance, a collision is detected only when an
+object happens to be drawn, and bugs of that kind are maddening to find. Keeping
+the phases separate is not bureaucracy; it is the single most effective habit for
+writing games that behave predictably.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,node distance=6mm,
+  phase/.style={rounded corners=3pt,draw=prgsteel,fill=prgpanel,minimum width=26mm,minimum height=11mm,align=center},
+  once/.style={rounded corners=3pt,draw=prggreen,fill=prggreen!10,minimum width=26mm,minimum height=11mm,align=center},
+  ar/.style={-{Stealth[length=2.2mm]},draw=prgink!70,thick}]
+  \node[once] (init) {\textbf{init}\\\scriptsize once at start};
+  \node[phase,right=14mm of init] (read) {\textbf{read input}\\\scriptsize buttons, time};
+  \node[phase,right=10mm of read] (update) {\textbf{update}\\\scriptsize change state};
+  \node[phase,right=10mm of update] (draw) {\textbf{draw}\\\scriptsize render state};
+  \draw[ar] (init) -- (read);
+  \draw[ar] (read) -- (update);
+  \draw[ar] (update) -- (draw);
+  \draw[ar] (draw.south) .. controls ([yshift=-9mm]draw.south) and ([yshift=-9mm]read.south) .. (read.south)
+     node[midway,below,font=\scriptsize\itshape]{next frame};
+\end{tikzpicture}
+\captionof{figure}{The frame loop. \prg calls your \code{init} once, then your
+\code{update} and \code{draw} once per frame, forever.}
+\label{fig:frameloop}
+\end{center}
+
+\section{The three-function contract}
+
+\prg expresses the frame loop as a contract of exactly three functions that you
+provide and the framework calls \citep{prg32teaching}. Every example in this
+book, in either language, exports the same three entry points, distinguished only
+by a prefix that names the game:
+
+\begin{lstlisting}[style=plain,caption={The universal shape of a \prg game. The prefix changes; the structure never does.}]
+<prefix>_init     -- runs once when the game (cartridge) is selected
+<prefix>_update   -- runs once per frame; changes game state
+<prefix>_draw     -- runs once per frame; renders the current state
+\end{lstlisting}
+
+For a Pong game written in assembly the prefix is \code{pong\_graphics}, so the
+symbols are \code{pong\_graphics\_init}, \code{pong\_graphics\_update}, and
+\code{pong\_graphics\_draw}. For the C version the prefix is \code{pong\_c}. The
+framework does not care which language produced the symbols; it only needs the
+three of them.
+
+\begin{prgconcept}
+The entire interface between your game and \prg is three functions:
+\code{init}, \code{update}, and \code{draw}. Learn this shape once and every
+example in the book---assembly or C, emulator or hardware---becomes a variation
+on it.
+\end{prgconcept}
+
+\section{The screen, the colours, and the coordinate system}
+
+\prg presents a display that is 320 pixels wide and 240 pixels tall, but games
+draw into a centred \emph{viewport} of 320 by 200, leaving thin bands at the top
+and bottom for status information \citep{prg32repo}. The coordinate origin
+$(0,0)$ is the top-left corner; $x$ increases to the right and $y$ increases
+\emph{downward}. This downward-$y$ convention surprises newcomers who remember
+graphs from mathematics, where $y$ goes up, and it is one of the most common
+sources of early confusion.
+
+\begin{prgwarn}
+On the screen, $y$ grows \emph{downward}. A larger $y$ means lower on the
+display. If your object moves up when you expected it to move down, you have very
+likely confused the sign of a $y$ change. This is normal; check it first.
+\end{prgwarn}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\scriptsize,scale=0.95]
+  % full 320x240 frame
+  \draw[draw=prgink!50,fill=prgink!4] (0,0) rectangle (8,6);
+  % top and bottom bands
+  \fill[prgsteel!25] (0,5.5) rectangle (8,6);
+  \fill[prgsteel!25] (0,0) rectangle (8,0.5);
+  % viewport 320x200 centered
+  \draw[draw=prgaccent,thick,fill=prgaccent!6] (0,0.5) rectangle (8,5.5);
+  % origin marker
+  \fill[prgred] (0,5.5) circle (1.4pt);
+  \node[anchor=south west,text=prgred] at (0.05,5.55){(0,0)};
+  % axes
+  \draw[-{Stealth[length=2mm]},prgink] (0.3,5.2) -- (2.3,5.2) node[right]{$x \to$};
+  \draw[-{Stealth[length=2mm]},prgink] (0.3,5.2) -- (0.3,3.6) node[below right]{$y \downarrow$};
+  \node[text=prgaccent] at (4,3){game viewport \textbf{320 $\times$ 200}};
+  \node[text=prgsteel] at (4,5.75){top status band};
+  \node[text=prgsteel] at (4,0.25){bottom status band};
+  \node[anchor=north west] at (0,-0.15){\itshape Full display: 320 $\times$ 240};
+\end{tikzpicture}
+\captionof{figure}{The \prg display. Framework screens use the full
+$320\times240$; your game draws into the centred $320\times200$ viewport.}
+\label{fig:screen}
+\end{center}
+
+Colours are expressed in the \textbf{RGB565} format: a 16-bit number that packs
+five bits of red, six of green, and five of blue. You rarely need to compute these
+by hand, because the framework defines names for the common ones---\code{PRG32\_COLOR\_BLACK}
+is \code{0x0000}, \code{PRG32\_COLOR\_WHITE} is \code{0xffff},
+\code{PRG32\_COLOR\_YELLOW} is \code{0xffe0}, and so on \citep{prg32repo}. When you
+see the literal \code{65535} in an assembly example, it is simply white written
+in decimal.
+
+\begin{prgaside}
+RGB565 was the natural pixel format of countless devices in the era this book
+celebrates, precisely because it fits a pixel in two bytes while still giving the
+eye enough colour. The extra green bit reflects the fact that human vision is most
+sensitive to green. The format is a small, elegant compromise between memory and
+fidelity---exactly the kind of constraint that makes retro programming
+instructive.
+\end{prgaside}
+
+\section{Reading the player: the input bitmask}
+
+\prg reports all the buttons at once as a single integer, a \emph{bitmask}, in
+which each button is one bit \citep{prg32repo}. Reading input is a single call,
+\code{prg32\_input\_read}, that returns this integer. To find out whether a
+particular button is pressed, you test its bit with a bitwise AND.
+
+\begin{center}
+\begin{tabular}{@{}llr@{}}
+\toprule
+Constant & Button & Bit value \\
+\midrule
+\code{PRG32\_BTN\_LEFT}   & left  & \code{0x01} \\
+\code{PRG32\_BTN\_RIGHT}  & right & \code{0x02} \\
+\code{PRG32\_BTN\_UP}     & up    & \code{0x04} \\
+\code{PRG32\_BTN\_DOWN}   & down  & \code{0x08} \\
+\code{PRG32\_BTN\_A}      & A     & \code{0x10} \\
+\code{PRG32\_BTN\_B}      & B     & \code{0x20} \\
+\code{PRG32\_BTN\_SELECT} & select & \code{0x40} \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Player-one button bits. Player two uses the same layout shifted
+into higher bits (\code{PRG32\_P2\_*}).}
+\label{tab:buttons}
+\end{center}
+
+The reason a bitmask is used, rather than seven separate variables, is that it
+mirrors how the hardware actually presents the buttons: as bits in a register. A
+student who understands the input bitmask understands, in miniature, how a
+processor reads any memory-mapped peripheral. We will use this fact in both
+tracks.
+
+\begin{prgwarn}
+Test a button with bitwise AND (\code{\&}), not equality (\code{==}). The mask may
+hold several pressed buttons at once, so \code{input \& PRG32\_BTN\_LEFT} asks
+``is the left bit set, regardless of the others?''---which is what you want.
+Writing \code{input == PRG32\_BTN\_LEFT} would only be true when \emph{exactly}
+left and nothing else is pressed.
+\end{prgwarn}
+
+\section{Drawing: the graphics calls you will use most}
+
+The framework offers a small drawing interface, and a beginner needs only a
+handful of its functions. Each of the calls below works identically in assembly
+(passing arguments in registers) and in C (passing arguments normally), and each
+works identically on QEMU and on the ESP32\nobreakdash-C6 \citep{prg32qemu}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Call & What it does \\
+\midrule
+\code{prg32\_gfx\_clear(color)} & fill the whole viewport with one colour \\
+\code{prg32\_gfx\_pixel(x,y,color)} & set a single pixel \\
+\code{prg32\_gfx\_rect(x,y,w,h,color)} & draw a filled rectangle \\
+\code{prg32\_gfx\_text8(x,y,s,fg,bg)} & draw a string of text \\
+\code{prg32\_gfx\_present()} & show the finished frame on the display \\
+\code{prg32\_sprite\_hitbox(\dots)} & test whether two rectangles overlap \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{The core drawing and collision calls. The full graphics
+interface is catalogued in Appendix~\ref{app:api}.}
+\label{tab:gfxcore}
+\end{center}
+
+The rectangle call, \code{prg32\_gfx\_rect}, is the workhorse of early examples:
+a paddle is a wide rectangle, a ball is a small square, a wall is a tall thin
+rectangle. The collision call, \code{prg32\_sprite\_hitbox}, takes the position
+and size of two rectangles and returns a non-zero value when they overlap, which
+is exactly the test a beginner needs for ``did the ball hit the paddle?''
+
+\section{Sound: a beep when something happens}
+
+Audio in \prg starts as simply as it can: \code{prg32\_audio\_beep(hz, ms)} plays
+a tone of a given frequency for a given number of milliseconds \citep{prg32abi}.
+On the physical board this drives a small buzzer; on QEMU the call is accepted but
+silent, because the emulator does not model the buzzer. The framework's own
+advice, which this book repeats, is to play a beep only on an \emph{event}---a
+collision, a score, a button press---and never on every frame, because a tone
+restarted sixty times a second is an unpleasant buzz rather than a sound effect.
+
+\begin{prgwarn}
+Do not call \code{prg32\_audio\_beep} every frame. Trigger sound on events only.
+A beep in \code{update} that fires whenever the ball is in flight will play
+continuously; a beep that fires only in the frame where a collision is newly
+detected will sound like a game.
+\end{prgwarn}
+
+\section{Cartridges: how a game reaches the machine}
+
+A finished \prg game is packaged as a \emph{cartridge}: a file ending in
+\fname{.prg32} that contains your compiled \riscv code together with a small
+header \citep{prg32cartfmt}. The resident firmware---flashed onto the board once,
+at the start of the course---knows how to load a cartridge and call its three
+functions. This separation is what lets you iterate quickly: you flash the
+firmware a single time, then upload cartridge after cartridge without reflashing,
+either over the board's own Wi-Fi network or, on the emulator, by staging the
+cartridge into the QEMU flash image.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\scriptsize,node distance=4mm,
+  s/.style={rounded corners=2pt,draw=prgsteel,fill=prgpanel,minimum height=10mm,minimum width=24mm,align=center},
+  ar/.style={-{Stealth[length=2mm]},draw=prgink!70}]
+  \node[s] (src) {\code{game.S}\\ or \code{game.c}};
+  \node[s,right=8mm of src] (tc) {\riscv\\toolchain};
+  \node[s,right=8mm of tc] (cart) {\code{.prg32}\\cartridge};
+  \node[s,right=8mm of cart] (rt) {\prg\\runtime};
+  \node[s,right=8mm of rt] (loop) {init / update\\/ draw};
+  \draw[ar] (src) -- (tc);
+  \draw[ar] (tc) -- (cart);
+  \draw[ar] (cart) -- (rt);
+  \draw[ar] (rt) -- (loop);
+\end{tikzpicture}
+\captionof{figure}{From source to running game. The same pipeline serves
+assembly and C, hardware and emulator \citep{prg32repo}.}
+\label{fig:pipeline}
+\end{center}
+
+The cartridge header begins with the magic bytes \code{PRG2} and records, among
+other things, the offsets of the \code{init}, \code{update}, and \code{draw}
+functions, so the firmware knows where to jump \citep{prg32cartfmt}. You will not
+write this header by hand; a tool called \fname{prg32\_game.py} builds it for you,
+and Appendix~\ref{app:api} documents the tool's command line. For now the
+important idea is conceptual: a cartridge is your three functions, compiled to
+native code, wrapped in just enough metadata for the firmware to run them.
+
+\section{The two targets, concretely}
+
+You will build every game for two targets. The commands differ only in a build
+directory and a configuration profile; the source does not change at all
+\citep{prg32qemu}.
+
+For the \textbf{physical ESP32\nobreakdash-C6 board}, the build uses a directory named
+\fname{build-esp32c6} and the board configuration profile:
+
+\begin{lstlisting}[style=bash,caption={Building and flashing for the physical board (abbreviated; see Appendix~\ref{app:env}).}]
+idf.py -B build-esp32c6 -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
+\end{lstlisting}
+
+For the \textbf{QEMU emulator}, the build uses \fname{build-qemu} and the QEMU
+profile, and targets the ESP32\nobreakdash-C3 emulator:
+
+\begin{lstlisting}[style=bash,caption={Building and running for the desktop emulator.}]
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+\end{lstlisting}
+
+\begin{prgwarn}
+Keep the two build directories strictly separate. Flashing a \fname{build-qemu}
+image to a real board produces a black screen, because the emulator build uses a
+virtual display panel that does not exist on real hardware. If your board shows
+nothing, the first thing to check is that you built in \fname{build-esp32c6}, not
+\fname{build-qemu} \citep{prg32qemu}.
+\end{prgwarn}
+
+\begin{prgaside}
+Why does the emulator target an ESP32\nobreakdash-C3 while the board is an ESP32\nobreakdash-C6? Both
+are \riscv microcontrollers from the same family, and both run the same 32-bit
+\riscv instructions. Espressif maintains a mature QEMU graphics path for the
+ESP32\nobreakdash-C3, so \prg uses it for desktop emulation, while the physical kits are
+built around the newer ESP32\nobreakdash-C6 \citep{prg32qemu}. From your game's point of
+view the difference is invisible: the calling convention and the framework
+interface are identical.
+\end{prgaside}
+
+\section{Design principles for first games}
+
+The \prg learning path distils years of classroom experience into a few rules,
+and they are worth stating plainly because beginners who follow them succeed and
+beginners who ignore them struggle \citep{prg32repo,prg32tutorial}.
+
+The first rule is \emph{start with returns that do nothing}. Write \code{init},
+\code{update}, and \code{draw} so that each simply returns immediately, build it,
+and confirm the framework runs without crashing. You now have a skeleton that
+compiles and runs; everything after is addition.
+
+The second rule is \emph{add one thing at a time}. One variable for position.
+Then draw one object at that position. Then read input and change the position.
+Then add one boundary check. Then one collision. Each step is small enough to
+verify by eye before the next begins.
+
+The third rule is \emph{sound comes last}. Get the core loop working and visible
+before adding audio, because a beep that fires at the wrong time is a symptom, not
+a feature, and you want the visual logic solid first.
+
+\begin{prgconcept}
+The intended rhythm of work is small and visible: change one thing, run it,
+observe the result, and write down what changed \citep{prg32repo}. This is not
+merely advice for beginners; it is how experienced systems programmers actually
+work when the machine is unforgiving.
+\end{prgconcept}
+
+\section{A pedagogical map of the example games}
+
+The platform ships with a family of complete example games, each provided in
+three forms: an ASCII assembly version, a graphics assembly version, and a C
+version \citep{prg32repo}. They are arranged, roughly, from simplest to richest,
+and this book draws its worked examples from them in that order.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Example & What it teaches first \\
+\midrule
+\code{pong} & state, input, boundaries, one collision \\
+\code{breakout} & arrays of objects, removing objects on hit \\
+\code{space\_invaders} & many moving objects, simple enemy waves \\
+\code{pacman} & grid movement, a tile map \\
+\code{asteroids} & wrap-around motion, rotation \\
+\code{tetris} & falling pieces, a fixed grid, line clears \\
+\code{platformer} & tile flags, gravity, camera follow \\
+\code{raycaster} & fixed-point arithmetic, a pseudo-3D corridor \\
+\code{wing\_commander} & two layered playfields, a cockpit \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{The example games, ordered by the concepts they introduce. This
+book builds Pong from scratch in both tracks and uses the others as references
+\citep{prg32repo,prg32teaching}.}
+\label{tab:games}
+\end{center}
+
+We will build Pong together, line by line, in both the assembly track
+(Chapters~\ref{ch:asm1}--\ref{ch:asmcap}) and the C track
+(Chapters~\ref{ch:c1}--\ref{ch:ccap}), because it is the smallest game that still
+contains every essential idea. The richer examples then become readable: once you
+have written Pong, the Breakout source is Pong with an array of bricks, and the
+platformer source is Pong with gravity and a tile map.
+
+\begin{prgcheck}
+Before starting a track, make sure you can answer these without looking back:
+What are the three functions every \prg game provides? In which direction does
+$y$ grow on the screen? How do you test whether one button is pressed? What is a
+cartridge? Why must the QEMU and board builds use separate directories?
+\end{prgcheck}

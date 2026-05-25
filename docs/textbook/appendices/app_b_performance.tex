@@ -1,0 +1,157 @@
+\chapter{Measuring Performance Like a Scientist}
+\label{app:perf}
+
+A game that ``feels fast'' is an opinion; a game that spends 4.2 milliseconds per
+frame in \code{update} is a measurement. This appendix shows how to turn the first
+into the second using \prg's optional performance-metrics pipeline, which records
+per-frame timing and uploads it to a small local server for analysis
+\citep{prg32metrics,prg32scimeasure}. The workflow is designed to be reproducible,
+so that a classmate or a reviewer can repeat your experiment and obtain the same
+result---the defining property of a scientific measurement.
+
+\section{Why measure, and what stays unchanged}
+
+Metrics are disabled by default, so ordinary gameplay is never slowed by
+measurement \citep{prg32metrics}. You enable them only for a profiling lab or a
+report. When enabled, the runtime begins a measurement \emph{run} when a cartridge
+starts and ends it when the cartridge is replaced, recording a sample every few
+frames into an in-memory ring buffer that a background task uploads. Because the
+recording function merely copies a sample and returns, the game's own timing is
+disturbed as little as possible \citep{prg32metrics}.
+
+\section{What each frame records}
+
+A sample captures where a frame's time went and how healthy the system was
+\citep{prg32metrics}. The most useful fields for a first report are the three
+phase timings and the deadline flag.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Field & Meaning \\
+\midrule
+\code{frame} & the frame counter \\
+\code{update\_us} & microseconds spent in your \code{update} \\
+\code{draw\_us} & microseconds spent in your \code{draw} \\
+\code{present\_us} & microseconds spent displaying the frame \\
+\code{frame\_us} & total work: update + draw + present \\
+\code{fps\_x100} & active-work frames per second, times 100 \\
+\code{heap\_free} & free memory at that moment \\
+\code{deadline\_missed} & true when the frame's work exceeded the 30-FPS budget \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Per-frame sample fields \citep{prg32metrics}.}
+\end{center}
+
+\begin{prgconcept}
+The frame budget at 30 frames per second is about 33 milliseconds. If
+\code{update}, \code{draw}, and \code{present} together exceed that,
+\code{deadline\_missed} is set and the game cannot keep its rate. Profiling is the
+art of finding which of the three phases is the culprit and reducing it---a habit
+worth forming early.
+\end{prgconcept}
+
+\section{The reproducible workflow}
+
+The platform's scientific-measurement tutorial prescribes a discipline borrowed
+from experimental science: state the question, freeze the software, measure, and
+report enough that someone else can repeat it \citep{prg32scimeasure}.
+
+\paragraph{State a narrow question.} Good questions are observable and repeatable:
+how much frame time does each demo spend in update, draw, and present? Does QEMU
+produce the same visual output as the board? Which examples stay below the 30-FPS
+budget? Write the question, one expected result, and one reason it might be wrong,
+\emph{before} measuring \citep{prg32scimeasure}.
+
+\paragraph{Freeze the software state.} Record the exact commit, the ESP-IDF
+version, the target (ESP32\nobreakdash-C6 hardware or ESP32\nobreakdash-C3 QEMU), the display backend,
+the metrics configuration, and the cartridge build command, so the experiment can
+be reconstructed \citep{prg32scimeasure}.
+
+\begin{lstlisting}[style=bash,caption={Recording the software state for reproducibility.}]
+git rev-parse HEAD          # the exact source revision
+git diff > experiment.patch # any local changes, saved as a patch
+\end{lstlisting}
+
+\paragraph{Build with metrics enabled.} A checked-in configuration profile turns
+on metrics without disturbing the normal board defaults; you combine the two
+profiles in one build \citep{prg32metrics}.
+
+\begin{lstlisting}[style=bash,caption={Building the board firmware with metrics enabled, using both configuration profiles.}]
+idf.py -B build-esp32c6-metrics \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  set-target esp32c6
+idf.py -B build-esp32c6-metrics \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  build
+\end{lstlisting}
+
+\paragraph{Run the metrics server.} A small Flask and SQLite server collects the
+uploaded samples \citep{prg32metrics}.
+
+\begin{lstlisting}[style=bash,caption={Starting the local metrics server.}]
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r tools/prg32_metrics_server/requirements.txt
+python3 tools/prg32_metrics_server/app.py --host 0.0.0.0 --port 8080
+\end{lstlisting}
+
+Point \code{CONFIG\_PRG32\_METRICS\_SERVER\_URL} at the computer's address that the
+board or QEMU can reach, then run your cartridge; the firmware uploads samples in
+the background as it plays \citep{prg32metrics}.
+
+\section{Getting results out}
+
+The server stores each run and computes summary statistics. You can list runs,
+inspect one with its statistics, download the raw samples as CSV, or download a
+ready-made Markdown report \citep{prg32metrics}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Endpoint & Returns \\
+\midrule
+\code{GET /api/runs} & all recorded runs \\
+\code{GET /api/runs/<id>} & one run with summary statistics \\
+\code{GET /api/runs/<id>/samples.csv} & the raw per-frame samples \\
+\code{GET /api/runs/<id>/report.md} & a formatted report \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Metrics-server endpoints for retrieving results
+\citep{prg32metrics}.}
+\end{center}
+
+For a written report there is an export helper that produces, from one run, a CSV
+file, a Markdown report, a small \LaTeX{} table you can paste into a document, and,
+when \code{matplotlib} is installed, PNG plots \citep{prg32metrics}.
+
+\begin{lstlisting}[style=bash,caption={Exporting a run into report-ready artefacts.}]
+python3 tools/prg32_metrics_server/export_run.py <run_id> \
+  --db tools/prg32_metrics_server/metrics.db \
+  --out metrics_export/<run_id>
+\end{lstlisting}
+
+\section{A complete profiling exercise}
+
+The platform suggests a self-contained experiment that teaches both profiling and
+the effect of measurement itself on the thing measured \citep{prg32metrics}. Run a
+cartridge with metrics off and note the frame rate. Enable metrics with a sample
+every frame and run the same cartridge for thirty seconds. Export the run and
+compare the update, draw, and present times. Then raise the sample period to one in
+five frames and repeat. Finally, explain how the measurement overhead and the
+network conditions changed the numbers.
+
+\begin{prgtargets}
+\textbf{Both targets.} The metrics pipeline works for both the ESP32\nobreakdash-C6 and the
+QEMU target, and the screenshot endpoint returns the same 320-by-240 BMP in either
+case, which makes ``does QEMU match the board?'' a question you can answer with
+evidence rather than impression \citep{prg32qemu,prg32scimeasure}.
+\end{prgtargets}
+
+\begin{prgaside}
+The instruction to record one expected result, and one reason it might be wrong,
+before measuring is not bureaucracy---it is the heart of honest experiment. A
+prediction made after seeing the data is no prediction at all. By committing to an
+expectation first, you turn a casual look at some numbers into a genuine test, and
+you learn the most from the cases where the machine surprises you.
+\end{prgaside}

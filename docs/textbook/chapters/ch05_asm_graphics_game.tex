@@ -1,0 +1,245 @@
+\chapter{Drawing the Game: Graphics, Collision, and the Frame}
+\label{ch:asm3}
+
+You can now move an object with the joystick and keep it on the screen. This
+chapter gives that object a body. We move from the text console to the
+320-by-200 graphics viewport, draw rectangles for a paddle and a ball, detect
+when they touch, and tie the three functions together into a complete, playable
+graphical game. The viewport calls behave identically on QEMU and on the
+ESP32\nobreakdash-C6, so you can develop everything on a laptop and confirm it on hardware
+later \citep{prg32qemu,prg32tutorialgraphic}.
+
+\section{From text columns to pixels}
+
+The console measured position in text columns; the viewport measures it in
+pixels. The mental model is otherwise unchanged: state lives in \code{.data},
+\code{update} changes it, \code{draw} renders it. What changes is the drawing
+call. Instead of \code{prg32\_console\_write}, we use \code{prg32\_gfx\_clear} to
+erase the frame and \code{prg32\_gfx\_rect} to draw a filled rectangle.
+
+Recall the rectangle call from Chapter~\ref{ch:platform}:
+\code{prg32\_gfx\_rect(x, y, w, h, color)}. In assembly the five arguments go,
+in order, into \reg{a0} through \reg{a4}, following the calling convention. The
+colour in \reg{a4} is an RGB565 value; you may write it as a named constant in C,
+but in assembly it is usually a plain number---\code{65535} for white,
+\code{65504} for yellow, \code{0} for black \citep{prg32repo}.
+
+\begin{prgconcept}
+The five arguments of \code{prg32\_gfx\_rect} occupy \reg{a0}=x, \reg{a1}=y,
+\reg{a2}=width, \reg{a3}=height, \reg{a4}=colour. Getting an argument into the
+wrong register draws the wrong rectangle---a vivid, immediate way to see what the
+calling convention actually means.
+\end{prgconcept}
+
+\section{A blank frame, then one rectangle}
+
+Following the platform's own first-game rhythm, we start with a \code{draw} that
+clears the screen to black and does nothing else, confirm it runs, then add a
+single rectangle \citep{prg32tutorialgraphic}.
+
+\begin{lstlisting}[style=asm,caption={A \code{draw} that clears the frame. Build this first and confirm a black screen before drawing anything on it.}]
+game_draw:
+    addi sp, sp, -16
+    sw   ra, 12(sp)
+    li   a0, 0                 # RGB565 black
+    call prg32_gfx_clear       # fill the 320x200 viewport
+    lw   ra, 12(sp)
+    addi sp, sp, 16
+    ret
+\end{lstlisting}
+
+\begin{prgcheck}
+Build this for QEMU and confirm the virtual screen shows solid black with no
+crash. A black screen is success: the frame is being cleared every frame. If you
+see garbage or the program hangs, recheck the \reg{ra} save/restore pair from
+Chapter~\ref{ch:asm1}.
+\end{prgcheck}
+
+Now add a rectangle. We draw a white paddle near the bottom of the viewport, at
+a position read from \code{.data}. The platform's graphics Pong places the paddle
+at $y=188$, a 64-by-8 white bar---wide enough to be easy to see in the emulator
+\citep{prg32repo}.
+
+\begin{lstlisting}[style=asm,caption={Drawing the paddle from a stored position. The five arguments fill \reg{a0}--\reg{a4} in order.}]
+    la   t0, paddle_x          # address of the paddle position
+    lw   a0, 0(t0)             # a0 = x  (a value read from memory)
+    li   a1, 188               # a1 = y  (near the bottom)
+    li   a2, 64                # a2 = width
+    li   a3, 8                 # a3 = height
+    li   a4, 65535             # a4 = white (RGB565 0xffff)
+    call prg32_gfx_rect        # draw the paddle
+\end{lstlisting}
+
+\begin{prgwarn}
+The order of the loads matters because each \code{li} into \reg{a0}--\reg{a4}
+sets one argument. If you load the width into \reg{a1} instead of \reg{a2}, you
+draw a rectangle of the wrong shape in the wrong place. The platform's
+break-and-fix lab asks you to do exactly this on purpose, observe the distorted
+rectangle, then restore the order and explain the error
+\citep{prg32tutorialgraphic}.
+\end{prgwarn}
+
+\section{The ball: position, velocity, and the bounce}
+
+A paddle the player moves is half a game; the other half is a ball that moves on
+its own and bounces. The ball needs four words of state: its $x$ and $y$ position
+and its $x$ and $y$ velocity (which the examples call \code{dx} and \code{dy}).
+Each frame, the velocity is added to the position; when the ball reaches an edge,
+the velocity is negated so it travels back the other way. This is the heart of
+the platform's graphics Pong update \citep{prg32repo}.
+
+\begin{lstlisting}[style=asm,caption={Autonomous ball motion on the x axis with edge bounce. The same pattern, repeated for y, gives full 2-D motion.}]
+.section .data
+ball_x:  .word 156
+ball_dx: .word 2               # +2 means moving right
+
+.section .text
+    la   t1, ball_x
+    lw   t2, 0(t1)             # t2 = ball x
+    la   t3, ball_dx
+    lw   t4, 0(t3)             # t4 = ball dx (velocity)
+    add  t2, t2, t4           # x = x + dx
+    bltz t2, 1f                # hit the left edge?
+    li   t5, 312               # 320 - ball width (8)
+    ble  t2, t5, 2f            # still in range on the right?
+    mv   t2, t5                # clamp to right edge
+    neg  t4, t4                # reverse direction
+    j    2f
+1:  li   t2, 0                 # clamp to left edge
+    neg  t4, t4                # reverse direction
+2:  sw   t2, 0(t1)            # store new x
+    sw   t4, 0(t3)            # store (possibly reversed) dx
+\end{lstlisting}
+
+\begin{prgconcept}
+\textbf{Velocity} is just a number added to position each frame. A \emph{bounce}
+is negating that number when the object reaches a boundary: \code{neg t4, t4}
+turns $+2$ into $-2$, so the next frames move the ball back the way it came. With
+this one idea---add velocity, negate at the edges---you can make anything bounce.
+\end{prgconcept}
+
+\begin{prgaside}
+Notice that the bounce reuses the clamp from Chapter~\ref{ch:asm2}, with one
+addition: where the clamp merely stopped the object at the edge, the bounce also
+negates the velocity. The platform's examples keep the clamp so the ball never
+visibly leaves the screen even for a single frame, then negate so it returns. Good
+game feel often comes from such small combinations of simple rules.
+\end{prgaside}
+
+\section{Did they touch? Rectangle collision}
+
+A ball that passes straight through the paddle is no fun. We need to know when
+the ball's rectangle overlaps the paddle's rectangle. The framework provides
+exactly this test: \code{prg32\_sprite\_hitbox(ax, ay, aw, ah, bx, by, bw, bh)}
+takes the position and size of two rectangles and returns non-zero when they
+overlap \citep{prg32tutorialgraphic}. In assembly the eight arguments fill
+\reg{a0} through \reg{a7}.
+
+\begin{lstlisting}[style=asm,caption={Testing ball-versus-paddle overlap. A non-zero result in \reg{a0} means they touched this frame.}]
+    la   t0, ball_x
+    lw   a0, 0(t0)            # ball x
+    la   t0, ball_y
+    lw   a1, 0(t0)            # ball y
+    li   a2, 8                # ball width
+    li   a3, 8                # ball height
+    la   t0, paddle_x
+    lw   a4, 0(t0)            # paddle x
+    li   a5, 188              # paddle y
+    li   a6, 64               # paddle width
+    li   a7, 8                # paddle height
+    call prg32_sprite_hitbox  # a0 = non-zero if overlapping
+    beqz a0, 3f               # no overlap: skip the bounce
+    la   t0, ball_dy          # overlap: make the ball go up
+    li   t1, -1
+    sw   t1, 0(t0)
+3:
+\end{lstlisting}
+
+\begin{prgconcept}
+Two rectangles overlap when they intersect on \emph{both} axes at once: the $x$
+ranges overlap \emph{and} the $y$ ranges overlap. \code{prg32\_sprite\_hitbox}
+performs this two-axis test for you and returns the answer as a single value, so
+collision becomes one call followed by one branch.
+\end{prgconcept}
+
+\section{Assembling the complete game}
+
+We now have every part: a paddle moved by input and clamped, a ball that moves
+and bounces, and a collision test. Putting them in the three functions gives a
+complete graphical game whose structure exactly matches the platform's
+\code{pong\_graphics} example \citep{prg32repo}. The \code{init} prints a title
+and beeps once; the \code{update} moves the paddle from input, advances and
+bounces the ball, and applies collision; the \code{draw} clears the frame and
+renders the paddle and ball.
+
+\begin{lstlisting}[style=asm,caption={The \code{draw} of the complete game. Compare it line for line with \code{pong\_graphics\_draw} in the repository.}]
+game_draw:
+    addi sp, sp, -16
+    sw   ra, 12(sp)
+    li   a0, 0
+    call prg32_gfx_clear       # black background
+
+    la   t0, paddle_x          # draw the paddle
+    lw   a0, 0(t0)
+    li   a1, 188
+    li   a2, 64
+    li   a3, 8
+    li   a4, 65535             # white
+    call prg32_gfx_rect
+
+    la   t0, ball_x            # draw the ball
+    lw   a0, 0(t0)
+    la   t0, ball_y
+    lw   a1, 0(t0)
+    li   a2, 8
+    li   a3, 8
+    li   a4, 65504             # yellow
+    call prg32_gfx_rect
+
+    lw   ra, 12(sp)
+    addi sp, sp, 16
+    ret
+\end{lstlisting}
+
+\begin{prgtargets}
+\textbf{Both targets.} Develop and watch this on the QEMU virtual screen, where
+the ball bounces and the paddle responds to injected input. Then build the
+identical source for the ESP32\nobreakdash-C6 to play it with a real joystick and hear the
+beep. Because QEMU defaults disable the physical GPIO buttons, the paddle may sit
+still in the emulator unless input is injected; the ball still moves, so the
+render path is fully verified on the desktop \citep{prg32qemu}.
+\end{prgtargets}
+
+\section{Step-by-step: how this game was built}
+
+It is worth making explicit the pedagogical order in which a game like this is
+constructed, because it is the order the platform recommends and the order in
+which the example games in \code{examples/games} were themselves written
+\citep{prg32tutorial,prg32tutorialgraphic}. You do not write the listing above in
+one sitting; you grow it.
+
+First, write \code{init}, \code{update}, and \code{draw} that only return, and
+confirm the framework runs them. Second, add one \code{.data} variable for the
+paddle position and draw the paddle at it. Third, read input in \code{update} and
+move the paddle, then add its clamp. Fourth, add the ball's four state words and
+its autonomous motion with bounces. Fifth, add the collision test. Only then,
+sixth, add sound on the collision event. Each step is buildable and observable on
+its own; if a step breaks, the bug is in the few lines you just added, not
+hidden in a wall of untested code.
+
+\begin{prgtry}
+Build the game incrementally in exactly these six steps, rebuilding and running
+after each. Keep a short log: after each step, write one line saying what you
+added and what you saw. This log is not busywork---it is the written form of the
+``change one thing, observe, record'' method, and it will make the difference
+between a frustrating afternoon and a productive one
+\citep{prg32repo}.
+\end{prgtry}
+
+\begin{prgcheck}
+You can now clear the frame, draw rectangles from stored state, move the ball
+with velocity and bounces, and detect collisions with one call. You have, in
+other words, built a complete graphical game in \riscv assembly that runs on both
+targets. Chapter~\ref{ch:asmcap} turns this into a capstone you extend and
+package as a cartridge.
+\end{prgcheck}

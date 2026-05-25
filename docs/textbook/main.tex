@@ -1,0 +1,58 @@
+% ============================================================================
+%  Playing with RISC-V: Assembly, C, and Retro Games on the PRG32 Platform
+%  A first-year textbook for Computer Architecture and Computer Programming
+%  Main document.  Compile with:  latexmk -pdf main.tex
+% ============================================================================
+\documentclass[11pt,twoside,openright]{book}
+\usepackage{prg32style}
+
+\begin{document}
+
+% -------------------- FRONT MATTER --------------------
+\frontmatter
+\input{frontmatter/titlepage}
+\input{frontmatter/copyright}
+\tableofcontents
+\input{frontmatter/preface}
+\input{frontmatter/howtoread}
+
+% -------------------- MAIN MATTER --------------------
+\mainmatter
+
+% Part I --- Foundations
+\part{Foundations}
+\input{chapters/ch01_introduction}
+\input{chapters/ch02_platform_and_design}
+
+% Part II --- The Computer Architecture Track (Assembly)
+\part{The Computer Architecture Track: RISC-V Assembly}
+\input{chapters/ch03_asm_first_contact}
+\input{chapters/ch04_asm_state_and_input}
+\input{chapters/ch05_asm_graphics_game}
+\input{chapters/ch06_asm_capstone}
+
+% Part III --- The Computer Programming Track (C)
+\part{The Computer Programming Track: The C Language}
+\input{chapters/ch07_c_first_contact}
+\input{chapters/ch08_c_structs_and_tiles}
+\input{chapters/ch09_c_capstone}
+
+% Part IV --- Bringing It Together
+\part{Bringing It Together}
+\input{chapters/ch10_assembly_meets_c}
+
+% -------------------- APPENDICES --------------------
+\appendix
+\part{Appendices}
+\input{appendices/app_a_api}
+\input{appendices/app_b_performance}
+\input{appendices/app_c_worked_examples}
+\input{appendices/app_d_github}
+\input{appendices/app_e_hardware}
+\input{appendices/app_f_environment}
+
+% -------------------- BACK MATTER --------------------
+\backmatter
+\bibliography{frontmatter/references}
+
+\end{document}

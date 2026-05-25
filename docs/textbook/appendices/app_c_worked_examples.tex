@@ -1,0 +1,67 @@
+\chapter{Full Working Examples}
+\label{app:worked}
+
+This appendix collects complete, working source listings for the games built and
+referenced in the chapters. Each is reproduced verbatim from the \prg repository's
+\fname{examples/games} directory, where the sources are deliberately written with a
+comment on nearly every instruction so that a first-year student can connect each
+line to its visible effect \citep{prg32repo}. Read them after the corresponding
+chapter: the assembly listings reward the reader of Part~II, the C listings the
+reader of Part~III, and the side-by-side comparison rewards anyone who has read
+Chapter~\ref{ch:join}.
+
+All four programs implement games discussed in the text, and all four are designed
+to run unchanged on both the QEMU emulator and the physical ESP32\nobreakdash-C6, packaged as
+\fname{.prg32} cartridges by the workflow of Appendix~\ref{app:api}
+\citep{prg32qemu}.
+
+\section{Pong in graphics assembly}
+
+This is the complete \code{pong\_graphics} example developed across
+Chapters~\ref{ch:asm1}--\ref{ch:asm3}. It exports the three symbols
+\code{pong\_graphics\_init}, \code{pong\_graphics\_update}, and
+\code{pong\_graphics\_draw}, keeps its state in \code{.data}, moves a paddle and a
+bouncing ball, and renders them with \code{prg32\_gfx\_rect}. The optional debug
+overlay at the end is guarded by a compile-time flag.
+
+\lstinputlisting[style=asm,caption={\fname{examples/games/pong/graphics/game.S} --- complete graphics Pong in \riscv assembly \citep{prg32repo}.}]{examples/pong_graphics_game.S}
+
+\section{Pong in ASCII assembly}
+
+The ASCII variant uses the same three-function structure but renders to the text
+console, making it the gentlest possible introduction to the calling convention,
+as used in Chapter~\ref{ch:asm1}. Note how closely its \code{update} mirrors the
+graphics version: the same input read, the same bit tests, the same clamps,
+differing only in units (text columns rather than pixels).
+
+\lstinputlisting[style=asm,caption={\fname{examples/games/pong/ascii/game.S} --- complete ASCII Pong in \riscv assembly \citep{prg32repo}.}]{examples/pong_ascii_game.S}
+
+\section{Pong in C}
+
+The C version, the basis of Chapter~\ref{ch:c1}, expresses the identical game in a
+fraction of the lines. Compare it directly with the graphics assembly above: every
+C statement here corresponds to a block of instructions there, which is the lesson
+of Chapter~\ref{ch:join}. This version also keeps a second paddle alive with a
+fallback AI so the two-player screen stays in motion even without a second player.
+
+\lstinputlisting[style=c,caption={\fname{examples/games/pong/c/game.c} --- complete Pong in C \citep{prg32repo}.}]{examples/pong_c_game.c}
+
+\section{Breakout in C}
+
+Breakout is Pong with one new idea: a row of bricks, stored as the bits of a single
+byte, each set bit meaning a brick is still present. When the ball reaches the
+brick row, the code clears the corresponding bit with a bitwise AND and bounces the
+ball. This is the bitmask technique of Chapter~\ref{ch:asm2} reused for game state,
+as discussed in Chapter~\ref{ch:asmcap}.
+
+\lstinputlisting[style=c,caption={\fname{examples/games/breakout/c/game.c} --- complete Breakout in C, showing bricks as a bitmask \citep{prg32repo}.}]{examples/breakout_c_game.c}
+
+\section{Where to find the rest}
+
+The repository contains, for each of the nine example games, an ASCII assembly
+version, a graphics assembly version, and a C version, alongside focused feature
+demos for scrolling, parallax, animated sprites, and dual playfields
+\citep{prg32repo}. Having read the four listings above, you have the vocabulary to
+read any of them. The recommended next reads, in increasing richness, are Space
+Invaders, Tetris, the platformer, the raycaster, and Wing Commander, each of which
+is a variation on the patterns reproduced here.

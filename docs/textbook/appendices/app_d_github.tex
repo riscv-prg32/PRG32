@@ -1,0 +1,130 @@
+\chapter{Using GitHub for Your Coursework}
+\label{app:github}
+
+The \prg platform lives on GitHub, and so should your work \citep{prg32repo}. This
+appendix is a practical introduction to the version-control workflow you will use
+to obtain the platform, track your own changes, recover from mistakes, and submit
+assignments. It assumes no prior experience with Git. The aim is not Git mastery
+but the handful of operations that make coursework safer and submission painless.
+
+\section{Why version control, concretely}
+
+Two everyday disasters motivate everything in this appendix. The first is the
+embedding lab of Chapter~\ref{ch:ccap}, where you temporarily modify the firmware's
+build list and main loop, then must restore them; without a record of the original,
+``restore'' becomes guesswork. The second is the moment, familiar to every
+programmer, when a working game stops working after an edit and you cannot remember
+what you changed. Version control solves both: it remembers every committed state of
+your files and lets you compare or return to any of them.
+
+\begin{prgconcept}
+\textbf{Git} records snapshots, called \emph{commits}, of your project over time.
+Each commit is a labelled, recoverable state. \textbf{GitHub} hosts your Git
+repository online, so your work is backed up, shareable, and submittable. Together
+they turn ``I think I broke something'' into ``let me see exactly what I changed.''
+\end{prgconcept}
+
+\section{Getting the platform}
+
+You obtain \prg by \emph{cloning} its repository, which downloads the full project
+and its history \citep{prg32repo}.
+
+\begin{lstlisting}[style=bash,caption={Cloning the platform repository.}]
+git clone https://github.com/riscv-prg32/PRG32.git
+cd PRG32
+\end{lstlisting}
+
+To incorporate later updates from the upstream project without losing your own
+work, you fetch and merge changes; for coursework, however, the cleaner path is to
+keep your own changes on a branch, described below.
+
+\section{The everyday cycle}
+
+Three commands cover the great majority of daily use: \code{status} to see what has
+changed, \code{add} to stage the changes you want to keep, and \code{commit} to
+record them with a message.
+
+\begin{lstlisting}[style=bash,caption={The everyday Git cycle: inspect, stage, commit.}]
+git status                         # what has changed?
+git add examples/games/mygame/     # stage the files to keep
+git commit -m "Add boundary clamp to mygame paddle"
+\end{lstlisting}
+
+\begin{prgwarn}
+Write commit messages that your future self will understand: ``Add boundary clamp
+to mygame paddle,'' not ``stuff'' or ``fix.'' A week later, when you are hunting for
+the commit where a bug appeared, descriptive messages are the difference between a
+minute and an hour. The platform's own history follows this practice.
+\end{prgwarn}
+
+\section{Branches: experiment without fear}
+
+A \emph{branch} is an independent line of work. Before a risky change---say, the
+firmware embedding of Chapter~\ref{ch:ccap}, or a large refactor of your game---make
+a branch. If the experiment fails, you discard the branch and your main line is
+untouched; if it succeeds, you merge it back.
+
+\begin{lstlisting}[style=bash,caption={Working on a branch, then merging or discarding.}]
+git switch -c experiment-embed-game   # create and switch to a branch
+# ... make changes, commit them ...
+git switch main                        # return to the safe main line
+git merge experiment-embed-game        # keep the experiment, OR
+git branch -D experiment-embed-game    # discard it entirely
+\end{lstlisting}
+
+\begin{prgconcept}
+A branch lets you try something that might break your project, in isolation. The
+embedding lab is the textbook case: branch first, embed and test, then either merge
+the working result or discard the branch to restore the firmware to its original
+state in one command---exactly the ``restore afterwards'' the tutorial requires
+\citep{prg32tutorialc}.
+\end{prgconcept}
+
+\section{Recovering from mistakes}
+
+When an edit breaks a working game, Git shows you precisely what changed since your
+last commit, and can undo it.
+
+\begin{lstlisting}[style=bash,caption={Seeing and undoing uncommitted changes.}]
+git diff                               # show every uncommitted change
+git restore examples/games/mygame/game.S   # discard changes to one file
+\end{lstlisting}
+
+The discipline that makes this powerful is committing often---after each working
+step of the incremental method this book teaches. If you commit after every
+verified change (``draw the paddle,'' ``add input,'' ``add the clamp''), then any
+break is, at worst, one step's worth of work to inspect or undo.
+
+\section{Submitting your work}
+
+For submission you push your commits to your own GitHub repository, then share its
+link or open a pull request as your course directs. You create an empty repository
+on GitHub, connect it as a remote, and push.
+
+\begin{lstlisting}[style=bash,caption={Publishing your work to your own GitHub repository.}]
+git remote add origin https://github.com/<your-user>/<your-repo>.git
+git push -u origin main
+\end{lstlisting}
+
+\begin{prgaside}
+The \prg repository models the conventions you are learning: a \fname{README} that
+orients a newcomer, a \fname{CONTRIBUTING} guide, a \fname{LICENSE}, a
+\fname{CITATION.cff} so the work can be cited, and continuous-integration workflows
+that run automated checks on every change \citep{prg32repo}. When you structure your
+own coursework repository, these are the files that signal care and make your work
+easy for an instructor to evaluate.
+\end{prgaside}
+
+\section{Citing the platform}
+
+If you use \prg in a report, a thesis, or any submitted work, cite it. The
+repository ships citation metadata in \fname{CITATION.cff} for exactly this purpose
+\citep{prg32repo}. This book cites the platform throughout, and the bibliography
+entry for the repository is the model to follow in your own writing.
+
+\begin{prgcheck}
+You should now be able to clone the platform, see what you have changed, stage and
+commit changes with a meaningful message, work safely on a branch, undo an
+unwanted change, and push your work to GitHub for submission. These few operations
+are enough for an entire first year of coursework.
+\end{prgcheck}

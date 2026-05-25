@@ -1,0 +1,185 @@
+\chapter{State and Input: Branches, Bitmasks, and Boundaries}
+\label{ch:asm2}
+
+In Chapter~\ref{ch:asm1} a counter advanced on its own. A game, though, responds
+to a player. This chapter teaches the assembly you need to read the controller
+and to make decisions: the input bitmask, the bitwise \code{andi} test, and the
+conditional branch. By the end you will move an object with the joystick and keep
+it on the screen---the core interactive loop of every game in this book. We follow
+the structure of the platform's ASCII Pong update routine, which was written to be
+read by first-year students \citep{prg32tutorialascii,prg32repo}.
+
+\section{Decisions: the conditional branch}
+
+So far our instructions ran in a straight line. To respond to the player, a
+program must choose: if a button is pressed, move; otherwise, do not. In \riscv
+this choice is a \emph{conditional branch}, an instruction that jumps to a label
+only when a condition holds.
+
+\begin{prgconcept}
+A \textbf{conditional branch} compares registers and jumps to a label only if the
+comparison is true; otherwise execution simply continues to the next instruction.
+The branch is how a processor makes every decision, from ``is this button
+pressed?'' to ``has the ball hit the wall?''
+\end{prgconcept}
+
+The branches you will use most are few. \code{beqz t, label} jumps if \reg{t} is
+zero; \code{bltz t, label} jumps if \reg{t} is negative; \code{ble a, b, label}
+jumps if \reg{a} $\le$ \reg{b}; and the unconditional \code{j label} always jumps.
+A common idiom, which surprises beginners, is to branch on the \emph{opposite} of
+what you want: to do something ``if the button is pressed,'' you test the button
+bit and \code{beqz}---branch away---when it is \emph{not} pressed, letting the
+movement code run only when it is. This reads backwards at first but becomes
+natural quickly.
+
+\begin{prgaside}
+Local labels written as a bare number followed by a colon, like \code{1:}, and
+referenced as \code{1f} (the next \code{1} ``forward'') or \code{1b} (``backward''),
+are an assembler convenience for short jumps that need no memorable name. The
+platform's examples use them heavily for the small skips inside an update routine
+\citep{prg32repo}.
+\end{prgaside}
+
+\section{Reading the controller}
+
+Recall from Chapter~\ref{ch:platform} that \prg returns all buttons at once as a
+bitmask. In assembly you obtain it by calling \code{prg32\_input\_read}; the
+result arrives, by convention, in \reg{a0}. The very first thing to do is copy it
+somewhere safe, because the next \code{call} you make would overwrite \reg{a0}.
+
+\begin{lstlisting}[style=asm,caption={Read the input bitmask and keep it. The copy to a temporary is essential, because later calls reuse \reg{a0}.}]
+    call prg32_input_read    # button bitmask returned in a0
+    mv   t0, a0              # keep our own copy in t0 before anything else
+\end{lstlisting}
+
+\begin{prgwarn}
+Copy the input mask out of \reg{a0} immediately. \reg{a0} is the argument and
+return register; the moment you call another function, its old contents are gone.
+The platform's examples copy the mask into a temporary on the very next line for
+exactly this reason \citep{prg32tutorialascii}.
+\end{prgwarn}
+
+To test a single button you isolate its bit with \code{andi}, the
+``and-immediate'' instruction, using the bit value from
+Table~\ref{tab:buttons}. The result is non-zero exactly when that button is
+pressed.
+
+\begin{lstlisting}[style=asm,caption={Testing one button. \code{andi} keeps only the chosen bit; \code{beqz} skips the body when that bit is clear.}]
+    andi t3, t0, 1          # PRG32_BTN_LEFT is bit 0 (value 1)
+    beqz t3, 1f             # if the LEFT bit is clear, skip the move
+    addi t1, t1, -1         # LEFT is pressed: move the object left
+1:
+\end{lstlisting}
+
+\begin{prgconcept}
+\code{andi t3, t0, 1} computes the bitwise AND of the input mask with the
+constant \code{1}, leaving in \reg{t3} the value of bit~0 alone. If LEFT is
+pressed, \reg{t3} is non-zero; if not, it is zero. Testing a button is therefore
+``mask the bit, then branch on whether the result is zero.''
+\end{prgconcept}
+
+\section{Moving an object with the joystick}
+
+We now assemble a complete \code{update} that moves an object left and right with
+the joystick. The state is a single word in \code{.data}, exactly as in
+Chapter~\ref{ch:asm1}. The routine reads input, tests LEFT and RIGHT, and updates
+the position. This mirrors the platform's ASCII Pong update almost line for line
+\citep{prg32repo}.
+
+\begin{lstlisting}[style=asm,caption={A full \code{update}: read input, move on LEFT/RIGHT, store the result. Compare with the platform's \code{pong\_ascii\_update}.}]
+.section .data
+game_x:  .word 20           # object position, in text columns
+
+.section .text
+game_update:
+    addi sp, sp, -16
+    sw   ra, 12(sp)
+
+    call prg32_input_read
+    mv   t0, a0             # t0 = button bitmask
+
+    la   t1, game_x
+    lw   t2, 0(t1)          # t2 = current x (a value)
+
+    andi t3, t0, 1          # test LEFT (bit 0)
+    beqz t3, 1f
+    addi t2, t2, -1         # move left
+1:  andi t3, t0, 2          # test RIGHT (bit 1)
+    beqz t3, 2f
+    addi t2, t2, 1          # move right
+2:  sw   t2, 0(t1)          # store the new x
+
+    lw   ra, 12(sp)
+    addi sp, sp, 16
+    ret
+\end{lstlisting}
+
+Trace it once by hand. Suppose \code{game\_x} holds \code{20} and the player
+holds RIGHT. The input read returns a mask with bit~1 set. The LEFT test
+(\code{andi ... 1}) yields zero, so \code{beqz} skips the left move. The RIGHT
+test (\code{andi ... 2}) yields non-zero, so the right move runs and \reg{t2}
+becomes \code{21}. The store writes \code{21} back. Next frame it becomes
+\code{22}, and so on. The object slides right as long as RIGHT is held. This kind
+of by-hand trace is the most valuable debugging skill you will build in this
+course.
+
+\section{Staying on the screen: the boundary clamp}
+
+Left unchecked, our object will slide right off the edge of the screen and
+vanish. The fix is a \emph{clamp}: after computing the new position, force it back
+into the legal range. For the 40-column ASCII console the legal range is 0 to 39;
+for the 320-pixel graphics viewport it will be 0 to a value that accounts for the
+object's width. The logic is identical either way.
+
+\begin{lstlisting}[style=asm,caption={Clamping x to the range [0, 39]. Negative values snap to 0; values past the edge snap to the maximum.}]
+    bltz t2, 3f             # if x < 0, clamp to the left edge
+    li   t3, 39             # maximum column
+    ble  t2, t3, 4f         # if x <= 39, it is already in range
+    mv   t2, t3             # otherwise clamp to the right edge
+    j    4f
+3:  li   t2, 0              # left clamp
+4:  sw   t2, 0(t1)          # store the bounded x
+\end{lstlisting}
+
+\begin{prgconcept}
+A \textbf{boundary clamp} keeps a value inside a legal range: if it went below the
+minimum, set it to the minimum; if above the maximum, set it to the maximum;
+otherwise leave it alone. Almost every off-screen bug in a beginner's game is a
+missing or wrong clamp. When an object disappears, suspect the clamp first.
+\end{prgconcept}
+
+\begin{prgwarn}
+The maximum is not the screen width; it is the screen width minus the object's
+own size. A 64-pixel-wide paddle on a 320-pixel screen may go no further right
+than $320-64 = 256$, or its right edge would leave the viewport. The platform's
+graphics Pong clamps the paddle to exactly \code{256} for this reason
+\citep{prg32repo}.
+\end{prgwarn}
+
+\begin{prgtry}
+Add the clamp above to your \code{update}. Then deliberately break it: change the
+maximum from \code{39} to \code{60}, rebuild, and hold RIGHT. Watch the object
+leave the visible area. Restore the clamp, rebuild, and confirm it stays. Write
+one sentence explaining which comparison protects the right edge. This
+break-and-fix exercise is taken directly from the platform's labs
+\citep{prg32tutorialgraphic}.
+\end{prgtry}
+
+\section{Debugging like a systems programmer}
+
+When an assembly game misbehaves, the platform's guidance is explicit and worth
+adopting as a discipline: do not guess, trace state \citep{prg32tutorial}. Ask, in
+order, which register held the last correct value, which instruction changed it,
+whether a \code{call} overwrote a temporary you expected to keep, and whether a
+branch skipped the code that updates memory. Reduce the program to the smallest
+version that still shows the bug. Nine times in ten the answer is one of three
+things: a missing \reg{ra} save, an address-versus-value confusion, or a branch
+that goes the wrong way.
+
+\begin{prgcheck}
+You should now be able to read the input bitmask into a register; test an
+individual button with \code{andi} and \code{beqz}; move a value in \code{.data}
+in response to the joystick; and clamp that value to a legal range. With these,
+you have written the interactive core of a game. Chapter~\ref{ch:asm3} adds the
+one missing ingredient: drawing it on the screen.
+\end{prgcheck}

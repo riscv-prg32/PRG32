@@ -1,0 +1,49 @@
+% ---------------------------------------------------------------------------
+%  Title page
+% ---------------------------------------------------------------------------
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  % top banner
+  \fill[prgsteel] (current page.north west) rectangle ([yshift=-5.5cm]current page.north east);
+  \fill[prgaccent] ([yshift=-5.5cm]current page.north west) rectangle ([yshift=-5.85cm]current page.north east);
+  % a tiny "retro screen" motif in the banner
+  \begin{scope}
+    \clip ([xshift=1.4cm,yshift=-1.1cm]current page.north west) rectangle ([xshift=4.0cm,yshift=-3.0cm]current page.north west);
+    \fill[prgink] ([xshift=1.4cm,yshift=-1.1cm]current page.north west) rectangle ([xshift=4.0cm,yshift=-3.0cm]current page.north west);
+    \foreach \i in {0,...,7}{
+      \fill[prggreen] ([xshift=1.55cm+\i*0.30cm,yshift=-2.65cm]current page.north west) rectangle ++(0.20cm,0.20cm);
+    }
+    \fill[prgamber]  ([xshift=2.45cm,yshift=-2.0cm]current page.north west) rectangle ++(0.55cm,0.30cm);
+    \fill[prgred]    ([xshift=1.7cm,yshift=-1.5cm]current page.north west) rectangle ++(0.30cm,0.30cm);
+  \end{scope}
+  \node[anchor=north west,text=white,font=\sffamily\large] at ([xshift=4.6cm,yshift=-1.5cm]current page.north west){An open educational platform};
+  \node[anchor=north west,text=white,font=\sffamily\Large\bfseries] at ([xshift=4.6cm,yshift=-2.2cm]current page.north west){PRG32 \textnormal{\large— RISC-V Gaming (32-bit)}};
+  \node[anchor=north west,text=prgpaper,font=\sffamily\small] at ([xshift=4.6cm,yshift=-3.4cm]current page.north west){ESP32-C6 hardware \quad$\bullet$\quad ESP32-C3 QEMU emulation};
+\end{tikzpicture}
+
+\vspace*{6.5cm}
+
+\begin{flushleft}
+{\sffamily\bfseries\fontsize{30}{34}\selectfont\color{prgink}
+Playing with \riscv}\\[4pt]
+{\sffamily\fontsize{18}{22}\selectfont\color{prgsteel}
+Assembly, C, and Retro Games on the PRG32 Platform}\\[18pt]
+{\sffamily\large\color{prgaccent}
+A First-Year Textbook for Computer Architecture\\ and Computer Programming}
+\end{flushleft}
+
+\vfill
+
+\begin{flushleft}
+{\sffamily\normalsize\color{prgink}
+Built on the PRG32 educational runtime\\
+\textit{Platform for RISC-V Gaming development (32-bit)}}\\[10pt]
+{\small Academic supervision: Raffaele Montella, University of Naples ``Parthenope''\\
+Student contributor: Ivan Cafiero, University of Naples ``Parthenope''}\\[10pt]
+{\small Every example in this book runs on both Espressif QEMU (desktop) and the physical ESP32-C6 board.}
+\end{flushleft}
+
+\vspace{1.2cm}
+{\footnotesize\color{prgcomment} Companion repository: \url{https://github.com/riscv-prg32/PRG32}}
+\end{titlepage}

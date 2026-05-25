@@ -1,0 +1,90 @@
+% ---------------------------------------------------------------------------
+%  How to read this book
+% ---------------------------------------------------------------------------
+\chapter*{How to Read This Book}
+\addcontentsline{toc}{chapter}{How to Read This Book}
+\markboth{How to Read This Book}{How to Read This Book}
+
+\section*{Two tracks, one runtime}
+
+This book contains two courses that share a single platform. Part~II is the
+\textbf{Computer Architecture track}, written entirely in \riscv assembly.
+Part~III is the \textbf{Computer Programming track}, written entirely in C. The
+two parts are independent: neither requires you to have read the other, and they
+deliberately solve some of the same problems so that they can be compared. If you
+are following only one course, read the shared foundation in Part~I, then your
+own track, and consult the appendices as needed. Part~IV is a short closing
+chapter that brings the two languages into contact; it rewards readers who have
+seen both, but it is optional.
+
+\begin{center}
+\begin{tikzpicture}[node distance=8mm and 12mm,
+  every node/.style={font=\sffamily\small},
+  box/.style={rounded corners=2pt,draw=prgsteel,fill=prgpanel,minimum height=9mm,minimum width=34mm,align=center},
+  acc/.style={rounded corners=2pt,draw=prggreen,fill=prggreen!8,minimum height=9mm,minimum width=34mm,align=center},
+  cbox/.style={rounded corners=2pt,draw=prgamber,fill=prgamber!8,minimum height=9mm,minimum width=34mm,align=center},
+  ar/.style={-{Stealth[length=2mm]},draw=prgink!60}]
+  \node[box] (found) {Part~I\\Foundations};
+  \node[acc,below left=of found] (asm) {Part~II\\Assembly track};
+  \node[cbox,below right=of found] (c) {Part~III\\C track};
+  \node[box,below=18mm of found] (join) {Part~IV\\Assembly meets C};
+  \draw[ar] (found) -- (asm);
+  \draw[ar] (found) -- (c);
+  \draw[ar] (asm) -- (join);
+  \draw[ar] (c) -- (join);
+\end{tikzpicture}
+\end{center}
+
+\section*{The recurring boxes}
+
+Throughout the book a small set of coloured boxes carries specific kinds of
+information. Learning to recognise them at a glance will speed up your reading.
+
+\begin{prgconcept}
+A \textbf{Concept} box states an idea you should be able to explain in your own
+words before moving on. Concepts are the things an exam, or a colleague, will ask
+you about.
+\end{prgconcept}
+
+\begin{prgtry}
+A \textbf{Try It Yourself} box is a small, concrete task. The book is built on the
+principle that you learn by changing one thing and observing the result, so these
+boxes appear often and are meant to be done, not merely read.
+\end{prgtry}
+
+\begin{prgcheck}
+A \textbf{Checkpoint} box lists what should be true if the preceding section
+worked. If a checkpoint fails, stop and fix it before continuing; later sections
+assume the earlier ones succeeded.
+\end{prgcheck}
+
+\begin{prgwarn}
+A \textbf{Watch Out} box flags a mistake that beginners reliably make. Reading
+these will save you hours of confusion at the workbench.
+\end{prgwarn}
+
+\begin{prgaside}
+A \textbf{Historical Note} box steps back to place an idea in its context---why a
+convention exists, where a technique came from, or what an old machine did. These
+are enrichment; skipping them costs you nothing technical.
+\end{prgaside}
+
+\section*{Both targets, every time}
+
+Every program in this book is designed to run on two targets without changing a
+single line of game code: Espressif's \textbf{QEMU} emulator on your laptop, and
+the physical \textbf{ESP32\nobreakdash-C6} board. When a section gives build commands, it
+gives them for both. The QEMU target uses an ESP32\nobreakdash-C3 emulator profile because
+that is the \riscv graphics path Espressif maintains, while the hardware target
+is the ESP32\nobreakdash-C6; the \riscv calling convention and the \prg interface are
+identical across the two \citep{prg32qemu}. Wherever a feature exists only on real
+hardware---physical buttons, the buzzer, Wi\nobreakdash-Fi cartridge upload---the text says
+so plainly.
+
+\section*{What you need}
+
+To follow the book you need a computer running Windows, Linux, or macOS, and the
+free, open-source toolchain described in Appendix~F. To follow the optional
+hardware exercises you also need an ESP32\nobreakdash-C6 development board and a small
+collection of inexpensive parts listed in Appendix~E. Nothing else in this book
+is proprietary or paid.

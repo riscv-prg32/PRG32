@@ -1,0 +1,159 @@
+\chapter{Setting Up Your Development Environment}
+\label{app:env}
+
+This appendix gets you from a fresh computer to a built, runnable \prg on Windows,
+Linux, or macOS. The instructions follow the platform's own setup guides
+\citep{prg32repo}. The common foundation on every operating system is the same:
+install Espressif's ESP-IDF, the development framework for these \riscv
+microcontrollers, then build the firmware for your chosen target. Pick your
+operating system's section, then read the shared sections on QEMU and the build
+commands.
+
+\section{The one idea behind every setup}
+
+Whatever your operating system, the toolchain is ESP-IDF version 5.3 or newer,
+configured for the \code{esp32c3} and \code{esp32c6} targets---the first for the
+QEMU emulator, the second for the physical board \citep{prg32repo,prg32qemu}. Once
+ESP-IDF is installed and ``sourced'' (made active in your shell), the command
+\code{idf.py} builds, flashes, and runs everything. Almost every setup problem
+reduces to ESP-IDF not being active in the current shell.
+
+\begin{prgwarn}
+ESP-IDF must be activated in \emph{each new terminal} before \code{idf.py} works.
+If you see \code{idf.py: command not found} or a missing \code{riscv32-esp-elf-gcc},
+ESP-IDF is simply not sourced in that shell. This is the single most common
+setup error, and the fix is always the same: re-run the export step
+\citep{prg32repo}.
+\end{prgwarn}
+
+\section{macOS}
+
+The platform's macOS path, tested on Apple Silicon, installs the prerequisites with
+Homebrew and then ESP-IDF \citep{prg32repo}.
+
+\begin{lstlisting}[style=bash,caption={macOS setup with Homebrew and ESP-IDF.}]
+brew install git cmake ninja dfu-util ccache libusb python
+cd $HOME
+git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32c3,esp32c6
+. ./export.sh
+\end{lstlisting}
+
+A convenient habit is an alias so a single word activates ESP-IDF in any shell
+\citep{prg32repo}.
+
+\begin{lstlisting}[style=bash,caption={A quality-of-life alias for activating ESP-IDF.}]
+alias get_idf=". $HOME/esp-idf/export.sh"
+\end{lstlisting}
+
+\section{Linux}
+
+On Debian or Ubuntu, install the build prerequisites with the system package
+manager, then ESP-IDF as above \citep{prg32repo}. Other distributions use their own
+package names for the equivalent libraries.
+
+\begin{lstlisting}[style=bash,caption={Linux (Debian/Ubuntu) prerequisites, then ESP-IDF.}]
+sudo apt update
+sudo apt install -y git wget flex bison gperf python3 python3-venv \
+  python3-pip cmake ninja-build ccache libffi-dev libssl-dev \
+  dfu-util libusb-1.0-0
+cd $HOME
+git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32c3,esp32c6
+. ./export.sh
+\end{lstlisting}
+
+To flash a real board, your user must be allowed to use the serial port. Add
+yourself to the \code{dialout} group, then log out and back in
+\citep{prg32repo}.
+
+\begin{lstlisting}[style=bash,caption={Granting serial-port access on Linux.}]
+sudo usermod -aG dialout "$USER"   # then log out and back in
+\end{lstlisting}
+
+\begin{prgaside}
+ESP32\nobreakdash-C6 boards usually appear as \fname{/dev/ttyACM0}, while USB-bridge boards may
+appear as \fname{/dev/ttyUSB0} \citep{prg32repo}. If flashing fails although the
+board is visible, the cause is almost always the \code{dialout} membership not yet
+taking effect---log out and back in after adding yourself to the group.
+\end{prgaside}
+
+\section{Windows}
+
+The platform recommends a classroom path built on Visual Studio Code with the
+Espressif ESP-IDF extension, which installs the toolchain for you, plus the
+PlatformIO and Microsoft C/C++ and Python extensions \citep{prg32repo}. There is
+also a standalone path using the official ESP-IDF Tools Installer, after which you
+work from the ``ESP-IDF PowerShell'' shortcut it creates.
+
+\begin{lstlisting}[style=bash,caption={Windows standalone path, run from the ESP-IDF PowerShell shortcut.}]
+cd $HOME\Documents
+git clone https://github.com/riscv-prg32/PRG32.git
+cd PRG32
+idf.py -B build-esp32c6 -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
+\end{lstlisting}
+
+\begin{prgwarn}
+On Windows, use the ESP-IDF PowerShell or ESP-IDF Command Prompt, not a plain
+terminal where \code{idf.py} has not been exported. If flashing fails, check Device
+Manager for the board's serial port and pass it explicitly with \code{-p COMx}; if
+the monitor cannot open the port, close every other program using it (Arduino
+Serial Monitor, other ESP-IDF monitors, and so on) \citep{prg32repo}.
+\end{prgwarn}
+
+\section{Installing the QEMU emulator}
+
+To run on the desktop, install Espressif's \riscv QEMU after ESP-IDF, then
+re-activate ESP-IDF so the new tool is on the path \citep{prg32qemu}.
+
+\begin{lstlisting}[style=bash,caption={Installing the RISC-V QEMU tool and re-activating ESP-IDF.}]
+python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
+. $IDF_PATH/export.sh
+\end{lstlisting}
+
+Linux and macOS hosts also need a few native libraries for the QEMU display window
+\citep{prg32qemu}.
+
+\begin{lstlisting}[style=bash,caption={QEMU window libraries on Linux (top) and macOS (bottom).}]
+sudo apt-get install -y libgcrypt20 libglib2.0-0 libpixman-1-0 libsdl2-2.0-0 libslirp0
+brew install libgcrypt glib pixman sdl2 libslirp
+\end{lstlisting}
+
+\section{The build commands, both targets}
+
+With ESP-IDF active, the same two pairs of commands appear throughout the book.
+Keep the two build directories strictly separate, as warned in
+Chapter~\ref{ch:platform} \citep{prg32qemu}.
+
+\begin{lstlisting}[style=bash,caption={Building and flashing for the physical ESP32\nobreakdash-C6 board.}]
+idf.py -B build-esp32c6 -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
+\end{lstlisting}
+
+\begin{lstlisting}[style=bash,caption={Building and running for the QEMU emulator (ESP32\nobreakdash-C3 target).}]
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+\end{lstlisting}
+
+\section{Confirming it works}
+
+A healthy board boot logs the firmware entering \code{app\_main}, the configured
+display pins, and finally ``PRG32 runtime initialized,'' then shows the splash
+\citep{prg32tutorial}. The platform also ships a smoke test that exercises the whole
+workflow---environment, firmware build, cartridge build, and QEMU staging---and
+prints \code{=== SMOKE TEST PASSED ===} when all is well \citep{prg32repo}.
+
+\begin{lstlisting}[style=bash,caption={Running the end-to-end smoke test.}]
+./scripts/smoke_test.sh
+\end{lstlisting}
+
+\begin{prgcheck}
+Your environment is ready when, on your operating system, \code{idf.py} runs in an
+ESP-IDF shell, the QEMU build opens a virtual screen reaching ``PRG32 runtime
+initialized,'' and---if you have a board---the firmware flashes and shows its
+splash. With that in place, every chapter and every example in this book is
+buildable on your machine.
+\end{prgcheck}

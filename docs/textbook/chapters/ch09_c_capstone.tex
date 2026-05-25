@@ -1,0 +1,154 @@
+\chapter{Capstone: Extending and Shipping a C Game}
+\label{ch:ccap}
+
+This chapter closes the C track the way Chapter~\ref{ch:asmcap} closed the
+assembly track: by extending a game and shipping it. You will embed a C game in
+the firmware for quick iteration, build it into a \fname{.prg32} cartridge, and
+deploy it to both QEMU and the board. Along the way you will meet two ideas that
+recur in serious systems programming---reusing helper functions, and doing
+arithmetic without a floating-point unit---both grounded in the platform's richer
+C examples \citep{prg32tutorialc,prg32repo}.
+
+\section{Embedding a C game in the firmware}
+
+For fast iteration during development, the platform lets you compile a C game
+directly into the firmware instead of packaging a cartridge each time. You add the
+game's source to the firmware's build list and call its three functions from the
+main loop \citep{prg32tutorialc}. This is a temporary lab arrangement, restored
+afterwards, but it shortens the edit-build-run cycle while you are still changing
+the game often.
+
+\begin{lstlisting}[style=c,caption={Calling a C game's three functions from the firmware's main loop. \texttt{init} once, then \texttt{update} and \texttt{draw} each frame, with a present and a short delay.}]
+#include "prg32.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+void pong_c_init(void);
+void pong_c_update(void);
+void pong_c_draw(void);
+
+void app_main(void) {
+    prg32_init();
+    pong_c_init();
+    while (1) {
+        pong_c_update();
+        pong_c_draw();
+        prg32_gfx_present();             /* show the finished frame */
+        vTaskDelay(pdMS_TO_TICKS(33));   /* ~30 frames per second */
+    }
+}
+\end{lstlisting}
+
+\begin{prgconcept}
+The frame loop you met as a diagram in Chapter~\ref{ch:platform} is, in the
+firmware, a literal \code{while (1)} that calls \code{update}, then \code{draw},
+then \code{prg32\_gfx\_present} to display the frame, then waits briefly so the
+game runs at a steady rate. Embedding your game here lets you see the loop you have
+been writing the body of all along.
+\end{prgconcept}
+
+\begin{prgwarn}
+The embedding is temporary. The platform's tutorial is explicit that you should
+restore the firmware's default main loop and build list after the lab, so the
+resident firmware returns to loading cartridges normally \citep{prg32tutorialc}.
+Keep a clean copy, or use version control (Appendix~\ref{app:github}) so restoring
+is one command.
+\end{prgwarn}
+
+\section{Reusing helpers and reading richer examples}
+
+Once your game grows, repeated code is a liability. C's answer is the helper
+function: a named, reusable piece of logic you write once and call many times. You
+already saw the platformer's \code{put\_run} and \code{put\_column} helpers in
+Chapter~\ref{ch:c2}; they exist precisely so the world-building code is not a wall
+of near-identical lines. When you extend your own game, watch for three or more
+lines that recur with small variations, and lift them into a helper.
+
+The platform's raycaster example is the next step for a class ready for more
+\citep{prg32teaching}. It renders a Doom-style corridor---a convincing pseudo-3-D
+view---on the same \riscv runtime used for everything else. What makes it
+instructive is not the 3-D effect but \emph{how} it computes that effect without a
+floating-point unit.
+
+\section{Arithmetic without floating point: fixed point}
+
+Small microcontrollers often have no hardware for fractional numbers, yet a
+raycaster needs fractions: half a step, a third of an angle. The classic solution,
+used by the platform's raycaster, is \emph{fixed-point arithmetic}: represent a
+fractional value as an integer that has been scaled up by a fixed factor, do the
+arithmetic in integers, then scale back down \citep{prg32tutorialc,prg32repo}.
+
+\begin{lstlisting}[style=c,caption={Fixed-point in the raycaster. Direction vectors are stored scaled by 256; multiplying and then dividing by 256 keeps the fraction.}]
+/* dir_q8 holds direction components scaled by 256 (called Q8 fixed point). */
+int hx = player_x + (dir_q8[angle][0] * dist) / 256;
+int hy = player_y + (dir_q8[angle][1] * dist) / 256;
+\end{lstlisting}
+
+\begin{prgconcept}
+\textbf{Fixed-point arithmetic} stores a fractional number as an integer scaled by
+a fixed factor---here, 256. A value of $1.5$ is stored as $384$, because
+$1.5\times256=384$. Multiplications are done in integers and then divided by the
+scale to bring the result back. This lets a processor with no floating-point unit
+compute smooth motion and angles using only integer instructions---a technique as
+old as real-time graphics and still used in embedded systems today.
+\end{prgconcept}
+
+\begin{prgaside}
+The notation ``Q8'' in the example names the format: eight bits of fraction, so a
+scale of $2^8 = 256$. Fixed-point was the only practical way to do fast fractional
+maths on the home computers of the retro era, and the raycaster's corridor is a
+direct descendant of the techniques that made early 3-D games run on machines with
+no floating-point hardware at all. Learning it here is learning a genuine piece of
+computing history that remains useful.
+\end{prgaside}
+
+\section{Building and shipping a C cartridge}
+
+Packaging a C game is identical to packaging an assembly game, except the source
+is a \code{.c} file and the entry prefix matches the C function names. The same
+\fname{prg32\_game.py} tool resolves the framework symbols from the firmware ELF
+and produces a \fname{.prg32} cartridge \citep{prg32tutorialc}.
+
+\begin{lstlisting}[style=bash,caption={Building a C cartridge against the board firmware.}]
+python3 tools/prg32_game.py build \
+  examples/games/pong/c/game.c \
+  --firmware-elf build-esp32c6/PRG32.elf \
+  --entry-prefix pong_c \
+  --name pong-c \
+  --out build-esp32c6/pong-c.prg32
+\end{lstlisting}
+
+Deployment is the same as in Chapter~\ref{ch:asmcap}: upload over the board's Wi-Fi
+for hardware, or build against the QEMU firmware ELF and stage into the flash image
+for the emulator \citep{prg32qemu}.
+
+\begin{lstlisting}[style=bash,caption={Uploading the C cartridge to the board, then the QEMU variant.}]
+python3 tools/prg32_game.py upload build-esp32c6/pong-c.prg32 --url http://192.168.4.1
+# For QEMU: build against build-qemu/PRG32.elf, then:
+python3 tools/prg32_game.py upload-qemu build-qemu/pong-c.prg32
+\end{lstlisting}
+
+\begin{prgtargets}
+\textbf{Both targets.} A C cartridge and an assembly cartridge are the same kind of
+file and run through the same loader; the framework neither knows nor cares which
+language produced the three functions inside \citep{prg32teaching}. This is the
+deepest demonstration of the platform's design: two courses, two languages, one
+runtime, two targets, one cartridge format.
+\end{prgtargets}
+
+\begin{prgtry}
+Take the C Pong you wrote in Chapter~\ref{ch:c1}, add a score that increments when
+the ball bounces off the paddle---guarding against counting one hit many times, as
+warned in Chapter~\ref{ch:asmcap}---and display it with \code{prg32\_gfx\_text8}.
+Build it as a cartridge for QEMU and run it. Then, if you have a board, upload the
+same cartridge over Wi-Fi and play it. You will have written, extended, packaged,
+and shipped a complete C game on real \riscv hardware \citep{prg32repo}.
+\end{prgtry}
+
+\begin{prgcheck}
+The C track is complete. You can embed a game for fast iteration, factor repeated
+logic into helpers, reason about fixed-point arithmetic, and build and deploy a C
+cartridge to both targets. With both tracks behind you (or your own track behind
+you), Chapter~\ref{ch:join} offers a short, illuminating reunion: the same game,
+in both languages, side by side.
+\end{prgcheck}

@@ -1,0 +1,73 @@
+% ---------------------------------------------------------------------------
+%  Preface
+% ---------------------------------------------------------------------------
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+\markboth{Preface}{Preface}
+
+There is an old and stubborn problem in the first year of every computer science
+and computer engineering degree. Two courses run in parallel, and they seem to
+belong to two different universes. In the computer architecture course, students
+meet registers, instructions, and the bare metal of a processor; the work is
+precise, but the reward is often nothing more than a number printed on a
+terminal. In the programming course, students meet variables, functions, and
+the comfortable abstractions of a high-level language; the work feels powerful,
+but the machine underneath has vanished from view. A student can pass both
+courses and still not feel, in any concrete way, that the \texttt{addi}
+instruction they traced by hand on Monday is the same machine that ran their C
+program on Thursday.
+
+This book was written to dissolve that separation, and it does so with a
+deliberately old-fashioned trick: it makes a game move on a screen. When a
+white rectangle slides left because a student set a bit in a register, the
+distance between the instruction and the consequence collapses to nothing. The
+screen is honest in a way a grade is not. If the paddle leaves the viewport, the
+boundary check was wrong, and no amount of confident explanation will put it
+back. Retro game development turns the abstract machinery of a processor into
+something a beginner can see, hear, and argue about.
+
+The platform that makes this possible is \prg, an open educational runtime for
+\riscv assembly and C games \citep{prg32repo}. \prg is deliberately not a CPU
+emulator that hides the processor behind a comfortable layer. Student code runs
+\emph{natively} as 32-bit \riscv machine code, either on a real ESP32\nobreakdash-C6
+board on the desk or on Espressif's QEMU build on a laptop. The same three
+functions---\code{init}, \code{update}, and \code{draw}---structure every
+example, whether it is written in hand-tuned assembly or in plain C. Because the
+two language tracks call exactly the same runtime, a teacher can show the same
+game logic at two altitudes: as a C function that reads almost like prose, and as
+a sequence of \riscv instructions whose every register can be traced. That dual
+view is the pedagogical heart of this book.
+
+Two practical commitments run through every chapter. First, every example is
+designed to work on \emph{both} QEMU and the physical ESP32\nobreakdash-C6 board, so a
+student without hardware is never locked out and a student with hardware is never
+limited to simulation. Second, the work is incremental and visible. The intended
+rhythm, borrowed directly from the \prg learning path, is small and concrete:
+change one thing, run it, observe the result, and write down what changed.
+Nothing in this book asks a beginner to type a hundred lines of assembly before
+seeing a single pixel.
+
+A word on why the processor at the centre of this book matters beyond the
+classroom. \riscv is an open instruction set architecture, free of the licensing
+restrictions that govern the proprietary architectures that have dominated
+computing for decades. For Europe in particular, that openness has become a
+matter of strategic technological sovereignty, and the introduction that follows
+makes the case for treating \riscv literacy as an investment, not a curiosity.
+Teaching a first-year student to read and write \riscv is, in a small way,
+participation in that larger project.
+
+The book is organised so that the two courses it serves can use it independently
+or together. The computer architecture track and the computer programming track
+occupy separate parts and never depend on each other's internals, exactly as the
+\prg teaching guide recommends \citep{prg32teaching}. A short shared foundation at
+the start, and a short reunion at the end, are the only places the two paths
+touch. The appendices collect the reference material---the full runtime API, the
+performance-measurement workflow, complete worked examples, the use of GitHub,
+the construction of the physical board, and the configuration of the development
+environment on Windows, Linux, and macOS---so that the chapters can stay focused
+on teaching.
+
+I hope that by the last page a student will not merely have passed two courses,
+but will have built something that moves, makes noise, and runs on a chip they
+can hold in their hand---and will understand, instruction by instruction, why it
+works.

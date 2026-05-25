@@ -1,0 +1,158 @@
+\chapter{Capstone: Extending and Shipping an Assembly Game}
+\label{ch:asmcap}
+
+A program that runs only when embedded in the firmware is a lab exercise; a
+program packaged as a cartridge is a game you can hand to someone. This closing
+chapter of the assembly track does two things. First, it extends the Pong of
+Chapter~\ref{ch:asm3} into a fuller game by reading, not rewriting, the
+platform's richer examples. Second, it ships your work: it builds your source
+into a \fname{.prg32} cartridge and deploys it to both QEMU and the physical
+board without reflashing the firmware \citep{prg32tutorial,prg32cartfmt}.
+
+\section{Reading is a skill: Breakout as Pong with bricks}
+
+You will spend far more of your career reading code than writing it, and the
+platform's example games are designed to be read. Once you have written Pong, the
+Breakout example is legible at a glance: it is Pong with an extra piece of
+state---a row of bricks---and one extra rule, removing a brick when the ball hits
+it \citep{prg32repo}. The Breakout source even stores its bricks as a small bitmask,
+the same bitmask idea you learned for the input in Chapter~\ref{ch:asm2}, now
+repurposed so that each set bit means ``this brick is still present.''
+
+\begin{prgconcept}
+A bitmask is not only for input. Breakout packs a row of bricks into the bits of a
+single word: bit $i$ set means brick $i$ is intact, clear means it has been
+knocked out. Testing a brick is \code{andi}; clearing one is a bitwise AND with
+the complement of its bit. The same instruction you used to read a button now
+manages a row of bricks.
+\end{prgconcept}
+
+\begin{prgtry}
+Open \fname{examples/games/breakout/graphics/game.S} and find the line that
+declares the brick state (it is a single \code{.word} near the top, holding a
+small mask). Then find, in \code{update}, where a brick is removed. Write two
+sentences: one naming the register that holds the brick mask, and one explaining
+which bitwise operation clears a brick. You are now reading assembly the way a
+maintainer does \citep{prg32repo}.
+\end{prgtry}
+
+\section{Extending your own game}
+
+Before packaging, extend the Pong you built in Chapter~\ref{ch:asm3} with one new
+feature of your choosing. The platform's suggested progression---one moving
+object, one collision, one score counter, then sound---means the natural next
+features are a score that increases on a successful bounce, a second collision
+surface, or a beep on the event \citep{prg32tutorial}. Add exactly one, build it,
+and confirm it on QEMU. Resist the urge to add three features at once; the whole
+method of this book is that a single change is easy to verify and a triple change
+is not.
+
+A score is the gentlest extension and reinforces the load--modify--store cycle
+from Chapter~\ref{ch:asm1}. In \code{update}, when the collision test succeeds,
+read the score word, add one, and store it back. In \code{draw}, render it with
+\code{prg32\_gfx\_text8}, whose arguments are the position, the string, and a
+foreground and background colour. Because turning a number into a string is
+fiddly in pure assembly, a good first version simply draws a fixed label such as
+\code{"SCORE"} and proves the text path works; printing the digits can come later
+with the console's \code{prg32\_console\_hex32} helper, which displays a value in
+hexadecimal without any string conversion on your part \citep{prg32repo}.
+
+\begin{prgwarn}
+Increment the score on the \emph{event}, not every frame. The collision test is
+true for as long as the rectangles overlap, which may be several frames, so a
+naive ``add one whenever overlapping'' counts a single hit many times. The robust
+pattern is to act on the \emph{transition} into overlap; a simple version remembers
+whether the ball was overlapping last frame and scores only when it newly
+overlaps. This is the same ``act on the event'' discipline as the beep warning in
+Chapter~\ref{ch:platform}.
+\end{prgwarn}
+
+\section{Building a cartridge}
+
+When your firmware has been flashed once and your game source is ready, the
+\fname{prg32\_game.py} tool compiles and packages it into a \fname{.prg32}
+cartridge. The tool needs your source file, the firmware ELF so it can resolve
+the framework symbols your game calls, the entry-point prefix that names your
+three functions, a human-readable name, and an output path \citep{prg32tutorial}.
+
+\begin{lstlisting}[style=bash,caption={Building an assembly cartridge against the board firmware. The \texttt{--entry-prefix} must match your \texttt{<prefix>\_init/update/draw} symbols.}]
+python3 tools/prg32_game.py build \
+  examples/games/pong/graphics/game.S \
+  --firmware-elf build-esp32c6/PRG32.elf \
+  --entry-prefix pong_graphics \
+  --name pong \
+  --out build-esp32c6/pong.prg32
+\end{lstlisting}
+
+\begin{prgconcept}
+A cartridge bundles your three compiled functions with a small header that the
+firmware reads to find them. The \code{--entry-prefix} you pass is how the tool
+knows which symbols are your \code{init}, \code{update}, and \code{draw}; it must
+exactly match the prefix in your \code{.global} directives. A mismatch here is a
+common build-time error, and the message names the symbol it could not find.
+\end{prgconcept}
+
+\section{Deploying to both targets}
+
+The same cartridge runs on both targets; only the delivery differs
+\citep{prg32qemu}.
+
+On the \textbf{physical board}, the resident firmware starts its own Wi-Fi access
+point named \code{PRG32}. You connect your computer to that network and upload the
+cartridge over HTTP; the firmware stores it and runs it, no reflashing required.
+
+\begin{lstlisting}[style=bash,caption={Uploading a cartridge to the board over its Wi-Fi access point.}]
+python3 tools/prg32_game.py upload build-esp32c6/pong.prg32 --url http://192.168.4.1
+\end{lstlisting}
+
+On \textbf{QEMU}, there is no Wi-Fi to upload over, so you build the cartridge
+against the QEMU firmware ELF and stage it directly into the emulator's flash
+image. If the flash image does not yet exist, run QEMU once so ESP-IDF creates it,
+quit, then stage \citep{prg32qemu}.
+
+\begin{lstlisting}[style=bash,caption={Building and staging a cartridge for the emulator. Note the QEMU firmware ELF and the \texttt{upload-qemu} subcommand.}]
+python3 tools/prg32_game.py build \
+  examples/games/pong/graphics/game.S \
+  --firmware-elf build-qemu/PRG32.elf \
+  --entry-prefix pong_graphics \
+  --name pong \
+  --out build-qemu/pong.prg32
+python3 tools/prg32_game.py upload-qemu build-qemu/pong.prg32 --flash build-qemu/qemu_flash.bin
+\end{lstlisting}
+
+\begin{prgtargets}
+\textbf{Both targets.} The cartridge format is identical; what changes is the
+firmware ELF you build against (\fname{build-esp32c6} versus \fname{build-qemu})
+and the delivery (\code{upload} over Wi-Fi versus \code{upload-qemu} into the
+flash image). Your game source is byte-for-byte the same in both cases
+\citep{prg32qemu}.
+\end{prgtargets}
+
+\begin{prgwarn}
+Build the cartridge against the matching firmware ELF. A cartridge built against
+\fname{build-esp32c6/PRG32.elf} resolves the framework symbols at the addresses
+the board firmware uses; staging that same cartridge into a QEMU image built at
+different addresses will not work. Build for the target you intend to run on.
+\end{prgwarn}
+
+\section{When it goes wrong}
+
+The platform ships a self-check, \code{python3 tools/prg32\_game.py doctor}, that
+verifies your toolchain prerequisites and the partition layout before you spend
+time chasing a build failure \citep{prg32repo}. If a cartridge upload to QEMU
+fails, the usual cause is a missing or invalid \fname{build-qemu/qemu\_flash.bin};
+run QEMU once to create it, then stage again. If the board shows a black screen,
+the usual cause is the wrong build directory, as warned in
+Chapter~\ref{ch:platform}. These are not exotic failures; they are the everyday
+friction of embedded work, and learning to read the error and apply the known fix
+is itself part of the curriculum.
+
+\begin{prgcheck}
+The assembly track is complete. You can read a register-level game written by
+someone else; you can extend a game by one well-tested feature; and you can
+package your work as a cartridge and deploy it to both the emulator and real
+hardware. You have, end to end, written and shipped a native \riscv program.
+Appendix~\ref{app:worked} contains the full annotated source of the games
+referenced here, and Appendix~\ref{app:api} is your reference for every framework
+call you have used.
+\end{prgcheck}

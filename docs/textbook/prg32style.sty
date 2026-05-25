@@ -1,0 +1,192 @@
+% ============================================================================
+%  prg32style.sty  --  Shared style package for
+%  "Playing with RISC-V: Assembly, C, and Retro Games on the PRG32 Platform"
+% ============================================================================
+\ProvidesPackage{prg32style}[2026/05/25 PRG32 textbook style]
+
+% ---- Encoding & fonts ------------------------------------------------------
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{textcomp}
+\RequirePackage[protrusion=true,expansion=false]{microtype}
+\RequirePackage{xspace}
+
+% ---- Page geometry ---------------------------------------------------------
+\RequirePackage[a4paper,inner=1.25in,outer=1in,top=1.15in,bottom=1.2in,headheight=15pt]{geometry}
+
+% ---- Colour palette (RGB565-inspired, used consistently in figures) --------
+\RequirePackage{xcolor}
+\definecolor{prgink}{HTML}{1B2530}      % near-black ink
+\definecolor{prgsteel}{HTML}{2E4A62}    % steel blue (headings)
+\definecolor{prgaccent}{HTML}{0E7C86}   % teal accent
+\definecolor{prgamber}{HTML}{C7791B}    % amber (warnings)
+\definecolor{prgred}{HTML}{B23A48}      % alert red
+\definecolor{prggreen}{HTML}{2F7D4F}    % phosphor green
+\definecolor{prgpaper}{HTML}{FBFAF6}    % warm paper
+\definecolor{prgpanel}{HTML}{EEF2F4}    % light panel
+\definecolor{prgcode}{HTML}{F4F1EA}     % code background
+\definecolor{prgrule}{HTML}{C9C9C9}     % light rules
+\definecolor{prgcomment}{HTML}{6A7B6F}  % code comment
+\definecolor{prgkeyword}{HTML}{1F5673}  % code keyword
+\definecolor{prgstring}{HTML}{8A5A28}   % code string
+
+% ---- Graphics, tables, math ------------------------------------------------
+\RequirePackage{graphicx}
+\RequirePackage{booktabs}
+\RequirePackage{array}
+\RequirePackage{tabularx}
+\RequirePackage{longtable}
+\RequirePackage{multirow}
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{enumitem}
+\setlist{itemsep=2pt,topsep=4pt,parsep=0pt}
+
+% ---- Tikz for diagrams -----------------------------------------------------
+\RequirePackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,shapes.geometric,fit,backgrounds,decorations.pathreplacing}
+
+% ---- Captions --------------------------------------------------------------
+\RequirePackage[font=small,labelfont=bf,labelsep=period]{caption}
+
+% ---- Headers and footers ---------------------------------------------------
+\RequirePackage{fancyhdr}
+\RequirePackage{emptypage}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[LE]{\small\nouppercase{\leftmark}}
+\fancyhead[RO]{\small\nouppercase{\rightmark}}
+\fancyfoot[C]{\thepage}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\thepage}%
+  \renewcommand{\headrulewidth}{0pt}}
+
+% ---- Section title styling -------------------------------------------------
+\RequirePackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\huge\bfseries\color{prgsteel}}
+  {\sffamily\Large\color{prgaccent}CHAPTER \thechapter}
+  {1ex}
+  {\vspace{0.4ex}\color{prgrule}\titlerule[1pt]\vspace{0.8ex}\color{prgsteel}}
+  [\vspace{0.4ex}{\color{prgrule}\titlerule[0.4pt]}]
+\titleformat{\section}
+  {\normalfont\sffamily\Large\bfseries\color{prgsteel}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\sffamily\large\bfseries\color{prgink}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\sffamily\normalsize\bfseries\color{prgink}}{\thesubsubsection}{1em}{}
+
+% ---- Listings (code) -------------------------------------------------------
+\RequirePackage{listings}
+\lstdefinestyle{prgbase}{
+  backgroundcolor=\color{prgcode},
+  basicstyle=\ttfamily\small,
+  breakatwhitespace=false,
+  breaklines=true,
+  captionpos=b,
+  commentstyle=\color{prgcomment}\itshape,
+  keepspaces=true,
+  keywordstyle=\color{prgkeyword}\bfseries,
+  numbers=left,
+  numbersep=8pt,
+  numberstyle=\tiny\color{prgcomment},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  stringstyle=\color{prgstring},
+  tabsize=4,
+  frame=single,
+  rulecolor=\color{prgrule},
+  framesep=5pt,
+  xleftmargin=20pt,
+  aboveskip=1.2em,
+  belowskip=1.2em,
+}
+
+% RISC-V assembly dialect
+\lstdefinelanguage{riscv}{
+  morekeywords={add,addi,sub,and,andi,or,ori,xor,xori,sll,slli,srl,srli,sra,
+    srai,slt,slti,sltu,lw,sw,lh,lhu,lb,lbu,sh,sb,lui,auipc,beq,bne,blt,bge,
+    bltu,bgeu,beqz,bnez,bltz,bgez,blez,bgtz,j,jal,jalr,call,ret,la,li,mv,neg,
+    nop,ble,bgt,mul,mulh,div,divu,rem,remu,ecall,ebreak,fence,csrr,csrw},
+  morekeywords=[2]{.text,.data,.rodata,.bss,.section,.global,.globl,.word,
+    .half,.byte,.asciz,.ascii,.space,.align,.option,.equ,norelax},
+  morecomment=[l]{\#},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  sensitive=true,
+}
+\lstdefinestyle{asm}{style=prgbase,language=riscv}
+\lstdefinestyle{c}{style=prgbase,language=C,
+  morekeywords={uint32_t,uint16_t,uint8_t,int8_t,int16_t,int32_t,size_t,
+    bool,void,prg32_platform_actor_t,prg32_anim_sprite_t,prg32_note_t}}
+\lstdefinestyle{bash}{style=prgbase,language=bash,numbers=none}
+\lstdefinestyle{plain}{style=prgbase,numbers=none}
+\lstset{style=prgbase}
+
+% ---- Callout boxes (tcolorbox) ---------------------------------------------
+\RequirePackage[most]{tcolorbox}
+\tcbset{
+  prgbox/.style={
+    enhanced,
+    fonttitle=\sffamily\bfseries, coltitle=white,
+    colframe=prgsteel, boxrule=0.8pt, sharp corners,
+    left=3mm,right=3mm,top=2.5mm,bottom=2.5mm,
+    toptitle=1mm,bottomtitle=1mm,
+    title={Note}}
+}
+
+\newtcolorbox{prgconcept}{prgbox, colback=prgpanel, colframe=prgsteel,
+  colbacktitle=prgsteel, title={Concept}}
+
+\newtcolorbox{prgtry}{prgbox, colback=prggreen!6, colframe=prggreen,
+  colbacktitle=prggreen, title={Try It Yourself}}
+
+\newtcolorbox{prgwarn}{prgbox, colback=prgamber!8, colframe=prgamber,
+  colbacktitle=prgamber, title={Watch Out}}
+
+\newtcolorbox{prgcheck}{prgbox, colback=prgaccent!6, colframe=prgaccent,
+  colbacktitle=prgaccent, title={Checkpoint}}
+
+\newtcolorbox{prgaside}{prgbox, colback=prgpaper, colframe=prgink!45,
+  colbacktitle=prgink!70, title={Historical Note}}
+
+% Both-targets badge used throughout
+\newtcolorbox{prgtargets}{
+  enhanced, colback=prgink!4, colframe=prgink!55,
+  sharp corners, boxrule=0.5pt, left=3mm,right=3mm,top=2mm,bottom=2mm,
+  fontupper=\small}
+
+% ---- Hyperlinks ------------------------------------------------------------
+\RequirePackage[hidelinks,bookmarks=true,bookmarksnumbered=true]{hyperref}
+\hypersetup{
+  pdftitle={Playing with RISC-V: Assembly, C, and Retro Games on the PRG32 Platform},
+  pdfauthor={Authored for the PRG32 Educational Platform},
+  colorlinks=true, linkcolor=prgsteel, citecolor=prgaccent, urlcolor=prgaccent}
+
+% ---- Bibliography ----------------------------------------------------------
+\RequirePackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% ---- Convenience macros ----------------------------------------------------
+% \prg uses small caps, but falls back gracefully inside bold headings where
+% a bold sans small-caps shape does not exist.
+\newcommand{\prg}{\textsc{prg32}\xspace}
+\newcommand{\reg}[1]{\texttt{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\fname}[1]{\texttt{#1}}
+\newcommand{\riscv}{RISC\nobreakdash-V\xspace}
+
+% Slightly more tolerant line breaking to absorb long technical tokens
+% (e.g. ESP32-C6) in justified prose without visible overfull boxes.
+\setlength{\emergencystretch}{2.5em}
+\hbadness=2500
+
+% Running marginal "both targets" mark
+\newcommand{\bothtargets}{%
+  \marginpar{\footnotesize\sffamily\color{prgaccent}\textbf{QEMU\,+\,C6}}}
+
+\endinput

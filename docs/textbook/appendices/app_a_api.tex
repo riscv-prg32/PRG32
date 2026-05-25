@@ -1,0 +1,268 @@
+\chapter{The \prg Runtime Interface}
+\label{app:api}
+
+This appendix is the working reference for the \prg framework calls used
+throughout the book, together with the calling convention, the cartridge tool, and
+the constants you will reach for most often. It catalogues the public interface
+declared in \fname{components/prg32/include/prg32.h} and documented in the
+platform's ABI notes \citep{prg32repo,prg32abi}. It is organised by task rather
+than alphabetically, so that you can find a call by what you are trying to do.
+
+\section{The calling convention}
+
+Every framework function follows the standard \riscv calling convention, which is
+what allows assembly games and C games to call the same functions
+\citep{prg32abi}. Arguments are passed in \reg{a0}--\reg{a7} in order; the return
+value comes back in \reg{a0}. Temporaries \reg{t0}--\reg{t6} may be destroyed by a
+call; saved registers \reg{s0}--\reg{s11} are preserved across one. The return
+address is in \reg{ra} and must be saved before a nested call; the stack pointer
+\reg{sp} stays 16-byte aligned.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}llX@{}}
+\toprule
+Register & Role & Preserved across a call? \\
+\midrule
+\reg{a0}--\reg{a7} & arguments / return value & no \\
+\reg{t0}--\reg{t6} & temporaries & no \\
+\reg{s0}--\reg{s11} & saved values & yes \\
+\reg{ra} & return address & no (save it yourself) \\
+\reg{sp} & stack pointer & yes (16-byte aligned) \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{The \riscv register convention as \prg uses it \citep{prg32abi}.}
+\end{center}
+
+\section{Lifecycle and timing}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_init()} & initialise the runtime; call once before the loop \\
+\code{prg32\_ticks\_ms()} & milliseconds since start, for timing and animation \\
+\code{prg32\_gfx\_present()} & display the frame you have drawn \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Lifecycle and timing calls.}
+\end{center}
+
+\section{Input}
+
+All buttons arrive as a single bitmask. Player two occupies the same layout shifted
+into higher bits (\code{PRG32\_P2\_*}) \citep{prg32repo}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_input\_read()} & full player 1 / player 2 bitmask \\
+\code{prg32\_input\_read\_player(p)} & one player's bits, normalised to the low bits \\
+\code{prg32\_input\_read\_menu()} & both joysticks merged, for menu navigation \\
+\code{prg32\_input\_wait\_released(mask)} & block until the selected bits are released \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Input calls.}
+\end{center}
+
+\begin{center}
+\begin{tabular}{@{}lr l lr@{}}
+\toprule
+Constant & Bit & & Constant & Bit \\
+\midrule
+\code{PRG32\_BTN\_LEFT}  & \code{0x01} & & \code{PRG32\_BTN\_A}      & \code{0x10} \\
+\code{PRG32\_BTN\_RIGHT} & \code{0x02} & & \code{PRG32\_BTN\_B}      & \code{0x20} \\
+\code{PRG32\_BTN\_UP}    & \code{0x04} & & \code{PRG32\_BTN\_SELECT} & \code{0x40} \\
+\code{PRG32\_BTN\_DOWN}  & \code{0x08} & & (\code{PRG32\_BTN\_START} alias) & \code{0x40} \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Player-one button bits \citep{prg32repo}.}
+\end{center}
+
+\section{Graphics}
+
+The viewport is 320 by 200 within a 320-by-240 display; colours are RGB565
+\citep{prg32repo}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_gfx\_clear(color)} & fill the viewport with one colour \\
+\code{prg32\_gfx\_pixel(x,y,color)} & set one pixel \\
+\code{prg32\_gfx\_rect(x,y,w,h,color)} & filled rectangle \\
+\code{prg32\_gfx\_text8(x,y,s,fg,bg)} & draw a text string \\
+\code{prg32\_gfx\_present()} & present the finished frame \\
+\code{prg32\_gfx\_lock()} / \code{\_unlock()} & enter / leave the graphics critical section \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Core graphics calls.}
+\end{center}
+
+\begin{center}
+\begin{tabular}{@{}lr l lr@{}}
+\toprule
+Colour & RGB565 & & Colour & RGB565 \\
+\midrule
+\code{PRG32\_COLOR\_BLACK} & \code{0x0000} & & \code{PRG32\_COLOR\_YELLOW}  & \code{0xffe0} \\
+\code{PRG32\_COLOR\_WHITE} & \code{0xffff} & & \code{PRG32\_COLOR\_CYAN}    & \code{0x07ff} \\
+\code{PRG32\_COLOR\_RED}   & \code{0xf800} & & \code{PRG32\_COLOR\_MAGENTA} & \code{0xf81f} \\
+\code{PRG32\_COLOR\_GREEN} & \code{0x07e0} & & \code{PRG32\_COLOR\_BLUE}    & \code{0x001f} \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Named colour constants \citep{prg32repo}.}
+\end{center}
+
+\section{Sprites and collision}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_sprite\_hitbox(ax,ay,aw,ah,bx,by,bw,bh)} & non-zero if two rectangles overlap \\
+\code{prg32\_sprite\_anim\_frame(now,count,ms)} & which animation frame to show now \\
+\code{prg32\_sprite\_draw\_frame(x,y,w,h,frames,frame,transparent)} & draw one frame of an animation \\
+\code{prg32\_sprite\_draw\_8x8(x,y,bits,fg,bg)} & draw an 8-by-8 bit sprite \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Sprite and collision calls \citep{prg32repo}.}
+\end{center}
+
+\section{Playfields and tiles}
+
+The framework provides two scrolling tile layers for larger worlds
+\citep{prg32repo}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_playfield\_put(layer,tx,ty,id)} & place a tile in the grid \\
+\code{prg32\_playfield\_get(layer,tx,ty)} & read a tile from the grid \\
+\code{prg32\_playfield\_scroll(layer,x,y)} & scroll a layer to a position \\
+\code{prg32\_playfield\_parallax(layer,x\_q8,y\_q8)} & scroll with fixed-point parallax \\
+\code{prg32\_playfield\_camera(x,y)} & set the shared camera position \\
+\code{prg32\_playfield\_draw\_dual()} & draw both layers \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Playfield and tile calls.}
+\end{center}
+
+\section{Platform-game physics}
+
+The actor struct \code{prg32\_platform\_actor\_t} and its helpers implement
+gravity, movement, and tile collision \citep{prg32repo}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_platform\_tile\_flags(id,flags)} & give a tile behaviour (solid, hazard, \dots) \\
+\code{prg32\_platform\_actor\_init(\&a,layer,x,y,w,h)} & set up an actor \\
+\code{prg32\_platform\_actor\_step(\&a,input,move,jump,grav,maxfall)} & one frame of physics; returns state flags \\
+\code{prg32\_platform\_camera\_follow(\&a,dzx,dzy)} & scroll to keep the actor in view \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Platform physics calls. Pass the actor by address (\code{\&}).}
+\end{center}
+
+\begin{center}
+\begin{tabular}{@{}ll l ll@{}}
+\toprule
+Tile flag & Meaning & & Actor state & Meaning \\
+\midrule
+\code{...\_SOLID}    & blocks movement & & \code{...\_ON\_GROUND} & standing on ground \\
+\code{...\_PLATFORM} & one-way platform & & \code{...\_HIT\_HEAD}  & bumped a ceiling \\
+\code{...\_HAZARD}   & harmful tile & & \code{...\_HAZARD}    & touched a hazard \\
+\code{...\_COLLECT}  & collectable & & \code{...\_COLLECT}   & collected an item \\
+\bottomrule
+\end{tabular}
+\captionof{table}{Tile flags (\code{PRG32\_TILE\_FLAG\_*}) and actor state bits
+(\code{PRG32\_PLATFORM\_*}) \citep{prg32repo}.}
+\end{center}
+
+\section{Console and sound}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_console\_clear()} & clear the text console \\
+\code{prg32\_console\_write(s)} & write a string to the console \\
+\code{prg32\_console\_hex32(v)} & write a 32-bit value in hexadecimal \\
+\code{prg32\_audio\_beep(hz,ms)} & play a tone (event sounds only) \\
+\code{prg32\_audio\_note(midi,ms)} & play a MIDI note for a duration \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Console and basic sound calls. Sound is audible on the board and
+silent on QEMU.}
+\end{center}
+
+\section{Cartridges and scores}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Purpose \\
+\midrule
+\code{prg32\_cart\_default\_slot()} & saved default cartridge slot, or $-1$ \\
+\code{prg32\_cart\_select\_default()} & load the saved default cartridge \\
+\code{prg32\_score\_submit(game,player,score)} & record a local score \\
+\code{prg32\_device\_demo\_run()} & run the built-in device demo \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Selected cartridge and score calls \citep{prg32abi}.}
+\end{center}
+
+\section{The cartridge tool}
+
+The \fname{tools/prg32\_game.py} script builds and deploys cartridges
+\citep{prg32repo}. Its subcommands:
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Subcommand & Purpose \\
+\midrule
+\code{build} & compile a \code{.S} or \code{.c} source into a \code{.prg32} cartridge \\
+\code{upload} & upload a cartridge to the board over HTTP (Wi-Fi) \\
+\code{upload-qemu} & stage a cartridge into the QEMU flash image \\
+\code{runtime} & print the runtime linker information \\
+\code{doctor} & check local toolchain prerequisites \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{The cartridge tool's subcommands.}
+\end{center}
+
+The \code{build} subcommand's main options are \code{--out} (the output path,
+required), \code{--name} (the cartridge name), \code{--entry-prefix} (the prefix of
+your three functions), and \code{--firmware-elf} (the firmware ELF that resolves
+the framework symbols). By default it targets the \riscv architecture
+\code{rv32imc\_zicsr\_zifencei} with the \code{ilp32} ABI, the same 32-bit \riscv
+profile your code is written for \citep{prg32repo}.
+
+\section{The HTTP runtime API}
+
+When the board's firmware is running and reachable, it exposes a small HTTP
+interface useful for tooling and labs \citep{prg32repo}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Endpoint & Returns \\
+\midrule
+\code{GET /api/runtime} & firmware version, cartridge state, frame count, last input \\
+\code{GET /api/games} & the installed cartridges \\
+\code{POST /api/games?slot=cart0} & install a cartridge into a slot \\
+\code{GET /api/screenshot.bmp} & the current 320-by-240 framebuffer as a BMP \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{Selected HTTP runtime endpoints \citep{prg32repo}.}
+\end{center}

@@ -1,0 +1,206 @@
+\chapter{Why a Game, Why \riscv, Why Now}
+\label{ch:intro}
+
+\section{The problem this book solves}
+
+A first-year student of computing is, in a sense, asked to believe two stories at
+once. The first story is told in the computer architecture course: a processor is
+a finite collection of registers and a small repertoire of instructions, and
+everything a computer does is, at bottom, a long sequence of those instructions
+moving numbers between registers and memory. The second story is told in the
+programming course: software is built from variables, functions, loops, and the
+clean abstractions of a high-level language, and the machine underneath is a
+detail best left to compilers. Both stories are true. The difficulty is that a
+beginner is rarely given a single object in which both stories are visibly the
+same object seen from two sides.
+
+This book provides that object: a small retro video game running on a real
+\riscv processor. In the assembly track you will write the game one instruction
+at a time and watch a rectangle move because you set a bit. In the C track you
+will write the same game as ordinary functions and watch the same rectangle move.
+Because both tracks compile to native \riscv machine code and run on the same
+platform, the gap between the two stories closes. The compiler stops being a
+black box and becomes a translator whose output you can read.
+
+\begin{prgconcept}
+The central pedagogical claim of this book is that a visible, audible, native
+program collapses the distance between an instruction and its consequence. A
+grade is an opinion; a paddle that leaves the screen is a fact. We will use facts.
+\end{prgconcept}
+
+\section{The platform in one paragraph}
+
+The platform is \prg, an open educational runtime for \riscv assembly and C games
+\citep{prg32repo}. It is important to understand what \prg is \emph{not}: it is
+not a CPU instruction emulator that interprets your code on top of another
+machine. Your code runs natively, as 32-bit \riscv machine code, either on a
+physical ESP32\nobreakdash-C6 board or on Espressif's QEMU firmware target. Games are
+distributed as small \emph{cartridges}, files with the extension \fname{.prg32},
+which the resident firmware loads and runs through three functions you will write
+yourself: an \code{init} called once, and an \code{update} and a \code{draw}
+called once per frame. That three-function shape is the entire contract between
+your game and the machine, and it is identical whether you write in assembly or
+in C. We will return to it in Chapter~\ref{ch:platform}; for now it is enough to
+know that the platform is deliberately thin, so that the processor it runs on is
+never far out of view.
+
+\section{\riscv as strategic European intellectual property}
+
+It would be possible to teach this material on any number of processors. We have
+chosen \riscv deliberately, and the reason reaches well beyond the classroom.
+
+For most of the history of modern computing, the instruction set architecture---
+the fundamental contract that defines what a processor's instructions mean---has
+been proprietary. The dominant architectures of the desktop, server, and mobile
+eras were owned by a small number of companies, and designing a competitive
+processor meant either licensing one of those architectures under restrictive
+terms or being shut out entirely. An instruction set is the deepest layer of a
+computing stack at which a nation or a region can exercise genuine technological
+independence, and for decades that layer was not open.
+
+\riscv changed the terms of the question. It is an open standard instruction set
+architecture, built on established reduced-instruction-set principles and
+governed as a shared specification rather than a private product
+\citep{riscvisa}. Anyone may design, manufacture, and sell a \riscv processor
+without paying a licensing fee for the architecture itself. That openness is not
+merely a convenience for hobbyists; it has become a matter of explicit industrial
+strategy, and nowhere more visibly than in Europe.
+
+\begin{prgaside}
+The name ``\riscv''---pronounced ``risk-five''---marks the fifth generation of
+reduced-instruction-set computing research at the University of California,
+Berkeley, where the architecture began as an academic project. That it grew from
+a teaching and research instruction set into a strategic industrial standard is a
+useful reminder that the line between a classroom exercise and a national
+technology base is thinner than it looks.
+\end{prgaside}
+
+The European Union has come to treat \riscv as a strategic lever for
+technological sovereignty and for greater competition in a global semiconductor
+market worth on the order of seven hundred billion United States dollars
+\citep{hipeac2026uap}. Europe currently accounts for roughly a tenth of that
+market, and the 2023 European Chips Act sets the explicit goal of doubling that
+share to a fifth by the end of the decade \citep{hipeac2026uap}. Achieving such a
+goal on borrowed, proprietary architectures would leave the continent's most
+strategic hardware dependent on decisions made elsewhere; building it on an open
+architecture does not.
+
+This is not aspiration on paper alone. Through the EuroHPC Joint Undertaking,
+Europe has launched the DARE project---``Digital Autonomy with \riscv in
+Europe''---a multi-year, multi-partner effort, backed by funding on the order of
+two hundred and forty million euros, to design European processors and
+accelerators for high-performance computing and artificial intelligence on a
+\riscv foundation \citep{eurohpcdare,daremedium}. DARE builds on a lineage of
+earlier European programmes, including the European Processor Initiative, and is
+paralleled by industrial efforts such as the TRISTAN project under the Chips
+Joint Undertaking, whose partners have assembled Europe's first comprehensive
+collection of verified, industry-ready \riscv intellectual property
+\citep{hipeac2026uap}. The recurring word in all of these announcements is
+\emph{sovereignty}: the capacity to build strategic computing technology without
+asking permission.
+
+\begin{prgconcept}
+\riscv is open intellectual property: a freely usable instruction set rather than
+a licensed product. Europe has made it a centrepiece of its strategy for
+technological sovereignty, funding processor and high-performance-computing
+programmes built on it. Learning to read and write \riscv is therefore not only a
+foundational computing skill but a small act of participation in that strategy.
+\end{prgconcept}
+
+For a first-year student the lesson is concrete and encouraging. The instructions
+you will trace by hand in Chapter~\ref{ch:asm1}---\texttt{addi}, \texttt{lw},
+\texttt{sw}, \texttt{beqz}---are not a teaching dialect invented for a course.
+They are the same instructions that European industry and academia are using to
+build the processors that the continent intends to depend on. The skill transfers
+directly, and it transfers to a technology whose importance is still increasing.
+
+\section{Why retro games, and what \emph{Ready Player One} understood}
+
+If \riscv answers the question ``which processor,'' retro game development
+answers the question ``which kind of program.'' The choice is, again, deliberate.
+
+Retro games occupy a pedagogical sweet spot. They are small enough that a
+beginner can hold an entire program in their head, yet rich enough to exercise
+every concept a first course needs: state stored in memory, input read from the
+world, arithmetic that updates that state, branches that make decisions, and a
+loop that ties it all together at a fixed frame rate. A game written for a
+320-by-200 retro viewport, with a handful of moving rectangles, is simultaneously
+a complete and satisfying artefact and a transparent specimen for study. Crucially,
+a game gives \emph{immediate, honest feedback}. A sorting routine that is subtly
+wrong may still print plausible numbers; a game that is subtly wrong puts the ball
+through the paddle, and the error announces itself.
+
+There is also a cultural argument, and it is here that Ernest Cline's novel
+\emph{Ready Player One} is more than a passing reference \citep{cline2011}. The
+novel imagines a future in which fluency with the games, machines, and idioms of
+an earlier computing era becomes the most valuable literacy of all---the key, in
+the story quite literally, to a vast inheritance. Stripped of its science-fiction
+framing, the book captures something true about computing as a discipline: the
+foundational layers do not become obsolete so much as they become invisible, and
+the people who can still see them retain a kind of power. The student who
+understands how a sprite is drawn pixel by pixel, how a collision is detected with
+a few comparisons, and how a frame is timed, understands the substrate on which
+all the comfortable modern abstractions are built. Retro game development is, in
+this sense, a way of preserving and transmitting exactly the literacy that
+\emph{Ready Player One} treats as priceless.
+
+\begin{prgaside}
+The aesthetic of this book---the 320-by-200 viewport, the chunky rectangles, the
+single-channel beep, the cartridge that you ``insert'' by uploading a
+\fname{.prg32} file---is a faithful homage to the home computers and consoles of
+the late twentieth century. The constraints are not nostalgia for its own sake.
+A tight memory budget and a simple display force a beginner to understand what is
+actually happening, in a way that a modern engine with gigabytes of memory and a
+forgiving runtime never would.
+\end{prgaside}
+
+\section{Both targets, no compromise}
+
+A practical commitment shapes every example in this book: it must run on both the
+desktop emulator and the physical board. The emulator, Espressif's QEMU build,
+lets you compile, run, and debug graphics on a laptop with no hardware at all; it
+is ideal for checking layout, movement, timing, and for stepping through code
+with a debugger. The physical ESP32\nobreakdash-C6 board is where the program meets the
+real world: real buttons, a real display, a real buzzer, and wireless cartridge
+upload \citep{prg32qemu}. The QEMU target is configured as an ESP32\nobreakdash-C3 emulator
+profile because that is the \riscv graphics path Espressif maintains, while the
+hardware is the ESP32\nobreakdash-C6; the \riscv calling convention and the \prg interface
+do not change between them, so the same source builds for both.
+
+\begin{prgtargets}
+\textbf{Both targets, every example.} Throughout the book this badge marks code
+that has been designed to run unchanged on QEMU and on the ESP32\nobreakdash-C6. Where a
+feature is hardware-only (physical buttons, the buzzer, Wi-Fi upload) or
+emulator-only (host-side debugging conveniences), the text says so explicitly.
+\end{prgtargets}
+
+\section{How the rest of the book is arranged}
+
+Part~I, which this chapter opens, sets the foundation. Chapter~\ref{ch:platform}
+introduces game design principles and the \prg framework in detail; it is the one
+chapter that every reader, on either track, should read before going further.
+
+Part~II is the computer architecture track, in \riscv assembly. It begins with
+your first program, builds through state and input, develops a complete graphical
+game, and ends with a capstone you assemble yourself.
+
+Part~III is the computer programming track, in C. It is structured to parallel
+Part~II without depending on it: the same three-function shape, the same runtime,
+the same two targets, expressed in a high-level language.
+
+Part~IV is a short reunion. Having written games in both languages, you will look
+at the two side by side and see, concretely, what a compiler does.
+
+The appendices are the reference shelf: the complete runtime interface,
+the performance-measurement workflow, full annotated example programs, a guide to
+using GitHub for your coursework, instructions for building the physical board,
+and step-by-step environment setup for Windows, Linux, and macOS. The chapters
+send you to the appendices rather than interrupting the narrative with reference
+tables.
+
+\begin{prgcheck}
+Before continuing, you should be able to explain, in a sentence or two each: why
+this book uses a game as its teaching object; what it means to say \riscv is an
+open instruction set and why Europe treats it as strategic; and what it means
+that every example runs on both QEMU and the ESP32\nobreakdash-C6.
+\end{prgcheck}

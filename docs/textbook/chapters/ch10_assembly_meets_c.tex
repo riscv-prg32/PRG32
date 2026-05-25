@@ -1,0 +1,131 @@
+\chapter{Assembly Meets C: One Game, Two Altitudes}
+\label{ch:join}
+
+This short chapter is the book's reunion. If you have read both tracks, it will
+crystallise something you have half-seen already; if you have read only one, it is
+an invitation to glance over the wall at the other side. The claim is simple and,
+once shown, hard to unsee: the assembly game and the C game are the same game,
+viewed at two altitudes, and the compiler is the translator between them
+\citep{prg32teaching}.
+
+\section{The same logic, two languages}
+
+Consider the single most common operation in any of our games: move an object left
+when the left button is pressed. In C it is three lines you could read aloud as
+English.
+
+\begin{lstlisting}[style=c,caption={Move left, in C. Read input, test the bit, change the position.}]
+uint32_t input = prg32_input_read();
+if (input & PRG32_BTN_LEFT) {
+    paddle_x -= 3;
+}
+\end{lstlisting}
+
+In assembly it is the same idea spelled out in the machine's own terms: call,
+copy the result, mask the bit, branch if clear, subtract, and---because
+\code{paddle\_x} lives in memory---load before and store after.
+
+\begin{lstlisting}[style=asm,caption={Move left, in assembly. The same logic, with every step the C compiler would have generated made explicit.}]
+    call prg32_input_read     # input bitmask in a0
+    mv   t0, a0               # keep our copy
+    la   t1, paddle_x
+    lw   t2, 0(t1)            # load paddle_x from memory
+    andi t3, t0, 1            # isolate the LEFT bit
+    beqz t3, 1f               # if LEFT is clear, skip
+    addi t2, t2, -3           # paddle_x -= 3
+1:  sw   t2, 0(t1)            # store paddle_x back
+\end{lstlisting}
+
+Line up the two listings and the correspondence is exact. The C \code{if (input \&
+PRG32\_BTN\_LEFT)} becomes \code{andi} followed by \code{beqz}. The C \code{paddle\_x
+-= 3} becomes a load, an \code{addi}, and a store, because a C variable in memory
+must be brought into a register to be changed and written back---the
+load--modify--store cycle of Chapter~\ref{ch:asm1}. Nothing in the assembly is
+arbitrary; every instruction is doing work the C statement implied.
+
+\begin{prgconcept}
+A compiler translates each C construct into a fixed pattern of machine
+instructions: a bitwise test becomes a mask and a branch, an assignment to a
+variable in memory becomes load--modify--store, a function call becomes the
+calling convention. C is not magic that the machine somehow understands; it is a
+notation that a compiler mechanically turns into exactly the assembly you would
+have written by hand.
+\end{prgconcept}
+
+\section{What C hides, and what it does not}
+
+The C version is shorter not because it does less but because the compiler writes
+the bookkeeping for you. It chooses the registers, emits the loads and stores,
+manages the stack frame, and saves \reg{ra} around calls---all the discipline you
+practised by hand in Part~II. This is C's bargain: you express intent, the
+compiler handles the mechanism.
+
+What C does \emph{not} hide, on this platform, is the machine itself. The same
+display, the same input bitmask, the same RGB565 colours, the same three-function
+contract, the same two targets. A C variable is still a box in memory; a collision
+is still a comparison; a frame is still a turn around a loop. The abstractions of C
+sit directly on the concepts of Part~I, which is why a student who has seen both
+tracks understands C more deeply than one who has only ever used it: they know what
+the compiler is doing on their behalf.
+
+\section{A side-by-side map}
+
+The platform's teaching guide recommends exactly this comparison as a classroom
+activity, using the platformer example, whose assembly and C versions implement
+the same game \citep{prg32teaching}. Table~\ref{tab:sidebyside} lays the two
+languages alongside each other for the concepts you have met.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+Concept & In assembly (Part~II) & In C (Part~III) \\
+\midrule
+Persistent state & labelled words in \code{.data} & file-scope variables \\
+A grouped object & a block of memory at fixed offsets & a \code{struct} \\
+Many objects & an array of words & an array \\
+Read input & \code{call}, then \code{andi}/\code{beqz} & \code{prg32\_input\_read} and \code{if (\dots \& \dots)} \\
+Change a variable & load, modify, store & \code{x += \dots} \\
+A decision & a conditional branch & an \code{if} \\
+Call the framework & manage \reg{ra} and the stack & write the call \\
+Move an actor & \code{call prg32\_platform\_actor\_step} & the same call, by name \\
+\bottomrule
+\end{tabularx}
+\captionof{table}{The same ideas in both languages. The right column is the left
+column with the bookkeeping delegated to the compiler
+\citep{prg32teaching}.}
+\label{tab:sidebyside}
+\end{center}
+
+\begin{prgaside}
+That the framework call \code{prg32\_platform\_actor\_step} appears identically in
+both columns is the whole point of the platform's design. The framework is written
+in C and exposes a standard \riscv calling convention, so an assembly game and a C
+game invoke it the same way. The boundary between ``your code'' and ``the
+framework'' is the same boundary in both languages, which is why the two tracks can
+share a single runtime, a single set of examples, and a single pair of targets
+\citep{prg32abi,prg32teaching}.
+\end{prgaside}
+
+\section{Where to go next}
+
+You have now written native \riscv games---in assembly, in C, or in both---that run
+on a real open-architecture processor and on its emulator. The natural next steps
+are to read the richer examples you have not yet opened: Space Invaders for many
+moving enemies, Tetris for a falling-piece grid, the raycaster for fixed-point
+pseudo-3-D, and Wing Commander for two layered playfields \citep{prg32repo}. Each is
+a variation on patterns you already know, and each is written to be read.
+
+Beyond the games, the appendices that follow are a working reference for everything
+you have used and several things you have not: the complete framework interface,
+the workflow for measuring a game's performance like a scientist, full annotated
+source for the examples, the use of GitHub to manage and submit your work, the
+construction of the physical board, and the setup of your development environment
+on whichever operating system you use.
+
+\begin{prgcheck}
+You should now be able to look at a short C statement and describe, in words, the
+assembly the compiler will produce for it---and to look at a fragment of \riscv
+assembly and recognise the C construct it implements. That two-way fluency, between
+the notation and the machine, is the deepest thing a first year of computing can
+give you, and it is what this book set out to teach.
+\end{prgcheck}

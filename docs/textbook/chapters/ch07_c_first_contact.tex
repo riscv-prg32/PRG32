@@ -1,0 +1,217 @@
+\chapter{First Contact: Functions, Variables, and the Game Loop in C}
+\label{ch:c1}
+
+This chapter begins the computer programming track. It is independent of the
+assembly track: you need not have read Part~II, only the shared foundation in
+Part~I. Here you will write a complete retro game in C, running on both QEMU and
+the ESP32\nobreakdash-C6. The same three-function shape from Chapter~\ref{ch:platform}
+organises the work, but where assembly exposed registers and the stack, C lets you
+write the game's logic almost as plainly as you would describe it in words
+\citep{prg32tutorialc}.
+
+\section{Why C, and why the same platform}
+
+C occupies a deliberate middle ground. It is a high-level language---you write
+functions, name variables, and use \code{if} and \code{while}---yet it stays close
+enough to the machine that nothing important is hidden. A C variable is a named
+box in memory; a C function compiles to the very calling convention you would
+write by hand in assembly. By learning C on the same platform, the same display,
+and the same two targets used for the architecture course, you keep your attention
+on the language and the game logic rather than on a new toolchain
+\citep{prg32teaching}. If you later read Part~IV, you will see your C compiled into
+exactly the assembly idioms of Part~II.
+
+\begin{prgconcept}
+The platform runs C and assembly games through the identical \code{init},
+\code{update}, \code{draw} contract and the identical framework interface. The
+only thing that changes between the two tracks is the language you express the
+logic in. This is why the platform can serve both a computer architecture course
+and a computer programming course from one codebase \citep{prg32teaching}.
+\end{prgconcept}
+
+\section{The three functions, in C}
+
+In C the three entry points are ordinary functions returning \code{void}, named
+with your game's prefix. The framework calls \code{<prefix>\_init} once and then
+\code{<prefix>\_update} and \code{<prefix>\_draw} once per frame, exactly as in the
+assembly track \citep{prg32tutorialc}. To use the framework you include one header.
+
+\begin{lstlisting}[style=c,caption={The smallest C game. Three functions that do nothing yet---the C counterpart of the assembly skeleton in Chapter~\ref{ch:asm1}.}]
+#include "prg32.h"
+
+void pong_c_init(void) {
+}
+
+void pong_c_update(void) {
+}
+
+void pong_c_draw(void) {
+}
+\end{lstlisting}
+
+The single \code{\#include "prg32.h"} gives you every framework function and every
+named constant---the button bits, the colours, the screen dimensions---that you
+met in Chapter~\ref{ch:platform}. You never declare these yourself; the header does
+it for you, and Appendix~\ref{app:api} catalogues what it contains.
+
+\begin{prgcheck}
+Build this skeleton for QEMU and confirm it runs without crashing and shows a
+blank screen. As in the assembly track, an empty screen is the correct first
+result: the framework has found and called your three functions. The build
+commands are in Appendix~\ref{app:env}.
+\end{prgcheck}
+
+\section{State: variables that persist between frames}
+
+A game remembers things between frames. In assembly that meant the \code{.data}
+section; in C it means variables declared outside the functions, at file scope,
+so they keep their values from one frame to the next. The platform's C Pong
+declares its paddle and ball state exactly this way \citep{prg32repo}.
+
+\begin{lstlisting}[style=c,caption={Game state as file-scope variables. Declared outside the functions, they persist across frames. \texttt{static} keeps them private to this file.}]
+#include "prg32.h"
+
+static int paddle_x;
+static int ball_x;
+static int ball_y;
+static int ball_dx;       /* horizontal velocity */
+static int ball_dy;       /* vertical velocity   */
+\end{lstlisting}
+
+The \code{init} function sets their starting values. This is where a game decides
+where things begin: the paddle centred, the ball near the middle, the velocities
+small.
+
+\begin{lstlisting}[style=c,caption={Initialising state in \code{init}. This runs once, before the first frame.}]
+void pong_c_init(void) {
+    paddle_x = 128;
+    ball_x = 156;
+    ball_y = 96;
+    ball_dx = 2;
+    ball_dy = 1;
+}
+\end{lstlisting}
+
+\begin{prgconcept}
+File-scope variables in C play the role that labelled words in \code{.data} play
+in assembly: they are the game's persistent state. \code{init} gives them their
+opening values; \code{update} changes them each frame; \code{draw} reads them to
+render. Keeping state in named variables, rather than recomputing it, is what
+makes a game a game rather than a static picture.
+\end{prgconcept}
+
+\section{Reading input: the bitmask in C}
+
+Input works just as it did in Chapter~\ref{ch:platform}: one call returns a
+bitmask, and you test a button with bitwise AND against a named constant. In C the
+call returns a value you store in a variable, and the test is an \code{if}.
+
+\begin{lstlisting}[style=c,caption={Reading input and moving the paddle. Note the bitwise \texttt{\&}, not \texttt{==}, exactly as warned in Chapter~\ref{ch:platform}.}]
+void pong_c_update(void) {
+    uint32_t input = prg32_input_read();
+    if (input & PRG32_BTN_LEFT) {
+        paddle_x -= 3;
+    }
+    if (input & PRG32_BTN_RIGHT) {
+        paddle_x += 3;
+    }
+    if (paddle_x < 0)   { paddle_x = 0; }
+    if (paddle_x > 256) { paddle_x = 256; }   /* 320 - 64-wide paddle */
+}
+\end{lstlisting}
+
+\begin{prgwarn}
+Use \code{input \& PRG32\_BTN\_LEFT}, with a single ampersand for bitwise AND, not
+\code{input == PRG32\_BTN\_LEFT}. The mask may hold several buttons at once; the
+bitwise test asks ``is the left bit set, regardless of the others,'' which is what
+you want. This is the same warning as in the assembly track, and it catches
+beginners in both languages \citep{prg32tutorialc}.
+\end{prgwarn}
+
+The two clamps at the end are the boundary check from Chapter~\ref{ch:asm2},
+written in C. The maximum is the screen width minus the paddle's own width, so the
+paddle's right edge never leaves the viewport. In C the clamp is two short
+\code{if} statements; the logic is identical to the assembly version, only more
+compact.
+
+\section{The ball: velocity and bounce, in C}
+
+The ball moves by adding its velocity to its position each frame and bounces by
+negating its velocity at the edges---the same rule as in
+Chapter~\ref{ch:asm3}, now in three lines of C \citep{prg32repo}.
+
+\begin{lstlisting}[style=c,caption={Ball motion and edge bounce. Adding velocity moves the ball; negating it at the boundary turns it around.}]
+    ball_x += ball_dx;
+    ball_y += ball_dy;
+    if (ball_x < 0 || ball_x > 312) {   /* 320 - 8-wide ball */
+        ball_dx = -ball_dx;             /* bounce horizontally */
+    }
+    if (ball_y < 0 || ball_y > 192) {
+        ball_dy = -ball_dy;             /* bounce vertically */
+    }
+\end{lstlisting}
+
+\section{Collision: one call, one decision}
+
+To bounce the ball off the paddle, ask the framework whether their rectangles
+overlap. \code{prg32\_sprite\_hitbox} takes the position and size of two
+rectangles and returns non-zero when they touch, so collision is a single call
+inside an \code{if} \citep{prg32repo}.
+
+\begin{lstlisting}[style=c,caption={Bouncing the ball off the paddle. The hitbox test returns non-zero on overlap.}]
+    if (prg32_sprite_hitbox(ball_x, ball_y, 8, 8,
+                            paddle_x, 188, 64, 8)) {
+        ball_dy = -1;        /* send the ball back upward */
+    }
+\end{lstlisting}
+
+\begin{prgconcept}
+Collision detection in C is one function call and one \code{if}. The framework
+does the geometric work of testing overlap on both axes; you decide what happens
+when the answer is yes. This separation---the engine answers ``did they touch,''
+your code decides ``so what''---is a pattern you will meet throughout game
+programming.
+\end{prgconcept}
+
+\section{Drawing the frame}
+
+The \code{draw} function clears the viewport and renders each object as a coloured
+rectangle, using the named colour constants from the header. It reads the state
+variables but does not change them; all logic stays in \code{update}. This is the
+phase separation from Chapter~\ref{ch:platform}, and C makes it easy to honour
+\citep{prg32tutorialc}.
+
+\begin{lstlisting}[style=c,caption={Rendering the frame. \code{draw} only reads state and puts pixels; it changes nothing.}]
+void pong_c_draw(void) {
+    prg32_gfx_clear(PRG32_COLOR_BLACK);
+    prg32_gfx_rect(paddle_x, 188, 64, 8, PRG32_COLOR_WHITE);
+    prg32_gfx_rect(ball_x, ball_y, 8, 8, PRG32_COLOR_YELLOW);
+    prg32_gfx_text8(8, 96, "PONG C", PRG32_COLOR_GREEN, PRG32_COLOR_BLACK);
+}
+\end{lstlisting}
+
+\begin{prgtargets}
+\textbf{Both targets.} This complete C Pong runs unchanged on QEMU and the
+ESP32\nobreakdash-C6. On the emulator you watch the ball bounce and verify the layout; on
+the board you play it with a real joystick. The platform's own C Pong adds a second
+paddle with a fallback AI so that even without a second player the two-player
+screen stays in motion on the desktop \citep{prg32qemu}.
+\end{prgtargets}
+
+\begin{prgtry}
+Change the paddle colour from \code{PRG32\_COLOR\_WHITE} to
+\code{PRG32\_COLOR\_CYAN} and the ball size from \code{8} to \code{12}, then
+rebuild. Both changes should be visible immediately. Next, the platform's
+break-and-fix exercise: delete the \code{paddle\_x > 256} clamp, rebuild, hold
+RIGHT until the paddle leaves the screen, then restore the clamp and explain in one
+sentence which condition protects the boundary \citep{prg32tutorialc}.
+\end{prgtry}
+
+\begin{prgcheck}
+You can now write a complete C game: persistent state in file-scope variables,
+input read as a bitmask and tested with \code{\&}, motion by velocity with
+boundary clamps, bounce by negation, collision by one call, and rendering kept
+separate in \code{draw}. Chapter~\ref{ch:c2} scales these ideas up with the C
+features---arrays and structs---that let a game hold many objects and a whole
+world.
+\end{prgcheck}

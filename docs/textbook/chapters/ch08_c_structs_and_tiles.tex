@@ -1,0 +1,194 @@
+\chapter{A Bigger World: Arrays, Structs, and Tile Maps}
+\label{ch:c2}
+
+The Pong of Chapter~\ref{ch:c1} held a handful of separate variables. Real games
+hold many things at once: rows of bricks, swarms of enemies, a whole landscape of
+ground and platforms. This chapter introduces the two C features that make such
+games manageable---the \emph{array}, which holds many values of the same kind, and
+the \emph{struct}, which groups related values into one named thing---and applies
+them to a tile-based platform game built on the platform's own example
+\citep{prg32repo,prg32tutorialc}.
+
+\section{Arrays: many values under one name}
+
+An array is a numbered row of values of the same type. Where Pong needed one
+paddle position, Breakout needs a position---or simply a present/absent flag---for
+each of many bricks, and writing a separate variable for each would be absurd. An
+array lets you store them together and reach any one by its index.
+
+\begin{lstlisting}[style=c,caption={An array of brick flags. Index $i$ holds whether brick $i$ is still present.}]
+static uint8_t bricks[10];   /* bricks[i] == 1 means brick i is intact */
+
+static void reset_bricks(void) {
+    for (int i = 0; i < 10; ++i) {
+        bricks[i] = 1;       /* every brick starts present */
+    }
+}
+\end{lstlisting}
+
+\begin{prgconcept}
+An array stores many values of one type in a numbered sequence; \code{bricks[i]}
+is the value at index \code{i}, counting from zero. A \code{for} loop visits every
+element in turn. Together, the array and the loop replace dozens of separate
+variables and the repetitive code that would manage them.
+\end{prgconcept}
+
+The framework itself uses small arrays to describe artwork. An 8-by-8 tile---a
+patch of ground, a coin, a hazard---is stored as an array of eight bytes, one per
+row, where each bit is a pixel. The platformer example defines its tiles exactly
+this way \citep{prg32repo}.
+
+\begin{lstlisting}[style=c,caption={An 8-by-8 tile as an array of eight bytes. Each byte is one row; each bit is one pixel. This is the platformer's coin tile.}]
+static const uint8_t tile_coin[8] = {
+    0x18, 0x3c, 0x66, 0x5a, 0x5a, 0x66, 0x3c, 0x18,
+};
+\end{lstlisting}
+
+\begin{prgaside}
+Reading the bits of \code{tile\_coin} as ones and zeros, top to bottom, sketches a
+small round coin: the rows are narrow at top and bottom and wide in the middle.
+Defining graphics as bit patterns in arrays is exactly how the home computers of
+the retro era stored their character sets and sprites, with artists working in
+hexadecimal on grid paper. The technique is old, compact, and still perfectly
+legible.
+\end{prgaside}
+
+\section{Structs: grouping what belongs together}
+
+A moving character has several attributes that always travel together: its
+position, its velocity, its size, its state. Keeping them in separate arrays that
+must be kept in step is error-prone. A \emph{struct} bundles them into a single
+named value, so the whole character is one thing you can pass around. The framework
+defines such a struct for platform-game characters, \code{prg32\_platform\_actor\_t}
+\citep{prg32repo}.
+
+\begin{lstlisting}[style=c,caption={The framework's actor struct (from \texttt{prg32.h}). Position, velocity, size, and state, grouped into one value.}]
+typedef struct {
+    int x;          /* position */
+    int y;
+    int vx;         /* velocity */
+    int vy;
+    uint16_t w;     /* size */
+    uint16_t h;
+    uint16_t state; /* collision/status flags */
+    uint8_t layer;
+    uint8_t reserved;
+} prg32_platform_actor_t;
+\end{lstlisting}
+
+\begin{prgconcept}
+A struct groups related values into one named type. With
+\code{prg32\_platform\_actor\_t player;} you create a single \code{player} whose
+position is \code{player.x}, velocity \code{player.vx}, and so on. Passing one
+struct is cleaner and safer than passing six loose variables, and it scales: an
+array of structs is a crowd of characters.
+\end{prgconcept}
+
+\section{A tile map: the world as a grid}
+
+A platform game's world is too large to draw as individual rectangles. Instead it
+is a \emph{tile map}: a grid in which each cell names a tile to draw there. The
+framework provides a two-layer playfield for this, and you fill it by placing tile
+identifiers at grid coordinates with \code{prg32\_playfield\_put} \citep{prg32repo}.
+The platformer example builds its landscape with small helpers that draw runs and
+columns of tiles---ordinary loops over the grid.
+
+\begin{lstlisting}[style=c,caption={Filling a run of ground tiles with a loop. The platformer uses helpers like this to lay out its world.}]
+static void put_run(uint8_t layer, uint8_t x0, uint8_t x1,
+                    uint8_t y, uint8_t tile) {
+    for (uint8_t x = x0; x <= x1 && x < PRG32_PLAYFIELD_COLS; ++x) {
+        prg32_playfield_put(layer, x, y, tile);
+    }
+}
+\end{lstlisting}
+
+\begin{prgconcept}
+A tile map represents a large world compactly: instead of remembering every pixel,
+it remembers, for each grid cell, which small reusable tile belongs there. Drawing
+the world becomes drawing the grid; building the world becomes filling the grid
+with loops. This is how side-scrolling games fit sprawling levels into tiny
+memory.
+\end{prgconcept}
+
+\section{Behaviour from tile flags}
+
+A tile is not only a picture; it can carry \emph{behaviour}. The framework lets you
+attach flags to a tile identifier---solid, platform, hazard, collectable---and then
+the physics helpers know how a character should interact with it. You declare, for
+instance, that tile~2 is solid, and from then on a character cannot walk through
+it \citep{prg32repo}.
+
+\begin{lstlisting}[style=c,caption={Giving tiles behaviour. Marking a tile solid makes the physics helper treat it as ground or wall.}]
+prg32_platform_tile_flags(2, PRG32_TILE_FLAG_SOLID);    /* ground is solid */
+prg32_platform_tile_flags(5, PRG32_TILE_FLAG_HAZARD);   /* spikes hurt */
+prg32_platform_tile_flags(6, PRG32_TILE_FLAG_COLLECT);  /* coins collect */
+\end{lstlisting}
+
+\section{Putting it together: an actor in a world}
+
+With an actor struct, a tile map, and tile flags, a platform game's per-frame
+logic becomes remarkably short. The framework's \code{prg32\_platform\_actor\_step}
+reads the input, applies gravity, moves the actor, and resolves collisions against
+the solid tiles, updating the struct's \code{state} flags so your code can react
+to what happened \citep{prg32repo,prg32tutorialc}.
+
+\begin{lstlisting}[style=c,caption={One frame of platform physics. The helper does the movement and collision; your code reads the resulting state.}]
+static prg32_platform_actor_t player;
+
+void platformer_c_init(void) {
+    fill_world();                                    /* build the tile map */
+    prg32_platform_tile_flags(2, PRG32_TILE_FLAG_SOLID);
+    prg32_platform_actor_init(&player, 1, 32, 120, 8, 8);
+}
+
+void platformer_c_update(void) {
+    uint32_t input = prg32_input_read();
+    /* move_speed, jump_speed, gravity, max_fall */
+    uint16_t state = prg32_platform_actor_step(&player, input, 2, -7, 1, 5);
+    if (state & PRG32_PLATFORM_HAZARD) {
+        prg32_audio_beep(120, 60);                   /* hit a hazard */
+    }
+    prg32_platform_camera_follow(&player, 64, 48);   /* scroll the world */
+}
+\end{lstlisting}
+
+Notice the economy. A single call advances the whole character: the joystick moves
+it, gravity pulls it down, the solid tiles stop it, and the returned \code{state}
+tells you if it touched a hazard. The camera-follow call then scrolls the tile map
+so the character stays in view. The same behaviour written from first principles
+would be a page of code; the struct and the helper compress it because they capture
+exactly the data and the operation the problem needs.
+
+\begin{prgwarn}
+Pass the \emph{address} of the actor, \code{\&player}, to the stepping and
+follow helpers, not the struct by value. These functions must \emph{change} the
+actor---its position and state---and in C a function can only change a value the
+caller can see if it is given that value's address. Forgetting the \code{\&} is a
+common error; the symptom is an actor that never moves, because the function
+updated a private copy.
+\end{prgwarn}
+
+\begin{prgtargets}
+\textbf{Both targets.} The platformer's tile map, gravity, and camera all render on
+the QEMU virtual screen, so you can build and tune the whole level on a laptop. On
+the ESP32\nobreakdash-C6 you then play it with the joystick and hear the hazard beep
+\citep{prg32qemu}. The struct, the array of tiles, and the physics call are
+identical across the two targets.
+\end{prgtargets}
+
+\begin{prgtry}
+Open \fname{examples/games/platformer/c/game.c} and find where it defines the coin
+tile and where it marks a tile collectable. Add one new platform to the world by
+calling \code{put\_run} with new coordinates, rebuild for QEMU, and confirm your
+platform appears. Then change the \code{gravity} argument of
+\code{prg32\_platform\_actor\_step} from \code{1} to \code{2} and describe how the
+jump feels different. One change, observed and recorded \citep{prg32repo}.
+\end{prgtry}
+
+\begin{prgcheck}
+You can now hold many values in arrays, group related values in structs, represent
+a world as a tile map filled by loops, and give tiles behaviour with flags. These
+are the data-structuring ideas a programming course exists to teach, learned here
+on a game you can see and play. Chapter~\ref{ch:ccap} brings them together into a
+capstone you extend and ship as a cartridge.
+\end{prgcheck}
