@@ -67,6 +67,8 @@ typedef struct {
     uint32_t heap_min;
 } prg32_performance_summary_t;
 
+typedef int (*prg32_performance_json_writer_t)(const char *chunk, void *ctx);
+
 int prg32_metrics_init(const prg32_metrics_config_t *config);
 int prg32_metrics_start_run(void);
 int prg32_metrics_stop_run(void);
@@ -77,6 +79,8 @@ const char *prg32_metrics_run_id(void);
 int prg32_performance_test_run(void);
 int prg32_performance_has_results(void);
 int prg32_performance_summary(prg32_performance_summary_t *out);
+int prg32_performance_json_write(prg32_performance_json_writer_t writer,
+                                 void *ctx);
 char *prg32_performance_json_alloc(void);
 void prg32_performance_json_free(char *json);
 

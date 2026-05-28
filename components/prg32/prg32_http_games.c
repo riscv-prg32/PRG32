@@ -105,6 +105,8 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                (uintptr_t)prg32_performance_has_results);
     add_import(imports, "prg32_performance_summary",
                (uintptr_t)prg32_performance_summary);
+    add_import(imports, "prg32_performance_json_write",
+               (uintptr_t)prg32_performance_json_write);
     add_import(imports, "prg32_performance_json_alloc",
                (uintptr_t)prg32_performance_json_alloc);
     add_import(imports, "prg32_performance_json_free",
@@ -398,21 +400,26 @@ out:
     return err;
 }
 
-static esp_err_t get_performance_json(httpd_req_t *req) {
-    char *json = prg32_performance_json_alloc();
-    if (!json) {
-        httpd_resp_send_err(req, 500, "out of memory");
-        return ESP_ERR_NO_MEM;
+static int http_performance_json_write(const char *chunk, void *ctx) {
+    if (!chunk || !ctx) {
+        return -1;
     }
+    httpd_req_t *req = (httpd_req_t *)ctx;
+    return httpd_resp_sendstr_chunk(req, chunk) == ESP_OK ? 0 : -1;
+}
 
+static esp_err_t get_performance_json(httpd_req_t *req) {
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req,
                        "Content-Disposition",
                        "attachment; filename=\"prg32_performance.json\"");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    esp_err_t err = httpd_resp_sendstr(req, json);
-    prg32_performance_json_free(json);
-    return err;
+    int rc = prg32_performance_json_write(http_performance_json_write, req);
+    esp_err_t end_err = httpd_resp_sendstr_chunk(req, NULL);
+    if (rc != 0) {
+        return ESP_FAIL;
+    }
+    return end_err;
 }
 
 static esp_err_t post_game(httpd_req_t *req) {

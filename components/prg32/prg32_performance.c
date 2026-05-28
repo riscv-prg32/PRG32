@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -544,6 +545,262 @@ int prg32_performance_summary(prg32_performance_summary_t *out) {
         return -1;
     }
     *out = g_summary;
+    return 0;
+}
+
+static int stream_write(prg32_performance_json_writer_t writer,
+                        void *ctx,
+                        const char *chunk) {
+    if (!writer || !chunk) {
+        return -1;
+    }
+    return writer(chunk, ctx);
+}
+
+static int stream_writef(prg32_performance_json_writer_t writer,
+                         void *ctx,
+                         const char *fmt,
+                         ...) {
+    char chunk[768];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(chunk, sizeof(chunk), fmt, ap);
+    va_end(ap);
+    if (n < 0 || (size_t)n >= sizeof(chunk)) {
+        return -1;
+    }
+    return stream_write(writer, ctx, chunk);
+}
+
+static int stream_json_string(prg32_performance_json_writer_t writer,
+                              void *ctx,
+                              const char *value) {
+    if (stream_write(writer, ctx, "\"") != 0) {
+        return -1;
+    }
+    const unsigned char *p = (const unsigned char *)(value ? value : "");
+    while (*p) {
+        char escaped[8];
+        if (*p == '"' || *p == '\\') {
+            escaped[0] = '\\';
+            escaped[1] = (char)*p;
+            escaped[2] = '\0';
+            if (stream_write(writer, ctx, escaped) != 0) {
+                return -1;
+            }
+        } else if (*p == '\n') {
+            if (stream_write(writer, ctx, "\\n") != 0) {
+                return -1;
+            }
+        } else if (*p == '\r') {
+            if (stream_write(writer, ctx, "\\r") != 0) {
+                return -1;
+            }
+        } else if (*p == '\t') {
+            if (stream_write(writer, ctx, "\\t") != 0) {
+                return -1;
+            }
+        } else if (*p < 0x20) {
+            snprintf(escaped, sizeof(escaped), "\\u%04x", (unsigned)*p);
+            if (stream_write(writer, ctx, escaped) != 0) {
+                return -1;
+            }
+        } else {
+            escaped[0] = (char)*p;
+            escaped[1] = '\0';
+            if (stream_write(writer, ctx, escaped) != 0) {
+                return -1;
+            }
+        }
+        p++;
+    }
+    return stream_write(writer, ctx, "\"");
+}
+
+static int stream_json_string_field(prg32_performance_json_writer_t writer,
+                                    void *ctx,
+                                    const char *name,
+                                    const char *value,
+                                    int leading_comma) {
+    if (stream_writef(writer, ctx, "%s\"%s\":", leading_comma ? "," : "", name) != 0) {
+        return -1;
+    }
+    return stream_json_string(writer, ctx, value);
+}
+
+static int stream_summary_fields(prg32_performance_json_writer_t writer,
+                                 void *ctx) {
+    return stream_writef(writer,
+                         ctx,
+                         "\"frames\":%lu,"
+                         "\"fps_mean\":%lu.%02lu,"
+                         "\"frame_us_min\":%lu,"
+                         "\"frame_us_mean\":%lu,"
+                         "\"frame_us_p50\":%lu,"
+                         "\"frame_us_p95\":%lu,"
+                         "\"frame_us_p99\":%lu,"
+                         "\"frame_us_max\":%lu,"
+                         "\"missed_deadlines\":%lu,"
+                         "\"update_us_mean\":%lu,"
+                         "\"draw_us_mean\":%lu,"
+                         "\"present_us_mean\":%lu,"
+                         "\"heap_min\":%lu",
+                         (unsigned long)g_summary.frames,
+                         (unsigned long)(g_summary.fps_mean_x100 / 100u),
+                         (unsigned long)(g_summary.fps_mean_x100 % 100u),
+                         (unsigned long)g_summary.frame_us_min,
+                         (unsigned long)g_summary.frame_us_mean,
+                         (unsigned long)g_summary.frame_us_p50,
+                         (unsigned long)g_summary.frame_us_p95,
+                         (unsigned long)g_summary.frame_us_p99,
+                         (unsigned long)g_summary.frame_us_max,
+                         (unsigned long)g_summary.missed_deadlines,
+                         (unsigned long)g_summary.update_us_mean,
+                         (unsigned long)g_summary.draw_us_mean,
+                         (unsigned long)g_summary.present_us_mean,
+                         (unsigned long)g_summary.heap_min);
+}
+
+int prg32_performance_json_write(prg32_performance_json_writer_t writer,
+                                 void *ctx) {
+    if (!writer) {
+        return -1;
+    }
+    if (g_perf_running) {
+        return stream_write(writer, ctx, "{\"ok\":false,\"running\":true}");
+    }
+    if (!g_perf_has_results) {
+        return stream_write(writer,
+                            ctx,
+                            "{\"ok\":false,\"error\":\"no performance test results\"}");
+    }
+
+    if (stream_write(writer, ctx, "{\"ok\":true") != 0 ||
+        stream_json_string_field(writer, ctx, "run_id", g_summary.run_id, 1) != 0 ||
+        stream_json_string_field(writer, ctx, "board_id", g_summary.board_id, 1) != 0 ||
+        stream_json_string_field(writer, ctx, "target", g_summary.target, 1) != 0 ||
+        stream_json_string_field(writer,
+                                 ctx,
+                                 "display_backend",
+                                 g_summary.display_backend,
+                                 1) != 0 ||
+        stream_json_string_field(writer,
+                                 ctx,
+                                 "firmware_git_sha",
+                                 g_summary.firmware_git_sha,
+                                 1) != 0 ||
+        stream_json_string_field(writer,
+                                 ctx,
+                                 "firmware_version",
+                                 g_summary.firmware_version,
+                                 1) != 0 ||
+        stream_json_string_field(writer, ctx, "game_name", g_summary.game_name, 1) != 0) {
+        return -1;
+    }
+    if (stream_writef(writer,
+                      ctx,
+                      ",\"cartridge_generation\":%lu",
+                      (unsigned long)g_summary.cartridge_generation) != 0 ||
+        stream_json_string_field(writer, ctx, "build_type", g_summary.build_type, 1) != 0 ||
+        stream_json_string_field(writer, ctx, "wifi_mode", g_summary.wifi_mode, 1) != 0 ||
+        stream_writef(writer,
+                      ctx,
+                      ",\"sample_period_frames\":%lu,"
+                      "\"started_at_device_us\":%llu,"
+                      "\"started_at_server_ts\":null,"
+                      "\"duration_us\":%lu,"
+                      "\"samples\":[",
+                      (unsigned long)g_summary.sample_period_frames,
+                      (unsigned long long)g_summary.started_at_device_us,
+                      (unsigned long)g_summary.duration_us) != 0) {
+        return -1;
+    }
+
+    for (uint32_t i = 0; i < g_sample_count; ++i) {
+        const prg32_perf_sample_t *s = &g_samples[i];
+        if (stream_writef(writer,
+                          ctx,
+                          "%s{"
+                          "\"frame_index\":%lu,"
+                          "\"sampled_at_device_us\":%llu,"
+                          "\"t_update_us\":%lu,"
+                          "\"t_draw_us\":%lu,"
+                          "\"t_present_us\":%lu,"
+                          "\"t_frame_total_us\":%lu,"
+                          "\"deadline_missed\":%s,"
+                          "\"free_heap_bytes\":%lu,"
+                          "\"min_free_heap_bytes\":%lu,"
+                          "\"input_mask\":%lu,"
+                          "\"upload_queue_depth\":%lu"
+                          "}",
+                          i ? "," : "",
+                          (unsigned long)s->frame_index,
+                          (unsigned long long)s->sampled_at_device_us,
+                          (unsigned long)s->t_update_us,
+                          (unsigned long)s->t_draw_us,
+                          (unsigned long)s->t_present_us,
+                          (unsigned long)s->t_frame_total_us,
+                          s->deadline_missed ? "true" : "false",
+                          (unsigned long)s->free_heap_bytes,
+                          (unsigned long)s->min_free_heap_bytes,
+                          (unsigned long)s->input_mask,
+                          (unsigned long)s->upload_queue_depth) != 0) {
+            return -1;
+        }
+    }
+
+    if (stream_write(writer, ctx, "],\"aggregate_windows\":[") != 0) {
+        return -1;
+    }
+    for (uint32_t i = 0; i < g_window_count; ++i) {
+        const prg32_perf_window_t *w = &g_windows[i];
+        if (stream_writef(writer,
+                          ctx,
+                          "%s{"
+                          "\"window_index\":%lu,"
+                          "\"started_at_device_us\":%llu,"
+                          "\"duration_us\":%lu,"
+                          "\"frames\":%lu,"
+                          "\"fps_mean\":%lu.%02lu,"
+                          "\"frame_us_min\":%lu,"
+                          "\"frame_us_mean\":%lu,"
+                          "\"frame_us_p50\":%lu,"
+                          "\"frame_us_p95\":%lu,"
+                          "\"frame_us_p99\":%lu,"
+                          "\"frame_us_max\":%lu,"
+                          "\"missed_deadlines\":%lu,"
+                          "\"update_us_mean\":%lu,"
+                          "\"draw_us_mean\":%lu,"
+                          "\"present_us_mean\":%lu,"
+                          "\"heap_min\":%lu"
+                          "}",
+                          i ? "," : "",
+                          (unsigned long)w->window_index,
+                          (unsigned long long)w->started_at_device_us,
+                          (unsigned long)w->duration_us,
+                          (unsigned long)w->frames,
+                          (unsigned long)(w->fps_mean_x100 / 100u),
+                          (unsigned long)(w->fps_mean_x100 % 100u),
+                          (unsigned long)w->frame_us_min,
+                          (unsigned long)w->frame_us_mean,
+                          (unsigned long)w->frame_us_p50,
+                          (unsigned long)w->frame_us_p95,
+                          (unsigned long)w->frame_us_p99,
+                          (unsigned long)w->frame_us_max,
+                          (unsigned long)w->missed_deadlines,
+                          (unsigned long)w->update_us_mean,
+                          (unsigned long)w->draw_us_mean,
+                          (unsigned long)w->present_us_mean,
+                          (unsigned long)w->heap_min) != 0) {
+            return -1;
+        }
+    }
+
+    if (stream_write(writer, ctx, "],\"summary\":{") != 0 ||
+        stream_summary_fields(writer, ctx) != 0 ||
+        stream_write(writer, ctx, "}}") != 0) {
+        return -1;
+    }
     return 0;
 }
 

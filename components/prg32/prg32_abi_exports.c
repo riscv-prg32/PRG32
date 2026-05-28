@@ -38,6 +38,7 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_performance_test_run,
     (prg32_any_fn_t)prg32_performance_has_results,
     (prg32_any_fn_t)prg32_performance_summary,
+    (prg32_any_fn_t)prg32_performance_json_write,
     (prg32_any_fn_t)prg32_performance_json_alloc,
     (prg32_any_fn_t)prg32_performance_json_free,
     (prg32_any_fn_t)prg32_audio_init,

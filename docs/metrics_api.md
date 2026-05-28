@@ -32,6 +32,8 @@ curl http://192.168.4.1/api/performance.json \
 ```
 
 Use the current setup IP address when the board is in infrastructure mode.
+The endpoint streams the response in HTTP chunks, so the ESP32 does not need to
+allocate a second full copy of the raw sample set while serving the file.
 
 The JSON contains top-level run metadata, raw sampled frames, aggregate windows,
 and a summary object. The run metadata includes:
