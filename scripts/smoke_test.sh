@@ -103,7 +103,7 @@ else
   warn "qemu-launch-check failed (non-blocking)"
 fi
 
-if [[ ! -f "$QEMU_BUILD_DIR/qemu_flash.bin" ]]; then
+if [[ ! -f "$QEMU_BUILD_DIR/flash_image.bin" ]]; then
   fail "qemu-flash-image missing (run QEMU once with build-qemu/sdkconfig)"
 fi
 ok "qemu-flash-image"
@@ -111,7 +111,7 @@ ok "qemu-flash-image"
 run_step "stage-cartridge-qemu" \
   python3 tools/prg32_game.py upload-qemu \
     "$QEMU_BUILD_DIR/pong.prg32" \
-    --flash "$QEMU_BUILD_DIR/qemu_flash.bin"
+    --flash "$QEMU_BUILD_DIR/flash_image.bin"
 
 ok "smoke-test-complete"
 echo "=== SMOKE TEST PASSED ==="

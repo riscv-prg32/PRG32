@@ -34,7 +34,7 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
 
-# 6) Run QEMU once (creates build-qemu/qemu_flash.bin)
+# 6) Run QEMU once (creates build-qemu/flash_image.bin)
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
 ```
 
@@ -49,7 +49,7 @@ python3 tools/prg32_game.py build \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32
-python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/qemu_flash.bin
+python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/flash_image.bin
 ```
 
 Run everything with one command next time:
@@ -272,7 +272,7 @@ Flow:
   using that port, then start only one PlatformIO Monitor.
 - QEMU runs but the game does not move: QEMU defaults disable physical GPIO
   buttons. Use a UART bridge packet source, or debug logic with the overlay/GDB.
-- Cartridge upload fails: `build-qemu/qemu_flash.bin` is missing/invalid, or the
+- Cartridge upload fails: `build-qemu/flash_image.bin` is missing/invalid, or the
   cartridge is too large. Run QEMU once, then rerun `upload-qemu`.
 - `riscv32-esp-elf-gcc` missing: re-run `./install.sh esp32c3,esp32c6` and
   source the ESP-IDF export script.

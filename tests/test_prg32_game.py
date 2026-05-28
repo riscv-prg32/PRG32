@@ -98,7 +98,7 @@ class QemuUploadTests(unittest.TestCase):
     def test_upload_qemu_stages_cartridge_at_partition_offset(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            flash = tmp_path / "qemu_flash.bin"
+            flash = tmp_path / "flash_image.bin"
             cart = tmp_path / "game.prg32"
             partitions = tmp_path / "partitions.csv"
 

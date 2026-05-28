@@ -251,7 +251,7 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 ```
 
 Stop QEMU after the first successful launch. This creates
-`build-qemu/qemu_flash.bin`.
+`build-qemu/flash_image.bin`.
 
 ### 3. Build a QEMU Cartridge
 
@@ -278,7 +278,7 @@ name.
 ```bash
 python3 tools/prg32_game.py upload-qemu \
   build-qemu/tetris-graphics.prg32 \
-  --flash build-qemu/qemu_flash.bin
+  --flash build-qemu/flash_image.bin
 ```
 
 ### 5. Run QEMU Again

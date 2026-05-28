@@ -106,7 +106,7 @@ the 320x200 viewport. The normal hardware build keeps the ESP32-C6 target and
 ILI9341 SPI display backend.
 
 QEMU cartridge testing uses the same `.prg32` package but stages it into
-`build-qemu/qemu_flash.bin`:
+`build-qemu/flash_image.bin`:
 
 ```bash
 python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32

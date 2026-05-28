@@ -8,7 +8,7 @@ QEMU_DEFAULTS="sdkconfig.defaults.qemu"
 DEMO_SOURCE="examples/games/asteroids/graphics/game.S"
 DEMO_PREFIX="asteroids_graphics"
 DEMO_CART="$QEMU_BUILD_DIR/asteroids.prg32"
-DEMO_FLASH="$QEMU_BUILD_DIR/qemu_flash.bin"
+DEMO_FLASH="$QEMU_BUILD_DIR/flash_image.bin"
 
 fail() {
   echo "[FAIL] $1" >&2
