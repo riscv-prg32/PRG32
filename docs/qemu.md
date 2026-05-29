@@ -167,24 +167,32 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 ## Input in QEMU
 
 QEMU screen emulation validates rendering, frame timing, and most assembly
-debugging exercises. The QEMU defaults disable physical GPIO buttons, the buzzer,
-and the controller bridge, so desktop QEMU runs will usually show the game at
-rest unless the app is extended with a host-side input bridge.
+debugging exercises. The QEMU defaults disable physical GPIO buttons and the
+buzzer, but the QEMU RGB build enables a small UART-console keyboard mapper for
+player 1 input.
+
+When the QEMU monitor terminal has focus, use these keys:
+
+| PRG32 input | QEMU key |
+| --- | --- |
+| Joystick 1 LEFT / RIGHT / UP / DOWN | arrow keys or `A` / `D` / `W` / `S` |
+| SELECT | `Enter` or `Space` |
+| A button | `J` or `Z` |
+| B button | `K`, `X`, `Backspace`, or `Esc` |
 
 The PRG32 input ABI remains the same:
 
 ```text
-'U' 'G' <button-mask-low> <button-mask-high>
+bit 0 LEFT, bit 1 RIGHT, bit 2 UP, bit 3 DOWN, bit 4 A, bit 5 B, bit 6 SELECT
 ```
 
-This makes it possible to add a host-side keyboard/gamepad bridge later without
-changing student games.
+Framework code can also call `prg32_diag_set_input_state()` to inject the same
+player-1 bits in QEMU-oriented tests.
 
-Player 2 uses the same mask shifted into `PRG32_P2_*` bits. Framework code can
-also call `prg32_diag_set_input_state()` to inject player 1 or player 2 bits in
-QEMU-oriented tests. The Pong C example keeps the second paddle active with a
-fallback AI when no P2 input is available, so the two-player screen path remains
-visible in desktop runs.
+The multiplayer API is available in QEMU without real Wi-Fi. A cartridge can
+call `prg32_multiplayer_join()` with the same signature it uses on hardware;
+the call succeeds locally, `prg32_multiplayer_available()` returns true, and
+peer snapshots are empty by default.
 
 ## Troubleshooting
 

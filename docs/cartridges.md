@@ -13,7 +13,7 @@ The same cartridge format is used on:
 
 ```text
 PRG32 firmware
-|-- display, input, audio, score APIs
+|-- display, input, audio, score, multiplayer APIs
 |-- cartridge loader
 |-- executable cartridge RAM
 |-- cart0 flash partition
@@ -22,7 +22,8 @@ PRG32 firmware
 game.prg32
 |-- PRG32 cartridge header
 |-- linked RV32 code/data payload
-`-- optional AUDIO block
+|-- optional AUDIO block
+`-- optional PRG32META metadata trailer
 ```
 
 The firmware exports the PRG32 API addresses and the cartridge RAM address.
@@ -110,6 +111,31 @@ games, PRG32 enters setup unless a default cartridge has been saved. Use
 `DEFAULT CARTRIDGE` in setup to choose the slot that should boot automatically,
 or `RUN CARTRIDGE` to launch a slot immediately.
 
+## Multiplayer Cartridges
+
+A cartridge opts in to multiplayer by calling
+`prg32_multiplayer_join(signature, flags)` from its game code. The build tool
+can also mark the package header with `PRG32_CART_FLAG_MULTIPLAYER`:
+
+```bash
+python3 tools/prg32_game.py build \
+  examples/games/pong/c/game.c \
+  --firmware-elf build-esp32c6/PRG32.elf \
+  --entry-prefix pong_c \
+  --multiplayer \
+  --name pong-mp \
+  --out build-esp32c6/pong-mp.prg32
+```
+
+Use the same signature string for compatible cartridge builds. The WebSocket
+server groups only matching signatures, so a `pong-v1` cartridge never receives
+state from a `breakout-v1` cartridge or an incompatible `pong-v2` revision.
+
+On ESP32-C6, multiplayer uses Wi-Fi station mode and the standalone Node.js
+[MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer). QEMU
+keeps the same API available with a local offline stub so the cartridge still
+builds and runs on the desktop path.
+
 ## Runtime Query Workflow
 
 If the board is already running and the host can reach its HTTP API, the build
@@ -170,6 +196,57 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 QEMU does not emulate the classroom Wi-Fi upload path. Instead, it uses the same
 cartridge package and writes it into `cart0` by default, or `cart1` when
 `upload-qemu --slot cart1` is used.
+
+## Store-Ready Metadata
+
+The optional `PRG32META` trailer turns a cartridge into a monolithic store
+artifact containing metadata, an icon, an optional screenshot, an optional
+signature, and an optional colophon.
+
+Create the executable cartridge first, then append metadata:
+
+```bash
+python3 tools/prg32_game.py attach-metadata \
+  build-esp32c6/asteroids.prg32 \
+  --metadata metadata.json \
+  --icon icon.png \
+  --screenshot screenshot.png \
+  --colophon colophon.json \
+  --architecture esp32c6 \
+  --out dist/asteroids-esp32c6.prg32
+```
+
+Inspect the trailer:
+
+```bash
+python3 tools/prg32_game.py inspect-metadata dist/asteroids-esp32c6.prg32
+```
+
+A `.prg32` artifact contains one linked cartridge architecture. Build and
+publish separate artifacts for physical ESP32-C6 hardware and the QEMU graphics
+workflow:
+
+```bash
+# Physical board variant.
+python3 tools/prg32_game.py build ... \
+  --firmware-elf build-esp32c6/PRG32.elf \
+  --out build-esp32c6/game.prg32
+
+# QEMU variant.
+python3 tools/prg32_game.py build ... \
+  --firmware-elf build-qemu/PRG32.elf \
+  --out build-qemu/game.prg32
+```
+
+Use `--architecture esp32c6` for the physical build and `--architecture qemu`
+for the emulator build. The Cartrige Store groups those artifacts by metadata
+`id` and `version`, then offers the correct architecture to firmware or QEMU
+clients.
+
+See [cartridge_metadata.md](cartridge_metadata.md) for the binary trailer and
+metadata ABI, [colophon_abi.md](colophon_abi.md) for the colophon ABI, and
+[setup_mode_cartridge_store.md](setup_mode_cartridge_store.md) for the
+setup-mode integration contract.
 
 ## HTTP API
 

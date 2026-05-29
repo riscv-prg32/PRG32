@@ -19,4 +19,4 @@ The source is intentionally small and uses only simple PRG32 framework calls so
 students can trace registers, memory variables, and C helper calls in the
 debugger, or compare the same behavior with C control flow.
 
-In QEMU, input may be static unless a UART bridge is enabled.
+In QEMU, use the monitor terminal keyboard mapping described in `docs/qemu.md`.

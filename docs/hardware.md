@@ -9,9 +9,8 @@ for the hardware directory map and board scaffolds.
 |---:|---|---|
 | 1 | ESP32-C6 development board | PRG32 RISC-V host |
 | 1 | ILI9341 SPI TFT or supported display | video output |
-| 1 | digital joystick module | player 1 input |
+| 1 | digital joystick module | local input |
 | 1 | optional setup button | force setup mode without holding A+B |
-| 1 | optional second joystick | player 2 games |
 
 ## Reference Display And Input Wiring
 

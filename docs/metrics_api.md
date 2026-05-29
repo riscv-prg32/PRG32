@@ -15,8 +15,18 @@ experiments.
 ## Setup Performance Test
 
 Open setup mode and choose `PERFORMANCE TEST`. The firmware starts the Wi-Fi
-HTTP API if possible, runs the benchmark without further user interaction, and
-then shows a summary on the 320x240 setup screen.
+HTTP API if possible, then runs every measurement screen without further user
+interaction. At the end it shows a summary on the 320x240 setup screen.
+
+The unattended sequence currently measures five distinct screens:
+
+| Screen | What It Measures |
+|---|---|
+| `clear-fill` | viewport clear and large rectangle fill bandwidth |
+| `text-overlay` | 8x8 text drawing and status overlay load |
+| `sprite-storm` | many moving sprite-sized rectangles and collision-like motion |
+| `scrolling` | horizontal and vertical scrolling with parallax-like stars |
+| `mixed-gameplay` | combined text, sprites, scrolling road, and playfield objects |
 
 The test stores results only in RAM:
 
@@ -51,6 +61,7 @@ and a summary object. The run metadata includes:
 | `build_type` | `release` or `debug` |
 | `wifi_mode` | `off`, `access_point`, `infrastructure`, or `ap_infrastructure` |
 | `sample_period_frames` | frame sampling period |
+| `screen_count` | number of measurement screens in the unattended run |
 | `started_at_device_us` | ESP timer timestamp when the run began |
 | `started_at_server_ts` | `null` for onboard-only runs |
 
@@ -59,6 +70,8 @@ Each raw sample records:
 | Field | Meaning |
 |---|---|
 | `frame_index` | benchmark frame number |
+| `screen_index` | zero-based measurement screen index |
+| `screen_name` | measurement screen name |
 | `t_update_us` | update stage time |
 | `t_draw_us` | draw stage time |
 | `t_present_us` | display present time |
@@ -71,6 +84,10 @@ Each raw sample records:
 
 Each aggregate window includes `frames`, `fps_mean`, frame-time min/mean/p50/p95/p99/max,
 missed deadlines, update/draw/present means, and minimum heap.
+
+The `screen_summaries` array repeats the same aggregate metrics per measurement
+screen. This makes it easier to compare rendering workloads directly in a
+paper without manually filtering raw frame samples.
 
 ## Firmware Configuration
 
@@ -147,13 +164,16 @@ Each sampled frame records:
 
 ## Server Setup
 
-Install and run the server:
+Install and run the standalone
+[MetricsServer](https://github.com/riscv-prg32/MetricsServer):
 
 ```bash
+git clone https://github.com/riscv-prg32/MetricsServer.git
+cd MetricsServer
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install -r tools/prg32_metrics_server/requirements.txt
-python3 tools/prg32_metrics_server/app.py --host 0.0.0.0 --port 8080
+python3 -m pip install -r requirements.txt
+python3 app.py --host 0.0.0.0 --port 8080
 ```
 
 Set `CONFIG_PRG32_METRICS_SERVER_URL` to the computer IP address reachable by
@@ -172,7 +192,7 @@ the ESP32-C6 or QEMU network path.
 | `GET /api/runs/<run_id>/samples.csv` | Download raw samples |
 | `GET /api/runs/<run_id>/report.md` | Download a Markdown report |
 
-Sample payloads are in `tools/prg32_metrics_server/samples`.
+Sample payloads are in the MetricsServer repository's `samples` directory.
 
 ## Export For Reports
 
@@ -191,17 +211,20 @@ The output directory contains:
 - `normalized_metrics.json`
 - `table_summary.tex`
 - `table_windows.tex`
+- `table_screens.tex`
 - `captions.tex`
 - `figure_frame_time_timeseries.png`
 - `figure_frame_time_distribution.png`
 - `figure_stage_timing.png`
 - `figure_heap_stability.png`
+- `figure_screen_comparison.png`
 
-For server-side streaming metrics, export a run from SQLite:
+For server-side streaming metrics, export a run from SQLite inside the
+MetricsServer checkout:
 
 ```bash
-python3 tools/prg32_metrics_server/export_run.py <run_id> \
-  --db tools/prg32_metrics_server/metrics.db \
+python3 export_run.py <run_id> \
+  --db metrics.db \
   --out metrics_export/<run_id>
 ```
 

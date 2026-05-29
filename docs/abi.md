@@ -18,6 +18,18 @@ PRG32 follows the standard RISC-V calling convention:
 
 Assembly examples save `ra` around C calls and keep stack alignment visible.
 
+## Cartridge Package ABI
+
+The executable cartridge ABI remains `PRG2` major `1`, minor `0`. Store-ready
+cartridges append a backward-compatible `PRG32META` trailer after the legacy
+payload. The trailer does not change the imported function ABI, but it gives
+host tools and setup-mode clients standard blocks for `META`, `ICON`, `SCRN`,
+`SIGN`, and `COLO`.
+
+Metadata JSON uses `prg32-metadata-1.0`; colophon JSON uses
+`prg32-colophon-1.0`. The game colophon is shown after the cartridge is
+activated, before the player starts a new play.
+
 ## Audio ABI Calls
 
 The audio ABI is the C API exposed to cartridges:
@@ -168,18 +180,27 @@ Setup screens and cartridge programs use the same button bitmasks:
 
 | Symbol | Purpose |
 |---|---|
-| `prg32_input_read` | read the full player 1/player 2 bitmask |
-| `prg32_input_read_player` | read player 1 or player 2 normalized to low bits |
-| `prg32_input_read_menu` | merge joystick 1 and joystick 2 for setup/menu navigation |
+| `prg32_input_read` | read the local player input bitmask |
+| `prg32_input_read_player` | read player 1 normalized to low bits; player 2 returns `0` |
+| `prg32_input_read_menu` | read local joystick input for setup/menu navigation |
 | `prg32_input_wait_released` | wait until selected menu bits are released |
 | `prg32_wifi_current_mode` | return the active Wi-Fi mode enum |
 | `prg32_wifi_current_ip` | return the current IP display string |
 | `prg32_wifi_current_ssid` | return the current AP or infrastructure SSID |
+| `prg32_multiplayer_init` | initialize the multiplayer service |
+| `prg32_multiplayer_available` | return whether cartridge multiplayer can be used |
+| `prg32_multiplayer_join` | join peers with the same cartridge signature |
+| `prg32_multiplayer_leave` | leave the current multiplayer room |
+| `prg32_multiplayer_tick` | service periodic multiplayer sends and peer expiry |
+| `prg32_multiplayer_set_local_state` | publish local player position and sprite status |
+| `prg32_multiplayer_set_input` | publish local player input |
+| `prg32_multiplayer_get_peer_count` | return visible peer count |
+| `prg32_multiplayer_get_peer` | copy one peer snapshot |
 | `prg32_cart_default_slot` | return the saved default cartridge slot, or `-1` |
 | `prg32_cart_set_default_slot` | save a default cartridge slot, or clear with `-1` |
 | `prg32_cart_select_default` | load the saved default cartridge |
 | `prg32_device_demo_run` | run the firmware-owned device demo from setup or a lab |
-| `prg32_performance_test_run` | run the unattended setup benchmark |
+| `prg32_performance_test_run` | run the unattended multi-screen setup benchmark |
 | `prg32_performance_has_results` | return nonzero when onboard benchmark results are available |
 | `prg32_performance_summary` | copy the latest benchmark summary into a caller-provided struct |
 

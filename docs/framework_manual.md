@@ -15,10 +15,10 @@ arguments and return values, `ra` holds the return address, and `sp` is kept
 - `PRG32_MODE_LCD_ONLY`: text appears on the ILI9341 display.
 - `PRG32_MODE_UART_LCD_MIRROR`: debug text is sent both to serial and LCD.
 
-## Input and Player 2
+## Input
 
-`prg32_input_read()` returns the full PRG32 input register. Player 1 uses the
-low bits:
+`prg32_input_read()` returns the PRG32 input register. The low bits are the
+single local joystick:
 
 - `PRG32_BTN_LEFT`
 - `PRG32_BTN_RIGHT`
@@ -28,21 +28,20 @@ low bits:
 - `PRG32_BTN_B`
 - `PRG32_BTN_SELECT` (`PRG32_BTN_START` is kept as an alias)
 
-Player 2 uses the same layout shifted into the `PRG32_P2_*` bits. Games can use
-`prg32_input_read_player(1)` or `prg32_input_read_player(2)` to get a normalized
-low-bit mask for each player. This keeps Pong-style two-player games readable
-in both C and assembly.
+Games can use `prg32_input_read_player(1)` to get the same normalized low-bit
+mask. `prg32_input_read_player(2)` is kept as a source-compatible helper, but
+returns `0`; multiplayer games should use the PRG32 multiplayer API for remote
+players.
 
 QEMU and host-driven tests can inject the same bitmask through
-`prg32_diag_set_input_state()`, so two-player logic can be tested without the
-physical second joystick mounted.
+`prg32_diag_set_input_state()`.
 
-Menu/setup helpers can call `prg32_input_read_menu()` to merge joystick 1 and
-joystick 2 into the same normalized low-bit mask.
+Menu/setup helpers call `prg32_input_read_menu()` to read the local joystick in
+the same normalized low-bit mask.
 
 System hotkey:
 
-- A + B + DOWN on joystick 1 or joystick 2: restart the ESP32-C6 firmware from
+- A + B + DOWN on the local joystick: restart the ESP32-C6 firmware from
   anywhere in the PRG32 input path.
 
 ## Joystick Text Input
@@ -99,8 +98,9 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 ```
 
 When the QEMU backend is selected, `main/prg32_config.h` disables physical GPIO
-buttons, the buzzer, and the UART controller bridge. This keeps desktop screen
-tests focused on rendering and GDB exercises.
+buttons and the buzzer. QEMU builds keep player 1 usable through the UART
+console keyboard mapper: arrows or `W`/`A`/`S`/`D` for the joystick,
+`Enter`/`Space` for SELECT, `J`/`Z` for A, and `K`/`X` for B.
 
 ## Splash Screens
 
@@ -207,10 +207,12 @@ upload is handled asynchronously so the measured frame code does not wait for
 the network. See `docs/metrics_api.md` for the server, export workflow, and lab
 exercise.
 
-Setup mode also includes `PERFORMANCE TEST`, an unattended benchmark that stores
-raw frame samples and one-second aggregate windows in RAM without streaming
-every frame. The latest run is available as `/api/performance.json` until the
-next benchmark or reboot. Use `tools/prg32_metrics_paper.py` to turn that JSON
+Setup mode also includes `PERFORMANCE TEST`, an unattended multi-screen
+benchmark that stores raw frame samples, one-second aggregate windows, and
+per-screen summaries in RAM without streaming every frame. The latest run is
+available as `/api/performance.json` until the next benchmark or reboot. The
+built-in screens isolate clear/fill, text overlay, sprite storm, scrolling, and
+mixed-gameplay workloads. Use `tools/prg32_metrics_paper.py` to turn that JSON
 into LaTeX tables, captions, and high-resolution figures for a paper.
 
 ## Cartridge runtime
@@ -222,6 +224,9 @@ Important constants:
 
 - `PRG32_CART_MAGIC`: `.prg32` package magic.
 - `PRG32_CART_ABI_MAJOR` / `PRG32_CART_ABI_MINOR`: loader ABI version.
+- `PRG32_CART_META_MAGIC`: optional metadata trailer magic, `PRG32META`.
+- `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
+- `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
 - `PRG32_CART_RAM_SIZE`: executable cartridge RAM window, currently 32 KiB.
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
@@ -241,7 +246,12 @@ Important functions:
 - `prg32_cart_call_draw()`
 
 The default app automatically calls the current cartridge every frame when one
-is loaded.
+is loaded. Store-ready cartridges may include a metadata trailer after the
+legacy executable payload. The game colophon is shown after the cartridge is
+activated, before the player starts a new play. See
+[cartridge_metadata.md](cartridge_metadata.md),
+[colophon_abi.md](colophon_abi.md), and
+[setup_mode_cartridge_store.md](setup_mode_cartridge_store.md).
 
 ## Wi-Fi Modes and Setup
 
@@ -260,8 +270,10 @@ filled.
 
 The setup main menu contains cartridge launch, default cartridge selection,
 Wi-Fi setup, audio setup, the developer band menu, the device demo, the
-performance test, the about screen, and exit. Use UP/DOWN to choose, SELECT or
-B to confirm, and A to cancel/back. The
+performance test, the about screen, and exit. The Cartrige Store integration
+contract adds manual/discovered store URL entry, browsing, colophon preview, and
+download-to-slot behavior for future firmware work. Use UP/DOWN to choose,
+SELECT or B to confirm, and A to cancel/back. The
 device demo is a firmware-owned smoke test for display, input, audio, Wi-Fi
 status, cartridges, sprites, scrolling, playfield rendering, status bands, and
 small sketches inspired by Pong, Breakout, Space Invaders, Pacman, Tetris,
@@ -271,9 +283,8 @@ cockpit are separate playfields.
 
 The Wi-Fi setup screen lets the user choose access-point mode or infrastructure
 mode. Infrastructure mode scans for nearby SSIDs, lists them on screen, and
-uses UP/DOWN plus SELECT or B to select. A cancels back. Joystick 1 and
-joystick 2 work the same way in setup. The setup UI also shows the active Wi-Fi
-mode and IP address; AP mode shows the AP SSID, while
+uses UP/DOWN plus SELECT or B to select. A cancels back. The setup UI also
+shows the active Wi-Fi mode and IP address; AP mode shows the AP SSID, while
 infrastructure mode shows the selected/connected SSID.
 
 `PRG32_BOOT_SETUP_MODE` in `main/prg32_config.h` can still force setup on every
@@ -292,6 +303,51 @@ Useful calls:
 The chosen settings are stored in NVS under the `prg32wifi` namespace. QEMU
 builds keep physical Wi-Fi disabled by default, but games can still compile
 against the same API and exercise setup screens.
+
+## Multiplayer
+
+PRG32 multiplayer is a cartridge-level state-sharing service. A cartridge opts
+in by calling `prg32_multiplayer_join(signature, flags)` from its own code, or
+by being packaged with `tools/prg32_game.py build --multiplayer`. Use short
+ASCII signatures such as `pong-v1` or `mygame:lab`. Players only see peers that
+joined the same cartridge signature, so different games or different cartridge
+revisions do not share a playfield.
+
+The ESP32-C6 transport uses Wi-Fi station mode and WebSocket over TCP:
+
+- ESP32-C6 has native Wi-Fi, so station mode is the right physical network
+  transport for a classroom LAN.
+- WebSocket keeps one persistent bidirectional connection, which is lower
+  latency and simpler than repeated HTTP polling.
+- The classroom server is Node.js with the `ws` package, which is small enough
+  to run on an instructor laptop.
+
+Useful calls:
+
+- `prg32_multiplayer_init()`
+- `prg32_multiplayer_available()`
+- `prg32_multiplayer_join(signature, flags)`
+- `prg32_multiplayer_leave()`
+- `prg32_multiplayer_tick()`
+- `prg32_multiplayer_set_local_state(x, y, sprite, flags)`
+- `prg32_multiplayer_set_input(input)`
+- `prg32_multiplayer_get_peer_count()`
+- `prg32_multiplayer_get_peer(index, out)`
+
+Run the standalone relay server from
+[riscv-prg32/MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer):
+
+```bash
+git clone https://github.com/riscv-prg32/MultiplayerServer.git
+cd MultiplayerServer
+npm install
+npm start
+```
+
+Configure the board-side endpoint in `main/prg32_config.h` with
+`PRG32_MULTIPLAYER_SERVER_URL`. QEMU exposes the same API with an offline local
+stub: `prg32_multiplayer_available()` returns true, `join` succeeds for a
+non-empty signature, and peer snapshots are empty by default.
 
 ## Tile engine
 

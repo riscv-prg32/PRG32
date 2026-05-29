@@ -48,7 +48,7 @@ Feature demos live under `examples/features` and isolate one framework topic:
 - tile/platform helpers
 - joystick keyboard input
 - Wi-Fi setup
-- player 2 input
+- multiplayer snapshots
 - audio synthesis
 - onboard RGB LED and audio VU meter
 

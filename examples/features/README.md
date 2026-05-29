@@ -17,7 +17,6 @@ sketches without rebuilding a cartridge.
 | Joystick keyboard | - | `keyboard_input/c/demo.c` | `keyboard_input_c` | alphanumeric text input |
 | Wi-Fi setup | - | `wifi_setup/c/demo.c` | `wifi_setup_c` | setup mode and AP/STA choice |
 | Audio synth | - | `audio_synth/c/demo.c` | `audio_synth_c` | notes and samples |
-| Player 2 input | - | `player2_input/c/demo.c` | `player2_input_c` | two-player bitmasks |
 
 Each demo exports:
 

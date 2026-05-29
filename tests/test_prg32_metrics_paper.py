@@ -22,6 +22,7 @@ class MetricsPaperToolTests(unittest.TestCase):
             "game_name": "setup-performance-test",
             "build_type": "release",
             "wifi_mode": "access_point",
+            "screen_count": 1,
             "aggregate_windows": [
                 {
                     "window_index": 0,
@@ -33,9 +34,24 @@ class MetricsPaperToolTests(unittest.TestCase):
                     "missed_deadlines": 0,
                 }
             ],
+            "screen_summaries": [
+                {
+                    "screen_index": 0,
+                    "screen_name": "clear-fill",
+                    "metric_goal": "viewport clear and large rectangle fill bandwidth",
+                    "frames": 2,
+                    "fps_mean": 40.0,
+                    "frame_us_mean": 25000,
+                    "frame_us_p95": 26000,
+                    "frame_us_p99": 26000,
+                    "missed_deadlines": 0,
+                }
+            ],
             "samples": [
                 {
                     "frame_index": 0,
+                    "screen_index": 0,
+                    "screen_name": "clear-fill",
                     "t_update_us": 500,
                     "t_draw_us": 7000,
                     "t_present_us": 17000,
@@ -48,6 +64,8 @@ class MetricsPaperToolTests(unittest.TestCase):
                 },
                 {
                     "frame_index": 1,
+                    "screen_index": 0,
+                    "screen_name": "clear-fill",
                     "t_update_us": 520,
                     "t_draw_us": 7100,
                     "t_present_us": 18000,
@@ -72,8 +90,10 @@ class MetricsPaperToolTests(unittest.TestCase):
             self.assertTrue((out_dir / "samples.csv").exists())
             self.assertTrue((out_dir / "table_summary.tex").exists())
             self.assertTrue((out_dir / "table_windows.tex").exists())
+            self.assertTrue((out_dir / "table_screens.tex").exists())
             self.assertTrue((out_dir / "captions.tex").exists())
             self.assertIn("Mean FPS", (out_dir / "table_summary.tex").read_text())
+            self.assertIn("clear-fill", (out_dir / "table_screens.tex").read_text())
 
 
 if __name__ == "__main__":

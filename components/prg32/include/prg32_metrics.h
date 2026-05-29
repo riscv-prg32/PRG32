@@ -53,6 +53,7 @@ typedef struct {
     uint32_t frames;
     uint32_t sample_count;
     uint32_t window_count;
+    uint32_t screen_count;
     uint32_t fps_mean_x100;
     uint32_t frame_us_min;
     uint32_t frame_us_mean;

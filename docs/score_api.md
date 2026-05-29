@@ -1,8 +1,9 @@
 # PRG32 Score API
 
-PRG32 can expose a small REST API over Wi-Fi and can also submit records to an
-external classroom server. This is useful for competitions and for teaching the
-boundary between assembly, C, and network services.
+PRG32 can expose a small REST API over Wi-Fi and can also submit records to the
+standalone [ScoreServer](https://github.com/riscv-prg32/ScoreServer). This is
+useful for competitions and for teaching the boundary between assembly, C, and
+network services.
 
 ## Enable Wi-Fi
 
@@ -62,10 +63,15 @@ This is a clean ABI example: arguments in `a0`, `a1`, `a2`, return value in `a0`
 
 ## Remote classroom server
 
-Run the optional Flask + SQLite server:
+Clone and run the standalone Flask + SQLite server:
 
 ```bash
-python3 tools/prg32_score_server/app.py
+git clone https://github.com/riscv-prg32/ScoreServer.git
+cd ScoreServer
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+python3 app.py
 ```
 
 Then submit from a host:
@@ -87,8 +93,8 @@ prg32_score_submit_remote("http://192.168.1.20:5000",
 
 ## Current implementation
 
-The board-local implementation stores a small in-RAM scoreboard. The optional
-Python server persists records in SQLite.
+The board-local implementation stores a small in-RAM scoreboard. The standalone
+ScoreServer persists records in SQLite.
 
 The same board HTTP server also hosts the cartridge upload API when
 `PRG32_GAME_UPLOAD_ENABLE` is enabled. See `docs/cartridges.md`.

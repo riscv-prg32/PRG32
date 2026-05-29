@@ -75,6 +75,8 @@ def normalize_samples(data: dict[str, Any]) -> list[dict[str, Any]]:
         normalized.append(
             {
                 "frame_index": _sample_field(raw, "frame_index", "frame"),
+                "screen_index": _int(raw.get("screen_index")),
+                "screen_name": str(raw.get("screen_name", "unknown")),
                 "t_update_us": _sample_field(raw, "t_update_us", "update_us"),
                 "t_draw_us": _sample_field(raw, "t_draw_us", "draw_us"),
                 "t_present_us": _sample_field(raw, "t_present_us", "present_us"),
@@ -142,6 +144,8 @@ def summarize(samples: list[dict[str, Any]]) -> dict[str, float]:
 def write_samples_csv(path: Path, samples: list[dict[str, Any]]) -> None:
     fields = [
         "frame_index",
+        "screen_index",
+        "screen_name",
         "t_update_us",
         "t_draw_us",
         "t_present_us",
@@ -227,6 +231,34 @@ def write_window_table(path: Path, data: dict[str, Any]) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def write_screen_table(path: Path, data: dict[str, Any]) -> None:
+    screens = data.get("screen_summaries", [])
+    lines = [
+        r"\begin{table}[tbp]",
+        r"\centering",
+        r"\caption{Per-screen PRG32 benchmark results. "
+        r"Each row reports one unattended measurement screen with a distinct "
+        r"graphics workload, enabling separate analysis of clear/fill, text, "
+        r"sprite, scrolling, and mixed-game rendering costs.}",
+        r"\label{tab:prg32-performance-screens}",
+        r"\begin{tabular}{lrrrrr}",
+        r"\hline",
+        r"Screen & FPS & Mean us & p95 us & p99 us & Missed \\",
+        r"\hline",
+    ]
+    for screen in screens:
+        lines.append(
+            f"{_latex_escape(screen.get('screen_name', 'unknown'))} & "
+            f"{_number(screen.get('fps_mean')):.2f} & "
+            f"{_number(screen.get('frame_us_mean')):.1f} & "
+            f"{_number(screen.get('frame_us_p95')):.1f} & "
+            f"{_number(screen.get('frame_us_p99')):.1f} & "
+            f"{_int(screen.get('missed_deadlines'))} \\\\"
+        )
+    lines.extend([r"\hline", r"\end{tabular}", r"\end{table}", ""])
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def write_captions(path: Path, data: dict[str, Any]) -> None:
     run = data.get("run_id", "unknown")
     target = data.get("target", "unknown")
@@ -250,12 +282,18 @@ def write_captions(path: Path, data: dict[str, Any]) -> None:
         r"\newcommand{\PRGThirtyTwoHeapCaption}{Heap stability during the PRG32 "
         r"performance test. A flat minimum-free-heap trace supports the absence "
         r"of per-frame allocation drift.}",
+        r"\newcommand{\PRGThirtyTwoScreenComparisonCaption}{Per-screen PRG32 "
+        r"benchmark comparison. The grouped workloads isolate display clear, "
+        r"text overlay, sprite, scrolling, and mixed-game rendering costs.}",
         "",
     ]
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def write_plots(output_dir: Path, samples: list[dict[str, Any]], dpi: int) -> None:
+def write_plots(output_dir: Path,
+                samples: list[dict[str, Any]],
+                data: dict[str, Any],
+                dpi: int) -> None:
     if os.environ.get("PRG32_METRICS_SKIP_PLOTS"):
         (output_dir / "plots_unavailable.txt").write_text(
             "Plot generation skipped by PRG32_METRICS_SKIP_PLOTS.\n",
@@ -290,6 +328,14 @@ def write_plots(output_dir: Path, samples: list[dict[str, Any]], dpi: int) -> No
     draw_ms = [int(sample["t_draw_us"]) / 1000.0 for sample in samples]
     present_ms = [int(sample["t_present_us"]) / 1000.0 for sample in samples]
     heap_kib = [int(sample["min_free_heap_bytes"]) / 1024.0 for sample in samples]
+    screen_markers: list[tuple[int, str]] = []
+    seen_screens: set[int] = set()
+    for sample in samples:
+        screen_index = int(sample.get("screen_index", 0))
+        if screen_index in seen_screens:
+            continue
+        seen_screens.add(screen_index)
+        screen_markers.append((int(sample["frame_index"]), str(sample.get("screen_name", ""))))
 
     accent = "#05a6d8"
     warning = "#e8327c"
@@ -299,6 +345,10 @@ def write_plots(output_dir: Path, samples: list[dict[str, Any]], dpi: int) -> No
     fig, ax = plt.subplots(figsize=(8.8, 4.6))
     ax.plot(frames, frame_ms, color=accent, linewidth=1.7)
     ax.axhline(33.333, color=warning, linestyle="--", linewidth=1.1, label="30 FPS budget")
+    for marker, name in screen_markers[1:]:
+        ax.axvline(marker, color="#8d99ae", linestyle=":", linewidth=0.8)
+        ax.text(marker, 0.98, name, rotation=90, va="top", ha="right",
+                transform=ax.get_xaxis_transform(), fontsize=7)
     ax.set_title("PRG32 frame-time time series")
     ax.set_xlabel("Frame index")
     ax.set_ylabel("Frame time (ms)")
@@ -350,6 +400,29 @@ def write_plots(output_dir: Path, samples: list[dict[str, Any]], dpi: int) -> No
     fig.savefig(output_dir / "figure_heap_stability.png", dpi=dpi)
     plt.close(fig)
 
+    screens = data.get("screen_summaries", [])
+    if screens:
+        names = [str(screen.get("screen_name", "unknown")) for screen in screens]
+        fps_values = [_number(screen.get("fps_mean")) for screen in screens]
+        p95_values = [_number(screen.get("frame_us_p95")) / 1000.0 for screen in screens]
+
+        fig, ax1 = plt.subplots(figsize=(8.8, 4.8))
+        x = list(range(len(names)))
+        ax1.bar(x, fps_values, color=accent, alpha=0.86, label="Mean FPS")
+        ax1.set_ylabel("Mean FPS")
+        ax1.set_xticks(x)
+        ax1.set_xticklabels(names, rotation=18, ha="right")
+        ax2 = ax1.twinx()
+        ax2.plot(x, p95_values, color=warning, marker="o", linewidth=1.8, label="p95 frame")
+        ax2.set_ylabel("p95 frame time (ms)")
+        ax1.set_title("PRG32 per-screen benchmark comparison")
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper right", frameon=True)
+        fig.tight_layout()
+        fig.savefig(output_dir / "figure_screen_comparison.png", dpi=dpi)
+        plt.close(fig)
+
 
 def process_metrics(input_path: Path, output_dir: Path, dpi: int) -> None:
     data = load_metrics(input_path)
@@ -365,8 +438,9 @@ def process_metrics(input_path: Path, output_dir: Path, dpi: int) -> None:
     write_samples_csv(output_dir / "samples.csv", samples)
     write_summary_table(output_dir / "table_summary.tex", data, summary)
     write_window_table(output_dir / "table_windows.tex", data)
+    write_screen_table(output_dir / "table_screens.tex", data)
     write_captions(output_dir / "captions.tex", data)
-    write_plots(output_dir, samples, dpi)
+    write_plots(output_dir, samples, data, dpi)
 
 
 def main() -> None:

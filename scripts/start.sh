@@ -262,6 +262,8 @@ inject_cartridge() {
 
 launch_qemu() {
   log_info "Launching QEMU"
+  log_info "Input: arrows or W/A/S/D = joystick 1, Enter/Space = SELECT"
+  log_info "Input: J/Z = A button, K/X = B button"
   log_info "Press Ctrl + ] to exit"
   exec qemu-system-riscv32 \
     -M esp32c3 \

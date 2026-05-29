@@ -12,11 +12,11 @@ available, then validate final wiring, buttons, and sound on physical hardware.
 Use this sequence for Computing Architecture / RISC-V assembly classes:
 
 1. `lab_01_hello_world.md`: build, flash, and change console output.
-2. `lab_02_input.md`: read GPIO buttons and controller bits.
+2. `lab_02_input.md`: read local GPIO button bits.
 3. `lab_03_graphics.md`: draw and move a rectangle.
 4. `lab_04_sound.md`: add sound effects and frame timing.
-5. `lab_05_scores_and_controllers.md`: submit scores and use the UART
-   controller bridge.
+5. `lab_05_scores_and_multiplayer.md`: submit scores and join the multiplayer
+   relay.
 6. Optional cartridge workflow: build and upload games without reflashing; see
    `docs/cartridges.md`.
 

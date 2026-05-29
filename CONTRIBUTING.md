@@ -81,7 +81,7 @@ Run these checks before opening a pull request:
 git diff --check
 PYTHONPYCACHEPREFIX=/tmp/prg32-pycache python3 -m py_compile \
   tools/prg32_game.py \
-  tools/prg32_score_server/app.py
+  tools/prg32_metrics_paper.py
 PYTHONPYCACHEPREFIX=/tmp/prg32-pycache python3 -m unittest discover -s tests
 python3 tools/prg32_game.py doctor --host-only
 ```

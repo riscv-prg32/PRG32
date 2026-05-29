@@ -802,6 +802,7 @@ void prg32_init(void) {
     prg32_audio_pwm_init();
     prg32_splash_show_default();
     prg32_input_init();
+    prg32_multiplayer_init();
     prg32_abi_exports_keep();
     prg32_cart_init();
     prg32_band_load_config();

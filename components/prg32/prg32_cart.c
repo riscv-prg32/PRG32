@@ -16,8 +16,21 @@
 #include "freertos/semphr.h"
 
 #define PRG32_CART_HEADER_MIN_SIZE ((size_t)sizeof(prg32_cart_header_t))
+#define PRG32_CART_META_MAGIC_LEN 9
 
 typedef void (*prg32_cart_entry_t)(void);
+
+typedef struct __attribute__((packed)) {
+    char magic[PRG32_CART_META_MAGIC_LEN];
+    uint8_t version;
+    uint16_t entry_count;
+    uint32_t trailer_size;
+} prg32_cart_meta_header_t;
+
+typedef struct __attribute__((packed)) {
+    char block_type[4];
+    uint32_t length;
+} prg32_cart_meta_tlv_header_t;
 
 static const char *TAG = "prg32_cart";
 
@@ -128,6 +141,52 @@ static const esp_partition_t *cart_partition(void) {
     return cart_partition_by_slot(g_current_slot);
 }
 
+static int read_metadata_trailer_size(const esp_partition_t *part,
+                                      size_t offset,
+                                      uint32_t *trailer_size) {
+    if (!part || !trailer_size) {
+        return -1;
+    }
+    *trailer_size = 0;
+    if (offset + sizeof(prg32_cart_meta_header_t) > part->size) {
+        return 0;
+    }
+
+    prg32_cart_meta_header_t header;
+    if (esp_partition_read(part, offset, &header, sizeof(header)) != ESP_OK) {
+        return -1;
+    }
+    if (memcmp(header.magic,
+               PRG32_CART_META_MAGIC,
+               PRG32_CART_META_MAGIC_LEN) != 0) {
+        return 0;
+    }
+    if (header.version != PRG32_CART_META_VERSION ||
+        header.trailer_size < sizeof(header) ||
+        offset + header.trailer_size > part->size) {
+        return -1;
+    }
+
+    size_t pos = sizeof(header);
+    for (uint16_t i = 0; i < header.entry_count; ++i) {
+        prg32_cart_meta_tlv_header_t tlv;
+        if (pos + sizeof(tlv) > header.trailer_size ||
+            esp_partition_read(part, offset + pos, &tlv, sizeof(tlv)) != ESP_OK) {
+            return -1;
+        }
+        pos += sizeof(tlv);
+        if (tlv.length > header.trailer_size - pos) {
+            return -1;
+        }
+        pos += tlv.length;
+    }
+    if (pos != header.trailer_size) {
+        return -1;
+    }
+    *trailer_size = header.trailer_size;
+    return 1;
+}
+
 static int read_stored_header(uint8_t slot,
                               prg32_cart_header_t *header,
                               size_t *image_size,
@@ -158,6 +217,14 @@ static int read_stored_header(uint8_t slot,
         }
         audio = block.block_size;
         total += block.block_size;
+    }
+    uint32_t metadata_size = 0;
+    int meta = read_metadata_trailer_size(part, total, &metadata_size);
+    if (meta < 0) {
+        return -1;
+    }
+    if (meta > 0) {
+        total += metadata_size;
     }
     if (image_size) {
         *image_size = total;
@@ -557,6 +624,7 @@ int prg32_cart_get_slot_info(uint8_t slot, prg32_cart_info_t *info) {
         info->code_size = header.code_size;
         info->mem_size = header.mem_size;
         info->audio_size = audio_size;
+        info->flags = header.flags;
         info->stored = 1;
         info->audio = audio_size > 0 ? 1 : 0;
     }
@@ -580,6 +648,7 @@ int prg32_cart_get_info(prg32_cart_info_t *info) {
         info->code_size = g_header.code_size;
         info->mem_size = g_header.mem_size;
         info->audio_size = g_audio_size;
+        info->flags = g_header.flags;
         info->audio = g_audio_size > 0 ? 1 : 0;
     }
     info->load_addr = (uint32_t)(uintptr_t)prg32_cart_exec;

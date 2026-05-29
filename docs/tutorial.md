@@ -46,10 +46,10 @@ To run without hardware, use the QEMU tasks instead:
 The QEMU screen task opens a virtual 320x240 PRG32 display window. Games still
 draw into the centered 320x200 viewport.
 
-If QEMU is your first target, remember that it does not emulate the physical
-GPIO buttons. Use QEMU for graphics, timing, register tracing, and memory
-inspection. Use the real ESP32-C6 board for final button, buzzer, Wi-Fi, and LCD
-wiring checks.
+If QEMU is your first target, use the monitor terminal keyboard for player 1:
+arrow keys or `W`/`A`/`S`/`D` move the joystick, `Enter`/`Space` is SELECT,
+`J`/`Z` is A, and `K`/`X` is B. Use the real ESP32-C6 board for final physical
+button, buzzer, Wi-Fi, and LCD wiring checks.
 
 ## 3. Read the API
 
@@ -127,17 +127,34 @@ li a2, 1200
 call prg32_score_submit
 ```
 
-For a classroom server, run `tools/prg32_score_server/app.py` and call `prg32_score_submit_remote` from C glue code or a wrapper.
+For a classroom server, run
+[ScoreServer](https://github.com/riscv-prg32/ScoreServer) and call
+`prg32_score_submit_remote` from C glue code or a wrapper.
 
-## 8. Add a Controller Bridge
+## 8. Add Multiplayer
 
-External controllers send UART packets:
+Cartridges opt in to multiplayer by joining a cartridge signature. Players who
+join the same signature share the same game field; players with different
+signatures stay isolated.
 
-```text
-'U' 'G' <button-mask-low> <button-mask-high>
+```c
+if (prg32_multiplayer_available()) {
+    prg32_multiplayer_join("my-game-v1", PRG32_MP_FLAG_ENABLE);
+}
 ```
 
-See `docs/external_controllers.md`.
+Each frame, publish the local player state and draw any peers:
+
+```c
+prg32_multiplayer_set_input(prg32_input_read_player(1));
+prg32_multiplayer_set_local_state(player_x, player_y, 0, 0);
+prg32_multiplayer_tick();
+```
+
+On ESP32-C6 this uses Wi-Fi station mode and WebSocket. Run the standalone
+[MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer) on the
+classroom LAN. QEMU exposes the same API with a local offline stub, so the
+cartridge still compiles and `join` succeeds.
 
 ## 9. Build a Complete Game
 

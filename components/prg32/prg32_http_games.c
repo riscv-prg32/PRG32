@@ -54,7 +54,11 @@ static esp_err_t send_runtime(httpd_req_t *req) {
         add_json_u32(cart, "code_size", info.code_size);
         add_json_u32(cart, "mem_size", info.mem_size);
         add_json_u32(cart, "audio_size", info.audio_size);
+        add_json_u32(cart, "flags", info.flags);
         cJSON_AddBoolToObject(cart, "audio", info.audio != 0);
+        cJSON_AddBoolToObject(cart,
+                              "multiplayer",
+                              (info.flags & PRG32_CART_FLAG_MULTIPLAYER) != 0);
         add_json_u32(cart, "generation", info.generation);
         cJSON_AddBoolToObject(root, "cart_loaded", info.loaded != 0);
     }
@@ -149,6 +153,24 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                (uintptr_t)prg32_wifi_setup_requested);
     add_import(imports, "prg32_wifi_setup_run",
                (uintptr_t)prg32_wifi_setup_run);
+    add_import(imports, "prg32_multiplayer_init",
+               (uintptr_t)prg32_multiplayer_init);
+    add_import(imports, "prg32_multiplayer_available",
+               (uintptr_t)prg32_multiplayer_available);
+    add_import(imports, "prg32_multiplayer_join",
+               (uintptr_t)prg32_multiplayer_join);
+    add_import(imports, "prg32_multiplayer_leave",
+               (uintptr_t)prg32_multiplayer_leave);
+    add_import(imports, "prg32_multiplayer_tick",
+               (uintptr_t)prg32_multiplayer_tick);
+    add_import(imports, "prg32_multiplayer_set_local_state",
+               (uintptr_t)prg32_multiplayer_set_local_state);
+    add_import(imports, "prg32_multiplayer_set_input",
+               (uintptr_t)prg32_multiplayer_set_input);
+    add_import(imports, "prg32_multiplayer_get_peer_count",
+               (uintptr_t)prg32_multiplayer_get_peer_count);
+    add_import(imports, "prg32_multiplayer_get_peer",
+               (uintptr_t)prg32_multiplayer_get_peer);
     add_import(imports, "prg32_cart_stored_count",
                (uintptr_t)prg32_cart_stored_count);
     add_import(imports, "prg32_cart_get_slot_info",
@@ -288,7 +310,11 @@ static esp_err_t get_games(httpd_req_t *req) {
         add_json_u32(cart, "code_size", info.code_size);
         add_json_u32(cart, "mem_size", info.mem_size);
         add_json_u32(cart, "audio_size", info.audio_size);
+        add_json_u32(cart, "flags", info.flags);
         cJSON_AddBoolToObject(cart, "audio", info.audio != 0);
+        cJSON_AddBoolToObject(cart,
+                              "multiplayer",
+                              (info.flags & PRG32_CART_FLAG_MULTIPLAYER) != 0);
         add_json_u32(cart, "generation", info.generation);
         cJSON_AddItemToArray(root, cart);
     }

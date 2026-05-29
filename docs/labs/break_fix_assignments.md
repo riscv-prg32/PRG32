@@ -38,13 +38,16 @@ Symptoms: the object disappears.
 
 Fix it: use memory inspection to find the coordinate and add bounds checks.
 
-## Assignment 5 - Bad UART Packet
+## Assignment 5 - Mismatched Multiplayer Signature
 
-Break it: send `U X lo hi` instead of `U G lo hi` from the controller bridge.
+Break it: start two cartridges with different signatures, such as
+`"pong-v1"` and `"pong-lab"`.
 
-Symptoms: external controller input stops updating while GPIO buttons still work.
+Symptoms: both cartridges can move locally, but neither one receives peer
+snapshots from the other.
 
-Fix it: restore the packet header and explain how the parser resynchronizes.
+Fix it: restore the shared signature and explain why PRG32 groups peers by
+cartridge signature rather than by display name.
 
 ## Assignment 6 - Score JSON Error
 

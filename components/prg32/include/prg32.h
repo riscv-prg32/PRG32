@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include "prg32_audio.h"
 #include "prg32_metrics.h"
+#include "prg32_multiplayer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,15 +57,6 @@ extern "C" {
 #define PRG32_BTN_START (1u << 6)
 #define PRG32_BTN_SELECT PRG32_BTN_START
 
-#define PRG32_P2_BTN_LEFT  (1u << 8)
-#define PRG32_P2_BTN_RIGHT (1u << 9)
-#define PRG32_P2_BTN_UP    (1u << 10)
-#define PRG32_P2_BTN_DOWN  (1u << 11)
-#define PRG32_P2_BTN_A     (1u << 12)
-#define PRG32_P2_BTN_B     (1u << 13)
-#define PRG32_P2_BTN_START (1u << 14)
-#define PRG32_P2_BTN_SELECT PRG32_P2_BTN_START
-
 #define PRG32_COLOR_BLACK   0x0000
 #define PRG32_COLOR_WHITE   0xffff
 #define PRG32_COLOR_RED     0xf800
@@ -81,6 +73,18 @@ extern "C" {
 #define PRG32_CART_ABI_MAJOR 1
 #define PRG32_CART_ABI_MINOR 0
 #define PRG32_CART_FLAG_AUDIO_BLOCK (1u << 0)
+#define PRG32_CART_FLAG_MULTIPLAYER (1u << 1)
+#define PRG32_CART_META_MAGIC "PRG32META"
+#define PRG32_CART_META_VERSION 1
+#define PRG32_CART_META_ABI "prg32-metadata-1.0"
+#define PRG32_CART_COLOPHON_ABI "prg32-colophon-1.0"
+#define PRG32_CART_META_BLOCK_META "META"
+#define PRG32_CART_META_BLOCK_ICON "ICON"
+#define PRG32_CART_META_BLOCK_SCREENSHOT "SCRN"
+#define PRG32_CART_META_BLOCK_SIGNATURE "SIGN"
+#define PRG32_CART_META_BLOCK_COLOPHON "COLO"
+#define PRG32_CART_ARCH_ESP32C6 "esp32c6"
+#define PRG32_CART_ARCH_QEMU "qemu"
 #define PRG32_CART_RAM_SIZE (32u * 1024u)
 #define PRG32_CART_NAME_LEN 32
 #define PRG32_CART_SLOT_COUNT 2
@@ -112,6 +116,7 @@ typedef struct {
     uint32_t mem_size;
     uint32_t audio_size;
     uint32_t generation;
+    uint16_t flags;
     uint8_t slot;
     uint8_t loaded;
     uint8_t stored;

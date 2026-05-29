@@ -23,11 +23,23 @@ import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[1]
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from prg32_cartridge_format import (  # noqa: E402
+    ARCHITECTURE_PROFILES,
+    build_from_files,
+    parse_file,
+    summary_dict,
+)
+
 CART_HEADER = struct.Struct("<4sHHHHIIIIIII32s")
 CART_MAGIC = b"PRG2"
 CART_ABI_MAJOR = 1
 CART_ABI_MINOR = 0
 PRG32_CART_FLAG_AUDIO_BLOCK = 1 << 0
+PRG32_CART_FLAG_MULTIPLAYER = 1 << 1
 AUDIO_BLOCK_MAGIC = b"AUD0"
 DEFAULT_PARTITION_TABLE = ROOT / "partitions_prg32.csv"
 DEFAULT_CART_SLOT = "cart0"
@@ -66,6 +78,15 @@ IMPORT_NAMES = [
     "prg32_wifi_current_ssid",
     "prg32_wifi_setup_requested",
     "prg32_wifi_setup_run",
+    "prg32_multiplayer_init",
+    "prg32_multiplayer_available",
+    "prg32_multiplayer_join",
+    "prg32_multiplayer_leave",
+    "prg32_multiplayer_tick",
+    "prg32_multiplayer_set_local_state",
+    "prg32_multiplayer_set_input",
+    "prg32_multiplayer_get_peer_count",
+    "prg32_multiplayer_get_peer",
     "prg32_cart_stored_count",
     "prg32_cart_get_slot_info",
     "prg32_cart_select_slot",
@@ -411,6 +432,8 @@ def build(args: argparse.Namespace) -> None:
                     f"but file has {len(audio_block)}"
                 )
             flags |= PRG32_CART_FLAG_AUDIO_BLOCK
+        if args.multiplayer:
+            flags |= PRG32_CART_FLAG_MULTIPLAYER
         start = linked_symbols["__cart_start"]
         end = linked_symbols["__cart_end"]
         mem_size = end - start
@@ -553,6 +576,34 @@ def doctor(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
+def attach_metadata(args: argparse.Namespace) -> None:
+    build_from_files(
+        args.cartridge,
+        metadata_path=args.metadata,
+        icon_path=args.icon,
+        out_path=args.out,
+        screenshot_path=args.screenshot,
+        signature_path=args.signature,
+        colophon_path=args.colophon,
+        architecture=args.architecture,
+    )
+    parsed = parse_file(args.out)
+    arch = ""
+    if parsed.metadata:
+        runtime = parsed.metadata.get("runtime", {})
+        if isinstance(runtime, dict) and runtime.get("architecture"):
+            arch = f" architecture={runtime['architecture']}"
+    print(
+        f"wrote {args.out} legacy={len(parsed.legacy_payload)} "
+        f"blocks={len(parsed.blocks)}{arch}"
+    )
+
+
+def inspect_metadata(args: argparse.Namespace) -> None:
+    parsed = parse_file(args.cartridge)
+    print(json.dumps(summary_dict(parsed), indent=2, sort_keys=True))
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tool-prefix", default="riscv32-esp-elf-")
@@ -573,6 +624,11 @@ def main(argv: list[str]) -> int:
     p.add_argument(
         "--audio-block",
         help="optional PRG32 AUDIO block produced by tools/prg32audio_pack.py",
+    )
+    p.add_argument(
+        "--multiplayer",
+        action="store_true",
+        help="mark the cartridge as using the PRG32 multiplayer service",
     )
     p.add_argument("--march", default="rv32imc_zicsr_zifencei")
     p.add_argument("--mabi", default="ilp32")
@@ -600,6 +656,31 @@ def main(argv: list[str]) -> int:
         help="skip ESP-IDF and RISC-V toolchain checks for CI/unit-test hosts",
     )
     p.set_defaults(func=doctor)
+
+    p = sub.add_parser(
+        "attach-metadata",
+        help="append or replace a PRG32META metadata trailer",
+    )
+    p.add_argument("cartridge")
+    p.add_argument("--out", required=True)
+    p.add_argument("--metadata", required=True, help="prg32-metadata-1.0 JSON")
+    p.add_argument("--icon", required=True, help="PNG or JPEG icon image")
+    p.add_argument("--screenshot", help="optional PNG or JPEG screenshot image")
+    p.add_argument("--signature", help="optional signature bytes or JSON object")
+    p.add_argument("--colophon", help="optional prg32-colophon-1.0 JSON")
+    p.add_argument(
+        "--architecture",
+        choices=sorted(ARCHITECTURE_PROFILES),
+        help="cartridge architecture variant recorded in metadata.runtime",
+    )
+    p.set_defaults(func=attach_metadata)
+
+    p = sub.add_parser(
+        "inspect-metadata",
+        help="print the PRG32META trailer summary for a cartridge",
+    )
+    p.add_argument("cartridge")
+    p.set_defaults(func=inspect_metadata)
 
     args = parser.parse_args(argv)
     args.func(args)
