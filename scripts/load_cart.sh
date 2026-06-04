@@ -10,18 +10,7 @@ QEMU_EFUSE="$BUILD_DIR/qemu_efuse.bin"
 FLASH_SIZE=$((4 * 1024 * 1024))
 GAMES_DIR="examples/games"
 
-step() {
-  echo "[STEP] $1"
-}
-
-info() {
-  echo "[INFO] $1"
-}
-
-fail() {
-  echo "[FAIL] $1" >&2
-  exit 1
-}
+. "$ROOT_DIR/scripts/logging.sh"
 
 require_cmd() {
   local cmd="$1"
@@ -66,14 +55,14 @@ ensure_qemu_firmware() {
   idf.py -B "$BUILD_DIR" -D "SDKCONFIG=$SDKCONFIG" -D "SDKCONFIG_DEFAULTS=$SDKCONFIG_DEFAULTS" build
 
   [[ -f "$BUILD_DIR/PRG32.elf" ]] || fail "Missing $BUILD_DIR/PRG32.elf after build."
-  info "Firmware build ready"
+  log_info "Firmware build ready"
 }
 
 ensure_qemu_flash() {
   step "Ensuring QEMU flash image exists ($FLASH_IMAGE)"
 
   if [[ ! -f "$FLASH_IMAGE" ]]; then
-    info "Creating 4MB QEMU flash image"
+    log_info "Creating 4MB QEMU flash image"
     mkdir -p "$BUILD_DIR"
     dd if=/dev/zero of="$FLASH_IMAGE" bs=1048576 count=4 >/dev/null 2>&1 || \
       fail "Failed to create $FLASH_IMAGE"
@@ -85,7 +74,7 @@ ensure_qemu_flash() {
     fail "$FLASH_IMAGE has size $size bytes, expected $FLASH_SIZE bytes (4MB)."
   fi
 
-  info "QEMU flash image ready (4MB)"
+  log_info "QEMU flash image ready (4MB)"
 }
 
 ensure_qemu_efuse() {
@@ -108,7 +97,7 @@ out_path.write_bytes(module.QEMU_TARGETS["esp32c3"].default_efuse)
 PY
   fi
 
-  info "QEMU efuse image ready"
+  log_info "QEMU efuse image ready"
 }
 
 build_cartridge() {
@@ -129,7 +118,7 @@ build_cartridge() {
     --out "$out"
 
   [[ -f "$out" ]] || fail "Cartridge file was not produced: $out"
-  info "Cartridge built: $out"
+  log_info "Cartridge built: $out"
 }
 
 stage_cartridge_to_qemu() {
@@ -140,8 +129,8 @@ stage_cartridge_to_qemu() {
   python3 tools/prg32_game.py upload-qemu "$cart" --flash "$FLASH_IMAGE"
 
   echo
-  echo "[OK] Cartridge '$game_name' loaded into $FLASH_IMAGE"
-  echo "[INFO] Restart QEMU to run the newly loaded cartridge."
+  log_ok "Cartridge '$game_name' loaded into $FLASH_IMAGE"
+  log_info "Restart QEMU to run the newly loaded cartridge."
 }
 
 usage() {

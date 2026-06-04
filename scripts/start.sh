@@ -26,26 +26,7 @@ if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
   fi
 fi
 
-log_info() {
-  echo "${COLOR_YELLOW}[INFO]${COLOR_RESET} $1"
-}
-
-log_ok() {
-  echo "${COLOR_GREEN}[OK]${COLOR_RESET} $1"
-}
-
-log_error() {
-  echo "${COLOR_RED}[ERROR]${COLOR_RESET} $1" >&2
-}
-
-step() {
-  echo "${COLOR_YELLOW}[INFO]${COLOR_RESET} $1"
-}
-
-die() {
-  log_error "$1"
-  exit 1
-}
+. "$ROOT_DIR/scripts/logging.sh"
 
 check_python() {
   if ! command -v python3 >/dev/null 2>&1; then
@@ -81,6 +62,7 @@ load_idf_env() {
   local idf_root
   if ! idf_root="$(find_idf_root)"; then
     log_error "ESP-IDF not loaded and no local checkout was found."
+    log_error "Check your idf directory: $(find_idf_root)"
     cat <<'EOF_FIX'
 Run one of these commands after installing ESP-IDF:
 . ~/esp-idf/export.sh
