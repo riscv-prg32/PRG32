@@ -107,7 +107,17 @@ Upload either cartridge with:
 python3 tools/prg32_game.py upload build-esp32c6/platformer-c.prg32 --url http://192.168.4.1
 ```
 
-For QEMU, build against `build-qemu/PRG32.elf` and use `upload-qemu`.
+For QEMU
+
+On Windows:
+build against `build-qemu/PRG32.elf` and use `upload-qemu`.
+
+On Linux or MacOS:
+```bash
+./scripts/qemu/build_qemu.sh
+./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
+./scripts/qemu/launch_qemu.sh
+```
 
 ## Comparing Assembly And C
 

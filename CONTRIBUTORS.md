@@ -7,6 +7,7 @@ submissions and coursework documentation.
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
 - Ivan Cafiero - UniParthenope - Computer Science student
+- Simone Boscaglia - UniParthenope - Computer Science student
 
 ## Notes
 

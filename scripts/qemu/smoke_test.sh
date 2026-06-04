@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 QEMU_BUILD_DIR="build-qemu"
 QEMU_SDKCONFIG="$QEMU_BUILD_DIR/sdkconfig"
 QEMU_DEFAULTS="sdkconfig.defaults.qemu"

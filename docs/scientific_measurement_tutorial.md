@@ -111,11 +111,17 @@ idf.py -B build-esp32c6-metrics \
 
 For QEMU screen testing:
 
+On Windows:
 ```bash
 idf.py -B build-qemu \
   -D SDKCONFIG=build-qemu/sdkconfig \
   -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu \
   qemu --graphics monitor
+```
+
+On Linux or MacOS:
+```bash
+./scripts/qemu/build_qemu.sh
 ```
 
 Wait until the runtime splash and setup screen are visible. Note the IP address
@@ -151,10 +157,17 @@ python3 tools/prg32_game.py upload \
 
 For QEMU:
 
+On Windows:
 ```bash
 python3 tools/prg32_game.py upload-qemu \
   build-qemu/pong.prg32 \
   --flash build-qemu/flash_image.bin
+```
+
+On Linux or MacOS:
+```bash
+./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
+./scripts/qemu/launch_qemu.sh
 ```
 
 ## 7. Run The Measurement
