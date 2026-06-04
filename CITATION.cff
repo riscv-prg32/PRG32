@@ -9,6 +9,9 @@ authors:
   - family-names: "Cafiero"
     given-names: "Ivan"
     affiliation: "UniParthenope"
+  - family-names: "Boscaglia"
+    given-names: "Simone"
+    affiliation: "UniParthenope"
 keywords:
   - embedded-systems
   - riscv

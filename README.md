@@ -9,6 +9,7 @@ PRG32 is an educational runtime for RISC-V assembly and C games.
 - Course style: first-year/early undergraduate assembly and systems labs
 - Academic supervisor / project lead: Raffaele Montella - UniParthenope
 - Contributor (student): Ivan Cafiero - UniParthenope - Computer Science student
+- Contributor (student): Simone Boscaglia - UniParthenope - Computer Science student
 
 ## 🚀 Quick Start (macOS)
 
@@ -24,24 +25,20 @@ cd esp-idf
 . ./export.sh
 
 # 3) Project
-cd /path/to/PRG32
+cd <path_to_PRG32>
 
 # 4) Build and flash physical ESP32-C6 firmware
 idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
 idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
 
 # 5) Build QEMU firmware
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
-
-# 6) Run QEMU once (creates build-qemu/flash_image.bin)
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+./scripts/qemu/build_qemu.sh
 ```
 
 Open a second terminal (source ESP-IDF again), then stage a demo cartridge:
 
 ```bash
-cd /path/to/PRG32
+cd <path_to_PRG32>
 . $HOME/esp-idf/export.sh
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
@@ -193,9 +190,7 @@ pio device monitor -b 115200
 QEMU path:
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+./scripts/qemu/build_qemu.sh
 ```
 
 Linux notes:
@@ -270,8 +265,8 @@ Flow:
 - PlatformIO says it cannot exclusively lock `/dev/cu.usbmodem...`: close every
   other Serial Monitor, ESP-IDF Monitor, Arduino Serial Monitor, and terminal
   using that port, then start only one PlatformIO Monitor.
-- QEMU runs but the game does not move: QEMU defaults disable physical GPIO
-  buttons. Use a UART bridge packet source, or debug logic with the overlay/GDB.
+- QEMU runs but the game does not move: to use the UART bridge input, 
+  you have to target the terminal running QEMU as active window.
 - Cartridge upload fails: `build-qemu/flash_image.bin` is missing/invalid, or the
   cartridge is too large. Run QEMU once, then rerun `upload-qemu`.
 - `riscv32-esp-elf-gcc` missing: re-run `./install.sh esp32c3,esp32c6` and
@@ -493,6 +488,8 @@ See `docs/images/README.md` for capture instructions.
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
 - Ivan Cafiero - UniParthenope - Computer Science student
+- Simone Boscaglia - UniParthenope - Computer Science student
+
 
 See [CONTRIBUTORS.md](CONTRIBUTORS.md) for contributor metadata suitable for
 academic submissions.

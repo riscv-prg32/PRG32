@@ -107,9 +107,15 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 
 Or build for QEMU:
 
+On Windows:
 ```bash
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+```
+
+On Linux or MacOS:
+```bash
+./scripts/qemu/build_qemu.sh
 ```
 
 Restore the default `main/CMakeLists.txt` and `main/main.c` after the lab.
@@ -133,7 +139,16 @@ Upload to the board:
 python3 tools/prg32_game.py upload build-esp32c6/pong-c.prg32 --url http://192.168.4.1
 ```
 
-For QEMU, build against `build-qemu/PRG32.elf` and stage with `upload-qemu`.
+For QEMU
+
+On Windows:
+build against `build-qemu/PRG32.elf` and stage with `upload-qemu`
+
+On Linux or MacOS:
+```bash
+./scripts/qemu/build_qemu.sh
+./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
+./scripts/qemu/launch_qemu.sh```
 
 ## 6. Move to Tiles and Platform Games
 

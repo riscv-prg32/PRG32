@@ -70,9 +70,17 @@ brew install libgcrypt glib pixman sdl2 libslirp
 Use a separate build directory so the physical board configuration and the QEMU
 configuration do not overwrite each other.
 
+On Windows:
 ```bash
+cd <path_to_PRG32>
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+```
+
+On Linux or MacOS:
+```bash
+cd <path_to_PRG32>
+./scripts/qemu/build_qemu.sh
 ```
 
 The second command builds the firmware if needed, starts QEMU, opens the virtual
@@ -131,6 +139,7 @@ QEMU uses the same uploadable `.prg32` game package as the real board, but QEMU
 does not emulate the classroom Wi-Fi AP. Stage the cartridge into the emulator
 flash image before starting QEMU:
 
+On Windows:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
@@ -138,23 +147,49 @@ python3 tools/prg32_game.py build \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32
+```
+If `build-qemu/flash_image.bin` does not exist yet, start QEMU once so ESP-IDF
+generates the flash image, quit QEMU, then run:
 
+```bash
 python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32
 ```
 
-If `build-qemu/flash_image.bin` does not exist yet, start QEMU once so ESP-IDF
-generates the flash image, quit QEMU, then run `upload-qemu`.
-
 Then run `PRG32: qemu screen`.
 
-## Running an Example Game
+On Linux or MacOS:
 
-Example games stay outside the default app. To test one in QEMU, wire it into
+If `build-qemu/flash_image.bin` does not exist yet, start QEMU once so ESP-IDF
+generates the flash image:
+
+```bash
+cd <path_to_PRG32>
+./scripts/qemu/build_qemu.sh
+```
+
+Then stage the cartridge:
+```bash
+cd <path_to_PRG32>
+./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
+./scripts/qemu/launch_qemu.sh
+```
+
+## Wiring the game into QEMU
+
+Example games stay outside the default app. To test one in QEMU, you can wire it into
 `main/CMakeLists.txt` and `main/main.c` exactly as you would for the real board,
 then run:
 
+On Windows:
 ```bash
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+```
+
+On Linux or MacOS:
+```bash
+cd <path_to_PRG32>
+./scripts/qemu/build_qemu.sh
+./scripts/qemu/lauch_qemu.sh
 ```
 
 The same source can later be built for the physical board:
@@ -168,8 +203,9 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 
 QEMU screen emulation validates rendering, frame timing, and most assembly
 debugging exercises. The QEMU defaults disable physical GPIO buttons, the buzzer,
-and the controller bridge, so desktop QEMU runs will usually show the game at
-rest unless the app is extended with a host-side input bridge.
+and the controller bridge, so desktop QEMU runs an ASCII UART driver to enable keyboard 
+controls when testing inside QEMU via terminal.
+To give inputs, make sure the active window is the terminal running QEMU.
 
 The PRG32 input ABI remains the same:
 
