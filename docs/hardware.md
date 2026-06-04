@@ -25,8 +25,8 @@ They are the same display wiring used by the Arduino/Adafruit validation sketch.
 | GPIO2 | MISO / touch DO |
 | GPIO6 | SCLK |
 | GPIO10 | CS |
-| GPIO8 | DC |
-| GPIO9 | RST |
+| GPIO1 | DC |
+| GPIO0 | RST |
 | GPIO5 | BL |
 
 | ESP32-C6 | Input |

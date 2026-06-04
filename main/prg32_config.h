@@ -76,8 +76,8 @@
 #define PRG32_PIN_LCD_MISO   2
 #define PRG32_PIN_LCD_SCLK   6
 #define PRG32_PIN_LCD_CS     10
-#define PRG32_PIN_LCD_DC     8
-#define PRG32_PIN_LCD_RST    9
+#define PRG32_PIN_LCD_DC     1
+#define PRG32_PIN_LCD_RST    0
 #define PRG32_PIN_LCD_BL     5
 
 #define PRG32_LCD_SPI_CLOCK_HZ 32000000
@@ -97,7 +97,7 @@
 
 #define PRG32_PIN_SETUP      -1
 
-#define PRG32_PIN_BUZZER     15
+#define PRG32_PIN_BUZZER     -1
 
 /*
  * Many ESP32-C6 boards route the onboard addressable RGB LED to GPIO8. The
@@ -105,7 +105,7 @@
  * is disabled by default. Set this to the board LED GPIO only when that pin is
  * free in your hardware variant.
  */
-#define PRG32_PIN_RGB_LED -1
+#define PRG32_PIN_RGB_LED 8
 #endif
 
 /*
