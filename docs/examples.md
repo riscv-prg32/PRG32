@@ -6,11 +6,11 @@ PRG32 examples are split into game examples and focused feature examples.
 
 | Example | Purpose | Hardware |
 |---|---|---|
-| `examples/audio_mono_beep` | generated mono tone smoke test | one MAX98357A |
-| `examples/audio_mono_sample` | unsigned 8-bit PCM sample playback | one MAX98357A |
-| `examples/audio_mono_tracker` | tracker event sequence | one MAX98357A |
-| `examples/audio_stereo_pan_test` | verify left/right channel selection | two MAX98357A boards |
-| `examples/audio_stereo_music` | centered music plus panned effects | two MAX98357A boards |
+| `examples/features/audio_mono_beep` | generated mono tone smoke test | one MAX98357A |
+| `examples/features/audio_mono_sample` | unsigned 8-bit PCM sample playback | one MAX98357A |
+| `examples/features/audio_mono_tracker` | tracker event sequence | one MAX98357A |
+| `examples/features/audio_stereo_pan_test` | verify left/right channel selection | two MAX98357A boards |
+| `examples/features/audio_stereo_music` | centered music plus panned effects | two MAX98357A boards |
 
 Run audio examples as temporary firmware apps while validating hardware. For
 uploadable cartridges, pack assets with `tools/prg32audio_pack.py` and pass

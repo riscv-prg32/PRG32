@@ -504,6 +504,11 @@ static void audio_menu(void) {
             prg32_gfx_text8(8, 52, line, PRG32_COLOR_CYAN, 0);
         } else {
             prg32_gfx_text8(8, 52, "NO AUDIO OUTPUT DETECTED", PRG32_COLOR_YELLOW, 0);
+            snprintf(line,
+                     sizeof(line),
+                     "AUDIO ERR: %.40s",
+                     prg32_audio_last_error());
+            prg32_gfx_text8(8, 68, line, PRG32_COLOR_YELLOW, 0);
         }
 
         snprintf(line, sizeof(line), "VOLUME: %u", g_setup_audio_volume);

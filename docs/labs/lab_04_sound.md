@@ -35,7 +35,7 @@ board.
 ## Extension: I2S Audio
 
 1. Wire one MAX98357A as shown in `docs/audio.md`.
-2. Run `examples/audio_mono_beep`.
+2. Run `examples/features/audio_mono_beep`.
 3. Replace the generated square sample with a short WAV converted through
    `tools/wav2prg32sample.py`.
 4. Pack the sample with `tools/prg32audio_pack.py`.

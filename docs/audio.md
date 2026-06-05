@@ -115,13 +115,25 @@ Default PRG32 audio Kconfig pins:
 | GPIO4 | BCLK |
 | GPIO11 | LRC / WS |
 | GPIO23 | DIN |
-| not wired by default | SD, optional |
+| not wired by default | SD / MODE, optional |
 | GND or default | GAIN |
 
 The required I2S pins avoid the reference LCD, joystick, and passive buzzer
 wiring. If a MAX98357A breakout needs explicit shutdown control, assign
 `CONFIG_PRG32_AUDIO_I2S_SD_GPIO` to another unused GPIO in menuconfig; otherwise
 leave SD at `-1` and wire the board for its default enabled state.
+
+On the Adafruit MAX98357A breakout, `SD` is also the channel-mode pin. The
+breakout's default resistor network enables stereo-average mono output, and
+PRG32 duplicates mono samples into both I2S slots, so a single board will play
+even if `SD` selects only left or only right. Do not tie `SD` directly to GND;
+that shuts the amplifier down. Powering the board from 3.3 V is valid, though
+5 V gives more speaker power.
+
+The firmware cannot electrically detect whether a MAX98357A is plugged in. The
+setup menu reports mono I2S when the firmware is built for physical ESP32-C6,
+audio is enabled, and the I2S driver starts on the configured pins. QEMU display
+builds intentionally disable I2S output.
 
 Stereo wiring shares the same I2S signals:
 
@@ -177,7 +189,7 @@ Mono:
 5. Leave SD in the breakout's default enabled state, or connect it to a
    menuconfig-selected unused GPIO.
 6. Connect the speaker to the MAX98357A speaker `+` and `-` outputs.
-7. Power the board and run `examples/audio_mono_beep`.
+7. Power the board and run `examples/features/audio_mono_beep`.
 
 Stereo:
 
@@ -187,7 +199,7 @@ Stereo:
 4. Configure the left board for left-channel output.
 5. Configure the right board for right-channel output.
 6. Connect one speaker to each board.
-7. Run `examples/audio_stereo_pan_test`.
+7. Run `examples/features/audio_stereo_pan_test`.
 
 ## Audio API
 
@@ -284,11 +296,11 @@ Initial commands:
 
 ## Examples
 
-- `examples/audio_mono_beep`: generated tone smoke test.
-- `examples/audio_mono_sample`: C-registered PCM sample.
-- `examples/audio_mono_tracker`: looping event sequence.
-- `examples/audio_stereo_pan_test`: left/right/center wiring test.
-- `examples/audio_stereo_music`: centered melody with panned effects.
+- `examples/features/audio_mono_beep`: generated tone smoke test.
+- `examples/features/audio_mono_sample`: C-registered PCM sample.
+- `examples/features/audio_mono_tracker`: looping event sequence.
+- `examples/features/audio_stereo_pan_test`: left/right/center wiring test.
+- `examples/features/audio_stereo_music`: centered melody with panned effects.
 
 ## Troubleshooting
 
@@ -296,8 +308,12 @@ No sound:
 
 - verify common ground
 - verify VIN, BCLK, LRC/WS, and DIN
+- verify Adafruit `SD/MODE` is not tied to GND
+- if the speaker emits a steady digital tone, check that DIN is not floating
+  because the firmware failed to start I2S
 - confirm speaker wires are on speaker outputs
 - confirm audio is enabled in Kconfig
+- confirm the build uses `sdkconfig.defaults`, not `sdkconfig.defaults.qemu`
 - confirm the selected GPIOs do not conflict with display or joystick wiring
 
 Only one stereo speaker works:
@@ -305,7 +321,7 @@ Only one stereo speaker works:
 - verify both boards receive BCLK, LRCLK, and DATA
 - verify both boards have power and ground
 - verify each board channel-selection jumper
-- run `examples/audio_stereo_pan_test`
+- run `examples/features/audio_stereo_pan_test`
 
 Left and right reversed:
 

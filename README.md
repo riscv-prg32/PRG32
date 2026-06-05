@@ -339,11 +339,11 @@ and one configured for the right channel.
 
 Start with:
 
-- `examples/audio_mono_beep`
-- `examples/audio_mono_sample`
-- `examples/audio_mono_tracker`
-- `examples/audio_stereo_pan_test`
-- `examples/audio_stereo_music`
+- `examples/features/audio_mono_beep`
+- `examples/features/audio_mono_sample`
+- `examples/features/audio_mono_tracker`
+- `examples/features/audio_stereo_pan_test`
+- `examples/features/audio_stereo_music`
 
 See [docs/audio.md](docs/audio.md) for wiring, API, cartridge AUDIO blocks, and
 troubleshooting.

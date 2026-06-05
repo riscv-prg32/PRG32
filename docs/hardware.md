@@ -72,13 +72,29 @@ VU meter.
 | GPIO4 | BCLK |
 | GPIO11 | LRC / WS |
 | GPIO23 | DIN |
-| not wired by default | SD optional |
+| not wired by default | SD / MODE optional |
 
 Connect one 4-8 ohm speaker to the MAX98357A speaker `+` and `-` outputs.
 
 The default audio Kconfig pins avoid the reference display, joystick, and
 passive buzzer wiring. If a breakout needs explicit SD/shutdown control, assign
 `CONFIG_PRG32_AUDIO_I2S_SD_GPIO` to another unused GPIO before flashing.
+
+On the Adafruit MAX98357A breakout, `SD` also selects the channel mode. Leave it
+in the breakout's default enabled state for mono, or drive it from the optional
+SD GPIO. Do not tie `SD` directly to GND because that shuts the amplifier down.
+PRG32 mono audio is carried as duplicated left/right I2S slots, so a single
+MAX98357A works whether the breakout averages both slots or selects one slot.
+
+Use the physical ESP32-C6 defaults when flashing classroom hardware:
+
+```bash
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build flash monitor
+```
+
+The QEMU defaults are for the ESP32-C3 virtual display path and intentionally
+disable physical I2S audio output.
 
 ## Stereo Audio
 

@@ -61,7 +61,7 @@ Mono audio uses one MAX98357A:
 | GPIO4 default | BCLK |
 | GPIO11 default | LRC / WS |
 | GPIO23 default | DIN |
-| not wired by default | SD, optional |
+| not wired by default | SD / MODE, optional |
 
 Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for
@@ -70,6 +70,12 @@ right-channel output using the breakout-specific jumper or mode pin.
 The default audio GPIOs avoid the reference display, joystick, and passive
 buzzer wiring. If a MAX98357A breakout needs explicit shutdown control, choose
 an unused SD GPIO in menuconfig before flashing.
+
+On the Adafruit MAX98357A breakout, `SD` also selects shutdown/channel mode.
+Leave it in the breakout's default enabled state for mono, or drive it high from
+the optional SD GPIO. Do not connect `SD` directly to GND unless you want the
+amplifier shut down. PRG32 duplicates mono samples into both I2S slots, so a
+single board can average both slots or select either one.
 
 Do not connect MAX98357A speaker outputs directly to headphones or line-level
 inputs. Use 4-8 ohm speakers.
