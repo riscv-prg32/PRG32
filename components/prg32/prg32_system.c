@@ -649,9 +649,9 @@ static void about_menu(void) {
         prg32_gfx_text8(8, 88, "RAFFAELE MONTELLA", PRG32_COLOR_WHITE, 0);
         prg32_gfx_text8(8, 104, "UNIPARTHENOPE", PRG32_COLOR_GREEN, 0);
         prg32_gfx_text8(8, 120, "ACADEMIC SUPERVISOR / PROJECT LEAD", PRG32_COLOR_CYAN, 0);
-        prg32_gfx_text8(8, 152, "IVAN CAFIERO", PRG32_COLOR_WHITE, 0);
+        prg32_gfx_text8(8, 152, "IVAN CAFIERO & SIMONE BOSCAGLIA", PRG32_COLOR_WHITE, 0);
         prg32_gfx_text8(8, 168, "UNIPARTHENOPE", PRG32_COLOR_GREEN, 0);
-        prg32_gfx_text8(8, 184, "COMPUTER SCIENCE STUDENT", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 184, "COMPUTER SCIENCE STUDENTS", PRG32_COLOR_CYAN, 0);
         prg32_gfx_text8(8, 224, "A / SELECT / B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         last = input;
