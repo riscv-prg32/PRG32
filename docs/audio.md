@@ -72,9 +72,9 @@ prg32_audio_config_t audio = {
     .mode = PRG32_AUDIO_MODE_STEREO,
     .max_voices = 8,
     .gpio_bclk = 4,
-    .gpio_lrclk = 5,
-    .gpio_data = 6,
-    .gpio_sd = 7,
+    .gpio_lrclk = 11,
+    .gpio_data = 23,
+    .gpio_sd = -1,
 };
 prg32_audio_init(&audio);
 ```
@@ -113,9 +113,9 @@ Default PRG32 audio Kconfig pins:
 | 3V3 or 5V | VIN |
 | GND | GND |
 | GPIO4 | BCLK |
-| GPIO5 | LRC / WS |
-| GPIO6 | DIN |
-| GPIO7 | SD, optional |
+| GPI11 | LRC / WS |
+| GPI23 | DIN |
+| GPI__ | SD, optional |
 | GND or default | GAIN |
 
 The current ESP32-C6 breadboard display reference uses GPIO5, GPIO6, and GPIO7
@@ -131,9 +131,9 @@ Stereo wiring shares the same I2S signals:
 | 3V3 or 5V | VIN | VIN |
 | GND | GND | GND |
 | GPIO4 / BCLK | BCLK | BCLK |
-| GPIO5 / LRCLK | LRC / WS | LRC / WS |
-| GPIO6 / DATA | DIN | DIN |
-| GPIO7 / SD | SD | SD |
+| GPI11 / LRCLK | LRC / WS | LRC / WS |
+| GPI23 / DATA | DIN | DIN |
+| GPI__ / SD | SD | SD |
 
 Configure the left board for the left I2S channel and the right board for the
 right channel. Breakout labels vary: common names include `L/R`, `GAIN`,
