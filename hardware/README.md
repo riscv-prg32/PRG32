@@ -5,7 +5,6 @@
 - ESP32-C6 development board
 - ILI9341 2.8 inch SPI TFT, 320x240
 - one 5-way digital joystick module for player 1
-- optional second 5-way digital joystick module for player 2 games such as Pong
 - one setup button, or use the joystick push switch when the wiring allows it
 - Passive buzzer
 - one MAX98357A I2S DAC/amplifier breakout and one 4-8 ohm speaker for mono
@@ -72,9 +71,9 @@ Mono audio uses one MAX98357A:
 | 3V3 or 5V | VIN |
 | GND | GND |
 | GPIO4 default | BCLK |
-| GPIO5 default | LRC / WS |
-| GPIO6 default | DIN |
-| GPIO7 default, optional | SD |
+| GPI11 default | LRC / WS |
+| GPI23 default | DIN |
+| GPI__ default, optional | SD |
 
 Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for
@@ -87,16 +86,9 @@ non-conflicting audio pins in menuconfig before flashing.
 Do not connect MAX98357A speaker outputs directly to headphones or line-level
 inputs. Use 4-8 ohm speakers.
 
-The previous six-tactile-button layout is replaced by a digital joystick module
-such as the user-provided reference part:
-<https://www.amazon.it/dp/B07HBPW3DF?ref=ppx_yo2ov_dt_b_fed_asin_title>.
+Digirak joystick: <https://www.amazon.it/dp/B07HBPW3DF>.
 Wire each joystick direction as a normally-open switch to ground; PRG32 enables
 internal pull-ups.
-
-For two-player games, mount a second joystick and assign its pins through
-`PRG32_PIN_P2_LEFT`, `PRG32_PIN_P2_RIGHT`, `PRG32_PIN_P2_UP`,
-`PRG32_PIN_P2_DOWN`, `PRG32_PIN_P2_A`, `PRG32_PIN_P2_B`, and
-`PRG32_PIN_P2_SELECT` / `PRG32_PIN_P2_START` in `main/prg32_config.h`.
 
 The `kicad` directory contains starter placeholders for a KiCad production
 board. The `case` directory contains a simple OpenSCAD enclosure starter. The
