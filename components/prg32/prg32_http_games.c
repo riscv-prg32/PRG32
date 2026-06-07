@@ -151,6 +151,8 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                (uintptr_t)prg32_cart_stored_count);
     add_import(imports, "prg32_cart_get_slot_info",
                (uintptr_t)prg32_cart_get_slot_info);
+    add_import(imports, "prg32_cart_store_slot",
+               (uintptr_t)prg32_cart_store_slot);
     add_import(imports, "prg32_cart_select_slot",
                (uintptr_t)prg32_cart_select_slot);
     add_import(imports, "prg32_console_clear", (uintptr_t)prg32_console_clear);
@@ -303,7 +305,11 @@ static esp_err_t get_games(httpd_req_t *req) {
     return ESP_OK;
 }
 
-static uint8_t request_slot(httpd_req_t *req) {
+static int request_slot(httpd_req_t *req, uint8_t *slot_out) {
+    if (!slot_out) {
+        return -1;
+    }
+    *slot_out = 0;
     char query[48];
     char value[12];
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK &&
@@ -312,9 +318,11 @@ static uint8_t request_slot(httpd_req_t *req) {
             prg32_cart_info_t info;
             prg32_cart_get_slot_info(slot, &info);
             if (strcmp(value, info.slot_name) == 0) {
-                return slot;
+                *slot_out = slot;
+                return 0;
             }
         }
+        return -1;
     }
     return 0;
 }
@@ -417,13 +425,14 @@ static esp_err_t get_performance_json(httpd_req_t *req) {
 
 static esp_err_t post_game(httpd_req_t *req) {
 #if PRG32_GAME_UPLOAD_ENABLE
-    if (req->content_len <= 0 ||
+    ESP_LOGI(TAG, "POST /api/games content_len=%u", (unsigned)req->content_len);
+    if (req->content_len == 0 ||
         (size_t)req->content_len > PRG32_CART_RAM_SIZE + sizeof(prg32_cart_header_t)) {
         char msg[96];
         snprintf(msg,
                  sizeof(msg),
-                 "invalid cartridge size %d (max %lu)",
-                 req->content_len,
+                 "invalid cartridge size %u (max %lu)",
+                 (unsigned)req->content_len,
                  (unsigned long)(PRG32_CART_RAM_SIZE + sizeof(prg32_cart_header_t)));
         httpd_resp_send_err(req, 400, msg);
         return ESP_FAIL;
@@ -448,23 +457,49 @@ static esp_err_t post_game(httpd_req_t *req) {
         }
         received += (size_t)n;
     }
-    uint8_t slot = request_slot(req);
-    int err = prg32_cart_install_slot(slot, body, received, 1);
+    ESP_LOGI(TAG, "POST /api/games received=%u", (unsigned)received);
+    uint8_t slot = 0;
+    if (request_slot(req, &slot) != 0) {
+        free(body);
+        httpd_resp_send_err(req, 400, "invalid cartridge slot");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(TAG, "POST /api/games slot=%u", (unsigned)slot);
+    ESP_LOGI(TAG, "POST /api/games storing slot=%u", (unsigned)slot);
+    int err = prg32_cart_store_slot(slot, body, received);
     free(body);
     if (err != 0) {
         httpd_resp_send_err(req, 400, prg32_cart_last_error());
         return ESP_FAIL;
     }
+    ESP_LOGI(TAG, "POST /api/games stored slot=%u", (unsigned)slot);
     prg32_cart_info_t info;
-    prg32_cart_get_info(&info);
-    char response[128];
-    snprintf(response,
-             sizeof(response),
-             "{\"ok\":true,\"slot\":\"%s\",\"name\":\"%s\"}",
-             info.slot_name,
-             info.name);
+    prg32_cart_get_slot_info(slot, &info);
+    cJSON *root = cJSON_CreateObject();
+    if (!root) {
+        httpd_resp_send_err(req, 500, "out of memory");
+        return ESP_ERR_NO_MEM;
+    }
+    cJSON_AddBoolToObject(root, "ok", true);
+    cJSON_AddStringToObject(root, "slot", info.slot_name);
+    cJSON_AddBoolToObject(root, "stored", info.stored != 0);
+    cJSON_AddBoolToObject(root, "loaded", info.loaded != 0);
+    cJSON_AddStringToObject(root, "name", info.name);
+    add_json_u32(root, "code_size", info.code_size);
+    add_json_u32(root, "mem_size", info.mem_size);
+    add_json_u32(root, "audio_size", info.audio_size);
+    cJSON_AddBoolToObject(root, "audio", info.audio != 0);
+    add_json_u32(root, "generation", info.generation);
+    char *json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    ESP_LOGI(TAG, "POST /api/games sending response");
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_sendstr(req, response);
+    if (!json) {
+        httpd_resp_sendstr(req, "{}");
+        return ESP_OK;
+    }
+    httpd_resp_sendstr(req, json);
+    cJSON_free(json);
     return ESP_OK;
 #else
     httpd_resp_send_err(req, 403, "game upload disabled");
@@ -473,7 +508,11 @@ static esp_err_t post_game(httpd_req_t *req) {
 }
 
 static esp_err_t select_game(httpd_req_t *req) {
-    uint8_t slot = request_slot(req);
+    uint8_t slot = 0;
+    if (request_slot(req, &slot) != 0) {
+        httpd_resp_send_err(req, 400, "invalid cartridge slot");
+        return ESP_FAIL;
+    }
     if (prg32_cart_select_slot(slot) != 0) {
         httpd_resp_send_err(req, 400, prg32_cart_last_error());
         return ESP_FAIL;

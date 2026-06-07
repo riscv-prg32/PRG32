@@ -3,7 +3,10 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "esp_err.h"
+#include "esp_log.h"
 #include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #ifndef PRG32_RESTART_HOTKEY_ENABLE
 #define PRG32_RESTART_HOTKEY_ENABLE 1
@@ -21,6 +24,8 @@
     (PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_DOWN)
 #define PRG32_RESTART_HOTKEY_P2 \
     (PRG32_P2_BTN_A | PRG32_P2_BTN_B | PRG32_P2_BTN_DOWN)
+
+static const char *TAG = "prg32_controller";
 
 /*
  * PRG32 controller layer.
@@ -78,14 +83,29 @@ void prg32_controller_bridge_init(void) {
     esp_err_t err =
         uart_driver_install(PRG32_CONTROLLER_BRIDGE_UART, 256, 0, 0, NULL, 0);
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        ESP_LOGW(TAG,
+                 "controller bridge UART driver install failed: %s",
+                 esp_err_to_name(err));
         return;
     }
-    ESP_ERROR_CHECK(uart_param_config(PRG32_CONTROLLER_BRIDGE_UART, &cfg));
-    ESP_ERROR_CHECK(uart_set_pin(PRG32_CONTROLLER_BRIDGE_UART,
-                                 PRG32_PIN_CONTROLLER_TX,
-                                 PRG32_PIN_CONTROLLER_RX,
-                                 UART_PIN_NO_CHANGE,
-                                 UART_PIN_NO_CHANGE));
+    err = uart_param_config(PRG32_CONTROLLER_BRIDGE_UART, &cfg);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG,
+                 "controller bridge UART config failed: %s",
+                 esp_err_to_name(err));
+        return;
+    }
+    err = uart_set_pin(PRG32_CONTROLLER_BRIDGE_UART,
+                       PRG32_PIN_CONTROLLER_TX,
+                       PRG32_PIN_CONTROLLER_RX,
+                       UART_PIN_NO_CHANGE,
+                       UART_PIN_NO_CHANGE);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG,
+                 "controller bridge UART pin setup failed: %s",
+                 esp_err_to_name(err));
+        return;
+    }
 }
 
 static uint32_t read_bridge(void) {
@@ -161,6 +181,8 @@ uint32_t prg32_controller_read(void) {
 #if PRG32_RESTART_HOTKEY_ENABLE
     if ((v & PRG32_RESTART_HOTKEY_P1) == PRG32_RESTART_HOTKEY_P1 ||
         (v & PRG32_RESTART_HOTKEY_P2) == PRG32_RESTART_HOTKEY_P2) {
+        ESP_LOGE(TAG, "ABOUT TO esp_restart() from %s:%d", __FILE__, __LINE__);
+        vTaskDelay(pdMS_TO_TICKS(500));
         esp_restart();
     }
 #endif

@@ -165,13 +165,20 @@
 
 /*
  * SELECT is the classroom-facing name; START remains a source-compatible alias.
- * The GPIO20 SELECT mapping matches the 7-button digital joystick harness.
- * GPIO14 is still read through PRG32_PIN_BTN_START for older wiring.
+ * GPIO14 remains the safe default for classroom wiring. Set
+ * PRG32_ENABLE_SEPARATE_SELECT_PIN to 1 in a local build only when the
+ * optional 7-button harness wires SELECT to GPIO20.
  */
+#ifndef PRG32_ENABLE_SEPARATE_SELECT_PIN
+#define PRG32_ENABLE_SEPARATE_SELECT_PIN 0
+#endif
+
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
-#else
+#elif PRG32_ENABLE_SEPARATE_SELECT_PIN
 #define PRG32_PIN_BTN_SELECT 20
+#else
+#define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
 #endif
 #define PRG32_PIN_P2_SELECT  PRG32_PIN_P2_START
 

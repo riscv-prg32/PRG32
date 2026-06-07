@@ -418,6 +418,72 @@ int prg32_cart_install(const void *image, size_t image_size, int persist) {
     return 0;
 }
 
+int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size) {
+    if (slot >= PRG32_CART_SLOT_COUNT) {
+        set_error("invalid cartridge slot");
+        return -1;
+    }
+    if (!image || image_size < sizeof(prg32_cart_header_t)) {
+        set_error("missing cartridge image");
+        return -1;
+    }
+
+    ESP_LOGI(TAG,
+             "cart store: validating slot=%s image size=%u",
+             slot_name(slot),
+             (unsigned)image_size);
+
+    const prg32_cart_header_t *h = (const prg32_cart_header_t *)image;
+    const uint8_t *payload = NULL;
+    const uint8_t *audio_block = NULL;
+    size_t audio_size = 0;
+    if (validate_header(h, image_size, &payload, &audio_block, &audio_size) != 0) {
+        return -1;
+    }
+
+    const esp_partition_t *part = cart_partition_by_slot(slot);
+    if (!part) {
+        set_errorf("%s partition not found", slot_name(slot));
+        return -1;
+    }
+    if (image_size > part->size) {
+        set_errorf("cartridge is larger than %s partition", slot_name(slot));
+        return -1;
+    }
+
+    if (lock_cart() != 0) {
+        set_error("failed to lock cartridge storage");
+        return -1;
+    }
+
+    ESP_LOGI(TAG,
+             "cart store: erase %s size=%u",
+             slot_name(slot),
+             (unsigned)part->size);
+    esp_err_t err = esp_partition_erase_range(part, 0, part->size);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "cart store: write %u bytes", (unsigned)image_size);
+        err = esp_partition_write(part, 0, image, image_size);
+    }
+    if (err == ESP_OK) {
+        prg32_cart_header_t stored_header;
+        if (read_stored_header(slot, &stored_header, NULL, NULL) != 0) {
+            err = ESP_ERR_INVALID_STATE;
+        }
+    }
+
+    unlock_cart();
+
+    if (err != ESP_OK) {
+        set_errorf("failed to persist cartridge: %s", esp_err_to_name(err));
+        return -1;
+    }
+
+    set_error("ok");
+    ESP_LOGI(TAG, "cart store: done");
+    return 0;
+}
+
 int prg32_cart_install_slot(uint8_t slot,
                             const void *image,
                             size_t image_size,
@@ -550,6 +616,9 @@ int prg32_cart_get_slot_info(uint8_t slot, prg32_cart_info_t *info) {
     info->slot = slot;
     info->load_addr = (uint32_t)(uintptr_t)prg32_cart_exec;
 
+    if (lock_cart() != 0) {
+        return -1;
+    }
     prg32_cart_header_t header;
     uint32_t audio_size = 0;
     if (read_stored_header(slot, &header, NULL, &audio_size) == 0) {
@@ -562,6 +631,7 @@ int prg32_cart_get_slot_info(uint8_t slot, prg32_cart_info_t *info) {
     }
     info->loaded = (g_loaded && g_current_slot == slot) ? 1 : 0;
     info->generation = g_generation;
+    unlock_cart();
     return 0;
 }
 

@@ -229,6 +229,7 @@ Important functions:
 
 - `prg32_cart_load_addr()`: runtime address used by the host linker.
 - `prg32_cart_install(image, size, persist)`: validate, load, and optionally store.
+- `prg32_cart_store_slot(slot, image, size)`: validate and store an image without running it.
 - `prg32_cart_install_slot(slot, image, size, persist)`: install to `cart0` or `cart1`.
 - `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot.
 - `prg32_cart_default_slot()`: read the saved default boot cartridge.

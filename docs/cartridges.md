@@ -204,8 +204,8 @@ Content-Type: application/octet-stream
 <game.prg32 bytes>
 ```
 
-Validates, stores, and starts the cartridge. Use `slot=cart1` for the second
-slot.
+Validates and stores the cartridge without starting it. Use `slot=cart1` for
+the second slot.
 
 ### Select Stored Game
 
@@ -213,7 +213,7 @@ slot.
 POST /api/games/select?slot=cart0
 ```
 
-Reloads the stored cartridge in the selected slot.
+Loads and starts the stored cartridge in the selected slot.
 
 ### Screenshot
 

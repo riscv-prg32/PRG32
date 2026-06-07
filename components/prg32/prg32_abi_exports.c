@@ -64,6 +64,7 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_wifi_setup_run,
     (prg32_any_fn_t)prg32_cart_stored_count,
     (prg32_any_fn_t)prg32_cart_get_slot_info,
+    (prg32_any_fn_t)prg32_cart_store_slot,
     (prg32_any_fn_t)prg32_cart_select_slot,
     (prg32_any_fn_t)prg32_cart_default_slot,
     (prg32_any_fn_t)prg32_cart_set_default_slot,
