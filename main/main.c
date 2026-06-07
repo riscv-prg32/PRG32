@@ -71,9 +71,12 @@ static void prg32_wait_for_frame_target(uint32_t *next_ms) {
         *next_ms += PRG32_FRAME_MS;
     }
     now = prg32_ticks_ms();
-    if ((int32_t)(*next_ms - now) > 0) {
-        vTaskDelay(pdMS_TO_TICKS(*next_ms - now));
+    int32_t delay_ms = (int32_t)(*next_ms - now);
+    TickType_t ticks = delay_ms > 0 ? pdMS_TO_TICKS(delay_ms) : 0;
+    if (ticks == 0) {
+        ticks = 1;
     }
+    vTaskDelay(ticks);
 }
 
 static void prg32_configure_metrics(const char *game_name) {
@@ -224,9 +227,8 @@ void app_main(void) {
     uint32_t last_idle_log_ms = 0;
     uint32_t next_frame_ms = prg32_ticks_ms();
     while (1) {
-        check_terminal_keyboard_input();
+        // check_terminal_keyboard_input();
         uint32_t input_snapshot = prg32_controller_read();
-        prg32_diag_set_input_state(input_snapshot);
 
         if (prg32_cart_is_loaded()) {
             uint32_t current_generation = prg32_cart_generation();

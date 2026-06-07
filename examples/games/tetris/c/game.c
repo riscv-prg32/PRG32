@@ -12,23 +12,36 @@ void tetris_c_init(void) {
     fall_count = 0;
 }
 
+static int input_delay = 0;
+
 void tetris_c_update(void) {
     uint32_t input = prg32_input_read();
+
+    if (input_delay > 0) {
+        input_delay--;
+        input = 0; // Ignore inputs during the delay
+    }
+
     if (input & PRG32_BTN_LEFT) {
         piece_x--;
+        input_delay = 3; // Wait 3 frames (~100ms) before next input
     }
     if (input & PRG32_BTN_RIGHT) {
         piece_x++;
+        input_delay = 3;
     }
     if (input & PRG32_BTN_A) {
         rotation = (rotation + 1) & 3;
+        input_delay = 5; // Slightly longer delay for rotation
     }
+    
     if (piece_x < 0) {
         piece_x = 0;
     }
     if (piece_x > 7) {
         piece_x = 7;
     }
+    
     fall_count++;
     if ((input & PRG32_BTN_DOWN) || fall_count > 8) {
         fall_count = 0;
