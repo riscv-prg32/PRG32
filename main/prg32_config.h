@@ -88,11 +88,11 @@
 #define PRG32_PIN_LCD_MISO   2
 #define PRG32_PIN_LCD_SCLK   6
 #define PRG32_PIN_LCD_CS     10
-#define PRG32_PIN_LCD_DC     8
-#define PRG32_PIN_LCD_RST    9
+#define PRG32_PIN_LCD_DC     1
+#define PRG32_PIN_LCD_RST    0
 #define PRG32_PIN_LCD_BL     5
 
-#define PRG32_LCD_SPI_CLOCK_HZ 40000000
+#define PRG32_LCD_SPI_CLOCK_HZ 32000000
 #define PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL 1
 #define PRG32_LCD_BOOT_TEST_MS 0
 #define PRG32_LCD_SOFT_SPI 0
@@ -103,7 +103,7 @@
 #define PRG32_PIN_BTN_DOWN   13
 #define PRG32_PIN_BTN_LEFT   18
 #define PRG32_PIN_BTN_RIGHT  19
-#define PRG32_PIN_BTN_START  14
+#define PRG32_PIN_BTN_START  20
 #define PRG32_PIN_BTN_A      21
 #define PRG32_PIN_BTN_B      22
 
@@ -117,7 +117,7 @@
 #define PRG32_PIN_P2_A       -1
 #define PRG32_PIN_P2_B       -1
 #define PRG32_PIN_P2_START   -1
-#define PRG32_PIN_BUZZER     15
+#define PRG32_PIN_BUZZER     -1
 
 /* Optional USB-controller support via an external USB HID host bridge. */
 #define PRG32_CONTROLLER_BRIDGE_ENABLE -1
