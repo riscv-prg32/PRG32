@@ -132,7 +132,7 @@
  * is disabled by default. Set this to the board LED GPIO only when that pin is
  * free in your hardware variant.
  */
-#define PRG32_PIN_RGB_LED -1
+#define PRG32_PIN_RGB_LED 8
 #endif
 
 /*
