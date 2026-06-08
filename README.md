@@ -19,7 +19,7 @@ brew install git cmake ninja dfu-util ccache libusb python
 
 # 2) ESP-IDF
 cd $HOME
-git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
+git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
@@ -161,7 +161,7 @@ Recommended reading paths:
 ```bash
 brew install git cmake ninja dfu-util ccache libusb python
 cd $HOME
-git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
+git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
@@ -251,7 +251,7 @@ Install ESP-IDF:
 
 ```bash
 cd $HOME
-git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
+git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
@@ -309,7 +309,7 @@ Linux notes:
 
 Open the repository root in PlatformIO. The checked-in `platformio.ini` default
 environment is `prg32-esp32c6`, which targets the ESP32-C6 DevKitC-1 with
-ESP-IDF, reuses the standard `main` component, and applies
+ESP-IDF, reuses the standard `main` component and applies
 `partitions_prg32.csv` plus `sdkconfig.defaults`.
 
 CLI equivalents:
@@ -321,7 +321,7 @@ pio device monitor -b 115200
 ```
 
 The ESP32-C6 build keeps UART0 as the primary ESP-IDF console and enables
-native USB Serial/JTAG as secondary output for PlatformIO Monitor. A healthy
+native USB Serial/JTAG as a secondary output for PlatformIO Monitor. A healthy
 boot logs the configured `prg32_lcd` ILI9341 pins before drawing the splash.
 
 The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep
