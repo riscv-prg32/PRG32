@@ -39,8 +39,12 @@ boot cartridge.
 In setup mode, choose access-point mode for the standard cartridge upload
 workflow, or infrastructure mode to scan nearby SSIDs and connect the board to
 an existing network. The same setup menu can launch the audio setup page, the
-developer band menu, the about screen, and the device demo. With no cartridge
-installed, the firmware starts the upload AP and waits in setup.
+developer band menu, the performance test, and the about screen. With no
+cartridge installed, the firmware starts the upload AP and waits in setup.
+
+The device smoke test is maintained as the external
+[DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo). Build and
+upload that cartridge when a classroom deployment needs the former setup demo.
 
 ## Flash once, upload games
 

@@ -12,7 +12,7 @@ Build, flash, and inspect the resident PRG32 runtime.
 4. Run task `PRG32: flash monitor`.
 5. Confirm the monitor reaches `PRG32 runtime initialized`.
 6. Hold A+B while resetting the board and confirm setup mode appears.
-7. Run `DEVICE DEMO` from setup.
+7. Upload and run the external DeviceDemo cartridge.
 
 ## Checkpoint
 
@@ -26,7 +26,7 @@ If no board is available, run:
 2. `PRG32: qemu screen`
 
 The QEMU monitor should reach the PRG32 runtime, and the virtual screen should
-show the 320x240 setup/device-demo display.
+show the 320x240 setup display and the 320x200 cartridge viewport.
 
 ## Reflection
 

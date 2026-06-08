@@ -332,7 +332,7 @@ The existing graphics examples already follow the right shape:
 - use normal RV32 calling convention
 - save `ra` before calling PRG32 C helpers
 - keep stack alignment at 16 bytes around C calls
-- keep code/data small enough for the 32 KiB cartridge RAM window
+- keep code/data small enough for the 64 KiB cartridge RAM window
 
 The cartridge linker resolves normal calls such as:
 
@@ -408,9 +408,10 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Cartridges are linked for one PRG32 firmware build.
 - If the firmware is rebuilt, rebuild the cartridges.
-- Cartridge RAM is 32 KiB.
+- Cartridge package size is 32 KiB.
+- Cartridge RAM is 64 KiB.
 - AUDIO blocks are stored after the code payload and count against cartridge
-  partition size, not cartridge executable RAM.
+  package size and partition size, not cartridge executable RAM.
 - Two flash slots, `cart0` and `cart1`, are available. Only one cartridge is
   loaded into executable RAM at a time.
 - QEMU staging requires QEMU to be stopped before patching `flash_image.bin`.

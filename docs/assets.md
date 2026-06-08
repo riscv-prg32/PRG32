@@ -70,7 +70,7 @@ python3 -m pip install pillow mido
 ```
 
 Generated arrays can be included in firmware examples or packaged into
-uploadable cartridges when they fit inside the cartridge RAM limit.
+uploadable cartridges when they fit inside the 32 KiB cartridge package limit.
 
 ## Cartridge AUDIO Blocks
 

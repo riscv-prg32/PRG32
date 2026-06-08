@@ -64,7 +64,7 @@ C versions are best for:
 - first C programming labs
 - comparing assembly and C implementations
 - showing that PRG32 is a small API, not an assembly-only runtime
-- playing the fuller versions of the device-demo game ideas, especially the
+- playing the fuller versions of the DeviceDemo cartridge ideas, especially the
   platformer tile-engine course, the fixed-point raycaster, and the
   dual-playfield space cockpit
 

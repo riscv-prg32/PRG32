@@ -396,7 +396,7 @@ download server is the standalone **Cartridge Store** in
 ## Learning Path
 
 1. Build and flash the resident firmware.
-2. Open setup with A+B at boot, run the device demo, and upload a cartridge.
+2. Open setup with A+B at boot, configure Wi-Fi or CartridgeStore, and upload a cartridge.
 3. Read `docs/tutorial.md` for assembly or `docs/tutorial_c_game.md` for C.
 4. Complete the labs in `docs/labs`.
 5. Modify one example game under `examples/games`.
@@ -455,13 +455,13 @@ cartridge is stored, or when multiple cartridges exist without a default. The
 setup menu can run a cartridge, set the default boot cartridge, configure Wi-Fi,
 configure CartridgeStore access, browse the store, open the audio setup menu,
 open the developer status-band menu, launch the unattended performance test,
-show the about screen, or launch the device demo.
+or show the about screen.
 Setup screens show the active Wi-Fi mode and current IP address,
 and the local joystick can navigate them with SELECT/B to confirm and A to go
-back. The device demo includes 320x200 sketches inspired by Pong, Breakout,
-Space Invaders, Pacman, Tetris, Pole Position, Asteroids, a side-scrolling
-platform game, a Doom-style raycaster, and a space cockpit that demonstrates
-dual playfields. When the audio configuration is usable for the current board,
+back. The former setup device demo now lives as the
+[DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo), which can be
+built, uploaded, and published through CartridgeStore like the teaching games.
+When the audio configuration is usable for the current board,
 the splash plays a short welcome sound; otherwise it falls back to the passive
 buzzer when configured.
 

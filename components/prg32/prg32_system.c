@@ -1,5 +1,6 @@
 #include "prg32.h"
 #include "prg32_config.h"
+#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <stdbool.h>
@@ -10,7 +11,6 @@ void prg32_display_init(void);
 void prg32_input_init(void);
 void prg32_audio_pwm_init(void);
 void prg32_abi_exports_keep(void);
-void prg32_device_demo_run(void);
 
 #ifndef PRG32_BOOT_SETUP_MODE
 #define PRG32_BOOT_SETUP_MODE 0
@@ -50,7 +50,6 @@ typedef enum {
     SETUP_OPTION_STORE_BROWSE,
     SETUP_OPTION_AUDIO,
     SETUP_OPTION_DEVELOPER,
-    SETUP_OPTION_DEMO,
     SETUP_OPTION_PERFORMANCE,
     SETUP_OPTION_ABOUT,
     SETUP_OPTION_EXIT,
@@ -85,6 +84,41 @@ static void draw_setup_status(int y) {
         prg32_gfx_text8(8, y + 32, "SSID:", PRG32_COLOR_GREEN, 0);
         prg32_gfx_text8(56, y + 32, ssid, PRG32_COLOR_GREEN, 0);
     }
+}
+
+static unsigned long bytes_to_kib(size_t bytes) {
+    return (unsigned long)((bytes + 1023u) / 1024u);
+}
+
+static size_t setup_available_cart_flash(void) {
+    size_t available = 0;
+    for (uint8_t slot = 0; slot < PRG32_CART_SLOT_COUNT; ++slot) {
+        size_t slot_size = prg32_cart_slot_size(slot);
+        prg32_cart_info_t info;
+        if (slot_size == 0 ||
+            prg32_cart_get_slot_info(slot, &info) != 0) {
+            continue;
+        }
+        if (!info.stored) {
+            available += slot_size;
+            continue;
+        }
+        size_t used = (size_t)info.code_size + (size_t)info.audio_size;
+        if (used < slot_size) {
+            available += slot_size - used;
+        }
+    }
+    return available;
+}
+
+static void draw_setup_resources(int y) {
+    char line[48];
+    snprintf(line,
+             sizeof(line),
+             "RAM: %luK  CART FLASH: %luK",
+             bytes_to_kib(esp_get_free_heap_size()),
+             bytes_to_kib(setup_available_cart_flash()));
+    prg32_gfx_text8(8, y, line, PRG32_COLOR_YELLOW, 0);
 }
 
 static int stored_slots(uint8_t *slots, int max_slots) {
@@ -727,10 +761,6 @@ static int setup_menu(void) {
             "DEVELOPER MENU",
         };
         options[option_count++] = (setup_option_t){
-            SETUP_OPTION_DEMO,
-            "DEVICE DEMO",
-        };
-        options[option_count++] = (setup_option_t){
             SETUP_OPTION_PERFORMANCE,
             "PERFORMANCE TEST",
         };
@@ -807,10 +837,6 @@ static int setup_menu(void) {
                     developer_menu();
                     break;
                 }
-                if (selected == SETUP_OPTION_DEMO) {
-                    prg32_device_demo_run();
-                    break;
-                }
                 if (selected == SETUP_OPTION_PERFORMANCE) {
                     start_performance_http_api();
                     prg32_performance_test_run();
@@ -831,9 +857,10 @@ static int setup_menu(void) {
             prg32_gfx_clear(PRG32_COLOR_BLACK);
             prg32_gfx_text8(8, 8, "PRG32 SETUP", PRG32_COLOR_WHITE, 0);
             draw_setup_status(28);
-            draw_cartridge_status(76);
+            draw_setup_resources(76);
+            draw_cartridge_status(92);
             for (int i = 0; i < option_count; ++i) {
-                int y = 102 + i * 14;
+                int y = 120 + i * 11;
                 prg32_gfx_text8(8, y, i == choice ? ">" : " ", PRG32_COLOR_GREEN, 0);
                 prg32_gfx_text8(24, y, options[i].label, PRG32_COLOR_WHITE, 0);
             }

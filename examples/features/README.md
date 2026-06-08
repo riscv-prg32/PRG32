@@ -3,10 +3,11 @@
 These demos isolate framework rendering features without full game rules. Use
 them when teaching one graphics concept at a time.
 
-The resident firmware also includes a setup-launched `DEVICE DEMO` that checks
+The fuller hardware smoke test is maintained as the external
+[DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo). It checks
 the physical display, joystick input, audio beep, Wi-Fi status, cartridge state,
 sprites, scrolling, status bands, dual playfields, and arcade-inspired 320x200
-sketches without rebuilding a cartridge.
+sketches through the same cartridge workflow students use for games.
 
 | Demo | Assembly source | C source | Entry prefixes | Shows |
 |---|---|---|---|---|

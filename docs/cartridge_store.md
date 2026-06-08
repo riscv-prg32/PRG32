@@ -107,6 +107,11 @@ python3 tools/prg32_game.py publish-bundle tetris.zip \
   --store-url http://192.168.1.42:5080
 ```
 
+The PRG32 hardware smoke test is published from the external
+[DeviceDemo repository](https://github.com/riscv-prg32/DeviceDemo). That
+repository contains its own cartridge metadata, colophon, Store bundle manifest,
+and build/publish instructions for the `esp32c6` and `qemu` variants.
+
 Download a cartridge from the host and upload it to the board:
 
 ```bash

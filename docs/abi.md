@@ -199,7 +199,6 @@ Setup screens and cartridge programs use the same button bitmasks:
 | `prg32_cart_default_slot` | return the saved default cartridge slot, or `-1` |
 | `prg32_cart_set_default_slot` | save a default cartridge slot, or clear with `-1` |
 | `prg32_cart_select_default` | load the saved default cartridge |
-| `prg32_device_demo_run` | run the firmware-owned device demo from setup or a lab |
 | `prg32_performance_test_run` | run the unattended multi-screen setup benchmark |
 | `prg32_performance_has_results` | return nonzero when onboard benchmark results are available |
 | `prg32_performance_summary` | copy the latest benchmark summary into a caller-provided struct |

@@ -94,7 +94,8 @@ extern "C" {
 #define PRG32_CART_META_BLOCK_COLOPHON "COLO"
 #define PRG32_CART_ARCH_ESP32C6 "esp32c6"
 #define PRG32_CART_ARCH_QEMU "qemu"
-#define PRG32_CART_RAM_SIZE (32u * 1024u)
+#define PRG32_CART_MAX_SIZE (32u * 1024u)
+#define PRG32_CART_RAM_SIZE (64u * 1024u)
 #define PRG32_CART_NAME_LEN 32
 #define PRG32_CART_SLOT_COUNT 2
 #ifndef PRG32_FIRMWARE_VERSION
@@ -339,7 +340,6 @@ void prg32_debug_overlay_draw(int enabled,
                               int y,
                               uint32_t input_mask,
                               uint32_t frame);
-void prg32_device_demo_run(void);
 
 void prg32_keyboard_init(prg32_keyboard_t *keyboard,
                          char *buffer,

@@ -223,13 +223,13 @@ Important implementation details:
 - Setup mode is entered by holding A+B at boot, by holding `PRG32_PIN_SETUP`
   low when that optional pin is wired, when no cartridge is present, or when
   multiple cartridges exist without a saved default cartridge.
-- Keep `prg32_device_demo_run()` current whenever framework capabilities are
-  added or changed. The setup-launched device demo should remain a quick
-  hardware/classroom smoke test covering display, input, audio, Wi-Fi status,
-  cartridge state, sprites, scrolling/playfields, status bands, RGB LED/audio
-  VU behavior, arcade-inspired viewport sketches, the tile-engine platformer,
-  the fixed-point raycaster, the dual-playfield space cockpit, and any new
-  framework feature.
+- Keep the external `riscv-prg32/DeviceDemo` cartridge current whenever
+  cartridge-facing framework capabilities are added or changed. It should
+  remain a quick hardware/classroom smoke test covering display, input, audio,
+  Wi-Fi status, cartridge state, sprites, scrolling/playfields, status bands,
+  RGB LED/audio VU behavior, arcade-inspired viewport sketches, the tile-engine
+  platformer, the fixed-point raycaster, the dual-playfield space cockpit, and
+  any new framework feature.
 
 ## Assembly Example Guidelines
 

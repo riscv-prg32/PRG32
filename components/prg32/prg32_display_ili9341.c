@@ -35,7 +35,7 @@ static const char *TAG = "prg32_lcd";
 #endif
 
 #define PRG32_VIEWPORT_Y ((PRG32_LCD_H - PRG32_GAME_H) / 2)
-#define PRG32_LCD_FLUSH_ROWS 20
+#define PRG32_LCD_FLUSH_ROWS 8
 
 #if !PRG32_LCD_SOFT_SPI
 static spi_device_handle_t g_lcd;

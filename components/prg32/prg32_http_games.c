@@ -90,6 +90,7 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                            "\"cart_abi_major\":%u,"
                            "\"cart_abi_minor\":%u,"
                            "\"cart_load_addr\":%lu,"
+                           "\"cart_max_size\":%lu,"
                            "\"cart_ram_size\":%lu,"
                            "\"cart_loaded\":%s,"
                            "\"qemu\":%s,"
@@ -113,6 +114,7 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                            (unsigned)PRG32_CART_ABI_MAJOR,
                            (unsigned)PRG32_CART_ABI_MINOR,
                            (unsigned long)(uint32_t)prg32_cart_load_addr(),
+                           (unsigned long)(uint32_t)PRG32_CART_MAX_SIZE,
                            (unsigned long)(uint32_t)prg32_cart_ram_size(),
                            have_cart && info.loaded ? "true" : "false",
                            qemu ? "true" : "false",
@@ -368,13 +370,13 @@ static esp_err_t post_game(httpd_req_t *req) {
 #if PRG32_GAME_UPLOAD_ENABLE
     ESP_LOGI(TAG, "POST /api/games content_len=%u", (unsigned)req->content_len);
     if (req->content_len == 0 ||
-        (size_t)req->content_len > PRG32_CART_RAM_SIZE + sizeof(prg32_cart_header_t)) {
+        (size_t)req->content_len > PRG32_CART_MAX_SIZE) {
         char msg[96];
         snprintf(msg,
                  sizeof(msg),
                  "invalid cartridge size %u (max %lu)",
                  (unsigned)req->content_len,
-                 (unsigned long)(PRG32_CART_RAM_SIZE + sizeof(prg32_cart_header_t)));
+                 (unsigned long)PRG32_CART_MAX_SIZE);
         httpd_resp_send_err(req, 400, msg);
         return ESP_FAIL;
     }

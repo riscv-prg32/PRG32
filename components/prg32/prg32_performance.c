@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef CONFIG_PRG32_METRICS_BOARD_ID
@@ -109,8 +110,8 @@ typedef struct {
     uint32_t stars;
 } prg32_perf_scene_t;
 
-static prg32_perf_sample_t g_samples[PRG32_PERF_MAX_SAMPLES];
-static prg32_perf_window_t g_windows[PRG32_PERF_MAX_WINDOWS];
+static prg32_perf_sample_t *g_samples;
+static prg32_perf_window_t *g_windows;
 static prg32_perf_screen_result_t g_screen_results[PRG32_PERF_SCREEN_COUNT];
 static prg32_performance_summary_t g_summary;
 static uint32_t g_sample_count;
@@ -147,6 +148,22 @@ static const prg32_perf_screen_def_t g_perf_screens[PRG32_PERF_SCREEN_COUNT] = {
         0x0008,
     },
 };
+
+static int perf_buffers_alloc(void) {
+    if (g_samples && g_windows) {
+        return 0;
+    }
+    g_samples = calloc(PRG32_PERF_MAX_SAMPLES, sizeof(prg32_perf_sample_t));
+    g_windows = calloc(PRG32_PERF_MAX_WINDOWS, sizeof(prg32_perf_window_t));
+    if (!g_samples || !g_windows) {
+        free(g_samples);
+        free(g_windows);
+        g_samples = NULL;
+        g_windows = NULL;
+        return -1;
+    }
+    return 0;
+}
 
 static void copy_text(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -487,7 +504,7 @@ static void scene_draw_screen(uint8_t screen_index,
 }
 
 static void store_sample(const prg32_perf_sample_t *sample) {
-    if (!sample || g_sample_count >= PRG32_PERF_MAX_SAMPLES) {
+    if (!sample || !g_samples || g_sample_count >= PRG32_PERF_MAX_SAMPLES) {
         return;
     }
     g_samples[g_sample_count++] = *sample;
@@ -550,7 +567,7 @@ static void compute_range_stats(prg32_perf_window_t *w,
 }
 
 static void compute_window(uint32_t window_index, uint32_t first, uint32_t last) {
-    if (g_window_count >= PRG32_PERF_MAX_WINDOWS || first >= last) {
+    if (!g_windows || g_window_count >= PRG32_PERF_MAX_WINDOWS || first >= last) {
         return;
     }
     compute_range_stats(&g_windows[g_window_count++], window_index, first, last);
@@ -558,6 +575,9 @@ static void compute_window(uint32_t window_index, uint32_t first, uint32_t last)
 
 static void compute_screen_results(void) {
     g_screen_result_count = 0;
+    if (!g_samples) {
+        return;
+    }
     for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT; ++screen_index) {
         uint32_t first = UINT32_MAX;
         uint32_t last = 0;
@@ -589,7 +609,7 @@ static void compute_results(uint64_t started_us, uint64_t finished_us) {
     g_window_count = 0;
     g_screen_result_count = 0;
     memset(&g_summary, 0, sizeof(g_summary));
-    if (g_sample_count == 0) {
+    if (!g_samples || !g_windows || g_sample_count == 0) {
         return;
     }
 
@@ -734,6 +754,17 @@ static void wait_for_summary_exit(void) {
 }
 
 int prg32_performance_test_run(void) {
+    if (perf_buffers_alloc() != 0) {
+        memset(&g_summary, 0, sizeof(g_summary));
+        g_perf_running = 0;
+        g_perf_has_results = 0;
+        prg32_gfx_clear(PRG32_COLOR_BLACK);
+        prg32_gfx_text8(8, 8, "PERFORMANCE TEST", PRG32_COLOR_WHITE, 0);
+        prg32_gfx_text8(8, 48, "NOT ENOUGH RAM", PRG32_COLOR_YELLOW, 0);
+        prg32_gfx_present();
+        wait_for_summary_exit();
+        return -1;
+    }
     prg32_perf_scene_t scene;
     scene_init(&scene);
     g_perf_running = 1;
@@ -741,8 +772,8 @@ int prg32_performance_test_run(void) {
     g_sample_count = 0;
     g_window_count = 0;
     g_screen_result_count = 0;
-    memset(g_samples, 0, sizeof(g_samples));
-    memset(g_windows, 0, sizeof(g_windows));
+    memset(g_samples, 0, PRG32_PERF_MAX_SAMPLES * sizeof(g_samples[0]));
+    memset(g_windows, 0, PRG32_PERF_MAX_WINDOWS * sizeof(g_windows[0]));
     memset(g_screen_results, 0, sizeof(g_screen_results));
     memset(&g_summary, 0, sizeof(g_summary));
 

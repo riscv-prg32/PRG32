@@ -111,7 +111,6 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_splash_show_game,
     (prg32_any_fn_t)prg32_splash_show_default,
     (prg32_any_fn_t)prg32_debug_overlay_draw,
-    (prg32_any_fn_t)prg32_device_demo_run,
     (prg32_any_fn_t)prg32_keyboard_init,
     (prg32_any_fn_t)prg32_keyboard_update,
     (prg32_any_fn_t)prg32_keyboard_draw,

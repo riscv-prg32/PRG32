@@ -7,6 +7,7 @@
 #include "freertos/task.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define STORE_ACCEPT (PRG32_BTN_SELECT | PRG32_BTN_B)
@@ -28,9 +29,34 @@ typedef struct {
 } store_game_t;
 
 static const char *TAG = "prg32_setup_store";
-static char catalog_body[PRG32_STORE_CATALOG_MAX_BYTES];
-static store_game_t games[STORE_MAX_GAMES];
+static char *catalog_body;
+static store_game_t *games;
 static int game_count;
+
+static int store_buffers_alloc(char *status, size_t status_len) {
+    if (catalog_body && games) {
+        return 0;
+    }
+    catalog_body = calloc(1, PRG32_STORE_CATALOG_MAX_BYTES);
+    games = calloc(STORE_MAX_GAMES, sizeof(store_game_t));
+    if (!catalog_body || !games) {
+        free(catalog_body);
+        free(games);
+        catalog_body = NULL;
+        games = NULL;
+        snprintf(status, status_len, "NO MEM");
+        return -1;
+    }
+    return 0;
+}
+
+static void store_buffers_free(void) {
+    free(catalog_body);
+    free(games);
+    catalog_body = NULL;
+    games = NULL;
+    game_count = 0;
+}
 
 static void wait_and_show(const char *line, uint32_t ms) {
     prg32_gfx_clear(PRG32_COLOR_BLACK);
@@ -140,6 +166,9 @@ static int json_array_strings_after(const char *start, const char *end, const ch
 
 static int parse_catalog(const char *json) {
     game_count = 0;
+    if (!json || !games) {
+        return 0;
+    }
     const char *p = json;
     while ((p = strchr(p, '{')) != NULL && game_count < STORE_MAX_GAMES) {
         const char *end = strchr(p, '}');
@@ -184,10 +213,18 @@ static int contains_casefold(const char *text, const char *needle) {
 }
 
 static int filter_catalog(const char *query) {
-    store_game_t all_games[STORE_MAX_GAMES];
+    if (!catalog_body || !games) {
+        return 0;
+    }
+    store_game_t *all_games = malloc(STORE_MAX_GAMES * sizeof(store_game_t));
+    if (!all_games) {
+        game_count = 0;
+        return 0;
+    }
     int all_count = parse_catalog(catalog_body);
-    memcpy(all_games, games, sizeof(all_games));
+    memcpy(all_games, games, STORE_MAX_GAMES * sizeof(store_game_t));
     if (!query || !query[0]) {
+        free(all_games);
         return all_count;
     }
     game_count = 0;
@@ -198,6 +235,7 @@ static int filter_catalog(const char *query) {
             games[game_count++] = all_games[i];
         }
     }
+    free(all_games);
     return game_count;
 }
 
@@ -208,7 +246,11 @@ static int fetch_catalog(const char *base_url, char *status, size_t status_len) 
              "fetch catalog: %s heap=%lu",
              url,
              (unsigned long)esp_get_free_heap_size());
-    memset(catalog_body, 0, sizeof(catalog_body));
+    if (!catalog_body || !games) {
+        snprintf(status, status_len, "NO MEM");
+        return -1;
+    }
+    memset(catalog_body, 0, PRG32_STORE_CATALOG_MAX_BYTES);
     esp_http_client_config_t config = {
         .url = url,
         .method = HTTP_METHOD_GET,
@@ -241,10 +283,10 @@ static int fetch_catalog(const char *base_url, char *status, size_t status_len) 
     }
     bool truncated = false;
     size_t len = 0;
-    while (len + 1 < sizeof(catalog_body)) {
+    while (len + 1 < PRG32_STORE_CATALOG_MAX_BYTES) {
         int got = esp_http_client_read(client,
                                        catalog_body + len,
-                                       sizeof(catalog_body) - len - 1);
+                                       PRG32_STORE_CATALOG_MAX_BYTES - len - 1);
         if (got < 0) {
             ESP_LOGI(TAG, "catalog read failed");
             snprintf(status, status_len, "READ");
@@ -320,7 +362,8 @@ static int stream_download(const char *base_url, const store_game_t *game, uint8
         esp_http_client_cleanup(client);
         return -1;
     }
-    if (content_len <= 0 || (size_t)content_len > slot_size) {
+    if (content_len <= 0 || (size_t)content_len > PRG32_CART_MAX_SIZE ||
+        (size_t)content_len > slot_size) {
         snprintf(status, status_len, "TOO LARGE");
         esp_http_client_close(client);
         esp_http_client_cleanup(client);
@@ -547,16 +590,22 @@ void prg32_setup_store_browse_run(void) {
         return;
     }
     char status[32];
-    wait_and_show("CONNECTING...", 10);
-    if (fetch_catalog(url, status, sizeof(status)) != 0) {
+    if (store_buffers_alloc(status, sizeof(status)) != 0) {
         char msg[48];
         snprintf(msg, sizeof(msg), "UNAVAILABLE: %s", status);
         wait_and_show(msg, 2000);
         return;
     }
+    wait_and_show("CONNECTING...", 10);
+    if (fetch_catalog(url, status, sizeof(status)) != 0) {
+        char msg[48];
+        snprintf(msg, sizeof(msg), "UNAVAILABLE: %s", status);
+        wait_and_show(msg, 2000);
+        goto done;
+    }
     if (game_count == 0) {
         wait_and_show("NO GAMES", 2000);
-        return;
+        goto done;
     }
     int selected = 0;
     int page = 0;
@@ -567,7 +616,7 @@ void prg32_setup_store_browse_run(void) {
         uint32_t input = prg32_input_read_menu();
         if (input & STORE_CANCEL) {
             prg32_input_wait_released(STORE_CANCEL);
-            return;
+            goto done;
         }
         if (input & PRG32_BTN_UP) {
             if (selected > 0) {
@@ -610,11 +659,14 @@ void prg32_setup_store_browse_run(void) {
                 }
                 prg32_input_wait_released(STORE_ACCEPT);
             } else if (run_detail(url, selected)) {
-                return;
+                goto done;
             } else {
                 prg32_input_wait_released(STORE_ACCEPT);
             }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
+
+done:
+    store_buffers_free();
 }

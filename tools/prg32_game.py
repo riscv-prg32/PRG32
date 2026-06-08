@@ -45,7 +45,8 @@ PRG32_CART_FLAG_MULTIPLAYER = 1 << 1
 AUDIO_BLOCK_MAGIC = b"AUD0"
 DEFAULT_PARTITION_TABLE = ROOT / "partitions_prg32.csv"
 DEFAULT_CART_SLOT = "cart0"
-FALLBACK_CART_RAM_SIZE = 32 * 1024
+FALLBACK_CART_RAM_SIZE = 64 * 1024
+FALLBACK_CART_MAX_SIZE = 32 * 1024
 STORE_DISCOVERY_ABI = "prg32-store-discovery-1.0"
 STORE_METADATA_ABI = "prg32-metadata-1.0"
 STORE_CONFIG = Path.home() / ".prg32" / "config.json"
@@ -95,19 +96,38 @@ IMPORT_NAMES = [
     "prg32_cart_stored_count",
     "prg32_cart_get_slot_info",
     "prg32_cart_select_slot",
+    "prg32_cart_default_slot",
+    "prg32_cart_set_default_slot",
+    "prg32_cart_select_default",
     "prg32_console_clear",
     "prg32_console_putc",
     "prg32_console_write",
     "prg32_console_hex32",
     "prg32_gfx_clear",
     "prg32_gfx_present",
+    "prg32_gfx_set_fullscreen",
+    "prg32_gfx_fullscreen_enabled",
     "prg32_gfx_pixel",
     "prg32_gfx_rect",
     "prg32_gfx_text8",
+    "prg32_gfx_snapshot_row_rgb565",
+    "prg32_band_set_mode",
+    "prg32_band_mode",
+    "prg32_band_mode_name",
+    "prg32_band_set_text",
+    "prg32_band_set_game_info",
+    "prg32_band_log",
+    "prg32_band_set_colors",
+    "prg32_band_use_default_colors",
+    "prg32_band_load_config",
+    "prg32_band_save_config",
     "prg32_splash_draw",
     "prg32_splash_show",
+    "prg32_splash_draw_game",
+    "prg32_splash_show_game",
     "prg32_splash_show_default",
     "prg32_debug_overlay_draw",
+    "prg32_input_wait_released",
     "prg32_keyboard_init",
     "prg32_keyboard_update",
     "prg32_keyboard_draw",
@@ -357,6 +377,7 @@ def runtime_from_elf(path: Path, tool_prefix: str) -> dict:
         )
     return {
         "cart_load_addr": nm["prg32_cart_exec"],
+        "cart_max_size": FALLBACK_CART_MAX_SIZE,
         "cart_ram_size": ram_size,
         "imports": {name: nm[name] for name in IMPORT_NAMES},
     }
@@ -369,6 +390,11 @@ def write_imports(path: Path, imports: dict[str, int]) -> None:
             raise SystemExit(f"runtime import missing: {name}")
         lines.append(f"PROVIDE({name} = 0x{int(imports[name]):08x});")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def ensure_cart_max_size(data: bytes, max_size: int = FALLBACK_CART_MAX_SIZE) -> None:
+    if len(data) > max_size:
+        raise SystemExit(f"cartridge image is {len(data)} bytes, max is {max_size}")
 
 
 def write_linker(path: Path, load_addr: int, init_symbol: str) -> None:
@@ -457,6 +483,7 @@ def build(args: argparse.Namespace) -> None:
             file=sys.stderr,
         )
     ram_size = int(runtime.get("cart_ram_size", FALLBACK_CART_RAM_SIZE))
+    max_size = int(runtime.get("cart_max_size", FALLBACK_CART_MAX_SIZE))
     imports = {k: int(v) for k, v in runtime["imports"].items()}
 
     source = Path(args.source)
@@ -561,8 +588,11 @@ def build(args: argparse.Namespace) -> None:
             crc,
             name_bytes + b"\0" * (32 - len(name_bytes)),
         )
+        image = header + code + audio_block
+        if len(image) > max_size:
+            raise SystemExit(f"cartridge image is {len(image)} bytes, max is {max_size}")
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(header + code + audio_block)
+        out.write_bytes(image)
 
     print(
         f"built {out} name={name} load=0x{load_addr:08x} "
@@ -572,6 +602,7 @@ def build(args: argparse.Namespace) -> None:
 
 def upload(args: argparse.Namespace) -> None:
     data = Path(args.cartridge).read_bytes()
+    ensure_cart_max_size(data)
     endpoint = args.url.rstrip("/") + "/api/games?slot=" + args.slot
     request = urllib.request.Request(
         endpoint,
@@ -806,6 +837,7 @@ def publish_bundle(args: argparse.Namespace) -> None:
 def upload_qemu(args: argparse.Namespace) -> None:
     flash = Path(args.flash)
     data = Path(args.cartridge).read_bytes()
+    ensure_cart_max_size(data)
     partitions = Path(args.partitions)
     cart_offset, cart_size = read_partition_slot(partitions, args.slot)
     if len(data) > cart_size:

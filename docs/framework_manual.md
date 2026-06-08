@@ -227,7 +227,8 @@ Important constants:
 - `PRG32_CART_META_MAGIC`: optional metadata trailer magic, `PRG32META`.
 - `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
 - `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
-- `PRG32_CART_RAM_SIZE`: executable cartridge RAM window, currently 32 KiB.
+- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, currently 32 KiB.
+- `PRG32_CART_RAM_SIZE`: executable cartridge RAM window, currently 64 KiB.
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
 Important functions:
@@ -270,17 +271,16 @@ has been saved, that cartridge starts automatically even when multiple slots are
 filled.
 
 The setup main menu contains cartridge launch, default cartridge selection,
-Wi-Fi setup, audio setup, the developer band menu, the device demo, the
-performance test, the about screen, and exit. The Cartridge Store integration
+Wi-Fi setup, Cartridge Store configuration and browsing, audio setup, the
+developer band menu, the performance test, the about screen, and exit. The Cartridge Store integration
 contract adds manual/discovered store URL entry, browsing, colophon preview, and
 download-to-slot behavior for future firmware work. Use UP/DOWN to choose,
 SELECT or B to confirm, and A to cancel/back. The
-device demo is a firmware-owned smoke test for display, input, audio, Wi-Fi
-status, cartridges, sprites, scrolling, playfield rendering, status bands, and
-small sketches inspired by Pong, Breakout, Space Invaders, Pacman, Tetris,
-Pole Position, Asteroids, a tile-engine platformer, and a Doom-style
-raycaster. It also includes a space-cockpit sketch where the starfield and
-cockpit are separate playfields.
+device smoke test is now the external
+[DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo), which
+exercises display, input, audio, sprites, scrolling, playfield rendering,
+status bands, and small classroom sketches through the same cartridge ABI used
+by student games.
 
 The Wi-Fi setup screen lets the user choose access-point mode or infrastructure
 mode. Infrastructure mode scans for nearby SSIDs, lists them on screen, and

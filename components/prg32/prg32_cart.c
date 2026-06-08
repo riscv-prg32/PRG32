@@ -269,6 +269,12 @@ static int validate_header(const prg32_cart_header_t *h,
         set_error("cartridge linked for a different runtime address");
         return -1;
     }
+    if (image_size > PRG32_CART_MAX_SIZE) {
+        set_errorf("cartridge image is too large image=%lu max=%lu",
+                   (unsigned long)image_size,
+                   (unsigned long)PRG32_CART_MAX_SIZE);
+        return -1;
+    }
     if (h->code_size == 0 || h->code_size > h->mem_size ||
         h->mem_size > PRG32_CART_RAM_SIZE) {
         set_errorf("invalid cartridge size code=%lu mem=%lu ram=%lu",
@@ -585,7 +591,8 @@ int prg32_cart_stream_begin(uint8_t slot, size_t image_size) {
         set_errorf("%s partition not found", slot_name(slot));
         return -1;
     }
-    if (image_size == 0 || image_size > part->size) {
+    if (image_size == 0 || image_size > PRG32_CART_MAX_SIZE ||
+        image_size > part->size) {
         set_errorf("cartridge is larger than %s partition", slot_name(slot));
         return -1;
     }
