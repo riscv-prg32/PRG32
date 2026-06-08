@@ -544,9 +544,9 @@ for a step-by-step scientific-paper measurement workflow with screenshots.
 - `tools/prg32_game.py store-discover`: find CartridgeStore instances via mDNS.
 - `tools/prg32_game.py store-list`: print a CartridgeStore catalog table.
 - `tools/prg32_game.py store-download`: download a `.prg32` from a store.
-- `tools/prg32_game.py publish`: build a cartridge and publish a store bundle.
+- `tools/prg32_game.py publish`: build a cartridge and submit a store bundle.
 - `tools/prg32_game.py pack-bundle`: create a flat multi-architecture zip.
-- `tools/prg32_game.py publish-bundle`: upload a prepared bundle.
+- `tools/prg32_game.py publish-bundle`: submit a prepared bundle.
 
 See [docs/assets.md](docs/assets.md).
 

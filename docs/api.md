@@ -49,6 +49,51 @@ The board can also run as an access point. In that mode the usual URL is:
 http://192.168.4.1
 ```
 
+### List Device Endpoints
+
+```http
+GET /api
+GET /api/
+```
+
+Returns a compact JSON index of the board-local device API. This endpoint is the
+first endpoint clients should call when discovering what the running firmware
+can serve.
+
+Example:
+
+```bash
+curl http://192.168.4.1/api
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "service": "PRG32",
+  "endpoints": [
+    {"method":"GET","path":"/api","available":true},
+    {"method":"GET","path":"/api/runtime","available":true},
+    {"method":"GET","path":"/api/games","available":true},
+    {"method":"POST","path":"/api/games","available":true},
+    {"method":"POST","path":"/api/games/select","available":true},
+    {"method":"GET","path":"/api/screenshot.bmp","available":true},
+    {"method":"GET","path":"/api/performance.json","available":true},
+    {"method":"GET","path":"/api/scores","available":false},
+    {"method":"POST","path":"/api/scores","available":false}
+  ]
+}
+```
+
+Expected behavior:
+
+- `/api` and `/api/` return the same shape;
+- endpoints compiled into the firmware are always listed consistently;
+- `available:false` means the route exists in the API model but the current
+  build/configuration does not serve it, for example score routes when
+  `PRG32_WIFI_SCORES_ENABLE` is disabled.
+
 ### Get Runtime Information
 
 ```http
@@ -93,21 +138,20 @@ Typical response fields:
   "diag": {
     "frame_count": 1294,
     "input_state": 0
-  },
-  "imports": {
-    "prg32_ticks_ms": 1100197840,
-    "prg32_input_read": 1100200144
   }
 }
 ```
 
 Expected behavior:
 
+- runtime returns a compact single `application/json` response with firmware,
+  cartridge, display-backend, and diagnostic status;
+- runtime does not include the full cartridge import-address table, because that
+  table is too large for a reliable board-local status response while Wi-Fi and
+  display services are active;
 - `cart_loaded` is `false` when no cartridge is active.
 - `qemu` is `true` for QEMU RGB builds and `false` for physical ESP32-C6
   builds.
-- `imports` contains numeric firmware function addresses. Host tools use these
-  values to link uploadable cartridges for the resident runtime.
 
 Main use cases:
 
@@ -265,9 +309,15 @@ curl http://192.168.4.1/api/screenshot.bmp --output screenshot.bmp
 
 Expected behavior:
 
-- the firmware presents the latest frame before reading pixels;
+- the firmware snapshots the current framebuffer without forcing a display
+  flush from the HTTP request;
 - the response uses `image/bmp`;
-- the response is marked `Cache-Control: no-store`.
+- the response includes a fixed `Content-Length`;
+- the bitmap is encoded as a conventional 24-bit BMP for broad client
+  compatibility;
+- the response is marked `Cache-Control: no-store`;
+- screenshot transfer is larger than JSON endpoints, so clients should use a
+  timeout of at least 30 seconds on weak Wi-Fi links.
 
 Main use cases:
 
@@ -597,7 +647,7 @@ Command-line `--store-url` and `--token` values take precedence.
 ### Publish A Bundle
 
 ```http
-POST /api/publish
+POST /api/publish/bundle
 Authorization: Bearer <token>
 Content-Type: multipart/form-data
 
@@ -651,8 +701,8 @@ Expected behavior:
 
 - missing or invalid tokens commonly return `401`;
 - invalid bundles return `400`;
-- successful responses are JSON and may include the published game record or a
-  submitted/published summary.
+- successful responses are JSON and normally create a pending submission;
+- the game appears in the public catalog after an editor verifies it.
 
 ### Publish A Prebuilt Bundle
 
@@ -677,6 +727,10 @@ python3 tools/prg32_game.py publish-bundle tetris.zip \
 
 Use this endpoint when the build artifacts already exist or when publishing a
 multi-architecture bundle.
+
+`POST /api/publish` remains a compatibility alias for the same zip-bundle
+upload shape. The Cartridge Store no longer accepts the old loose multipart
+`.prg32` upload fields.
 
 ## MetricsServer API
 

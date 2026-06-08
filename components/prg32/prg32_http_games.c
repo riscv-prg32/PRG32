@@ -16,254 +16,122 @@ void prg32_http_register_score_handlers(httpd_handle_t server);
 
 static const char *TAG = "prg32_wifi";
 static httpd_handle_t server;
+enum {
+    BMP_HEADER_SIZE = 54,
+    BMP_DIB_SIZE = 40,
+    BMP_BPP = 24,
+    BMP_ROW_SIZE = ((PRG32_LCD_W * 3 + 3) & ~3),
+    BMP_IMAGE_SIZE = BMP_ROW_SIZE * PRG32_LCD_H,
+    BMP_FILE_SIZE = BMP_HEADER_SIZE + BMP_IMAGE_SIZE,
+    SCREENSHOT_ROWS = 1,
+};
+static uint16_t screenshot_rgb[PRG32_LCD_W * SCREENSHOT_ROWS];
+static uint8_t screenshot_band[BMP_ROW_SIZE * SCREENSHOT_ROWS];
 
 static void add_json_u32(cJSON *obj, const char *name, uint32_t value) {
     cJSON_AddNumberToObject(obj, name, (double)value);
 }
 
-static void add_import(cJSON *imports, const char *name, uintptr_t addr) {
-    add_json_u32(imports, name, (uint32_t)addr);
+static esp_err_t send_api_index(httpd_req_t *req) {
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req,
+                       "{\"ok\":true,"
+                       "\"service\":\"PRG32\","
+                       "\"endpoints\":["
+                       "{\"method\":\"GET\",\"path\":\"/api\",\"available\":true},"
+                       "{\"method\":\"GET\",\"path\":\"/api/\",\"available\":true},"
+                       "{\"method\":\"GET\",\"path\":\"/api/runtime\",\"available\":true},"
+                       "{\"method\":\"GET\",\"path\":\"/api/games\",\"available\":true},"
+                       "{\"method\":\"POST\",\"path\":\"/api/games\",\"available\":"
+#if PRG32_GAME_UPLOAD_ENABLE
+                       "true"
+#else
+                       "false"
+#endif
+                       "},"
+                       "{\"method\":\"POST\",\"path\":\"/api/games/select\",\"available\":true},"
+                       "{\"method\":\"GET\",\"path\":\"/api/screenshot.bmp\",\"available\":true},"
+                       "{\"method\":\"GET\",\"path\":\"/api/performance.json\",\"available\":true},"
+                       "{\"method\":\"GET\",\"path\":\"/api/scores\",\"available\":"
+#if PRG32_WIFI_SCORES_ENABLE
+                       "true"
+#else
+                       "false"
+#endif
+                       "},"
+                       "{\"method\":\"POST\",\"path\":\"/api/scores\",\"available\":"
+#if PRG32_WIFI_SCORES_ENABLE
+                       "true"
+#else
+                       "false"
+#endif
+                       "}"
+                       "]}");
+    return ESP_OK;
 }
 
 static esp_err_t send_runtime(httpd_req_t *req) {
-    cJSON *root = cJSON_CreateObject();
-    if (!root) {
-        httpd_resp_send_err(req, 500, "out of memory");
-        return ESP_ERR_NO_MEM;
-    }
-    cJSON_AddStringToObject(root, "name", "PRG32");
-    cJSON_AddStringToObject(root, "firmware_version", PRG32_FIRMWARE_VERSION);
-    cJSON_AddStringToObject(root, "cart_magic", PRG32_CART_MAGIC);
-    cJSON_AddNumberToObject(root, "cart_abi_major", PRG32_CART_ABI_MAJOR);
-    cJSON_AddNumberToObject(root, "cart_abi_minor", PRG32_CART_ABI_MINOR);
-    add_json_u32(root, "cart_load_addr", (uint32_t)prg32_cart_load_addr());
-    add_json_u32(root, "cart_ram_size", (uint32_t)prg32_cart_ram_size());
-    cJSON_AddBoolToObject(root, "cart_loaded", false);
+    char json[768];
+    prg32_cart_info_t info;
+    bool have_cart = prg32_cart_get_info(&info) == 0;
+    bool qemu =
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
-    cJSON_AddBoolToObject(root, "qemu", true);
+        true;
 #else
-    cJSON_AddBoolToObject(root, "qemu", false);
+        false;
 #endif
 
-    prg32_cart_info_t info;
-    if (prg32_cart_get_info(&info) == 0) {
-        cJSON *cart = cJSON_AddObjectToObject(root, "cart");
-        cJSON_AddStringToObject(cart, "name", info.name);
-        cJSON_AddBoolToObject(cart, "loaded", info.loaded != 0);
-        cJSON_AddBoolToObject(cart, "stored", info.stored != 0);
-        add_json_u32(cart, "code_size", info.code_size);
-        add_json_u32(cart, "mem_size", info.mem_size);
-        add_json_u32(cart, "audio_size", info.audio_size);
-        cJSON_AddBoolToObject(cart, "audio", info.audio != 0);
-        add_json_u32(cart, "generation", info.generation);
-        cJSON_AddBoolToObject(root, "cart_loaded", info.loaded != 0);
+    int written = snprintf(json,
+                           sizeof(json),
+                           "{"
+                           "\"name\":\"PRG32\","
+                           "\"firmware_version\":\"%s\","
+                           "\"cart_magic\":\"%s\","
+                           "\"cart_abi_major\":%u,"
+                           "\"cart_abi_minor\":%u,"
+                           "\"cart_load_addr\":%lu,"
+                           "\"cart_ram_size\":%lu,"
+                           "\"cart_loaded\":%s,"
+                           "\"qemu\":%s,"
+                           "\"cart\":{"
+                           "\"name\":\"%s\","
+                           "\"loaded\":%s,"
+                           "\"stored\":%s,"
+                           "\"code_size\":%lu,"
+                           "\"mem_size\":%lu,"
+                           "\"audio_size\":%lu,"
+                           "\"audio\":%s,"
+                           "\"generation\":%lu"
+                           "},"
+                           "\"diag\":{"
+                           "\"frame_count\":%lu,"
+                           "\"input_state\":%lu"
+                           "}"
+                           "}",
+                           PRG32_FIRMWARE_VERSION,
+                           PRG32_CART_MAGIC,
+                           (unsigned)PRG32_CART_ABI_MAJOR,
+                           (unsigned)PRG32_CART_ABI_MINOR,
+                           (unsigned long)(uint32_t)prg32_cart_load_addr(),
+                           (unsigned long)(uint32_t)prg32_cart_ram_size(),
+                           have_cart && info.loaded ? "true" : "false",
+                           qemu ? "true" : "false",
+                           have_cart ? info.name : "",
+                           have_cart && info.loaded ? "true" : "false",
+                           have_cart && info.stored ? "true" : "false",
+                           (unsigned long)(have_cart ? info.code_size : 0),
+                           (unsigned long)(have_cart ? info.mem_size : 0),
+                           (unsigned long)(have_cart ? info.audio_size : 0),
+                           have_cart && info.audio ? "true" : "false",
+                           (unsigned long)(have_cart ? info.generation : 0),
+                           (unsigned long)prg32_diag_frame_count(),
+                           (unsigned long)prg32_diag_input_state());
+    if (written < 0 || (size_t)written >= sizeof(json)) {
+        httpd_resp_send_err(req, 500, "runtime json too large");
+        return ESP_FAIL;
     }
-
-    cJSON *diag = cJSON_AddObjectToObject(root, "diag");
-    add_json_u32(diag, "frame_count", prg32_diag_frame_count());
-    add_json_u32(diag, "input_state", prg32_diag_input_state());
-
-    cJSON *imports = cJSON_AddObjectToObject(root, "imports");
-    add_import(imports, "prg32_ticks_ms", (uintptr_t)prg32_ticks_ms);
-    add_import(imports, "prg32_input_read", (uintptr_t)prg32_input_read);
-    add_import(imports, "prg32_input_read_player",
-               (uintptr_t)prg32_input_read_player);
-    add_import(imports, "prg32_input_read_menu",
-               (uintptr_t)prg32_input_read_menu);
-    add_import(imports, "prg32_controller_read", (uintptr_t)prg32_controller_read);
-    add_import(imports, "prg32_audio_beep", (uintptr_t)prg32_audio_beep);
-    add_import(imports, "prg32_audio_tone", (uintptr_t)prg32_audio_tone);
-    add_import(imports, "prg32_audio_note", (uintptr_t)prg32_audio_note);
-    add_import(imports, "prg32_audio_play_notes",
-               (uintptr_t)prg32_audio_play_notes);
-    add_import(imports, "prg32_audio_sample_u8",
-               (uintptr_t)prg32_audio_sample_u8);
-    add_import(imports, "prg32_rgb_led_init", (uintptr_t)prg32_rgb_led_init);
-    add_import(imports, "prg32_rgb_led_available",
-               (uintptr_t)prg32_rgb_led_available);
-    add_import(imports, "prg32_rgb_led_set", (uintptr_t)prg32_rgb_led_set);
-    add_import(imports, "prg32_rgb_led_off", (uintptr_t)prg32_rgb_led_off);
-    add_import(imports, "prg32_rgb_led_vu", (uintptr_t)prg32_rgb_led_vu);
-    add_import(imports, "prg32_audio_led_vu_enable",
-               (uintptr_t)prg32_audio_led_vu_enable);
-    add_import(imports, "prg32_audio_led_vu_enabled",
-               (uintptr_t)prg32_audio_led_vu_enabled);
-    add_import(imports, "prg32_audio_led_vu_level",
-               (uintptr_t)prg32_audio_led_vu_level);
-    add_import(imports, "prg32_metrics_init", (uintptr_t)prg32_metrics_init);
-    add_import(imports, "prg32_metrics_start_run",
-               (uintptr_t)prg32_metrics_start_run);
-    add_import(imports, "prg32_metrics_stop_run",
-               (uintptr_t)prg32_metrics_stop_run);
-    add_import(imports, "prg32_metrics_is_enabled",
-               (uintptr_t)prg32_metrics_is_enabled);
-    add_import(imports, "prg32_metrics_record", (uintptr_t)prg32_metrics_record);
-    add_import(imports, "prg32_metrics_run_id", (uintptr_t)prg32_metrics_run_id);
-    add_import(imports, "prg32_performance_test_run",
-               (uintptr_t)prg32_performance_test_run);
-    add_import(imports, "prg32_performance_has_results",
-               (uintptr_t)prg32_performance_has_results);
-    add_import(imports, "prg32_performance_summary",
-               (uintptr_t)prg32_performance_summary);
-    add_import(imports, "prg32_performance_json_alloc",
-               (uintptr_t)prg32_performance_json_alloc);
-    add_import(imports, "prg32_performance_json_free",
-               (uintptr_t)prg32_performance_json_free);
-    add_import(imports, "prg32_audio_init", (uintptr_t)prg32_audio_init);
-    add_import(imports, "prg32_audio_shutdown", (uintptr_t)prg32_audio_shutdown);
-    add_import(imports, "prg32_audio_get_mode", (uintptr_t)prg32_audio_get_mode);
-    add_import(imports, "prg32_audio_play_sample",
-               (uintptr_t)prg32_audio_play_sample);
-    add_import(imports, "prg32_audio_play_sample_pan",
-               (uintptr_t)prg32_audio_play_sample_pan);
-    add_import(imports, "prg32_audio_stop_channel",
-               (uintptr_t)prg32_audio_stop_channel);
-    add_import(imports, "prg32_audio_stop_all", (uintptr_t)prg32_audio_stop_all);
-    add_import(imports, "prg32_audio_note_on", (uintptr_t)prg32_audio_note_on);
-    add_import(imports, "prg32_audio_note_on_pan",
-               (uintptr_t)prg32_audio_note_on_pan);
-    add_import(imports, "prg32_audio_note_off", (uintptr_t)prg32_audio_note_off);
-    add_import(imports, "prg32_audio_play_track",
-               (uintptr_t)prg32_audio_play_track);
-    add_import(imports, "prg32_audio_stop_track",
-               (uintptr_t)prg32_audio_stop_track);
-    add_import(imports, "prg32_audio_set_tempo",
-               (uintptr_t)prg32_audio_set_tempo);
-    add_import(imports, "prg32_audio_set_master_volume",
-               (uintptr_t)prg32_audio_set_master_volume);
-    add_import(imports, "prg32_audio_set_channel_volume",
-               (uintptr_t)prg32_audio_set_channel_volume);
-    add_import(imports, "prg32_audio_set_channel_pan",
-               (uintptr_t)prg32_audio_set_channel_pan);
-    add_import(imports, "prg32_wifi_start_mode",
-               (uintptr_t)prg32_wifi_start_mode);
-    add_import(imports, "prg32_wifi_current_mode",
-               (uintptr_t)prg32_wifi_current_mode);
-    add_import(imports, "prg32_wifi_current_ip",
-               (uintptr_t)prg32_wifi_current_ip);
-    add_import(imports, "prg32_wifi_current_ssid",
-               (uintptr_t)prg32_wifi_current_ssid);
-    add_import(imports, "prg32_wifi_setup_requested",
-               (uintptr_t)prg32_wifi_setup_requested);
-    add_import(imports, "prg32_wifi_setup_run",
-               (uintptr_t)prg32_wifi_setup_run);
-    add_import(imports, "prg32_cart_stored_count",
-               (uintptr_t)prg32_cart_stored_count);
-    add_import(imports, "prg32_cart_get_slot_info",
-               (uintptr_t)prg32_cart_get_slot_info);
-    add_import(imports, "prg32_cart_store_slot",
-               (uintptr_t)prg32_cart_store_slot);
-    add_import(imports, "prg32_cart_select_slot",
-               (uintptr_t)prg32_cart_select_slot);
-    add_import(imports, "prg32_console_clear", (uintptr_t)prg32_console_clear);
-    add_import(imports, "prg32_console_putc", (uintptr_t)prg32_console_putc);
-    add_import(imports, "prg32_console_write", (uintptr_t)prg32_console_write);
-    add_import(imports, "prg32_console_hex32", (uintptr_t)prg32_console_hex32);
-    add_import(imports, "prg32_gfx_clear", (uintptr_t)prg32_gfx_clear);
-    add_import(imports, "prg32_gfx_present", (uintptr_t)prg32_gfx_present);
-    add_import(imports, "prg32_gfx_lock", (uintptr_t)prg32_gfx_lock);
-    add_import(imports, "prg32_gfx_unlock", (uintptr_t)prg32_gfx_unlock);
-    add_import(imports, "prg32_gfx_set_fullscreen",
-               (uintptr_t)prg32_gfx_set_fullscreen);
-    add_import(imports, "prg32_gfx_fullscreen_enabled",
-               (uintptr_t)prg32_gfx_fullscreen_enabled);
-    add_import(imports, "prg32_gfx_set_band_color",
-               (uintptr_t)prg32_gfx_set_band_color);
-    add_import(imports, "prg32_gfx_use_background_bands",
-               (uintptr_t)prg32_gfx_use_background_bands);
-    add_import(imports, "prg32_band_set_mode", (uintptr_t)prg32_band_set_mode);
-    add_import(imports, "prg32_band_mode", (uintptr_t)prg32_band_mode);
-    add_import(imports, "prg32_band_mode_name", (uintptr_t)prg32_band_mode_name);
-    add_import(imports, "prg32_band_set_text", (uintptr_t)prg32_band_set_text);
-    add_import(imports, "prg32_band_set_game_info",
-               (uintptr_t)prg32_band_set_game_info);
-    add_import(imports, "prg32_band_log", (uintptr_t)prg32_band_log);
-    add_import(imports, "prg32_band_set_colors",
-               (uintptr_t)prg32_band_set_colors);
-    add_import(imports, "prg32_band_use_default_colors",
-               (uintptr_t)prg32_band_use_default_colors);
-    add_import(imports, "prg32_band_load_config",
-               (uintptr_t)prg32_band_load_config);
-    add_import(imports, "prg32_band_save_config",
-               (uintptr_t)prg32_band_save_config);
-    add_import(imports, "prg32_gfx_pixel", (uintptr_t)prg32_gfx_pixel);
-    add_import(imports, "prg32_gfx_rect", (uintptr_t)prg32_gfx_rect);
-    add_import(imports, "prg32_gfx_text8", (uintptr_t)prg32_gfx_text8);
-    add_import(imports, "prg32_gfx_snapshot_row_rgb565",
-               (uintptr_t)prg32_gfx_snapshot_row_rgb565);
-    add_import(imports, "prg32_splash_draw", (uintptr_t)prg32_splash_draw);
-    add_import(imports, "prg32_splash_show", (uintptr_t)prg32_splash_show);
-    add_import(imports, "prg32_splash_draw_game",
-               (uintptr_t)prg32_splash_draw_game);
-    add_import(imports, "prg32_splash_show_game",
-               (uintptr_t)prg32_splash_show_game);
-    add_import(imports, "prg32_splash_show_default",
-               (uintptr_t)prg32_splash_show_default);
-    add_import(imports, "prg32_debug_overlay_draw", (uintptr_t)prg32_debug_overlay_draw);
-    add_import(imports, "prg32_keyboard_init", (uintptr_t)prg32_keyboard_init);
-    add_import(imports, "prg32_keyboard_update", (uintptr_t)prg32_keyboard_update);
-    add_import(imports, "prg32_keyboard_draw", (uintptr_t)prg32_keyboard_draw);
-    add_import(imports, "prg32_text_input", (uintptr_t)prg32_text_input);
-    add_import(imports, "prg32_tile_clear", (uintptr_t)prg32_tile_clear);
-    add_import(imports, "prg32_tile_define", (uintptr_t)prg32_tile_define);
-    add_import(imports, "prg32_tile_put", (uintptr_t)prg32_tile_put);
-    add_import(imports, "prg32_tile_present", (uintptr_t)prg32_tile_present);
-    add_import(imports, "prg32_playfield_clear", (uintptr_t)prg32_playfield_clear);
-    add_import(imports, "prg32_playfield_put", (uintptr_t)prg32_playfield_put);
-    add_import(imports, "prg32_playfield_get", (uintptr_t)prg32_playfield_get);
-    add_import(imports, "prg32_playfield_scroll", (uintptr_t)prg32_playfield_scroll);
-    add_import(imports, "prg32_playfield_scroll_by",
-               (uintptr_t)prg32_playfield_scroll_by);
-    add_import(imports, "prg32_playfield_parallax",
-               (uintptr_t)prg32_playfield_parallax);
-    add_import(imports, "prg32_playfield_camera", (uintptr_t)prg32_playfield_camera);
-    add_import(imports, "prg32_playfield_camera_x",
-               (uintptr_t)prg32_playfield_camera_x);
-    add_import(imports, "prg32_playfield_camera_y",
-               (uintptr_t)prg32_playfield_camera_y);
-    add_import(imports, "prg32_playfield_draw", (uintptr_t)prg32_playfield_draw);
-    add_import(imports, "prg32_playfield_draw_dual",
-               (uintptr_t)prg32_playfield_draw_dual);
-    add_import(imports, "prg32_playfield_present", (uintptr_t)prg32_playfield_present);
-    add_import(imports, "prg32_platform_tile_flags",
-               (uintptr_t)prg32_platform_tile_flags);
-    add_import(imports, "prg32_platform_tile_flags_get",
-               (uintptr_t)prg32_platform_tile_flags_get);
-    add_import(imports, "prg32_platform_tile_at",
-               (uintptr_t)prg32_platform_tile_at);
-    add_import(imports, "prg32_platform_solid_at",
-               (uintptr_t)prg32_platform_solid_at);
-    add_import(imports, "prg32_platform_actor_init",
-               (uintptr_t)prg32_platform_actor_init);
-    add_import(imports, "prg32_platform_actor_move",
-               (uintptr_t)prg32_platform_actor_move);
-    add_import(imports, "prg32_platform_actor_step",
-               (uintptr_t)prg32_platform_actor_step);
-    add_import(imports, "prg32_platform_camera_follow",
-               (uintptr_t)prg32_platform_camera_follow);
-    add_import(imports, "prg32_sprite_hitbox", (uintptr_t)prg32_sprite_hitbox);
-    add_import(imports, "prg32_sprite_draw_8x8", (uintptr_t)prg32_sprite_draw_8x8);
-    add_import(imports, "prg32_sprite_draw_16x16", (uintptr_t)prg32_sprite_draw_16x16);
-    add_import(imports, "prg32_sprite_anim_frame",
-               (uintptr_t)prg32_sprite_anim_frame);
-    add_import(imports, "prg32_sprite_draw_frame",
-               (uintptr_t)prg32_sprite_draw_frame);
-    add_import(imports, "prg32_sprite_anim_init", (uintptr_t)prg32_sprite_anim_init);
-    add_import(imports, "prg32_sprite_anim_update",
-               (uintptr_t)prg32_sprite_anim_update);
-    add_import(imports, "prg32_sprite_anim_draw", (uintptr_t)prg32_sprite_anim_draw);
-    add_import(imports, "prg32_score_submit", (uintptr_t)prg32_score_submit);
-
-    char *json = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
     httpd_resp_set_type(req, "application/json");
-    if (!json) {
-        httpd_resp_sendstr(req, "{}");
-        return ESP_OK;
-    }
-    httpd_resp_sendstr(req, json);
-    cJSON_free(json);
-    return ESP_OK;
+    return httpd_resp_sendstr(req, json);
 }
 
 static esp_err_t get_games(httpd_req_t *req) {
@@ -348,24 +216,31 @@ static void rgb565_to_bgr888(uint16_t color, uint8_t *bgr) {
     bgr[2] = (uint8_t)((r5 << 3) | (r5 >> 2));
 }
 
+static esp_err_t screenshot_send_all(httpd_req_t *req, int sock, const void *data, size_t length) {
+    const uint8_t *bytes = (const uint8_t *)data;
+    while (length > 0) {
+        size_t chunk = length > 64 ? 64 : length;
+        int sent = httpd_socket_send(req->handle, sock, (const char *)bytes, chunk, 0);
+        if (sent <= 0) {
+            return ESP_FAIL;
+        }
+        bytes += sent;
+        length -= (size_t)sent;
+    }
+    return ESP_OK;
+}
+
 static esp_err_t get_screenshot_bmp(httpd_req_t *req) {
-    enum {
-        BMP_HEADER_SIZE = 54,
-        BMP_BPP = 24,
-        BMP_ROW_SIZE = ((PRG32_LCD_W * 3 + 3) & ~3),
-        BMP_IMAGE_SIZE = BMP_ROW_SIZE * PRG32_LCD_H,
-        BMP_FILE_SIZE = BMP_HEADER_SIZE + BMP_IMAGE_SIZE,
-    };
     uint8_t header[BMP_HEADER_SIZE] = {0};
-    uint16_t rgb[PRG32_LCD_W];
-    uint8_t row[BMP_ROW_SIZE];
+    uint16_t *rgb = screenshot_rgb;
+    uint8_t *band = screenshot_band;
     esp_err_t err;
 
     header[0] = 'B';
     header[1] = 'M';
     put_le32(&header[2], BMP_FILE_SIZE);
     put_le32(&header[10], BMP_HEADER_SIZE);
-    put_le32(&header[14], 40);
+    put_le32(&header[14], BMP_DIB_SIZE);
     put_le32(&header[18], PRG32_LCD_W);
     put_le32(&header[22], PRG32_LCD_H);
     put_le16(&header[26], 1);
@@ -374,53 +249,119 @@ static esp_err_t get_screenshot_bmp(httpd_req_t *req) {
     put_le32(&header[38], 2835);
     put_le32(&header[42], 2835);
 
-    prg32_gfx_lock();
-    prg32_gfx_present();
+    int sock = httpd_req_to_sockfd(req);
+    if (sock < 0) {
+        return ESP_FAIL;
+    }
 
-    httpd_resp_set_type(req, "image/bmp");
-    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=\"screenshot.bmp\"");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    uint8_t first_packet[256];
+    int http_header_len = snprintf((char *)first_packet,
+                                   sizeof(first_packet) - BMP_HEADER_SIZE,
+                                   "HTTP/1.1 200 OK\r\n"
+                                   "Content-Type: image/bmp\r\n"
+                                   "Content-Length: %u\r\n"
+                                   "Content-Disposition: inline; filename=\"screenshot.bmp\"\r\n"
+                                   "Cache-Control: no-store\r\n"
+                                   "Connection: close\r\n"
+                                   "\r\n",
+                                   (unsigned)BMP_FILE_SIZE);
+    if (http_header_len < 0 ||
+        (size_t)http_header_len >= sizeof(first_packet) - BMP_HEADER_SIZE) {
+        return ESP_FAIL;
+    }
+    memcpy(&first_packet[http_header_len], header, BMP_HEADER_SIZE);
 
-    err = httpd_resp_send_chunk(req, (const char *)header, sizeof(header));
+    err = screenshot_send_all(req, sock, first_packet, (size_t)http_header_len + BMP_HEADER_SIZE);
     if (err != ESP_OK) {
         goto out;
     }
-    for (int y = PRG32_LCD_H - 1; y >= 0; --y) {
-        if (prg32_gfx_snapshot_row_rgb565(y, rgb, PRG32_LCD_W) < 0) {
-            httpd_resp_sendstr_chunk(req, NULL);
-            err = ESP_FAIL;
-            goto out;
+    for (int y = PRG32_LCD_H - 1; y >= 0;) {
+        int first_y = y - SCREENSHOT_ROWS + 1;
+        if (first_y < 0) {
+            first_y = 0;
         }
-        for (int x = 0; x < PRG32_LCD_W; ++x) {
-            rgb565_to_bgr888(rgb[x], &row[x * 3]);
+        int rows = y - first_y + 1;
+
+        for (int snap_y = first_y; snap_y <= y; ++snap_y) {
+            uint16_t *dst = &rgb[(snap_y - first_y) * PRG32_LCD_W];
+            if (prg32_gfx_snapshot_row_rgb565(snap_y, dst, PRG32_LCD_W) < 0) {
+                err = ESP_FAIL;
+                goto out;
+            }
         }
-        err = httpd_resp_send_chunk(req, (const char *)row, BMP_ROW_SIZE);
+
+        for (int row_index = rows - 1; row_index >= 0; --row_index) {
+            const uint16_t *src = &rgb[row_index * PRG32_LCD_W];
+            uint8_t *dst = &band[(rows - 1 - row_index) * BMP_ROW_SIZE];
+            for (int x = 0; x < PRG32_LCD_W; ++x) {
+                rgb565_to_bgr888(src[x], &dst[x * 3]);
+            }
+        }
+        err = screenshot_send_all(req, sock, band, (size_t)rows * BMP_ROW_SIZE);
         if (err != ESP_OK) {
             goto out;
         }
+        y = first_y - 1;
     }
-    err = httpd_resp_sendstr_chunk(req, NULL);
 
 out:
-    prg32_gfx_unlock();
     return err;
 }
 
-static esp_err_t get_performance_json(httpd_req_t *req) {
-    char *json = prg32_performance_json_alloc();
-    if (!json) {
-        httpd_resp_send_err(req, 500, "out of memory");
-        return ESP_ERR_NO_MEM;
+typedef struct {
+    httpd_req_t *req;
+    char data[1024];
+    size_t used;
+} performance_http_stream_t;
+
+static int performance_http_flush(performance_http_stream_t *stream) {
+    if (!stream || !stream->req || stream->used == 0) {
+        return 0;
+    }
+    esp_err_t err = httpd_resp_send_chunk(stream->req, stream->data, stream->used);
+    stream->used = 0;
+    return err == ESP_OK ? 0 : -1;
+}
+
+static int performance_http_writer(const char *chunk, void *ctx) {
+    performance_http_stream_t *stream = (performance_http_stream_t *)ctx;
+    if (!stream || !chunk) {
+        return -1;
     }
 
+    const char *p = chunk;
+    size_t remaining = strlen(chunk);
+    while (remaining > 0) {
+        size_t space = sizeof(stream->data) - stream->used;
+        if (space == 0 && performance_http_flush(stream) != 0) {
+            return -1;
+        }
+        space = sizeof(stream->data) - stream->used;
+        size_t n = remaining < space ? remaining : space;
+        memcpy(&stream->data[stream->used], p, n);
+        stream->used += n;
+        p += n;
+        remaining -= n;
+    }
+    return 0;
+}
+
+static esp_err_t get_performance_json(httpd_req_t *req) {
+    performance_http_stream_t stream = {
+        .req = req,
+        .used = 0,
+    };
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req,
                        "Content-Disposition",
                        "attachment; filename=\"prg32_performance.json\"");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    esp_err_t err = httpd_resp_sendstr(req, json);
-    prg32_performance_json_free(json);
-    return err;
+    int rc = prg32_performance_json_write(performance_http_writer, &stream);
+    if (rc != 0 || performance_http_flush(&stream) != 0) {
+        httpd_resp_sendstr_chunk(req, NULL);
+        return ESP_FAIL;
+    }
+    return httpd_resp_sendstr_chunk(req, NULL);
 }
 
 static esp_err_t post_game(httpd_req_t *req) {
@@ -531,8 +472,10 @@ void prg32_scores_api_start(void) {
         return;
     }
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
-    cfg.max_uri_handlers = 10;
+    cfg.max_uri_handlers = 12;
     cfg.recv_wait_timeout = 10;
+    cfg.send_wait_timeout = 60;
+    cfg.stack_size = 8192;
     esp_err_t err = httpd_start(&server, &cfg);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "HTTP server start failed: %s", esp_err_to_name(err));
@@ -543,6 +486,16 @@ void prg32_scores_api_start(void) {
         .uri = "/api/runtime",
         .method = HTTP_GET,
         .handler = send_runtime
+    };
+    httpd_uri_t api_root = {
+        .uri = "/api/",
+        .method = HTTP_GET,
+        .handler = send_api_index
+    };
+    httpd_uri_t api = {
+        .uri = "/api",
+        .method = HTTP_GET,
+        .handler = send_api_index
     };
     httpd_uri_t games_get = {
         .uri = "/api/games",
@@ -569,6 +522,8 @@ void prg32_scores_api_start(void) {
         .method = HTTP_GET,
         .handler = get_performance_json
     };
+    ESP_ERROR_CHECK(httpd_register_uri_handler(server, &api_root));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(server, &api));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &rt));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &games_get));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &games_post));

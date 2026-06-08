@@ -107,7 +107,7 @@
 #define PRG32_PIN_BTN_A      21
 #define PRG32_PIN_BTN_B      22
 
-#define PRG32_PIN_SETUP      -1
+#define PRG32_PIN_SETUP      14
 
 /* Optional second digital joystick. Leave pins at -1 when not mounted. */
 #define PRG32_PIN_P2_LEFT    -1
@@ -174,6 +174,8 @@
 #define PRG32_WIFI_AP_PASSWORD "prg32game"
 #define PRG32_WIFI_AP_CHANNEL 6
 #define PRG32_WIFI_AP_MAX_CONN 4
+#define PRG32_WIFI_COUNTRY_CODE "IT"
+#define PRG32_WIFI_STA_LEGACY_PROTOCOLS 1
 
 /* CartridgeStore integration constants. */
 #define PRG32_STORE_URL_MAX_LEN        128

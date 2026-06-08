@@ -744,13 +744,16 @@ def publish(args: argparse.Namespace) -> None:
             if args.colophon:
                 zf.write(args.colophon, Path(args.colophon).name)
         response = post_multipart(
-            store_url(args) + "/api/publish",
+            store_url(args) + "/api/publish/bundle",
             {},
             {"bundle": (bundle.name, bundle.read_bytes(), "application/zip")},
             store_token(args),
         )
     print(json.dumps(response, indent=2, sort_keys=True))
-    print("✓ Published")
+    if response.get("status") == "pending" or response.get("review_required"):
+        print("Submitted for review")
+    else:
+        print("Published")
 
 
 def pack_bundle(args: argparse.Namespace) -> None:
@@ -796,6 +799,8 @@ def publish_bundle(args: argparse.Namespace) -> None:
     )
     published = response.get("published") or response.get("submitted") or response
     print(json.dumps(published, indent=2, sort_keys=True))
+    if response.get("status") == "pending" or response.get("review_required"):
+        print("Submitted for review")
 
 
 def upload_qemu(args: argparse.Namespace) -> None:

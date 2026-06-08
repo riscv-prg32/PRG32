@@ -496,9 +496,10 @@ curl http://192.168.4.1/api/screenshot.bmp --output hello_world.bmp
 ## 14. Create A Cartridge Store Publishing Package
 
 The current checked-in cartridge tool builds and uploads board/QEMU cartridges.
-For store publishing, create the metadata bundle explicitly. A store may accept
-this zip at `POST /api/publish` or `POST /api/publish/bundle`; check the store
-administrator's policy and token requirements.
+For store publishing, create the metadata bundle explicitly. Cartridge Store
+accepts this zip at `POST /api/publish/bundle`; `POST /api/publish` is a
+compatibility alias for the same zip-bundle shape. Check the store
+administrator's token and editor-review policy.
 
 Create a bundle directory:
 
@@ -576,15 +577,15 @@ $env:PRG32_STORE_TOKEN = "replace-with-classroom-token"
 Publish with `curl`:
 
 ```bash
-curl -X POST "$PRG32_STORE_URL/api/publish" \
+curl -X POST "$PRG32_STORE_URL/api/publish/bundle" \
   -H "Authorization: Bearer $PRG32_STORE_TOKEN" \
   -F "bundle=@build/store/hello_world-1.0.0.zip"
 ```
 
-Some stores expose `/api/publish/bundle` for prebuilt bundles:
+The compatibility alias accepts the same bundle:
 
 ```bash
-curl -X POST "$PRG32_STORE_URL/api/publish/bundle" \
+curl -X POST "$PRG32_STORE_URL/api/publish" \
   -H "Authorization: Bearer $PRG32_STORE_TOKEN" \
   -F "bundle=@build/store/hello_world-1.0.0.zip"
 ```
@@ -597,6 +598,9 @@ Verify the catalog:
 curl "$PRG32_STORE_URL/api/games"
 curl "$PRG32_STORE_URL/api/games/org.uniparthenope.hello-world"
 ```
+
+If the upload response says `status: pending`, an editor must verify the
+submission before these catalog requests show the new cartridge.
 
 Download the published physical artifact for a final smoke test:
 

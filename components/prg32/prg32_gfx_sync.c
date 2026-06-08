@@ -28,6 +28,24 @@ void prg32_gfx_lock(void) {
     }
 }
 
+int prg32_gfx_try_lock(uint32_t timeout_ms) {
+    prg32_gfx_lock_init();
+    if (!g_gfx_lock) {
+        return -1;
+    }
+    TaskHandle_t self = xTaskGetCurrentTaskHandle();
+    if (g_gfx_owner == self) {
+        g_gfx_depth++;
+        return 0;
+    }
+    if (xSemaphoreTake(g_gfx_lock, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
+        return -1;
+    }
+    g_gfx_owner = self;
+    g_gfx_depth = 1;
+    return 0;
+}
+
 void prg32_gfx_unlock(void) {
     TaskHandle_t self = xTaskGetCurrentTaskHandle();
     if (g_gfx_lock && g_gfx_owner == self) {

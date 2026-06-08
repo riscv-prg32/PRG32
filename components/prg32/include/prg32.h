@@ -266,6 +266,10 @@ int prg32_cart_install_slot(uint8_t slot,
                             size_t image_size,
                             int persist);
 int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size);
+size_t prg32_cart_slot_size(uint8_t slot);
+int prg32_cart_stream_begin(uint8_t slot, size_t image_size);
+int prg32_cart_stream_write(uint8_t slot, size_t offset, const void *data, size_t len);
+int prg32_cart_stream_end(uint8_t slot, size_t image_size);
 int prg32_cart_select_stored(void);
 int prg32_cart_select_slot(uint8_t slot);
 int prg32_cart_default_slot(void);
@@ -287,6 +291,7 @@ void prg32_console_hex32(uint32_t value);
 void prg32_gfx_clear(uint16_t color);
 void prg32_gfx_present(void);
 void prg32_gfx_lock(void);
+int prg32_gfx_try_lock(uint32_t timeout_ms);
 void prg32_gfx_unlock(void);
 void prg32_gfx_set_fullscreen(int enabled);
 int prg32_gfx_fullscreen_enabled(void);
