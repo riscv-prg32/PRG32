@@ -17,7 +17,7 @@
 #else
 #define STORE_MAX_GAMES 64
 #endif
-#define STORE_PAGE_SIZE 8
+#define STORE_PAGE_SIZE 4
 
 typedef struct {
     char id[48];

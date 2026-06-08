@@ -24,6 +24,7 @@ static uint16_t g_band_fg_cache[2];
 static uint16_t g_band_bg_cache[2];
 static int g_band_cache_valid[2];
 static int g_dirty_x0, g_dirty_y0, g_dirty_x1, g_dirty_y1;
+#define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
 
 void prg32_band_note_frame(uint32_t now_ms);
 int prg32_band_visible(uint8_t band);
@@ -32,7 +33,7 @@ uint16_t prg32_band_bg(uint8_t band, uint16_t fallback);
 const char *prg32_band_render_text(uint8_t band, uint32_t now_ms);
 void prg32_gfx_lock_init(void);
 
-static const uint8_t g_font8[96][8] = {
+static const uint8_t g_font8[96][8] PRG32_FLASH_RODATA = {
     [' ' - 32] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
     ['!' - 32] = {0x18,0x18,0x18,0x18,0x18,0x00,0x18,0x00},
     ['"' - 32] = {0x24,0x24,0x24,0x00,0x00,0x00,0x00,0x00},

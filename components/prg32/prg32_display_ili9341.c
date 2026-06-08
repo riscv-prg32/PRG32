@@ -36,6 +36,7 @@ static const char *TAG = "prg32_lcd";
 
 #define PRG32_VIEWPORT_Y ((PRG32_LCD_H - PRG32_GAME_H) / 2)
 #define PRG32_LCD_FLUSH_ROWS 8
+#define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
 
 #if !PRG32_LCD_SOFT_SPI
 static spi_device_handle_t g_lcd;
@@ -114,7 +115,7 @@ static esp_err_t lcd_prepare_input_pin(int pin, const char *name) {
     return err;
 }
 
-static const uint8_t g_font8[96][8] = {
+static const uint8_t g_font8[96][8] PRG32_FLASH_RODATA = {
     [' ' - 32] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
     ['!' - 32] = {0x18,0x18,0x18,0x18,0x18,0x00,0x18,0x00},
     ['"' - 32] = {0x24,0x24,0x24,0x00,0x00,0x00,0x00,0x00},
