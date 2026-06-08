@@ -5,7 +5,7 @@ square-wave sample. No cartridge audio assets are required.
 
 ## Run Embedded In Firmware
 
-1. Copy `examples/audio_mono_beep/main.c` into `main/main.c`, or temporarily add
+1. Copy `examples/features/audio_mono_beep/main.c` into `main/main.c`, or temporarily add
    it as the only app source in `main/CMakeLists.txt`.
 2. Wire one MAX98357A breakout as described in `docs/audio.md`.
 3. Build and flash:

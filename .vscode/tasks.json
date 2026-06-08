@@ -233,13 +233,6 @@
         "${input:prg32HardwareUrl}"
       ],
       "problemMatcher": []
-    },
-    {
-      "label": "PRG32: score server",
-      "type": "shell",
-      "command": "python3",
-      "args": ["tools/prg32_score_server/app.py"],
-      "problemMatcher": []
     }
   ],
   "inputs": [

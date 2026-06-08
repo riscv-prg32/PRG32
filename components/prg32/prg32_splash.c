@@ -45,10 +45,6 @@
 #define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
 #endif
 
-#ifndef PRG32_PIN_P2_SELECT
-#define PRG32_PIN_P2_SELECT PRG32_PIN_P2_START
-#endif
-
 #define PRG32_SPLASH_LOGO_W 320
 #define PRG32_SPLASH_LOGO_H 200
 #define PRG32_SPLASH_WELCOME_SAMPLE_ID 63
@@ -119,14 +115,6 @@ static int splash_i2s_pins_safe(void) {
         PRG32_PIN_BTN_START,
         PRG32_PIN_BTN_SELECT,
         PRG32_PIN_SETUP,
-        PRG32_PIN_P2_LEFT,
-        PRG32_PIN_P2_RIGHT,
-        PRG32_PIN_P2_UP,
-        PRG32_PIN_P2_DOWN,
-        PRG32_PIN_P2_A,
-        PRG32_PIN_P2_B,
-        PRG32_PIN_P2_START,
-        PRG32_PIN_P2_SELECT,
     };
 
     if (CONFIG_PRG32_DISPLAY_QEMU_RGB) {

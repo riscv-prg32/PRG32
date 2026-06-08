@@ -817,6 +817,7 @@ void prg32_init(void) {
     prg32_splash_show_default();
     printf("prg32_init => prg32_input_init()\n");
     prg32_input_init();
+    prg32_multiplayer_init();
     printf("prg32_init => prg32_abi_exports_keep()\n");
     prg32_abi_exports_keep();
     printf("prg32_init => prg32_cart_init()\n");

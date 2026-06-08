@@ -19,19 +19,36 @@ import subprocess
 import sys
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from prg32_cartridge_format import (  # noqa: E402
+    ARCHITECTURE_PROFILES,
+    build_from_files,
+    parse_file,
+    summary_dict,
+)
+
 CART_HEADER = struct.Struct("<4sHHHHIIIIIII32s")
 CART_MAGIC = b"PRG2"
 CART_ABI_MAJOR = 1
 CART_ABI_MINOR = 0
 PRG32_CART_FLAG_AUDIO_BLOCK = 1 << 0
+PRG32_CART_FLAG_MULTIPLAYER = 1 << 1
 AUDIO_BLOCK_MAGIC = b"AUD0"
 DEFAULT_PARTITION_TABLE = ROOT / "partitions_prg32.csv"
 DEFAULT_CART_SLOT = "cart0"
 FALLBACK_CART_RAM_SIZE = 32 * 1024
+STORE_DISCOVERY_ABI = "prg32-store-discovery-1.0"
+STORE_METADATA_ABI = "prg32-metadata-1.0"
+STORE_CONFIG = Path.home() / ".prg32" / "config.json"
 
 IMPORT_NAMES = [
     "prg32_ticks_ms",
@@ -66,6 +83,15 @@ IMPORT_NAMES = [
     "prg32_wifi_current_ssid",
     "prg32_wifi_setup_requested",
     "prg32_wifi_setup_run",
+    "prg32_multiplayer_init",
+    "prg32_multiplayer_available",
+    "prg32_multiplayer_join",
+    "prg32_multiplayer_leave",
+    "prg32_multiplayer_tick",
+    "prg32_multiplayer_set_local_state",
+    "prg32_multiplayer_set_input",
+    "prg32_multiplayer_get_peer_count",
+    "prg32_multiplayer_get_peer",
     "prg32_cart_stored_count",
     "prg32_cart_get_slot_info",
     "prg32_cart_select_slot",
@@ -148,6 +174,99 @@ def fetch_runtime(url: str) -> dict:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.URLError as exc:
         raise SystemExit(f"failed to read runtime from {endpoint}: {exc}") from exc
+
+
+def read_store_config() -> dict:
+    try:
+        return json.loads(STORE_CONFIG.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"failed to read {STORE_CONFIG}: {exc}") from exc
+
+
+def store_url(args: argparse.Namespace) -> str:
+    value = getattr(args, "store_url", None) or read_store_config().get("store_url")
+    if not value:
+        raise SystemExit("missing --store-url and no store_url in ~/.prg32/config.json")
+    return str(value).rstrip("/")
+
+
+def store_token(args: argparse.Namespace) -> str | None:
+    return getattr(args, "token", None) or read_store_config().get("store_token")
+
+
+def json_request(url: str, timeout: int = 15) -> dict:
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", "replace")
+        raise SystemExit(f"HTTP {exc.code}: {body}") from exc
+    except (urllib.error.URLError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"request failed: {exc}") from exc
+
+
+def catalog_items(body) -> list[dict]:
+    if isinstance(body, list):
+        return [item for item in body if isinstance(item, dict)]
+    if isinstance(body, dict):
+        for key in ("games", "items", "cartridges"):
+            value = body.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+    return []
+
+
+def multipart_request(url: str,
+                      fields: dict[str, str],
+                      files: dict[str, tuple[str, bytes, str]],
+                      token: str | None = None) -> urllib.request.Request:
+    boundary = "----prg32store" + binascii.hexlify(os.urandom(8)).decode("ascii")
+    chunks: list[bytes] = []
+    for name, value in fields.items():
+        chunks.append(f"--{boundary}\r\n".encode("ascii"))
+        chunks.append(
+            f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("ascii")
+        )
+        chunks.append(str(value).encode("utf-8") + b"\r\n")
+    for name, (filename, data, content_type) in files.items():
+        chunks.append(f"--{boundary}\r\n".encode("ascii"))
+        chunks.append(
+            (
+                f'Content-Disposition: form-data; name="{name}"; '
+                f'filename="{filename}"\r\n'
+                f"Content-Type: {content_type}\r\n\r\n"
+            ).encode("ascii")
+        )
+        chunks.append(data + b"\r\n")
+    chunks.append(f"--{boundary}--\r\n".encode("ascii"))
+    headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return urllib.request.Request(url, data=b"".join(chunks), headers=headers, method="POST")
+
+
+def post_multipart(url: str,
+                   fields: dict[str, str],
+                   files: dict[str, tuple[str, bytes, str]],
+                   token: str | None = None) -> dict:
+    request = multipart_request(url, fields, files, token)
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            text = response.read().decode("utf-8", "replace")
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                return {"status": response.status, "body": text}
+    except urllib.error.HTTPError as exc:
+        text = exc.read().decode("utf-8", "replace")
+        try:
+            body = json.loads(text)
+            message = body.get("error", text)
+        except json.JSONDecodeError:
+            message = text
+        raise SystemExit(f"publish failed: HTTP {exc.code}: {message}") from exc
 
 
 def parse_nm(text: str) -> dict[str, int]:
@@ -411,6 +530,8 @@ def build(args: argparse.Namespace) -> None:
                     f"but file has {len(audio_block)}"
                 )
             flags |= PRG32_CART_FLAG_AUDIO_BLOCK
+        if args.multiplayer:
+            flags |= PRG32_CART_FLAG_MULTIPLAYER
         start = linked_symbols["__cart_start"]
         end = linked_symbols["__cart_end"]
         mem_size = end - start
@@ -466,6 +587,215 @@ def upload(args: argparse.Namespace) -> None:
         raise SystemExit(f"upload failed: HTTP {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
         raise SystemExit(f"upload failed: {exc}") from exc
+
+
+def store_discover(args: argparse.Namespace) -> None:
+    try:
+        from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
+    except Exception as exc:
+        print("zeroconf not installed. Run: pip install zeroconf")
+        raise SystemExit(1) from exc
+
+    class Listener(ServiceListener):
+        def __init__(self) -> None:
+            self.found: list[tuple[str, str]] = []
+
+        def add_service(self, zc, service_type, name):
+            info = zc.get_service_info(service_type, name)
+            if not info or not info.addresses:
+                return
+            address = ".".join(str(part) for part in info.addresses[0])
+            url = f"http://{address}:{info.port}"
+            self.found.append((name.split("._", 1)[0].rstrip("."), url))
+
+        def update_service(self, zc, service_type, name):
+            self.add_service(zc, service_type, name)
+
+        def remove_service(self, zc, service_type, name):
+            return None
+
+    zc = Zeroconf()
+    listener = Listener()
+    ServiceBrowser(zc, "_prg32store._tcp.local.", listener)
+    try:
+        import time
+        time.sleep(args.timeout)
+    finally:
+        zc.close()
+    for name, url in listener.found:
+        abi = ""
+        try:
+            body = json_request(url + "/.well-known/prg32-store.json", timeout=3)
+            abi = body.get("abi", "")
+            name = body.get("name", name)
+        except SystemExit:
+            pass
+        print(f"Found: {name}")
+        print(f"  URL: {url}")
+        print(f"  ABI: {abi or STORE_DISCOVERY_ABI}")
+
+
+def store_list(args: argparse.Namespace) -> None:
+    body = json_request(store_url(args) + "/api/games")
+    rows = catalog_items(body)
+    print(f"{'ID':32} {'Title':24} {'Version':8} Architectures")
+    for item in rows:
+        archs = item.get("architectures", [])
+        if args.architecture and args.architecture not in archs:
+            continue
+        if isinstance(archs, list):
+            arch_text = ", ".join(str(a) for a in archs)
+        else:
+            arch_text = str(archs)
+        print(
+            f"{str(item.get('id', ''))[:32]:32} "
+            f"{str(item.get('title', ''))[:24]:24} "
+            f"{str(item.get('version', ''))[:8]:8} {arch_text}"
+        )
+
+
+def store_download(args: argparse.Namespace) -> None:
+    query = {"architecture": args.architecture}
+    if args.version:
+        query["version"] = args.version
+    endpoint = (
+        store_url(args)
+        + "/api/games/"
+        + urllib.parse.quote(args.game_id, safe="")
+        + "/download?"
+        + urllib.parse.urlencode(query)
+    )
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with urllib.request.urlopen(endpoint, timeout=60) as response, out.open("wb") as f:
+            total = int(response.headers.get("Content-Length", "0") or "0")
+            done = 0
+            while True:
+                chunk = response.read(64 * 1024)
+                if not chunk:
+                    break
+                f.write(chunk)
+                done += len(chunk)
+                if total:
+                    print(f"\r{done * 100 // total:3d}% {done}/{total} bytes", end="")
+            if total:
+                print()
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", "replace")
+        raise SystemExit(f"download failed: HTTP {exc.code}: {body}") from exc
+    except urllib.error.URLError as exc:
+        raise SystemExit(f"download failed: {exc}") from exc
+    print(f"saved {out}")
+
+
+def infer_architecture(firmware_elf: str | None) -> str:
+    if firmware_elf:
+        sdkconfig = Path(firmware_elf).with_name("sdkconfig")
+        if sdkconfig.exists():
+            text = sdkconfig.read_text(encoding="utf-8", errors="replace")
+            if "CONFIG_PRG32_DISPLAY_QEMU_RGB=y" in text:
+                return "qemu"
+    return "esp32c6"
+
+
+def make_metadata(args: argparse.Namespace, architecture: str, cartridge_file: str) -> dict:
+    game_id = args.id or f"org.prg32.{args.name}"
+    tags = [tag.strip() for tag in (args.tags or "").split(",") if tag.strip()]
+    return {
+        "abi": STORE_METADATA_ABI,
+        "id": game_id,
+        "title": args.name,
+        "version": args.version,
+        "summary": args.summary or "",
+        "tags": tags,
+        "assets": {
+            "icon": Path(args.icon).name if args.icon else "",
+            "splash": Path(args.splash).name if args.splash else "",
+        },
+        "architectures": [{"id": architecture, "file": cartridge_file}],
+    }
+
+
+def publish(args: argparse.Namespace) -> None:
+    architecture = args.architecture or infer_architecture(args.firmware_elf)
+    with tempfile.TemporaryDirectory(prefix="prg32-publish-") as tmp_s:
+        tmp = Path(tmp_s)
+        cart = tmp / f"{args.name}-{architecture}.prg32"
+        build_args = argparse.Namespace(**vars(args))
+        build_args.out = str(cart)
+        build_args.runtime_url = None
+        build_args.audio_block = None
+        build_args.multiplayer = False
+        build_args.march = "rv32imc_zicsr_zifencei"
+        build_args.mabi = "ilp32"
+        build(build_args)
+        manifest = tmp / "manifest.json"
+        metadata = make_metadata(args, architecture, cart.name)
+        manifest.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+        bundle = tmp / f"{args.name}.zip"
+        with zipfile.ZipFile(bundle, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.write(manifest, "manifest.json")
+            zf.write(cart, cart.name)
+            if args.icon:
+                zf.write(args.icon, Path(args.icon).name)
+            if args.splash:
+                zf.write(args.splash, Path(args.splash).name)
+            if args.colophon:
+                zf.write(args.colophon, Path(args.colophon).name)
+        response = post_multipart(
+            store_url(args) + "/api/publish",
+            {},
+            {"bundle": (bundle.name, bundle.read_bytes(), "application/zip")},
+            store_token(args),
+        )
+    print(json.dumps(response, indent=2, sort_keys=True))
+    print("✓ Published")
+
+
+def pack_bundle(args: argparse.Namespace) -> None:
+    manifest = Path(args.manifest)
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    base = manifest.parent
+    files = {"manifest.json": manifest}
+    assets = data.get("assets", {})
+    if isinstance(assets, dict):
+        for filename in assets.values():
+            if filename:
+                files[Path(filename).name] = base / filename
+    for arch in data.get("architectures", []):
+        filename = arch.get("file") if isinstance(arch, dict) else None
+        if filename:
+            files[Path(filename).name] = base / filename
+    for path in files.values():
+        if not path.exists():
+            raise SystemExit(f"bundle file not found: {path}")
+    out = Path(args.out)
+    with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for arcname, path in files.items():
+            zf.write(path, arcname)
+    total = 0
+    print(f"Bundle: {out}")
+    for arcname, path in files.items():
+        size = path.stat().st_size
+        total += size
+        print(f"  {arcname:28} {size / 1024:6.1f} KB")
+    print(f"Total: {total / 1024:.1f} KB")
+
+
+def publish_bundle(args: argparse.Namespace) -> None:
+    bundle = Path(args.bundle)
+    with bundle.open("rb") as f:
+        if f.read(4) != b"PK\x03\x04":
+            raise SystemExit(f"{bundle} is not a zip bundle")
+    response = post_multipart(
+        store_url(args) + "/api/publish/bundle",
+        {},
+        {"bundle": (bundle.name, bundle.read_bytes(), "application/zip")},
+        store_token(args),
+    )
+    published = response.get("published") or response.get("submitted") or response
+    print(json.dumps(published, indent=2, sort_keys=True))
 
 
 def upload_qemu(args: argparse.Namespace) -> None:
@@ -553,6 +883,34 @@ def doctor(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
+def attach_metadata(args: argparse.Namespace) -> None:
+    build_from_files(
+        args.cartridge,
+        metadata_path=args.metadata,
+        icon_path=args.icon,
+        out_path=args.out,
+        screenshot_path=args.screenshot,
+        signature_path=args.signature,
+        colophon_path=args.colophon,
+        architecture=args.architecture,
+    )
+    parsed = parse_file(args.out)
+    arch = ""
+    if parsed.metadata:
+        runtime = parsed.metadata.get("runtime", {})
+        if isinstance(runtime, dict) and runtime.get("architecture"):
+            arch = f" architecture={runtime['architecture']}"
+    print(
+        f"wrote {args.out} legacy={len(parsed.legacy_payload)} "
+        f"blocks={len(parsed.blocks)}{arch}"
+    )
+
+
+def inspect_metadata(args: argparse.Namespace) -> None:
+    parsed = parse_file(args.cartridge)
+    print(json.dumps(summary_dict(parsed), indent=2, sort_keys=True))
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tool-prefix", default="riscv32-esp-elf-")
@@ -574,13 +932,18 @@ def main(argv: list[str]) -> int:
         "--audio-block",
         help="optional PRG32 AUDIO block produced by tools/prg32audio_pack.py",
     )
+    p.add_argument(
+        "--multiplayer",
+        action="store_true",
+        help="mark the cartridge as using the PRG32 multiplayer service",
+    )
     p.add_argument("--march", default="rv32imc_zicsr_zifencei")
     p.add_argument("--mabi", default="ilp32")
     p.set_defaults(func=build)
 
     p = sub.add_parser("upload", help="upload a cartridge to hardware over HTTP")
     p.add_argument("cartridge")
-    p.add_argument("--url", default="http://192.168.4.1")
+    p.add_argument("--url", "--store-url", dest="url", default="http://192.168.4.1")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT)
     p.set_defaults(func=upload)
 
@@ -600,6 +963,76 @@ def main(argv: list[str]) -> int:
         help="skip ESP-IDF and RISC-V toolchain checks for CI/unit-test hosts",
     )
     p.set_defaults(func=doctor)
+
+    p = sub.add_parser(
+        "attach-metadata",
+        help="append or replace a PRG32META metadata trailer",
+    )
+    p.add_argument("cartridge")
+    p.add_argument("--out", required=True)
+    p.add_argument("--metadata", required=True, help="prg32-metadata-1.0 JSON")
+    p.add_argument("--icon", required=True, help="PNG or JPEG icon image")
+    p.add_argument("--screenshot", help="optional PNG or JPEG screenshot image")
+    p.add_argument("--signature", help="optional signature bytes or JSON object")
+    p.add_argument("--colophon", help="optional prg32-colophon-1.0 JSON")
+    p.add_argument(
+        "--architecture",
+        choices=sorted(ARCHITECTURE_PROFILES),
+        help="cartridge architecture variant recorded in metadata.runtime",
+    )
+    p.set_defaults(func=attach_metadata)
+
+    p = sub.add_parser(
+        "inspect-metadata",
+        help="print the PRG32META trailer summary for a cartridge",
+    )
+    p.add_argument("cartridge")
+    p.set_defaults(func=inspect_metadata)
+
+    p = sub.add_parser("store-discover", help="find CartridgeStore instances with mDNS")
+    p.add_argument("--timeout", type=float, default=5)
+    p.set_defaults(func=store_discover)
+
+    p = sub.add_parser("store-list", help="list cartridges from a CartridgeStore")
+    p.add_argument("--store-url")
+    p.add_argument("--architecture", choices=sorted(ARCHITECTURE_PROFILES))
+    p.set_defaults(func=store_list)
+
+    p = sub.add_parser("store-download", help="download a cartridge from a CartridgeStore")
+    p.add_argument("game_id")
+    p.add_argument("--store-url")
+    p.add_argument("--architecture", required=True, choices=sorted(ARCHITECTURE_PROFILES))
+    p.add_argument("--version")
+    p.add_argument("--out", required=True)
+    p.set_defaults(func=store_download)
+
+    p = sub.add_parser("publish", help="build and publish a cartridge bundle")
+    p.add_argument("source")
+    p.add_argument("--firmware-elf", required=True)
+    p.add_argument("--entry-prefix", required=True)
+    p.add_argument("--name", required=True)
+    p.add_argument("--store-url")
+    p.add_argument("--architecture", choices=sorted(ARCHITECTURE_PROFILES))
+    p.add_argument("--id")
+    p.add_argument("--version", default="1.0.0")
+    p.add_argument("--summary")
+    p.add_argument("--tags")
+    p.add_argument("--icon")
+    p.add_argument("--splash")
+    p.add_argument("--colophon")
+    p.add_argument("--token")
+    p.set_defaults(func=publish)
+
+    p = sub.add_parser("pack-bundle", help="pack a flat CartridgeStore zip bundle")
+    p.add_argument("--manifest", required=True)
+    p.add_argument("--out", required=True)
+    p.set_defaults(func=pack_bundle)
+
+    p = sub.add_parser("publish-bundle", help="publish a CartridgeStore zip bundle")
+    p.add_argument("bundle")
+    p.add_argument("--store-url")
+    p.add_argument("--token")
+    p.set_defaults(func=publish_bundle)
 
     args = parser.parse_args(argv)
     args.func(args)

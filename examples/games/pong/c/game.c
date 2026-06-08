@@ -31,12 +31,7 @@ void pong_c_update(void) {
         paddle_x = 256;
     }
 
-    uint32_t input2 = prg32_input_read_player(2);
-    if (input2 & PRG32_BTN_LEFT) {
-        paddle2_x -= 3;
-    } else if (input2 & PRG32_BTN_RIGHT) {
-        paddle2_x += 3;
-    } else if (ball_x + 4 < paddle2_x + 32) {
+    if (ball_x + 4 < paddle2_x + 32) {
         paddle2_x -= 1;
     } else if (ball_x + 4 > paddle2_x + 32) {
         paddle2_x += 1;
@@ -69,5 +64,5 @@ void pong_c_draw(void) {
     prg32_gfx_rect(paddle2_x, 4, 64, 8, PRG32_COLOR_CYAN);
     prg32_gfx_rect(paddle_x, 188, 64, 8, PRG32_COLOR_WHITE);
     prg32_gfx_rect(ball_x, ball_y, 8, 8, PRG32_COLOR_YELLOW);
-    prg32_gfx_text8(8, 96, "PONG C P1/P2", PRG32_COLOR_GREEN, PRG32_COLOR_BLACK);
+    prg32_gfx_text8(8, 96, "PONG C", PRG32_COLOR_GREEN, PRG32_COLOR_BLACK);
 }

@@ -16,6 +16,10 @@ if(IDF_TARGET STREQUAL "esp32c3")
     list(APPEND PRG32_PRIV_REQUIRES esp_lcd esp_lcd_qemu_rgb)
 endif()
 
+if(IDF_TARGET STREQUAL "esp32c6")
+    list(APPEND PRG32_PRIV_REQUIRES esp_websocket_client mdns)
+endif()
+
 if(CONFIG_PRG32_DISPLAY_QEMU_RGB)
     set(PRG32_DISPLAY_SRC "prg32_display_qemu_rgb.c")
 endif()
@@ -42,8 +46,12 @@ idf_component_register(
         "prg32_metrics.c"
         "prg32_performance.c"
         "prg32_platform.c"
+        "prg32_multiplayer.c"
+        "prg32_qemu_input.c"
         "prg32_sprite.c"
+        "prg32_setup_store.c"
         "prg32_splash.c"
+        "prg32_store.c"
         "prg32_system.c"
         "prg32_tile.c"
         "prg32_wifi.c"

@@ -2,17 +2,41 @@
 #include "driver/gpio.h"
 #include "driver/i2s_std.h"
 #include "esp_err.h"
+#include <stdio.h>
 
 static i2s_chan_handle_t g_i2s_tx;
+static char g_i2s_error[64] = "not started";
+
+static int audio_i2s_fail(const char *reason) {
+    snprintf(g_i2s_error, sizeof(g_i2s_error), "%s", reason);
+    return -1;
+}
+
+static int audio_i2s_fail_err(const char *step, esp_err_t err) {
+    snprintf(g_i2s_error,
+             sizeof(g_i2s_error),
+             "%s: %s",
+             step,
+             esp_err_to_name(err));
+    return -1;
+}
+
+const char *prg32_audio_last_error(void) {
+    return g_i2s_error;
+}
 
 int prg32_audio_i2s_start(const prg32_audio_config_t *config) {
 #if !CONFIG_PRG32_AUDIO_ENABLED || CONFIG_PRG32_DISPLAY_QEMU_RGB
     (void)config;
-    return -1;
+#if !CONFIG_PRG32_AUDIO_ENABLED
+    return audio_i2s_fail("audio disabled in Kconfig");
+#else
+    return audio_i2s_fail("I2S disabled in QEMU build");
+#endif
 #else
     if (!config || config->gpio_bclk < 0 || config->gpio_lrclk < 0 ||
         config->gpio_data < 0) {
-        return -1;
+        return audio_i2s_fail("I2S pins not configured");
     }
 
     if (config->gpio_sd >= 0) {
@@ -23,8 +47,14 @@ int prg32_audio_i2s_start(const prg32_audio_config_t *config) {
             .pull_down_en = GPIO_PULLDOWN_DISABLE,
             .intr_type = GPIO_INTR_DISABLE,
         };
-        gpio_config(&sd);
-        gpio_set_level(config->gpio_sd, 1);
+        esp_err_t err = gpio_config(&sd);
+        if (err != ESP_OK) {
+            return audio_i2s_fail_err("SD GPIO config", err);
+        }
+        err = gpio_set_level(config->gpio_sd, 1);
+        if (err != ESP_OK) {
+            return audio_i2s_fail_err("SD GPIO level", err);
+        }
     }
 
     i2s_chan_config_t chan_cfg =
@@ -35,7 +65,7 @@ int prg32_audio_i2s_start(const prg32_audio_config_t *config) {
     esp_err_t err = i2s_new_channel(&chan_cfg, &g_i2s_tx, NULL);
     if (err != ESP_OK) {
         g_i2s_tx = NULL;
-        return -1;
+        return audio_i2s_fail_err("I2S channel", err);
     }
 
     i2s_std_config_t std_cfg = {
@@ -64,8 +94,9 @@ int prg32_audio_i2s_start(const prg32_audio_config_t *config) {
     if (err != ESP_OK) {
         i2s_del_channel(g_i2s_tx);
         g_i2s_tx = NULL;
-        return -1;
+        return audio_i2s_fail_err("I2S std mode", err);
     }
+    snprintf(g_i2s_error, sizeof(g_i2s_error), "OK");
     return 0;
 #endif
 }

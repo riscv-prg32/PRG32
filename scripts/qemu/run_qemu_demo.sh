@@ -61,4 +61,5 @@ info "Staging demo cartridge into QEMU flash"
 python3 tools/prg32_game.py upload-qemu "$DEMO_CART" --flash "$DEMO_FLASH"
 
 info "Starting QEMU screen"
+info "Input: arrows or W/A/S/D = joystick 1, Enter/Space = SELECT, J/Z = A, K/X = B"
 exec idf.py -B "$QEMU_BUILD_DIR" -D "SDKCONFIG=$QEMU_SDKCONFIG" -D "SDKCONFIG_DEFAULTS=$QEMU_DEFAULTS" qemu --graphics monitor

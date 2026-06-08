@@ -9,9 +9,8 @@ for the hardware directory map and board scaffolds.
 |---:|---|---|
 | 1 | ESP32-C6 development board | PRG32 RISC-V host |
 | 1 | ILI9341 SPI TFT or supported display | video output |
-| 1 | digital joystick module | player 1 input |
+| 1 | digital joystick module | local input |
 | 1 | optional setup button | force setup mode without holding A+B |
-| 1 | optional second joystick | player 2 games |
 
 ## Reference Display And Input Wiring
 
@@ -26,8 +25,8 @@ They are the same display wiring used by the Arduino/Adafruit validation sketch.
 | GPIO2 | MISO / touch DO |
 | GPIO6 | SCLK |
 | GPIO10 | CS |
-| GPIO8 | DC |
-| GPIO9 | RST |
+| GPIO1 | DC |
+| GPIO0 | RST |
 | GPIO5 | BL |
 
 | ESP32-C6 | Input |
@@ -71,15 +70,31 @@ VU meter.
 | 3V3 or 5V | VIN |
 | GND | GND |
 | GPIO4 | BCLK |
-| GPIO5 | LRC / WS |
-| GPIO6 | DIN |
-| GPIO7 optional | SD |
+| GPIO11 | LRC / WS |
+| GPIO23 | DIN |
+| not wired by default | SD / MODE optional |
 
 Connect one 4-8 ohm speaker to the MAX98357A speaker `+` and `-` outputs.
 
-The default audio Kconfig pins overlap the reference display wiring. The
-firmware splash therefore skips I2S welcome audio on this wiring unless the
-audio pins are reassigned to unused GPIOs.
+The default audio Kconfig pins avoid the reference display, joystick, and
+passive buzzer wiring. If a breakout needs explicit SD/shutdown control, assign
+`CONFIG_PRG32_AUDIO_I2S_SD_GPIO` to another unused GPIO before flashing.
+
+On the Adafruit MAX98357A breakout, `SD` also selects the channel mode. Leave it
+in the breakout's default enabled state for mono, or drive it from the optional
+SD GPIO. Do not tie `SD` directly to GND because that shuts the amplifier down.
+PRG32 mono audio is carried as duplicated left/right I2S slots, so a single
+MAX98357A works whether the breakout averages both slots or selects one slot.
+
+Use the physical ESP32-C6 defaults when flashing classroom hardware:
+
+```bash
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build flash monitor
+```
+
+The QEMU defaults are for the ESP32-C3 virtual display path and intentionally
+disable physical I2S audio output.
 
 ## Stereo Audio
 
@@ -90,9 +105,9 @@ Stereo uses two MAX98357A boards on the same I2S bus:
 | 3V3 or 5V | VIN | VIN |
 | GND | GND | GND |
 | GPIO4 | BCLK | BCLK |
-| GPIO5 | LRC / WS | LRC / WS |
-| GPIO6 | DIN | DIN |
-| GPIO7 optional | SD | SD |
+| GPIO11 | LRC / WS | LRC / WS |
+| GPIO23 | DIN | DIN |
+| optional SD GPIO | SD | SD |
 
 Configure the left board for left output and the right board for right output.
 Breakout pin labels vary; verify the vendor pinout before soldering.

@@ -38,8 +38,10 @@ Named contributor metadata used across project docs:
 - Game examples in RISC-V assembly and C: `examples/games`.
 - Focused firmware feature demos: `examples/features`.
 - Course materials: `docs`, especially `docs/labs`.
-- Optional score server: `tools/prg32_score_server`.
-- Optional metrics server and report/export tooling: `tools/prg32_metrics_server`.
+- Optional score server: `riscv-prg32/ScoreServer`.
+- Standalone metrics server and streaming export tooling:
+  `riscv-prg32/MetricsServer`.
+- In-tree setup performance report tooling: `tools/prg32_metrics_paper.py`.
 - Uploadable game cartridge tool: `tools/prg32_game.py`.
 - Media conversion tools: `tools/prg32_image_convert.py`,
   `tools/prg32_image_prepare.py`, and `tools/prg32_audio_convert.py`.
@@ -66,14 +68,12 @@ Named contributor metadata used across project docs:
 |-- docs/                           Manuals, tutorial, labs, debugging exercises
 |-- docs/cartridges.md              Flash-once uploadable game workflow
 |-- docs/qemu.md                    QEMU virtual screen workflow
-|-- hardware/                       Wiring, USB bridge, PCB/enclosure scaffold
+|-- hardware/                       Wiring, Wi-Fi, PCB/enclosure scaffold
 |-- tools/qemu.sh                   macOS/Linux QEMU screen shortcut
 |-- tools/qemu.ps1                  Windows PowerShell QEMU screen shortcut
 |-- tools/prg32_game.py             Cartridge build/upload/staging tool
 |-- tools/prg32_image_convert.py    Image/GIF/sprite/tile conversion
 |-- tools/prg32_audio_convert.py    WAV/MIDI conversion
-|-- tools/prg32_score_server/       Flask + SQLite REST score service
-|-- tools/prg32_metrics_server/     Flask + SQLite performance metrics service
 |-- .vscode/                        Student-ready VS Code tasks/settings
 `-- PRG32.code-workspace
 ```
@@ -153,8 +153,8 @@ Useful checks:
 
 ```bash
 git diff --check
-python3 -m py_compile tools/prg32_score_server/app.py
-python3 -m py_compile tools/prg32_metrics_server/app.py
+python3 -m py_compile tools/prg32_game.py
+python3 -m py_compile tools/prg32_metrics_paper.py
 ```
 
 This environment may not have `idf.py`, `IDF_PATH`, or `riscv32-esp-elf-gcc` on
@@ -198,12 +198,13 @@ Important implementation details:
   game coordinate system.
 - Physical builds default to `CONFIG_PRG32_DISPLAY_ILI9341`.
 - QEMU builds use `sdkconfig.defaults.qemu` and `CONFIG_PRG32_DISPLAY_QEMU_RGB`.
-- `main/prg32_config.h` disables physical pins, buzzer, and controller bridge
-  when the QEMU display backend is selected.
+- `main/prg32_config.h` disables physical pins, buzzer, and real Wi-Fi
+  multiplayer transport when the QEMU display backend is selected.
 - `components/prg32/idf_component.yml` and CMake only pull
   `esp_lcd_qemu_rgb` for the ESP32-C3 emulator target.
 - Console text must remain visible on LCD and UART mirror modes.
-- `prg32_input_read()` merges local GPIO buttons and optional UART bridge state.
+- `prg32_input_read()` merges local GPIO buttons, QEMU keyboard input, and
+  diagnostic input state.
 - Uploadable cartridges run from `prg32_cart_exec` and are linked for that
   runtime address. Rebuild cartridges whenever the resident firmware changes.
 - Keep `PRG32_CART_RAM_SIZE` small enough for classroom examples unless the
@@ -213,13 +214,10 @@ Important implementation details:
   not become the main source of frame-time jitter.
 - Keep `partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`
   in sync when changing cartridge slots.
-- The controller UART packet is:
-
-```text
-'U' 'G' <low byte> <high byte>
-```
-
-- Player 2 uses the same packet through bits 8-14 (`PRG32_P2_*`).
+- `prg32_input_read_player(2)` returns `0`; multiplayer games should use the
+  cartridge multiplayer API for remote player snapshots.
+- Cartridge multiplayer groups peers by cartridge signature and uses ESP32-C6
+  Wi-Fi station mode plus WebSocket to a Node.js `ws` server.
 - Joystick text input lives in `prg32_keyboard.c` and should stay usable from
   games as well as setup screens.
 - Setup mode is entered by holding A+B at boot, by holding `PRG32_PIN_SETUP`
@@ -311,8 +309,11 @@ Core docs:
 - `docs/framework_manual.md`: PRG32 API and ABI overview.
 - `docs/qemu.md`: macOS, Windows, and Linux virtual screen workflow.
 - `docs/cartridges.md`: flash-once cartridge upload workflow.
-- `docs/score_api.md`: board-local and server score APIs.
-- `docs/external_controllers.md`: UART bridge protocol.
+- `docs/score_api.md`: board-local and external ScoreServer APIs.
+- `https://github.com/riscv-prg32/ScoreServer`: Flask + SQLite classroom score
+  server for persistent score storage.
+- `https://github.com/riscv-prg32/MultiplayerServer`: Node.js WebSocket relay
+  for cartridge multiplayer.
 - `docs/labs/`: lab handouts, debugging exercises, break/fix assignments.
 - `CONTRIBUTORS.md`: contributor metadata for coursework/project submissions.
 - `CITATION.cff`: citation metadata for reports, theses, and reproducible references.
@@ -332,7 +333,7 @@ Recommended extension list should include:
 
 - Espressif ESP-IDF extension.
 - Microsoft C/C++ extension.
-- Python extension for the score server.
+- Python extension for the external ScoreServer repository.
 
 Tasks should remain simple wrappers around:
 
@@ -346,34 +347,31 @@ Tasks should remain simple wrappers around:
 - `python3 tools/prg32_game.py build ...`
 - `python3 tools/prg32_game.py upload ...`
 - `python3 tools/prg32_game.py upload-qemu ...`
-- `python3 tools/prg32_score_server/app.py`
 
 Do not hard-code one instructor machine path. Use workspace-relative paths and
 standard ESP-IDF configuration variables where possible.
 
 ## Score Server Guidelines
 
-The score server lives in `tools/prg32_score_server`.
+The score server lives in `https://github.com/riscv-prg32/ScoreServer`, not in
+this firmware repository. Do not reintroduce `tools/prg32_score_server`.
 
-- Keep it small: Flask + SQLite only.
-- API endpoints must stay compatible with board firmware:
+- Keep the board firmware compatible with the external server endpoints:
   - `GET /api/scores`
   - `POST /api/scores`
-- Validate `game`, `player`, and non-negative integer `score`.
-- Do not commit generated files such as `.db`, `.db-wal`, `.db-shm`, or
-  `__pycache__`.
+- Update `docs/score_api.md` whenever the external server workflow or endpoint
+  contract changes.
 
 ## Hardware Guidelines
 
 Hardware docs should reinforce the architecture:
 
 ```text
-USB controller -> USB host bridge -> UART -> ESP32-C6 -> PRG32 bitmask
+ESP32-C6 -> Wi-Fi station -> Node.js WebSocket relay -> matching cartridge peers
 ```
 
 ESP32-C6 is the main RISC-V teaching MCU. Do not document it as a general USB HID
-host for arbitrary gamepads. External USB controllers require a bridge board or
-PC-side helper that emits the PRG32 UART packet.
+host for arbitrary gamepads. Multiplayer uses the ESP32-C6 native Wi-Fi radio.
 
 ## Git and Workspace Rules
 
@@ -386,6 +384,49 @@ PC-side helper that emits the PRG32 UART packet.
 - Before committing or finalizing, run at least `git diff --check`.
 - If a push is rejected because remote moved, pull/rebase and resolve conflicts
   without force-pushing unless the user explicitly requests a force push.
+
+## CartridgeStore Consistency
+
+PRG32 firmware and tools are paired with the CartridgeStore server.
+Keep both repositories consistent.
+
+Companion repository: https://github.com/riscv-prg32/CartridgeStore
+
+### Canonical constants -- must match in both repos
+
+| Constant | Value |
+|---|---|
+| mDNS service type | `_prg32store._tcp` |
+| mDNS default port | `5080` |
+| Discovery ABI | `prg32-store-discovery-1.0` |
+| Metadata ABI | `prg32-metadata-1.0` |
+| Colophon ABI | `prg32-colophon-1.0` |
+| Architecture -- physical | `esp32c6` |
+| Architecture -- QEMU | `qemu` |
+
+### Rules
+
+- Before changing any constant above in PRG32, verify it has the same value
+  in CartridgeStore. If they differ, resolve the discrepancy before merging.
+- Do not rename an architecture string without a coordinated change in
+  CartridgeStore; the string is stored in the CartridgeStore SQLite database
+  and in every firmware image that has that string baked via Kconfig.
+- When adding a new CartridgeStore API call in PRG32 firmware or tools,
+  cross-check `docs/api.md` in CartridgeStore for the exact request and
+  response shape.
+- The CartridgeStore `zeroconf` mDNS service name is the canonical source;
+  `PRG32_STORE_MDNS_SERVICE` in `main/prg32_config.h` must mirror it.
+
+### Integration files in this repo
+
+| Path | Purpose |
+|---|---|
+| `components/prg32/prg32_store.c` | mDNS discovery, NVS URL, HTTP catalog client |
+| `components/prg32/prg32_setup_store.c` | Setup menu screens: config + browser |
+| `components/prg32/include/prg32.h` | `prg32_store_*` public declarations |
+| `main/prg32_config.h` | `PRG32_STORE_*` compile-time constants |
+| `tools/prg32_game.py` | `publish`, `pack-bundle`, `publish-bundle`, `store-*` |
+| `docs/cartridge_store.md` | End-user integration guide |
 
 ## Metadata Consistency Rules
 
@@ -404,8 +445,11 @@ Before reporting completion, try the relevant subset:
 
 ```bash
 git diff --check
-python3 -m py_compile tools/prg32_score_server/app.py
+python3 tools/prg32_game.py doctor
 python3 -m py_compile tools/prg32_game.py
+python3 -m py_compile tools/prg32_metrics_paper.py
+# if zeroconf available on host:
+python3 tools/prg32_game.py store-discover --timeout 2
 idf.py build
 idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
 ```

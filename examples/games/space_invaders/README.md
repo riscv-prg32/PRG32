@@ -10,7 +10,7 @@ Build one version by adding the corresponding source file to
 `main/CMakeLists.txt`, or package it as a `.prg32` cartridge with
 `tools/prg32_game.py`.
 
-In QEMU, input may be static unless a UART bridge is enabled.
+In QEMU, use the monitor terminal keyboard mapping described in `docs/qemu.md`.
 
 The assembly source is deliberately commented line-by-line for architecture
 classes. The C source is intentionally direct for programming labs.

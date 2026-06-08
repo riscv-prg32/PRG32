@@ -153,8 +153,9 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
 ```
 
-QEMU shows the graphics viewport in a desktop window. Final input, sound, Wi-Fi,
-and display wiring checks still belong on the physical board.
+QEMU shows the graphics viewport in a desktop window. Use the monitor terminal
+keyboard for player 1 input, then keep final sound, Wi-Fi, and display wiring
+checks on the physical board.
 
 ### 5. Restore the Resident Runtime
 

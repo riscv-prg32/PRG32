@@ -24,9 +24,10 @@ andi t1, t0, 1
 
 The object must move only while the matching button is pressed.
 
-This checkpoint needs physical buttons or a UART controller bridge. The QEMU
-defaults disable physical input pins, so QEMU is useful for stepping through the
-bitmask code in GDB but not for the final button demonstration.
+This checkpoint works in QEMU with the monitor terminal keyboard mapper:
+arrow keys or `W`/`A`/`S`/`D` drive joystick 1, `Enter`/`Space` is SELECT,
+`J`/`Z` is A, and `K`/`X` is B. Repeat the same check on the physical board
+when validating the GPIO wiring.
 
 ## Debug Question
 

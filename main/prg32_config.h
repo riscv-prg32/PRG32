@@ -60,6 +60,10 @@
 #define PRG32_PIN_BTN_A      -1
 #define PRG32_PIN_BTN_B      -1
 #define PRG32_PIN_BTN_START  -1
+#define PRG32_PIN_SETUP      -1
+#define PRG32_PIN_BUZZER     -1
+#define PRG32_BOOT_DIAGNOSTIC_DELAY_MS 0
+
 #define PRG32_PIN_P2_LEFT    -1
 #define PRG32_PIN_P2_RIGHT   -1
 #define PRG32_PIN_P2_UP      -1
@@ -67,15 +71,13 @@
 #define PRG32_PIN_P2_A       -1
 #define PRG32_PIN_P2_B       -1
 #define PRG32_PIN_P2_START   -1
-#define PRG32_PIN_SETUP      -1
-#define PRG32_PIN_BUZZER     -1
-#define PRG32_BOOT_DIAGNOSTIC_DELAY_MS 0
 
 #define PRG32_CONTROLLER_BRIDGE_ENABLE 0
 #define PRG32_CONTROLLER_BRIDGE_UART 1
 #define PRG32_CONTROLLER_BRIDGE_BAUD 115200
 #define PRG32_PIN_CONTROLLER_TX -1
 #define PRG32_PIN_CONTROLLER_RX -1
+
 #define PRG32_PIN_RGB_LED -1
 
 #define PRG32_GAME_UPLOAD_ENABLE 0
@@ -88,8 +90,8 @@
 #define PRG32_PIN_LCD_MISO   2
 #define PRG32_PIN_LCD_SCLK   6
 #define PRG32_PIN_LCD_CS     10
-#define PRG32_PIN_LCD_DC     8
-#define PRG32_PIN_LCD_RST    9
+#define PRG32_PIN_LCD_DC     1
+#define PRG32_PIN_LCD_RST    0
 #define PRG32_PIN_LCD_BL     5
 
 #define PRG32_LCD_SPI_CLOCK_HZ 40000000
@@ -132,7 +134,7 @@
  * is disabled by default. Set this to the board LED GPIO only when that pin is
  * free in your hardware variant.
  */
-#define PRG32_PIN_RGB_LED -1
+#define PRG32_PIN_RGB_LED 8
 #endif
 
 /*
@@ -154,7 +156,19 @@
 #define PRG32_SCORE_MAX 16
 #define PRG32_IDLE_HEARTBEAT_MS 5000
 
-#define PRG32_WIFI_STA_ENABLE PRG32_WIFI_SCORES_ENABLE
+/* Optional cartridge multiplayer service over Wi-Fi STA + WebSocket. */
+#define PRG32_MULTIPLAYER_ENABLE 1
+#define PRG32_MULTIPLAYER_SERVER_URL "ws://192.168.4.2:8081"
+#define PRG32_MULTIPLAYER_SEND_PERIOD_MS 50
+#define PRG32_MULTIPLAYER_PEER_TIMEOUT_MS 3000
+
+#if CONFIG_PRG32_DISPLAY_QEMU_RGB
+#define PRG32_MULTIPLAYER_TRANSPORT_ENABLE 0
+#else
+#define PRG32_MULTIPLAYER_TRANSPORT_ENABLE PRG32_MULTIPLAYER_ENABLE
+#endif
+
+#define PRG32_WIFI_STA_ENABLE (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE)
 #define PRG32_WIFI_AP_ENABLE PRG32_GAME_UPLOAD_ENABLE
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
 #define PRG32_BOOT_SETUP_MODE 0
@@ -162,6 +176,17 @@
 #define PRG32_WIFI_AP_PASSWORD "prg32game"
 #define PRG32_WIFI_AP_CHANNEL 6
 #define PRG32_WIFI_AP_MAX_CONN 4
+
+/* CartridgeStore integration constants. */
+#define PRG32_STORE_URL_MAX_LEN        128
+#define PRG32_STORE_MDNS_SERVICE       "_prg32store"
+#define PRG32_STORE_MDNS_PROTO         "_tcp"
+#define PRG32_STORE_MDNS_TIMEOUT_MS    3000
+#define PRG32_STORE_DEFAULT_PORT       5080
+#define PRG32_STORE_CATALOG_MAX_BYTES  16384
+#define PRG32_STORE_CHUNK_BYTES        4096
+#define PRG32_STORE_DOWNLOAD_STACK     8192
+#define PRG32_STORE_HTTP_TIMEOUT_MS    5000
 
 /*
  * SELECT is the classroom-facing name; START remains a source-compatible alias.
@@ -180,6 +205,5 @@
 #else
 #define PRG32_PIN_BTN_SELECT PRG32_PIN_BTN_START
 #endif
-#define PRG32_PIN_P2_SELECT  PRG32_PIN_P2_START
 
 #endif

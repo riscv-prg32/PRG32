@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,12 +25,16 @@
 #define CONFIG_COMPILER_OPTIMIZATION_DEBUG 0
 #endif
 
-#define PRG32_PERF_TEST_FRAMES 300u
+#define PRG32_PERF_SCREEN_FRAMES 60u
+#define PRG32_PERF_SCREEN_COUNT 5u
+#define PRG32_PERF_TEST_FRAMES (PRG32_PERF_SCREEN_FRAMES * PRG32_PERF_SCREEN_COUNT)
 #define PRG32_PERF_SAMPLE_PERIOD_FRAMES 1u
-#define PRG32_PERF_MAX_SAMPLES 360u
-#define PRG32_PERF_MAX_WINDOWS 20u
+#define PRG32_PERF_MAX_SAMPLES (PRG32_PERF_TEST_FRAMES + 16u)
+#define PRG32_PERF_MAX_WINDOWS 80u
 #define PRG32_PERF_WINDOW_US 1000000u
 #define PRG32_PERF_FRAME_BUDGET_US 33333u
+#define PRG32_PERF_SCREEN_NAME_LEN 24u
+#define PRG32_PERF_SCREEN_GOAL_LEN 64u
 
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #define PRG32_PERF_TARGET_NAME "qemu-esp32c3"
@@ -56,6 +61,7 @@ typedef struct {
     uint32_t min_free_heap_bytes;
     uint32_t input_mask;
     uint16_t upload_queue_depth;
+    uint8_t screen_index;
     uint8_t deadline_missed;
 } prg32_perf_sample_t;
 
@@ -79,6 +85,21 @@ typedef struct {
 } prg32_perf_window_t;
 
 typedef struct {
+    uint8_t screen_index;
+    char screen_name[PRG32_PERF_SCREEN_NAME_LEN];
+    char metric_goal[PRG32_PERF_SCREEN_GOAL_LEN];
+    uint32_t first_frame;
+    uint32_t last_frame;
+    prg32_perf_window_t metrics;
+} prg32_perf_screen_result_t;
+
+typedef struct {
+    const char *name;
+    const char *metric_goal;
+    uint16_t background;
+} prg32_perf_screen_def_t;
+
+typedef struct {
     int x;
     int y;
     int vx;
@@ -90,12 +111,42 @@ typedef struct {
 
 static prg32_perf_sample_t g_samples[PRG32_PERF_MAX_SAMPLES];
 static prg32_perf_window_t g_windows[PRG32_PERF_MAX_WINDOWS];
+static prg32_perf_screen_result_t g_screen_results[PRG32_PERF_SCREEN_COUNT];
 static prg32_performance_summary_t g_summary;
 static uint32_t g_sample_count;
 static uint32_t g_window_count;
+static uint32_t g_screen_result_count;
 static uint32_t g_run_sequence;
 static volatile int g_perf_running;
 static volatile int g_perf_has_results;
+
+static const prg32_perf_screen_def_t g_perf_screens[PRG32_PERF_SCREEN_COUNT] = {
+    {
+        "clear-fill",
+        "viewport clear and large rectangle fill bandwidth",
+        0x0008,
+    },
+    {
+        "text-overlay",
+        "8x8 text drawing and status overlay load",
+        PRG32_COLOR_BLACK,
+    },
+    {
+        "sprite-storm",
+        "many moving sprite-sized rectangles and collision-like motion",
+        0x0841,
+    },
+    {
+        "scrolling",
+        "horizontal and vertical scrolling with parallax-like stars",
+        0x0008,
+    },
+    {
+        "mixed-gameplay",
+        "combined text, sprites, scrolling road, and playfield objects",
+        0x0008,
+    },
+};
 
 static void copy_text(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -185,15 +236,36 @@ static void draw_centered_line(int y, const char *text, uint16_t color) {
     prg32_gfx_text8(x, y, text ? text : "", color, 0);
 }
 
-static void draw_progress(uint32_t frame) {
+static const char *screen_name(uint8_t screen_index) {
+    if (screen_index >= PRG32_PERF_SCREEN_COUNT) {
+        return "unknown";
+    }
+    return g_perf_screens[screen_index].name;
+}
+
+static const char *screen_goal(uint8_t screen_index) {
+    if (screen_index >= PRG32_PERF_SCREEN_COUNT) {
+        return "";
+    }
+    return g_perf_screens[screen_index].metric_goal;
+}
+
+static void draw_progress(uint32_t frame, uint8_t screen_index) {
     char line[48];
     uint32_t width = (frame * 240u) / PRG32_PERF_TEST_FRAMES;
     prg32_gfx_set_fullscreen(1);
     prg32_gfx_clear(PRG32_COLOR_BLACK);
     draw_centered_line(40, "PRG32 PERFORMANCE TEST", PRG32_COLOR_WHITE);
-    draw_centered_line(64, "AUTOMATIC BENCHMARK RUNNING", PRG32_COLOR_CYAN);
+    draw_centered_line(64, "AUTOMATIC MULTI-SCREEN BENCHMARK", PRG32_COLOR_CYAN);
     prg32_gfx_rect(40, 112, 240, 14, PRG32_COLOR_BLUE);
     prg32_gfx_rect(42, 114, (int)width, 10, PRG32_COLOR_GREEN);
+    snprintf(line,
+             sizeof(line),
+             "SCREEN %u/%u: %.20s",
+             (unsigned)screen_index + 1u,
+             (unsigned)PRG32_PERF_SCREEN_COUNT,
+             screen_name(screen_index));
+    draw_centered_line(88, line, PRG32_COLOR_YELLOW);
     snprintf(line,
              sizeof(line),
              "FRAME %lu / %lu",
@@ -229,16 +301,140 @@ static void scene_update(prg32_perf_scene_t *scene, uint32_t frame) {
     scene->stars = scene->stars * 1664525u + 1013904223u;
 }
 
-static void scene_draw(const prg32_perf_scene_t *scene, uint32_t frame) {
+static void draw_screen_header(uint8_t screen_index,
+                               uint32_t global_frame,
+                               uint32_t local_frame) {
+    char line[40];
+    prg32_gfx_text8(8, 8, screen_name(screen_index), PRG32_COLOR_WHITE, 0);
+    snprintf(line,
+             sizeof(line),
+             "%03lu/%03lu",
+             (unsigned long)local_frame,
+             (unsigned long)PRG32_PERF_SCREEN_FRAMES);
+    prg32_gfx_text8(240, 8, line, PRG32_COLOR_CYAN, 0);
+    snprintf(line, sizeof(line), "F%03lu", (unsigned long)global_frame);
+    prg32_gfx_text8(240, 20, line, PRG32_COLOR_YELLOW, 0);
+}
+
+static void scene_draw_clear_fill(uint8_t screen_index,
+                                  const prg32_perf_scene_t *scene,
+                                  uint32_t global_frame,
+                                  uint32_t local_frame) {
+    (void)scene;
+    uint16_t bg = (local_frame & 1u) ? 0x0008 : 0x0100;
+    prg32_gfx_clear(bg);
+    draw_screen_header(screen_index, global_frame, local_frame);
+    for (int i = 0; i < 8; ++i) {
+        int y = 38 + i * 18;
+        int w = 300 - i * 22;
+        uint16_t color = (i & 1) ? PRG32_COLOR_BLUE : PRG32_COLOR_MAGENTA;
+        prg32_gfx_rect(10 + i * 7, y, w, 10, color);
+        prg32_gfx_rect(12 + i * 7, y + 2, w - 4, 2, PRG32_COLOR_CYAN);
+    }
+}
+
+static void scene_draw_text_overlay(uint8_t screen_index,
+                                    const prg32_perf_scene_t *scene,
+                                    uint32_t global_frame,
+                                    uint32_t local_frame) {
+    static const char *rows[] = {
+        "REGISTER TRACE  A0 A1 A2 A3",
+        "MEMORY VIEW     0000 1000 2000",
+        "STACK           RA SP S0 S1",
+        "FRAME BUDGET    33333 US",
+        "WIFI            AP/STA METADATA",
+        "CARTRIDGE       ABI PRG2",
+        "AUDIO           MIXER CHECK",
+        "INPUT           LOCAL MASK",
+    };
+    prg32_gfx_clear(PRG32_COLOR_BLACK);
+    draw_screen_header(screen_index, global_frame, local_frame);
+    for (int y = 32; y < PRG32_GAME_H; y += 8) {
+        int row = (y / 8 + (int)local_frame) & 7;
+        uint16_t color = (row & 1) ? PRG32_COLOR_GREEN : PRG32_COLOR_CYAN;
+        prg32_gfx_text8(8, y, rows[row], color, 0);
+        if ((row & 3) == 0) {
+            char value[32];
+            snprintf(value,
+                     sizeof(value),
+                     "%04lx %04lx",
+                     (unsigned long)(global_frame * 17u + (uint32_t)y),
+                     (unsigned long)(scene->stars >> (row & 7)));
+            prg32_gfx_text8(216, y, value, PRG32_COLOR_YELLOW, 0);
+        }
+    }
+}
+
+static void scene_draw_sprite_storm(uint8_t screen_index,
+                                    const prg32_perf_scene_t *scene,
+                                    uint32_t global_frame,
+                                    uint32_t local_frame) {
+    static const uint16_t colors[] = {
+        PRG32_COLOR_RED,
+        PRG32_COLOR_GREEN,
+        PRG32_COLOR_BLUE,
+        PRG32_COLOR_YELLOW,
+        PRG32_COLOR_CYAN,
+        PRG32_COLOR_MAGENTA,
+    };
+    prg32_gfx_clear(g_perf_screens[screen_index].background);
+    draw_screen_header(screen_index, global_frame, local_frame);
+    for (int i = 0; i < 36; ++i) {
+        int x = (int)((i * 23 + local_frame * (2 + (i & 3))) % (PRG32_GAME_W - 14));
+        int y = 30 + (int)((i * 19 + (scene->stars >> (i & 7))) % 150u);
+        uint16_t color = colors[(i + (int)local_frame) % 6];
+        prg32_gfx_rect(x, y, 12, 12, color);
+        prg32_gfx_rect(x + 3, y + 3, 6, 6, PRG32_COLOR_WHITE);
+        prg32_gfx_pixel(x + (i & 7), y + ((i * 3) & 7), PRG32_COLOR_BLACK);
+    }
+    prg32_gfx_rect(scene->x, scene->y, 18, 18, PRG32_COLOR_WHITE);
+    prg32_gfx_rect(scene->x + 4, scene->y + 4, 10, 10, PRG32_COLOR_RED);
+}
+
+static void scene_draw_scrolling(uint8_t screen_index,
+                                 const prg32_perf_scene_t *scene,
+                                 uint32_t global_frame,
+                                 uint32_t local_frame) {
     static const uint16_t star_colors[] = {
         PRG32_COLOR_WHITE,
         PRG32_COLOR_CYAN,
         PRG32_COLOR_YELLOW,
         PRG32_COLOR_MAGENTA,
     };
-    prg32_gfx_clear(0x0008);
-    prg32_gfx_text8(8, 8, "PRG32 PERF", PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(216, 8, "320x200", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_clear(g_perf_screens[screen_index].background);
+    draw_screen_header(screen_index, global_frame, local_frame);
+
+    for (int i = 0; i < 72; ++i) {
+        int speed = 1 + (i & 3);
+        int x = (int)((i * 37 + scene->scroll * speed) % PRG32_GAME_W);
+        int y = 28 + (int)((i * 17 + local_frame * (uint32_t)(i & 1)) % 130u);
+        prg32_gfx_pixel(x, y, star_colors[i & 3]);
+        if ((i & 7) == 0) {
+            prg32_gfx_pixel((x + 1) % PRG32_GAME_W, y, star_colors[i & 3]);
+        }
+    }
+
+    for (int y = 150; y < PRG32_GAME_H; y += 8) {
+        int lane = (scene->scroll * 2 + y * 3) % 44;
+        prg32_gfx_rect(0, y, PRG32_GAME_W, 1, 0x4208);
+        for (int x = -lane; x < PRG32_GAME_W; x += 44) {
+            prg32_gfx_rect(x, y + 3, 20, 2, PRG32_COLOR_YELLOW);
+        }
+    }
+}
+
+static void scene_draw_mixed_gameplay(uint8_t screen_index,
+                                      const prg32_perf_scene_t *scene,
+                                      uint32_t global_frame,
+                                      uint32_t local_frame) {
+    static const uint16_t star_colors[] = {
+        PRG32_COLOR_WHITE,
+        PRG32_COLOR_CYAN,
+        PRG32_COLOR_YELLOW,
+        PRG32_COLOR_MAGENTA,
+    };
+    prg32_gfx_clear(g_perf_screens[screen_index].background);
+    draw_screen_header(screen_index, global_frame, local_frame);
 
     for (int i = 0; i < 42; ++i) {
         int x = (int)((i * 37 + scene->scroll * (1 + (i & 3))) % PRG32_GAME_W);
@@ -256,7 +452,7 @@ static void scene_draw(const prg32_perf_scene_t *scene, uint32_t frame) {
 
     for (int i = 0; i < 8; ++i) {
         int x = 24 + i * 34;
-        int h = 18 + (int)((frame + i * 9u) % 28u);
+        int h = 18 + (int)((global_frame + i * 9u) % 28u);
         uint16_t color = (i & 1) ? PRG32_COLOR_BLUE : PRG32_COLOR_MAGENTA;
         prg32_gfx_rect(x, 132 - h, 22, h, color);
         prg32_gfx_rect(x + 4, 136 - h, 4, 4, PRG32_COLOR_CYAN);
@@ -265,6 +461,29 @@ static void scene_draw(const prg32_perf_scene_t *scene, uint32_t frame) {
     prg32_gfx_rect(scene->paddle_x, 184, 58, 6, PRG32_COLOR_GREEN);
     prg32_gfx_rect(scene->x, scene->y, 12, 12, PRG32_COLOR_RED);
     prg32_gfx_rect(scene->x + 3, scene->y + 3, 6, 6, PRG32_COLOR_WHITE);
+}
+
+static void scene_draw_screen(uint8_t screen_index,
+                              const prg32_perf_scene_t *scene,
+                              uint32_t global_frame,
+                              uint32_t local_frame) {
+    switch (screen_index) {
+    case 0:
+        scene_draw_clear_fill(screen_index, scene, global_frame, local_frame);
+        break;
+    case 1:
+        scene_draw_text_overlay(screen_index, scene, global_frame, local_frame);
+        break;
+    case 2:
+        scene_draw_sprite_storm(screen_index, scene, global_frame, local_frame);
+        break;
+    case 3:
+        scene_draw_scrolling(screen_index, scene, global_frame, local_frame);
+        break;
+    default:
+        scene_draw_mixed_gameplay(screen_index, scene, global_frame, local_frame);
+        break;
+    }
 }
 
 static void store_sample(const prg32_perf_sample_t *sample) {
@@ -337,8 +556,38 @@ static void compute_window(uint32_t window_index, uint32_t first, uint32_t last)
     compute_range_stats(&g_windows[g_window_count++], window_index, first, last);
 }
 
+static void compute_screen_results(void) {
+    g_screen_result_count = 0;
+    for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT; ++screen_index) {
+        uint32_t first = UINT32_MAX;
+        uint32_t last = 0;
+        for (uint32_t i = 0; i < g_sample_count; ++i) {
+            if (g_samples[i].screen_index != screen_index) {
+                continue;
+            }
+            if (first == UINT32_MAX) {
+                first = i;
+            }
+            last = i + 1u;
+        }
+        if (first == UINT32_MAX || last <= first ||
+            g_screen_result_count >= PRG32_PERF_SCREEN_COUNT) {
+            continue;
+        }
+        prg32_perf_screen_result_t *result = &g_screen_results[g_screen_result_count++];
+        memset(result, 0, sizeof(*result));
+        result->screen_index = screen_index;
+        copy_text(result->screen_name, sizeof(result->screen_name), screen_name(screen_index));
+        copy_text(result->metric_goal, sizeof(result->metric_goal), screen_goal(screen_index));
+        result->first_frame = g_samples[first].frame_index;
+        result->last_frame = g_samples[last - 1u].frame_index;
+        compute_range_stats(&result->metrics, screen_index, first, last);
+    }
+}
+
 static void compute_results(uint64_t started_us, uint64_t finished_us) {
     g_window_count = 0;
+    g_screen_result_count = 0;
     memset(&g_summary, 0, sizeof(g_summary));
     if (g_sample_count == 0) {
         return;
@@ -357,6 +606,7 @@ static void compute_results(uint64_t started_us, uint64_t finished_us) {
         }
     }
     compute_window(window_index, first, g_sample_count);
+    compute_screen_results();
 
     prg32_perf_window_t summary_window;
     compute_range_stats(&summary_window, UINT32_MAX, 0, g_sample_count);
@@ -389,6 +639,7 @@ static void compute_results(uint64_t started_us, uint64_t finished_us) {
     g_summary.frames = g_sample_count;
     g_summary.sample_count = g_sample_count;
     g_summary.window_count = g_window_count;
+    g_summary.screen_count = g_screen_result_count;
     g_summary.fps_mean_x100 = summary_window.fps_mean_x100;
     g_summary.frame_us_min = summary_window.frame_us_min;
     g_summary.frame_us_mean = summary_window.frame_us_mean;
@@ -412,40 +663,50 @@ static void draw_summary(void) {
              sizeof(line),
              "RUN: %.40s",
              g_summary.run_id);
-    prg32_gfx_text8(8, 32, line, PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 28, line, PRG32_COLOR_CYAN, 0);
     snprintf(line,
              sizeof(line),
-             "FPS MEAN: %lu.%02lu",
+             "OVERALL FPS: %lu.%02lu  SCREENS: %lu",
              (unsigned long)(g_summary.fps_mean_x100 / 100u),
-             (unsigned long)(g_summary.fps_mean_x100 % 100u));
-    prg32_gfx_text8(8, 56, line, PRG32_COLOR_GREEN, 0);
+             (unsigned long)(g_summary.fps_mean_x100 % 100u),
+             (unsigned long)g_summary.screen_count);
+    prg32_gfx_text8(8, 48, line, PRG32_COLOR_GREEN, 0);
     snprintf(line,
              sizeof(line),
              "FRAME US MEAN/P95/P99: %lu / %lu / %lu",
              (unsigned long)g_summary.frame_us_mean,
              (unsigned long)g_summary.frame_us_p95,
              (unsigned long)g_summary.frame_us_p99);
-    prg32_gfx_text8(8, 76, line, PRG32_COLOR_YELLOW, 0);
+    prg32_gfx_text8(8, 64, line, PRG32_COLOR_YELLOW, 0);
     snprintf(line,
              sizeof(line),
              "UPDATE/DRAW/PRESENT: %lu / %lu / %lu",
              (unsigned long)g_summary.update_us_mean,
              (unsigned long)g_summary.draw_us_mean,
              (unsigned long)g_summary.present_us_mean);
-    prg32_gfx_text8(8, 96, line, PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 80, line, PRG32_COLOR_WHITE, 0);
     snprintf(line,
              sizeof(line),
-             "MISSED DEADLINES: %lu / %lu",
+             "MISSED: %lu/%lu  HEAP MIN: %lu",
              (unsigned long)g_summary.missed_deadlines,
-             (unsigned long)g_summary.frames);
-    prg32_gfx_text8(8, 116, line, PRG32_COLOR_MAGENTA, 0);
-    snprintf(line,
-             sizeof(line),
-             "HEAP MIN: %lu BYTES",
+             (unsigned long)g_summary.frames,
              (unsigned long)g_summary.heap_min);
-    prg32_gfx_text8(8, 136, line, PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 96, line, PRG32_COLOR_MAGENTA, 0);
+    prg32_gfx_text8(8, 120, "SCREEN              FPS   P95US  MISS", PRG32_COLOR_CYAN, 0);
+    for (uint32_t i = 0; i < g_screen_result_count && i < 5u; ++i) {
+        const prg32_perf_screen_result_t *screen = &g_screen_results[i];
+        snprintf(line,
+                 sizeof(line),
+                 "%-18.18s %2lu.%02lu %5lu %4lu",
+                 screen->screen_name,
+                 (unsigned long)(screen->metrics.fps_mean_x100 / 100u),
+                 (unsigned long)(screen->metrics.fps_mean_x100 % 100u),
+                 (unsigned long)screen->metrics.frame_us_p95,
+                 (unsigned long)screen->metrics.missed_deadlines);
+        prg32_gfx_text8(8, 136 + (int)i * 14, line, PRG32_COLOR_WHITE, 0);
+    }
     prg32_gfx_text8(8,
-                     168,
+                     212,
                      "DOWNLOAD: /api/performance.json",
                      PRG32_COLOR_GREEN,
                      0);
@@ -479,49 +740,62 @@ int prg32_performance_test_run(void) {
     g_perf_has_results = 0;
     g_sample_count = 0;
     g_window_count = 0;
+    g_screen_result_count = 0;
     memset(g_samples, 0, sizeof(g_samples));
     memset(g_windows, 0, sizeof(g_windows));
+    memset(g_screen_results, 0, sizeof(g_screen_results));
     memset(&g_summary, 0, sizeof(g_summary));
 
-    draw_progress(0);
+    draw_progress(0, 0);
     vTaskDelay(pdMS_TO_TICKS(300));
 
     prg32_gfx_set_fullscreen(0);
     prg32_gfx_use_background_bands();
     uint64_t started_us = (uint64_t)esp_timer_get_time();
-    for (uint32_t frame = 0; frame < PRG32_PERF_TEST_FRAMES; ++frame) {
-        uint32_t input_mask = prg32_input_read_menu();
-        int64_t frame_start = esp_timer_get_time();
-        prg32_gfx_lock();
-        int64_t update_start = esp_timer_get_time();
-        scene_update(&scene, frame);
-        int64_t update_end = esp_timer_get_time();
-        int64_t draw_start = update_end;
-        scene_draw(&scene, frame);
-        int64_t draw_end = esp_timer_get_time();
-        int64_t present_start = draw_end;
-        prg32_gfx_present();
-        int64_t present_end = esp_timer_get_time();
-        prg32_gfx_unlock();
+    uint32_t frame = 0;
+    for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT; ++screen_index) {
+        draw_progress(frame, screen_index);
+        vTaskDelay(pdMS_TO_TICKS(120));
+        prg32_gfx_set_fullscreen(0);
+        prg32_gfx_use_background_bands();
 
-        prg32_perf_sample_t sample = {
-            .frame_index = frame,
-            .sampled_at_device_us = (uint64_t)present_end,
-            .t_update_us = elapsed_u32(update_end, update_start),
-            .t_draw_us = elapsed_u32(draw_end, draw_start),
-            .t_present_us = elapsed_u32(present_end, present_start),
-            .t_frame_total_us = elapsed_u32(present_end, frame_start),
-            .free_heap_bytes = esp_get_free_heap_size(),
-            .min_free_heap_bytes = esp_get_minimum_free_heap_size(),
-            .input_mask = input_mask,
-            .upload_queue_depth = 0,
-            .deadline_missed =
-                elapsed_u32(present_end, frame_start) > PRG32_PERF_FRAME_BUDGET_US,
-        };
-        store_sample(&sample);
+        for (uint32_t local_frame = 0;
+             local_frame < PRG32_PERF_SCREEN_FRAMES;
+             ++local_frame, ++frame) {
+            uint32_t input_mask = prg32_input_read_menu();
+            int64_t frame_start = esp_timer_get_time();
+            prg32_gfx_lock();
+            int64_t update_start = esp_timer_get_time();
+            scene_update(&scene, frame);
+            int64_t update_end = esp_timer_get_time();
+            int64_t draw_start = update_end;
+            scene_draw_screen(screen_index, &scene, frame, local_frame);
+            int64_t draw_end = esp_timer_get_time();
+            int64_t present_start = draw_end;
+            prg32_gfx_present();
+            int64_t present_end = esp_timer_get_time();
+            prg32_gfx_unlock();
 
-        if ((frame & 15u) == 15u) {
-            vTaskDelay(pdMS_TO_TICKS(1));
+            prg32_perf_sample_t sample = {
+                .frame_index = frame,
+                .sampled_at_device_us = (uint64_t)present_end,
+                .t_update_us = elapsed_u32(update_end, update_start),
+                .t_draw_us = elapsed_u32(draw_end, draw_start),
+                .t_present_us = elapsed_u32(present_end, present_start),
+                .t_frame_total_us = elapsed_u32(present_end, frame_start),
+                .free_heap_bytes = esp_get_free_heap_size(),
+                .min_free_heap_bytes = esp_get_minimum_free_heap_size(),
+                .input_mask = input_mask,
+                .upload_queue_depth = 0,
+                .screen_index = screen_index,
+                .deadline_missed =
+                    elapsed_u32(present_end, frame_start) > PRG32_PERF_FRAME_BUDGET_US,
+            };
+            store_sample(&sample);
+
+            if ((frame & 15u) == 15u) {
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
         }
     }
 
@@ -544,6 +818,322 @@ int prg32_performance_summary(prg32_performance_summary_t *out) {
         return -1;
     }
     *out = g_summary;
+    return 0;
+}
+
+static int stream_write(prg32_performance_json_writer_t writer,
+                        void *ctx,
+                        const char *chunk) {
+    if (!writer || !chunk) {
+        return -1;
+    }
+    return writer(chunk, ctx);
+}
+
+static int stream_writef(prg32_performance_json_writer_t writer,
+                         void *ctx,
+                         const char *fmt,
+                         ...) {
+    char chunk[768];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(chunk, sizeof(chunk), fmt, ap);
+    va_end(ap);
+    if (n < 0 || (size_t)n >= sizeof(chunk)) {
+        return -1;
+    }
+    return stream_write(writer, ctx, chunk);
+}
+
+static int stream_json_string(prg32_performance_json_writer_t writer,
+                              void *ctx,
+                              const char *value) {
+    if (stream_write(writer, ctx, "\"") != 0) {
+        return -1;
+    }
+    const unsigned char *p = (const unsigned char *)(value ? value : "");
+    while (*p) {
+        char escaped[8];
+        if (*p == '"' || *p == '\\') {
+            escaped[0] = '\\';
+            escaped[1] = (char)*p;
+            escaped[2] = '\0';
+            if (stream_write(writer, ctx, escaped) != 0) {
+                return -1;
+            }
+        } else if (*p == '\n') {
+            if (stream_write(writer, ctx, "\\n") != 0) {
+                return -1;
+            }
+        } else if (*p == '\r') {
+            if (stream_write(writer, ctx, "\\r") != 0) {
+                return -1;
+            }
+        } else if (*p == '\t') {
+            if (stream_write(writer, ctx, "\\t") != 0) {
+                return -1;
+            }
+        } else if (*p < 0x20) {
+            snprintf(escaped, sizeof(escaped), "\\u%04x", (unsigned)*p);
+            if (stream_write(writer, ctx, escaped) != 0) {
+                return -1;
+            }
+        } else {
+            escaped[0] = (char)*p;
+            escaped[1] = '\0';
+            if (stream_write(writer, ctx, escaped) != 0) {
+                return -1;
+            }
+        }
+        p++;
+    }
+    return stream_write(writer, ctx, "\"");
+}
+
+static int stream_json_string_field(prg32_performance_json_writer_t writer,
+                                    void *ctx,
+                                    const char *name,
+                                    const char *value,
+                                    int leading_comma) {
+    if (stream_writef(writer, ctx, "%s\"%s\":", leading_comma ? "," : "", name) != 0) {
+        return -1;
+    }
+    return stream_json_string(writer, ctx, value);
+}
+
+static int stream_summary_fields(prg32_performance_json_writer_t writer,
+                                 void *ctx) {
+    return stream_writef(writer,
+                         ctx,
+                         "\"frames\":%lu,"
+                         "\"fps_mean\":%lu.%02lu,"
+                         "\"frame_us_min\":%lu,"
+                         "\"frame_us_mean\":%lu,"
+                         "\"frame_us_p50\":%lu,"
+                         "\"frame_us_p95\":%lu,"
+                         "\"frame_us_p99\":%lu,"
+                         "\"frame_us_max\":%lu,"
+                         "\"missed_deadlines\":%lu,"
+                         "\"update_us_mean\":%lu,"
+                         "\"draw_us_mean\":%lu,"
+                         "\"present_us_mean\":%lu,"
+                         "\"heap_min\":%lu,"
+                         "\"screen_count\":%lu",
+                         (unsigned long)g_summary.frames,
+                         (unsigned long)(g_summary.fps_mean_x100 / 100u),
+                         (unsigned long)(g_summary.fps_mean_x100 % 100u),
+                         (unsigned long)g_summary.frame_us_min,
+                         (unsigned long)g_summary.frame_us_mean,
+                         (unsigned long)g_summary.frame_us_p50,
+                         (unsigned long)g_summary.frame_us_p95,
+                         (unsigned long)g_summary.frame_us_p99,
+                         (unsigned long)g_summary.frame_us_max,
+                         (unsigned long)g_summary.missed_deadlines,
+                         (unsigned long)g_summary.update_us_mean,
+                         (unsigned long)g_summary.draw_us_mean,
+                         (unsigned long)g_summary.present_us_mean,
+                         (unsigned long)g_summary.heap_min,
+                         (unsigned long)g_summary.screen_count);
+}
+
+int prg32_performance_json_write(prg32_performance_json_writer_t writer,
+                                 void *ctx) {
+    if (!writer) {
+        return -1;
+    }
+    if (g_perf_running) {
+        return stream_write(writer, ctx, "{\"ok\":false,\"running\":true}");
+    }
+    if (!g_perf_has_results) {
+        return stream_write(writer,
+                            ctx,
+                            "{\"ok\":false,\"error\":\"no performance test results\"}");
+    }
+
+    if (stream_write(writer, ctx, "{\"ok\":true") != 0 ||
+        stream_json_string_field(writer, ctx, "run_id", g_summary.run_id, 1) != 0 ||
+        stream_json_string_field(writer, ctx, "board_id", g_summary.board_id, 1) != 0 ||
+        stream_json_string_field(writer, ctx, "target", g_summary.target, 1) != 0 ||
+        stream_json_string_field(writer,
+                                 ctx,
+                                 "display_backend",
+                                 g_summary.display_backend,
+                                 1) != 0 ||
+        stream_json_string_field(writer,
+                                 ctx,
+                                 "firmware_git_sha",
+                                 g_summary.firmware_git_sha,
+                                 1) != 0 ||
+        stream_json_string_field(writer,
+                                 ctx,
+                                 "firmware_version",
+                                 g_summary.firmware_version,
+                                 1) != 0 ||
+        stream_json_string_field(writer, ctx, "game_name", g_summary.game_name, 1) != 0) {
+        return -1;
+    }
+    if (stream_writef(writer,
+                      ctx,
+                      ",\"cartridge_generation\":%lu",
+                      (unsigned long)g_summary.cartridge_generation) != 0 ||
+        stream_json_string_field(writer, ctx, "build_type", g_summary.build_type, 1) != 0 ||
+        stream_json_string_field(writer, ctx, "wifi_mode", g_summary.wifi_mode, 1) != 0 ||
+        stream_writef(writer,
+                      ctx,
+                      ",\"sample_period_frames\":%lu,"
+                      "\"screen_count\":%lu,"
+                      "\"started_at_device_us\":%llu,"
+                      "\"started_at_server_ts\":null,"
+                      "\"duration_us\":%lu,"
+                      "\"samples\":[",
+                      (unsigned long)g_summary.sample_period_frames,
+                      (unsigned long)g_summary.screen_count,
+                      (unsigned long long)g_summary.started_at_device_us,
+                      (unsigned long)g_summary.duration_us) != 0) {
+        return -1;
+    }
+
+    for (uint32_t i = 0; i < g_sample_count; ++i) {
+        const prg32_perf_sample_t *s = &g_samples[i];
+        if (stream_writef(writer,
+                          ctx,
+                          "%s{"
+                          "\"frame_index\":%lu,"
+                          "\"screen_index\":%lu,"
+                          "\"screen_name\":\"%s\","
+                          "\"sampled_at_device_us\":%llu,"
+                          "\"t_update_us\":%lu,"
+                          "\"t_draw_us\":%lu,"
+                          "\"t_present_us\":%lu,"
+                          "\"t_frame_total_us\":%lu,"
+                          "\"deadline_missed\":%s,"
+                          "\"free_heap_bytes\":%lu,"
+                          "\"min_free_heap_bytes\":%lu,"
+                          "\"input_mask\":%lu,"
+                          "\"upload_queue_depth\":%lu"
+                          "}",
+                          i ? "," : "",
+                          (unsigned long)s->frame_index,
+                          (unsigned long)s->screen_index,
+                          screen_name(s->screen_index),
+                          (unsigned long long)s->sampled_at_device_us,
+                          (unsigned long)s->t_update_us,
+                          (unsigned long)s->t_draw_us,
+                          (unsigned long)s->t_present_us,
+                          (unsigned long)s->t_frame_total_us,
+                          s->deadline_missed ? "true" : "false",
+                          (unsigned long)s->free_heap_bytes,
+                          (unsigned long)s->min_free_heap_bytes,
+                          (unsigned long)s->input_mask,
+                          (unsigned long)s->upload_queue_depth) != 0) {
+            return -1;
+        }
+    }
+
+    if (stream_write(writer, ctx, "],\"aggregate_windows\":[") != 0) {
+        return -1;
+    }
+    for (uint32_t i = 0; i < g_window_count; ++i) {
+        const prg32_perf_window_t *w = &g_windows[i];
+        if (stream_writef(writer,
+                          ctx,
+                          "%s{"
+                          "\"window_index\":%lu,"
+                          "\"started_at_device_us\":%llu,"
+                          "\"duration_us\":%lu,"
+                          "\"frames\":%lu,"
+                          "\"fps_mean\":%lu.%02lu,"
+                          "\"frame_us_min\":%lu,"
+                          "\"frame_us_mean\":%lu,"
+                          "\"frame_us_p50\":%lu,"
+                          "\"frame_us_p95\":%lu,"
+                          "\"frame_us_p99\":%lu,"
+                          "\"frame_us_max\":%lu,"
+                          "\"missed_deadlines\":%lu,"
+                          "\"update_us_mean\":%lu,"
+                          "\"draw_us_mean\":%lu,"
+                          "\"present_us_mean\":%lu,"
+                          "\"heap_min\":%lu"
+                          "}",
+                          i ? "," : "",
+                          (unsigned long)w->window_index,
+                          (unsigned long long)w->started_at_device_us,
+                          (unsigned long)w->duration_us,
+                          (unsigned long)w->frames,
+                          (unsigned long)(w->fps_mean_x100 / 100u),
+                          (unsigned long)(w->fps_mean_x100 % 100u),
+                          (unsigned long)w->frame_us_min,
+                          (unsigned long)w->frame_us_mean,
+                          (unsigned long)w->frame_us_p50,
+                          (unsigned long)w->frame_us_p95,
+                          (unsigned long)w->frame_us_p99,
+                          (unsigned long)w->frame_us_max,
+                          (unsigned long)w->missed_deadlines,
+                          (unsigned long)w->update_us_mean,
+                          (unsigned long)w->draw_us_mean,
+                          (unsigned long)w->present_us_mean,
+                          (unsigned long)w->heap_min) != 0) {
+            return -1;
+        }
+    }
+
+    if (stream_write(writer, ctx, "],\"screen_summaries\":[") != 0) {
+        return -1;
+    }
+    for (uint32_t i = 0; i < g_screen_result_count; ++i) {
+        const prg32_perf_screen_result_t *screen = &g_screen_results[i];
+        const prg32_perf_window_t *w = &screen->metrics;
+        if (stream_writef(writer,
+                          ctx,
+                          "%s{"
+                          "\"screen_index\":%lu,"
+                          "\"screen_name\":\"%s\","
+                          "\"metric_goal\":\"%s\","
+                          "\"first_frame\":%lu,"
+                          "\"last_frame\":%lu,"
+                          "\"frames\":%lu,"
+                          "\"fps_mean\":%lu.%02lu,"
+                          "\"frame_us_min\":%lu,"
+                          "\"frame_us_mean\":%lu,"
+                          "\"frame_us_p50\":%lu,"
+                          "\"frame_us_p95\":%lu,"
+                          "\"frame_us_p99\":%lu,"
+                          "\"frame_us_max\":%lu,"
+                          "\"missed_deadlines\":%lu,"
+                          "\"update_us_mean\":%lu,"
+                          "\"draw_us_mean\":%lu,"
+                          "\"present_us_mean\":%lu,"
+                          "\"heap_min\":%lu"
+                          "}",
+                          i ? "," : "",
+                          (unsigned long)screen->screen_index,
+                          screen->screen_name,
+                          screen->metric_goal,
+                          (unsigned long)screen->first_frame,
+                          (unsigned long)screen->last_frame,
+                          (unsigned long)w->frames,
+                          (unsigned long)(w->fps_mean_x100 / 100u),
+                          (unsigned long)(w->fps_mean_x100 % 100u),
+                          (unsigned long)w->frame_us_min,
+                          (unsigned long)w->frame_us_mean,
+                          (unsigned long)w->frame_us_p50,
+                          (unsigned long)w->frame_us_p95,
+                          (unsigned long)w->frame_us_p99,
+                          (unsigned long)w->frame_us_max,
+                          (unsigned long)w->missed_deadlines,
+                          (unsigned long)w->update_us_mean,
+                          (unsigned long)w->draw_us_mean,
+                          (unsigned long)w->present_us_mean,
+                          (unsigned long)w->heap_min) != 0) {
+            return -1;
+        }
+    }
+
+    if (stream_write(writer, ctx, "],\"summary\":{") != 0 ||
+        stream_summary_fields(writer, ctx) != 0 ||
+        stream_write(writer, ctx, "}}") != 0) {
+        return -1;
+    }
     return 0;
 }
 
@@ -573,6 +1163,26 @@ static void add_summary_json(cJSON *obj) {
     json_u32(obj, "draw_us_mean", g_summary.draw_us_mean);
     json_u32(obj, "present_us_mean", g_summary.present_us_mean);
     json_u32(obj, "heap_min", g_summary.heap_min);
+    json_u32(obj, "screen_count", g_summary.screen_count);
+}
+
+static void add_window_metrics_json(cJSON *obj, const prg32_perf_window_t *w) {
+    if (!obj || !w) {
+        return;
+    }
+    json_u32(obj, "frames", w->frames);
+    json_fps(obj, "fps_mean", w->fps_mean_x100);
+    json_u32(obj, "frame_us_min", w->frame_us_min);
+    json_u32(obj, "frame_us_mean", w->frame_us_mean);
+    json_u32(obj, "frame_us_p50", w->frame_us_p50);
+    json_u32(obj, "frame_us_p95", w->frame_us_p95);
+    json_u32(obj, "frame_us_p99", w->frame_us_p99);
+    json_u32(obj, "frame_us_max", w->frame_us_max);
+    json_u32(obj, "missed_deadlines", w->missed_deadlines);
+    json_u32(obj, "update_us_mean", w->update_us_mean);
+    json_u32(obj, "draw_us_mean", w->draw_us_mean);
+    json_u32(obj, "present_us_mean", w->present_us_mean);
+    json_u32(obj, "heap_min", w->heap_min);
 }
 
 char *prg32_performance_json_alloc(void) {
@@ -608,6 +1218,7 @@ char *prg32_performance_json_alloc(void) {
     cJSON_AddStringToObject(root, "build_type", g_summary.build_type);
     cJSON_AddStringToObject(root, "wifi_mode", g_summary.wifi_mode);
     json_u32(root, "sample_period_frames", g_summary.sample_period_frames);
+    json_u32(root, "screen_count", g_summary.screen_count);
     json_u64(root, "started_at_device_us", g_summary.started_at_device_us);
     cJSON_AddNullToObject(root, "started_at_server_ts");
     json_u32(root, "duration_us", g_summary.duration_us);
@@ -620,6 +1231,8 @@ char *prg32_performance_json_alloc(void) {
             continue;
         }
         json_u32(item, "frame_index", s->frame_index);
+        json_u32(item, "screen_index", s->screen_index);
+        cJSON_AddStringToObject(item, "screen_name", screen_name(s->screen_index));
         json_u64(item, "sampled_at_device_us", s->sampled_at_device_us);
         json_u32(item, "t_update_us", s->t_update_us);
         json_u32(item, "t_draw_us", s->t_draw_us);
@@ -643,20 +1256,24 @@ char *prg32_performance_json_alloc(void) {
         json_u32(item, "window_index", w->window_index);
         json_u64(item, "started_at_device_us", w->started_at_device_us);
         json_u32(item, "duration_us", w->duration_us);
-        json_u32(item, "frames", w->frames);
-        json_fps(item, "fps_mean", w->fps_mean_x100);
-        json_u32(item, "frame_us_min", w->frame_us_min);
-        json_u32(item, "frame_us_mean", w->frame_us_mean);
-        json_u32(item, "frame_us_p50", w->frame_us_p50);
-        json_u32(item, "frame_us_p95", w->frame_us_p95);
-        json_u32(item, "frame_us_p99", w->frame_us_p99);
-        json_u32(item, "frame_us_max", w->frame_us_max);
-        json_u32(item, "missed_deadlines", w->missed_deadlines);
-        json_u32(item, "update_us_mean", w->update_us_mean);
-        json_u32(item, "draw_us_mean", w->draw_us_mean);
-        json_u32(item, "present_us_mean", w->present_us_mean);
-        json_u32(item, "heap_min", w->heap_min);
+        add_window_metrics_json(item, w);
         cJSON_AddItemToArray(windows, item);
+    }
+
+    cJSON *screens = cJSON_AddArrayToObject(root, "screen_summaries");
+    for (uint32_t i = 0; screens && i < g_screen_result_count; ++i) {
+        const prg32_perf_screen_result_t *screen = &g_screen_results[i];
+        cJSON *item = cJSON_CreateObject();
+        if (!item) {
+            continue;
+        }
+        json_u32(item, "screen_index", screen->screen_index);
+        cJSON_AddStringToObject(item, "screen_name", screen->screen_name);
+        cJSON_AddStringToObject(item, "metric_goal", screen->metric_goal);
+        json_u32(item, "first_frame", screen->first_frame);
+        json_u32(item, "last_frame", screen->last_frame);
+        add_window_metrics_json(item, &screen->metrics);
+        cJSON_AddItemToArray(screens, item);
     }
 
     cJSON *summary = cJSON_AddObjectToObject(root, "summary");

@@ -275,7 +275,7 @@ sudo usermod -aG dialout "$USER"
 ```
 
 Log out and back in after changing group membership. ESP32-C6 boards usually
-appear as `/dev/ttyACM0`; USB bridge boards may appear as `/dev/ttyUSB0`.
+appear as `/dev/ttyACM0`; USB serial adapters may appear as `/dev/ttyUSB0`.
 
 PlatformIO CLI path:
 
@@ -333,19 +333,33 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 - Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target
   ESP32-C3 for desktop graphics/testing.
 - Games are distributed as cartridges (`.prg32`) loaded by the runtime.
-- Input supports one or two digital joystick modules through the same PRG32
-  bitmask used by QEMU and cartridge tests.
-- Hold A + B + DOWN on either joystick to restart the PRG32 firmware.
+- Store-ready cartridges may append a backward-compatible `PRG32META` trailer
+  with metadata, icon, optional screenshot/signature, and a standard colophon.
+- Input uses one local digital joystick through the same PRG32 bitmask used by
+  QEMU and cartridge tests.
+- Hold A + B + DOWN on the local joystick to restart the PRG32 firmware.
+- Optional cartridge multiplayer shares player snapshots over Wi-Fi station
+  mode and WebSocket through a small Node.js server.
 - Audio supports mandatory mono I2S output and optional stereo PRG32 Audio Plus
   using MAX98357A amplifier breakouts.
-- Optional performance metrics can upload buffered frame timing samples to a
-  local Flask/SQLite server for labs and regression checks.
+- Optional performance metrics can upload buffered frame timing samples to the
+  standalone
+  [MetricsServer](https://github.com/riscv-prg32/MetricsServer) for labs and
+  regression checks.
 
 Flow:
 
 ```text
 .S source -> riscv toolchain -> .prg32 cartridge -> PRG32 runtime -> init/update/draw loop
 ```
+
+Cartridge metadata and store publishing are documented in
+[docs/cartridge_metadata.md](docs/cartridge_metadata.md),
+[docs/colophon_abi.md](docs/colophon_abi.md),
+[docs/cartridge_store.md](docs/cartridge_store.md), and
+[docs/setup_mode_cartridge_store.md](docs/setup_mode_cartridge_store.md). The
+download server is the standalone **Cartridge Store** in
+`riscv-prg32/CartridgeStore`; it is not part of this firmware repository.
 
 ## ❗ Troubleshooting
 
@@ -366,8 +380,12 @@ Flow:
 - PlatformIO says it cannot exclusively lock `/dev/cu.usbmodem...`: close every
   other Serial Monitor, ESP-IDF Monitor, Arduino Serial Monitor, and terminal
   using that port, then start only one PlatformIO Monitor.
-- QEMU runs but the game does not move: to use the UART bridge input, 
-  you have to target the terminal running QEMU as active window.
+- QEMU runs but the game does not move: focus the QEMU monitor terminal and use
+  arrow keys or `W`/`A`/`S`/`D` for joystick 1, `Enter`/`Space` for SELECT,
+  `J`/`Z` for A, and `K`/`X` for B.
+- QEMU runs but the game does not move: focus the terminal running QEMU. Use
+  arrow keys or `W`/`A`/`S`/`D` for joystick 1, `Enter`/`Space` for SELECT,
+  `J`/`Z` for A, and `K`/`X` for B.
 - Cartridge upload fails: `build-qemu/flash_image.bin` is missing/invalid, or the
   cartridge is too large. Run QEMU once, then rerun `upload-qemu`.
 - `riscv32-esp-elf-gcc` missing: re-run `./install.sh esp32c3,esp32c6` and
@@ -402,10 +420,11 @@ The `examples/features` directory contains focused demos for framework features:
 - upper/lower status bands for FPS, Wi-Fi, game info, and debug text
 - joystick-driven on-screen keyboard input with printable ASCII support
 - Wi-Fi setup mode
+- cartridge multiplayer API with the external Node.js relay server
+- CartridgeStore integration for catalog discovery and cartridge downloads
 - setup audio menu with output detection, volume, and test tune
 - configurable onboard RGB LED API and optional audio VU meter
 - audio synthesis and sample playback
-- player 2 input
 
 Use these before building a full game when the lesson is about one graphics
 technique rather than game rules.
@@ -421,11 +440,11 @@ and one configured for the right channel.
 
 Start with:
 
-- `examples/audio_mono_beep`
-- `examples/audio_mono_sample`
-- `examples/audio_mono_tracker`
-- `examples/audio_stereo_pan_test`
-- `examples/audio_stereo_music`
+- `examples/features/audio_mono_beep`
+- `examples/features/audio_mono_sample`
+- `examples/features/audio_mono_tracker`
+- `examples/features/audio_stereo_pan_test`
+- `examples/features/audio_stereo_music`
 
 See [docs/audio.md](docs/audio.md) for wiring, API, cartridge AUDIO blocks, and
 troubleshooting.
@@ -434,10 +453,11 @@ The resident firmware also shows a full 320x240 logo splash screen on boot.
 Physical ESP32-C6 builds enter setup when A+B are held during boot, when no
 cartridge is stored, or when multiple cartridges exist without a default. The
 setup menu can run a cartridge, set the default boot cartridge, configure Wi-Fi,
-open the audio setup menu, open the developer status-band menu, launch the
-unattended performance test, show the about screen, or launch the device demo.
+configure CartridgeStore access, browse the store, open the audio setup menu,
+open the developer status-band menu, launch the unattended performance test,
+show the about screen, or launch the device demo.
 Setup screens show the active Wi-Fi mode and current IP address,
-and either joystick can navigate them with SELECT/B to confirm and A to go
+and the local joystick can navigate them with SELECT/B to confirm and A to go
 back. The device demo includes 320x200 sketches inspired by Pong, Breakout,
 Space Invaders, Pacman, Tetris, Pole Position, Asteroids, a side-scrolling
 platform game, a Doom-style raycaster, and a space cockpit that demonstrates
@@ -482,10 +502,18 @@ The C programming tutorial is [docs/tutorial_c_game.md](docs/tutorial_c_game.md)
 - Runtime/diagnostics: `GET /api/runtime`
 - Games: `GET /api/games`, `POST /api/games?slot=cart0`, `POST /api/games/select?slot=cart0`
 - Screenshot: `GET /api/screenshot.bmp`
-- Optional scores: `GET /api/scores`, `POST /api/scores`
+- Board-local scores: `GET /api/scores`, `POST /api/scores`
 - Performance test: `GET /api/performance.json`
-- Optional metrics server: `POST /api/runs`, `POST /api/metrics/batch`,
+- Classroom score server:
+  [ScoreServer](https://github.com/riscv-prg32/ScoreServer) provides the same
+  score API with SQLite persistence.
+- Optional metrics server:
+  [MetricsServer](https://github.com/riscv-prg32/MetricsServer) provides
+  `POST /api/runs`, `POST /api/metrics/batch`, and
   `GET /api/runs/<run_id>/report.md`
+- Multiplayer relay: run
+  [MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer) on a
+  classroom host and set `PRG32_MULTIPLAYER_SERVER_URL`.
 
 `/api/runtime` includes firmware version, cartridge state, frame count, and last input state.
 `/api/screenshot.bmp` returns the current 320x240 framebuffer as a BMP image.
@@ -494,7 +522,9 @@ including raw samples and aggregate windows.
 
 See [docs/metrics_api.md](docs/metrics_api.md) for the opt-in firmware metrics
 configuration, setup-mode performance test, `tools/prg32_metrics_paper.py`, and
-the `tools/prg32_metrics_server` reporting workflow. See
+the standalone
+[MetricsServer](https://github.com/riscv-prg32/MetricsServer) reporting
+workflow. See
 [docs/scientific_measurement_tutorial.md](docs/scientific_measurement_tutorial.md)
 for a step-by-step scientific-paper measurement workflow with screenshots.
 
@@ -507,6 +537,16 @@ for a step-by-step scientific-paper measurement workflow with screenshots.
 - `tools/midi2prg32audio.py`: convert simple MIDI notes to tracker JSON.
 - `tools/prg32audio_pack.py`: pack samples, instruments, and tracks into an
   AUDIO block for `.prg32` cartridges.
+- `tools/prg32_game.py attach-metadata`: append a deterministic `PRG32META`
+  trailer for Cartridge Store publishing.
+- `tools/prg32_game.py inspect-metadata`: inspect metadata, assets, signature,
+  colophon, and unknown trailer blocks.
+- `tools/prg32_game.py store-discover`: find CartridgeStore instances via mDNS.
+- `tools/prg32_game.py store-list`: print a CartridgeStore catalog table.
+- `tools/prg32_game.py store-download`: download a `.prg32` from a store.
+- `tools/prg32_game.py publish`: build a cartridge and publish a store bundle.
+- `tools/prg32_game.py pack-bundle`: create a flat multi-architecture zip.
+- `tools/prg32_game.py publish-bundle`: upload a prepared bundle.
 
 See [docs/assets.md](docs/assets.md).
 
@@ -571,6 +611,10 @@ See `docs/images/README.md` for capture instructions.
 - `tools/prg32_image_convert.py`: image and animation converter
 - `tools/prg32_audio_convert.py`: sample and MIDI converter
 - `tools/prg32audio_pack.py`: AUDIO block packer
+- Classroom score server:
+  [riscv-prg32/ScoreServer](https://github.com/riscv-prg32/ScoreServer)
+- Multiplayer relay:
+  [riscv-prg32/MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer)
 - `docs`: tutorials, labs, API docs
 - `.github/workflows/ci.yml`: GitHub Actions smoke and firmware build workflow
 - `tests`: host-side unit tests for tooling and documentation hygiene
@@ -582,7 +626,8 @@ See `docs/images/README.md` for capture instructions.
 - `examples/games`: course demos in RISC-V assembly and C
 - `examples/features`: focused rendering demos in RISC-V assembly and C
 - `docs/labs`: lab handouts, debugging assignments, and assessment-friendly exercises
-- `tools`: reproducible developer tooling (cartridge builder, QEMU scripts, score server)
+- `tools`: reproducible developer tooling (cartridge builder, QEMU scripts,
+  setup performance report tooling)
 - `hardware`: architecture notes and board integration scaffold
 
 ## Contributors

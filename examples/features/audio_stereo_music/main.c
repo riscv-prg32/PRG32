@@ -29,9 +29,9 @@ void app_main(void) {
         .mode = PRG32_AUDIO_MODE_STEREO,
         .max_voices = 8,
         .gpio_bclk = 4,
-        .gpio_lrclk = 5,
-        .gpio_data = 6,
-        .gpio_sd = 7,
+        .gpio_lrclk = 11,
+        .gpio_data = 23,
+        .gpio_sd = -1,
     };
     prg32_audio_init(&config);
     prg32_audio_register_sample(0, lead_wave, sizeof(lead_wave), 60, PRG32_AUDIO_SAMPLE_LOOP, 0, sizeof(lead_wave));

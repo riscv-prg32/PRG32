@@ -27,6 +27,8 @@
 
 static const char *TAG = "prg32_controller";
 
+uint32_t prg32_qemu_input_read(void);
+
 /*
  * PRG32 controller layer.
  *
@@ -110,10 +112,8 @@ void prg32_controller_bridge_init(void) {
 
 static uint32_t read_bridge(void) {
     uint8_t b[16];
-    printf("read_bridge => uart_read_bytes(PRG32_CONTROLLER_BRIDGE_UART)");
     int n = uart_read_bytes(PRG32_CONTROLLER_BRIDGE_UART, b, sizeof(b), 0);
     for (int i = 0; i < n; ++i) {
-        printf("bridge_feed()");
         bridge_feed(b[i]);
     }
     return bridge_state;
@@ -179,12 +179,11 @@ static uint32_t read_gpio_buttons(void) {
 uint32_t prg32_controller_read(void) {
     uint32_t v = read_gpio_buttons();
     v |= read_bridge();
+    v |= prg32_qemu_input_read();
     v |= prg32_diag_input_state();
 #if PRG32_RESTART_HOTKEY_ENABLE
     if ((v & PRG32_RESTART_HOTKEY_P1) == PRG32_RESTART_HOTKEY_P1 ||
         (v & PRG32_RESTART_HOTKEY_P2) == PRG32_RESTART_HOTKEY_P2) {
-        ESP_LOGE(TAG, "ABOUT TO esp_restart() from %s:%d\n", __FILE__, __LINE__);
-        vTaskDelay(pdMS_TO_TICKS(500));
         esp_restart();
     }
 #endif

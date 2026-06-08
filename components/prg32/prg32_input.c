@@ -43,21 +43,17 @@ static void pin_in(const char *name, int p) {
 void prg32_controller_bridge_init(void);
 
 void prg32_input_init(void) {
-    printf("prg32_input_init START\n");
     pin_in("LEFT", PRG32_PIN_BTN_LEFT);
     pin_in("RIGHT", PRG32_PIN_BTN_RIGHT);
     pin_in("UP", PRG32_PIN_BTN_UP);
     pin_in("DOWN", PRG32_PIN_BTN_DOWN);
     pin_in("A", PRG32_PIN_BTN_A);
     pin_in("B", PRG32_PIN_BTN_B);
-    printf("prg32_input_init PIN_BTN_START\n");
     pin_in("START", PRG32_PIN_BTN_START);
-    printf("prg32_input_init PIN_BTN_SELECT\n");
     if (PRG32_PIN_BTN_SELECT != PRG32_PIN_BTN_START) {
         pin_in("SELECT", PRG32_PIN_BTN_SELECT);
     }
 
-    printf("prg32_input_init P2\n");
     pin_in("P2 LEFT", PRG32_PIN_P2_LEFT);
     pin_in("P2 RIGHT", PRG32_PIN_P2_RIGHT);
     pin_in("P2 UP", PRG32_PIN_P2_UP);
@@ -65,14 +61,11 @@ void prg32_input_init(void) {
     pin_in("P2 A", PRG32_PIN_P2_A);
     pin_in("P2 B", PRG32_PIN_P2_B);
     pin_in("P2 START", PRG32_PIN_P2_START);
-    printf("prg32_input_init P2_SELECT\n");
     if (PRG32_PIN_P2_SELECT != PRG32_PIN_P2_START) {
         pin_in("P2 SELECT", PRG32_PIN_P2_SELECT);
     }
     pin_in("SETUP", PRG32_PIN_SETUP);
-    printf("prg32_input_init END\n");
-    //vTaskDelay(pdMS_TO_TICKS(1));
-    //prg32_controller_bridge_init();
+    prg32_controller_bridge_init();
 }
 
 uint32_t prg32_input_read(void) {
@@ -93,14 +86,9 @@ uint32_t prg32_input_read_menu(void) {
 }
 
 void prg32_input_wait_released(uint32_t mask) {
-    printf("prg32_input_wait_released START\n");
-    printf("prg32_input_wait_released mask=%ld\n", mask);
     int stable = 0;
     while (stable < 2) {
-        printf("prg32_input_wait_released => prg32_input_read_menu()\n");
-        uint32_t input_read_menu = prg32_input_read_menu();
-        printf("prg32_input_read_menu() = %ld\n", input_read_menu);
-        if ((input_read_menu & mask) == 0) {
+        if ((prg32_input_read_menu() & mask) == 0) {
             stable++;
         } else {
             stable = 0;

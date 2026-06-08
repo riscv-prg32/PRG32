@@ -33,6 +33,15 @@ config PRG32_QEMU_FAIL_ON_REAL_HW
         Keep this enabled so accidental real-hardware flashes stop clearly
         during display initialization instead of silently losing graphics.
 
+config PRG32_QEMU_UART_INPUT
+    bool "Enable QEMU keyboard input through the UART console"
+    depends on PRG32_DISPLAY_QEMU_RGB && ESP_CONSOLE_UART
+    default y
+    help
+        Read simple keyboard controls from the QEMU UART console and translate
+        them into the normal PRG32 player 1 input bits. This is for desktop
+        classroom testing only; physical ESP32-C6 builds still use GPIO buttons.
+
 config PRG32_SPLASH_ENABLED
     bool "Show PRG32 startup splash"
     default y
@@ -71,7 +80,7 @@ config PRG32_METRICS_SERVER_URL
     depends on PRG32_METRICS_ENABLE
     default "http://192.168.4.2:8080"
     help
-        Base URL for tools/prg32_metrics_server/app.py.
+        Base URL for the standalone PRG32 MetricsServer Flask app.
 
 config PRG32_METRICS_BOARD_ID
     string "Metrics board identifier"
@@ -105,6 +114,19 @@ config PRG32_METRICS_QUEUE_LEN
     help
         Number of samples kept in RAM before upload. If the queue fills, PRG32
         drops new samples and reports the drop count with the next batch.
+
+endmenu
+
+menu "CartridgeStore integration"
+
+config PRG32_STORE_URL
+    string "CartridgeStore base URL"
+    default ""
+    help
+        Base URL of the CartridgeStore instance used for catalog browsing
+        and cartridge download. Leave empty to use mDNS auto-discovery.
+        Example: http://192.168.1.42:5080
+        In QEMU builds, mDNS is unavailable; set this to reach a LAN server.
 
 endmenu
 

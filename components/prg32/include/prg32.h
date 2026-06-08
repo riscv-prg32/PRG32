@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include "prg32_audio.h"
 #include "prg32_metrics.h"
+#include "prg32_multiplayer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,6 +82,18 @@ extern "C" {
 #define PRG32_CART_ABI_MAJOR 1
 #define PRG32_CART_ABI_MINOR 0
 #define PRG32_CART_FLAG_AUDIO_BLOCK (1u << 0)
+#define PRG32_CART_FLAG_MULTIPLAYER (1u << 1)
+#define PRG32_CART_META_MAGIC "PRG32META"
+#define PRG32_CART_META_VERSION 1
+#define PRG32_CART_META_ABI "prg32-metadata-1.0"
+#define PRG32_CART_COLOPHON_ABI "prg32-colophon-1.0"
+#define PRG32_CART_META_BLOCK_META "META"
+#define PRG32_CART_META_BLOCK_ICON "ICON"
+#define PRG32_CART_META_BLOCK_SCREENSHOT "SCRN"
+#define PRG32_CART_META_BLOCK_SIGNATURE "SIGN"
+#define PRG32_CART_META_BLOCK_COLOPHON "COLO"
+#define PRG32_CART_ARCH_ESP32C6 "esp32c6"
+#define PRG32_CART_ARCH_QEMU "qemu"
 #define PRG32_CART_RAM_SIZE (32u * 1024u)
 #define PRG32_CART_NAME_LEN 32
 #define PRG32_CART_SLOT_COUNT 2
@@ -112,6 +125,7 @@ typedef struct {
     uint32_t mem_size;
     uint32_t audio_size;
     uint32_t generation;
+    uint16_t flags;
     uint8_t slot;
     uint8_t loaded;
     uint8_t stored;
@@ -230,6 +244,16 @@ int prg32_score_submit_remote(const char *base_url,
                               const char *player,
                               uint32_t score);
 
+/* CartridgeStore integration. */
+int prg32_store_url_get(char *out_url, size_t max_len);
+int prg32_store_url_set(const char *url);
+void prg32_store_url_clear(void);
+int prg32_store_url_resolve(char *out_url, size_t max_len);
+int prg32_store_discover(char *out_url, size_t max_len);
+int prg32_store_ping(const char *base_url, char *out_name, size_t name_len);
+void prg32_setup_store_run(void);
+void prg32_setup_store_browse_run(void);
+
 void prg32_cart_init(void);
 uintptr_t prg32_cart_load_addr(void);
 size_t prg32_cart_ram_size(void);
@@ -237,11 +261,11 @@ uint32_t prg32_cart_generation(void);
 int prg32_cart_is_loaded(void);
 int prg32_cart_load_stored(void);
 int prg32_cart_install(const void *image, size_t image_size, int persist);
-int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size);
 int prg32_cart_install_slot(uint8_t slot,
                             const void *image,
                             size_t image_size,
                             int persist);
+int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size);
 int prg32_cart_select_stored(void);
 int prg32_cart_select_slot(uint8_t slot);
 int prg32_cart_default_slot(void);

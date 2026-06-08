@@ -46,25 +46,30 @@ Record:
 
 ## 3. Prepare The Metrics Server
 
-Create a Python environment and start the local server:
+Clone the standalone metrics server next to the PRG32 repository, then create a
+Python environment and start it. The commands below assume `PRG32` and
+`MetricsServer` are sibling directories:
 
 ```bash
+cd ..
+git clone https://github.com/riscv-prg32/MetricsServer.git
+cd MetricsServer
 python3 -m venv .venv
 . .venv/bin/activate
-python3 -m pip install -r tools/prg32_metrics_server/requirements.txt
-python3 tools/prg32_metrics_server/app.py --host 0.0.0.0 --port 8080
+python3 -m pip install -r requirements.txt
+python3 app.py --host 0.0.0.0 --port 8080
 ```
 
 Keep the terminal open. The default database is:
 
 ```text
-tools/prg32_metrics_server/metrics.db
+../MetricsServer/metrics.db
 ```
 
 Use one database per experiment series, or copy the database after each series:
 
 ```bash
-cp tools/prg32_metrics_server/metrics.db data/metrics_series_01.db
+cp ../MetricsServer/metrics.db data/metrics_series_01.db
 ```
 
 ## 4. Build Firmware With Metrics Enabled
@@ -229,8 +234,9 @@ For the built-in unattended benchmark, use setup mode:
 
 1. Enter setup mode.
 2. Select `PERFORMANCE TEST`.
-3. Wait until the summary screen appears.
-4. Download the latest in-RAM metrics file:
+3. Do not press any buttons while the automatic measurement screens run.
+4. Wait until the summary screen appears.
+5. Download the latest in-RAM metrics file:
 
 ```bash
 curl http://192.168.4.1/api/performance.json \
@@ -240,7 +246,9 @@ curl http://192.168.4.1/api/performance.json \
 If the board is connected in infrastructure mode, replace `192.168.4.1` with
 the IP address shown at the top of setup mode. The JSON is cleared by reboot and
 is replaced when a new performance test is run, so archive it immediately after
-each run.
+each run. The JSON includes raw frame samples, one-second aggregate windows, and
+`screen_summaries` for the clear/fill, text overlay, sprite storm, scrolling,
+and mixed-gameplay screens.
 
 Create paper-ready artifacts:
 
@@ -251,7 +259,8 @@ python3 tools/prg32_metrics_paper.py data/prg32_performance_run01.json \
 ```
 
 This produces LaTeX tables, captions, normalized CSV/JSON data, and
-high-resolution frame-time, stage-time, and heap-stability charts.
+high-resolution frame-time, stage-time, heap-stability, and per-screen
+comparison charts.
 
 For streaming cartridge metrics, use the metrics server workflow.
 
@@ -264,8 +273,8 @@ curl http://127.0.0.1:8080/api/runs
 Export a run:
 
 ```bash
-python3 tools/prg32_metrics_server/export_run.py <run-id> \
-  --db tools/prg32_metrics_server/metrics.db \
+python3 ../MetricsServer/export_run.py <run-id> \
+  --db ../MetricsServer/metrics.db \
   --out data/exports/<run-id>
 ```
 

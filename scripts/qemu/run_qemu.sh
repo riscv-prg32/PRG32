@@ -104,6 +104,9 @@ generate_flash_image() {
 run_qemu() {
   step "Starting QEMU"
   echo
+  echo "Focus this terminal for input:"
+  echo "  arrows or W/A/S/D = joystick 1, Enter/Space = SELECT"
+  echo "  J/Z = A button, K/X = B button"
   echo "Press Ctrl + ] to exit QEMU monitor."
   echo
   exec qemu-system-riscv32 \

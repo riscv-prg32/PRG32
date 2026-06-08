@@ -6,6 +6,7 @@ submissions and coursework documentation.
 ## Core Contributors
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
+- Simone Boscaglia - UniParthenope - Computer Science student
 - Ivan Cafiero - UniParthenope - Computer Science student
 - Simone Boscaglia - UniParthenope - Computer Science student
 
