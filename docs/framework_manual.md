@@ -228,10 +228,12 @@ Important constants:
 - `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
 - `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
 - `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, currently 32 KiB.
-- `PRG32_CART_RAM_SIZE`: executable cartridge RAM window, configured by
-  `CONFIG_PRG32_CART_RAM_KIB`. Physical ESP32-C6 builds default to 48 KiB to
-  leave more SRAM to the resident runtime; QEMU defaults to 64 KiB for desktop
-  compatibility.
+- `PRG32_CART_RAM_SIZE`: statically placed executable cartridge RAM window,
+  configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 builds
+  default to the 32 KiB classroom profile to leave more SRAM to the resident
+  runtime; QEMU defaults to the 64 KiB extended profile for desktop
+  compatibility. The window remains static because cartridges are linked to
+  the exported `prg32_cart_exec` address.
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
 Important functions:

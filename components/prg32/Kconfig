@@ -65,18 +65,51 @@ config PRG32_SPLASH_SOUND_ENABLED
         When the PRG32 I2S audio subsystem is enabled, initialize it and play a
         short welcome tone sequence while the firmware splash is visible.
 
-config PRG32_CART_RAM_KIB
-    int "Executable cartridge RAM window in KiB"
-    default 64 if PRG32_DISPLAY_QEMU_RGB
+choice PRG32_CART_RAM_PROFILE
+    prompt "Executable cartridge RAM profile"
+    default PRG32_CART_RAM_EXTENDED if PRG32_DISPLAY_QEMU_RGB
+    default PRG32_CART_RAM_CLASSROOM
+    help
+        Choose how much internal executable RAM the resident firmware reserves
+        for uploadable cartridges. This memory has a fixed exported address so
+        host tools can link cartridges against prg32_cart_exec.
+
+config PRG32_CART_RAM_CLASSROOM
+    bool "Classroom profile, 32 KiB"
+    help
+        Reserve a smaller cartridge window for normal labs and examples. This
+        leaves more SRAM available to the resident runtime, Wi-Fi, setup menus,
+        diagnostics, and framebuffer work.
+
+config PRG32_CART_RAM_EXTENDED
+    bool "Extended profile, 64 KiB"
+    help
+        Reserve the historical large cartridge window. Use this only for labs
+        or demos that intentionally need larger linked cartridge images.
+
+config PRG32_CART_RAM_CUSTOM
+    bool "Custom profile"
+    help
+        Select a custom cartridge RAM window. Keep the value small for
+        classroom firmware unless a lab explicitly needs more executable RAM.
+
+endchoice
+
+config PRG32_CART_RAM_CUSTOM_KIB
+    int "Custom executable cartridge RAM window in KiB"
+    depends on PRG32_CART_RAM_CUSTOM
     default 48
     range 16 64
     help
-        Size of the internal executable RAM window reserved for uploadable
-        cartridges. The physical ESP32-C6 build defaults to 48 KiB to leave
-        more SRAM available to the resident runtime, Wi-Fi, setup screens, and
-        classroom diagnostics. Raise this only for cartridge labs that need a
-        larger linked image, then rebuild both the resident firmware and the
-        cartridge.
+        Custom size for the statically placed cartridge execution window.
+        Rebuild both the resident firmware and cartridges after changing it.
+
+config PRG32_CART_RAM_KIB
+    int
+    default 32 if PRG32_CART_RAM_CLASSROOM
+    default 64 if PRG32_CART_RAM_EXTENDED
+    default PRG32_CART_RAM_CUSTOM_KIB if PRG32_CART_RAM_CUSTOM
+    default 32
 
 menu "Performance metrics"
 
