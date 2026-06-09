@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="build-qemu"
 SDKCONFIG="$BUILD_DIR/sdkconfig"
 SDKCONFIG_DEFAULTS="sdkconfig.defaults.qemu"
-FLASH_IMAGE="$BUILD_DIR/flash_image.bin"
+FLASH_IMAGE="$BUILD_DIR/qemu_flash.bin"
 QEMU_EFUSE="$BUILD_DIR/qemu_efuse.bin"
 FLASH_SIZE=$((4 * 1024 * 1024))
 
@@ -97,7 +97,7 @@ generate_flash_image() {
   step "Generating QEMU flash image"
   (
     cd "$BUILD_DIR"
-    python3 -m esptool --chip=esp32c3 merge_bin --output=flash_image.bin --fill-flash-size=4MB @flash_args
+    python3 -m esptool --chip=esp32c3 merge_bin --output=qemu_flash.bin --fill-flash-size=4MB @flash_args
   ) || fail "Failed to generate $FLASH_IMAGE"
 }
 

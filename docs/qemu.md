@@ -148,7 +148,7 @@ python3 tools/prg32_game.py build \
   --name asteroids \
   --out build-qemu/asteroids.prg32
 ```
-If `build-qemu/flash_image.bin` does not exist yet, start QEMU once so ESP-IDF
+If `build-qemu/qemu_flash.bin` does not exist yet, start QEMU once so ESP-IDF
 generates the flash image, quit QEMU, then run:
 
 ```bash
@@ -159,7 +159,7 @@ Then run `PRG32: qemu screen`.
 
 On Linux or MacOS:
 
-If `build-qemu/flash_image.bin` does not exist yet, start QEMU once so ESP-IDF
+If `build-qemu/qemu_flash.bin` does not exist yet, start QEMU once so ESP-IDF
 generates the flash image:
 
 ```bash

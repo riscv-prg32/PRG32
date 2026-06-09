@@ -218,7 +218,7 @@
         "upload-qemu",
         "${input:prg32QemuCartOut}",
         "--flash",
-        "build-qemu/flash_image.bin"
+        "build-qemu/qemu_flash.bin"
       ],
       "problemMatcher": []
     },

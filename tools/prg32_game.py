@@ -986,7 +986,7 @@ def main(argv: list[str]) -> int:
 
     p = sub.add_parser("upload-qemu", help="stage a cartridge into QEMU flash")
     p.add_argument("cartridge")
-    p.add_argument("--flash", default="build-qemu/flash_image.bin")
+    p.add_argument("--flash", default="build-qemu/qemu_flash.bin")
     p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE))
     p.add_argument("--slot", default=DEFAULT_CART_SLOT)
     p.set_defaults(func=upload_qemu)

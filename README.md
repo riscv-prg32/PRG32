@@ -46,7 +46,7 @@ python3 tools/prg32_game.py build \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32
-python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/flash_image.bin
+python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/qemu_flash.bin
 ```
 
 Run everything with one command next time:
@@ -386,7 +386,7 @@ download server is the standalone **Cartridge Store** in
 - QEMU runs but the game does not move: focus the terminal running QEMU. Use
   arrow keys or `W`/`A`/`S`/`D` for joystick 1, `Enter`/`Space` for SELECT,
   `J`/`Z` for A, and `K`/`X` for B.
-- Cartridge upload fails: `build-qemu/flash_image.bin` is missing/invalid, or the
+- Cartridge upload fails: `build-qemu/qemu_flash.bin` is missing/invalid, or the
   cartridge is too large. Run QEMU once, then rerun `upload-qemu`.
 - `riscv32-esp-elf-gcc` missing: re-run `./install.sh esp32c3,esp32c6` and
   source the ESP-IDF export script.

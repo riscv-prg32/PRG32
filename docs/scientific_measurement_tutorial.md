@@ -166,7 +166,7 @@ On Windows:
 ```bash
 python3 tools/prg32_game.py upload-qemu \
   build-qemu/pong.prg32 \
-  --flash build-qemu/flash_image.bin
+  --flash build-qemu/qemu_flash.bin
 ```
 
 On Linux or MacOS:

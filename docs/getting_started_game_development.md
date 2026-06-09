@@ -352,7 +352,7 @@ If this fails with `missing tool: riscv32-esp-elf-gcc`, source ESP-IDF again.
 
 ## 10. Stage And Run The Cartridge In QEMU
 
-First start QEMU once so ESP-IDF creates `build-qemu/flash_image.bin`:
+First start QEMU once so ESP-IDF creates `build-qemu/qemu_flash.bin`:
 
 ```bash
 idf.py -B build-qemu \
@@ -366,7 +366,7 @@ Quit QEMU with `Ctrl+]`, then stage the cartridge:
 ```bash
 python3 tools/prg32_game.py upload-qemu \
   build-qemu/hello_world.prg32 \
-  --flash build-qemu/flash_image.bin
+  --flash build-qemu/qemu_flash.bin
 ```
 
 Start QEMU again:

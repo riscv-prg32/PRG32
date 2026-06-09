@@ -141,5 +141,5 @@ For QEMU, build against `build-qemu/PRG32.elf` and stage the cartridge:
 ```bash
 python3 tools/prg32_game.py upload-qemu \
   build-qemu/animated-sprites.prg32 \
-  --flash build-qemu/flash_image.bin
+  --flash build-qemu/qemu_flash.bin
 ```
