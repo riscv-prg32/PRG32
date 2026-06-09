@@ -65,6 +65,52 @@ config PRG32_SPLASH_SOUND_ENABLED
         When the PRG32 I2S audio subsystem is enabled, initialize it and play a
         short welcome tone sequence while the firmware splash is visible.
 
+choice PRG32_CART_RAM_PROFILE
+    prompt "Executable cartridge RAM profile"
+    default PRG32_CART_RAM_EXTENDED if PRG32_DISPLAY_QEMU_RGB
+    default PRG32_CART_RAM_CLASSROOM
+    help
+        Choose how much internal executable RAM the resident firmware reserves
+        for uploadable cartridges. This memory has a fixed exported address so
+        host tools can link cartridges against prg32_cart_exec.
+
+config PRG32_CART_RAM_CLASSROOM
+    bool "Classroom profile, 32 KiB"
+    help
+        Reserve a smaller cartridge window for normal labs and examples. This
+        leaves more SRAM available to the resident runtime, Wi-Fi, setup menus,
+        diagnostics, and framebuffer work.
+
+config PRG32_CART_RAM_EXTENDED
+    bool "Extended profile, 64 KiB"
+    help
+        Reserve the historical large cartridge window. Use this only for labs
+        or demos that intentionally need larger linked cartridge images.
+
+config PRG32_CART_RAM_CUSTOM
+    bool "Custom profile"
+    help
+        Select a custom cartridge RAM window. Keep the value small for
+        classroom firmware unless a lab explicitly needs more executable RAM.
+
+endchoice
+
+config PRG32_CART_RAM_CUSTOM_KIB
+    int "Custom executable cartridge RAM window in KiB"
+    depends on PRG32_CART_RAM_CUSTOM
+    default 48
+    range 16 64
+    help
+        Custom size for the statically placed cartridge execution window.
+        Rebuild both the resident firmware and cartridges after changing it.
+
+config PRG32_CART_RAM_KIB
+    int
+    default 32 if PRG32_CART_RAM_CLASSROOM
+    default 64 if PRG32_CART_RAM_EXTENDED
+    default PRG32_CART_RAM_CUSTOM_KIB if PRG32_CART_RAM_CUSTOM
+    default 32
+
 menu "Performance metrics"
 
 config PRG32_METRICS_ENABLE
@@ -109,11 +155,13 @@ config PRG32_METRICS_UPLOAD_PERIOD_MS
 config PRG32_METRICS_QUEUE_LEN
     int "Metrics upload queue length"
     depends on PRG32_METRICS_ENABLE
-    default 512
-    range 8 4096
+    default 128
+    range 8 1024
     help
-        Number of samples kept in RAM before upload. If the queue fills, PRG32
-        drops new samples and reports the drop count with the next batch.
+        Number of samples allocated when a metrics run starts. If the queue
+        fills, PRG32 drops new samples and reports the drop count with the next
+        batch. Keep this modest for normal gameplay; recording remains
+        non-blocking and never allocates from the frame path.
 
 endmenu
 

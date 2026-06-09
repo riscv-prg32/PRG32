@@ -10,6 +10,7 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_netif_ip_addr.h"
+#include "esp_heap_caps.h"
 #include "esp_wifi.h"
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -333,13 +334,17 @@ int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
         return -1;
     }
 
-    wifi_config_t sta = {0};
+    wifi_config_t sta = {
+        .sta = {
+            .scan_method = WIFI_ALL_CHANNEL_SCAN,
+            .sort_method = WIFI_CONNECT_AP_BY_SIGNAL
+        }
+    };
     copy_cstr((char *)sta.sta.ssid, sizeof(sta.sta.ssid), config->ssid);
     copy_cstr((char *)sta.sta.password,
               sizeof(sta.sta.password),
               config->password);
     if (selected_ap_valid &&
-        selected_ap_locked &&
         strcmp(config->ssid, selected_ssid) == 0) {
         memcpy(sta.sta.bssid, selected_bssid, sizeof(sta.sta.bssid));
         sta.sta.bssid_set = true;
@@ -555,6 +560,13 @@ static int scan_networks(wifi_ap_record_t **records_out,
 
     wifi_scan_config_t scan = {
         .show_hidden = true,
+        .scan_type = WIFI_SCAN_TYPE_ACTIVE,
+        .scan_time = {
+            .active = {
+                .min = 100,
+                .max = 300
+            }
+        }
     };
     uint16_t found_count = 0;
     err = esp_wifi_scan_start(&scan, true);
@@ -562,7 +574,9 @@ static int scan_networks(wifi_ap_record_t **records_out,
         uint16_t count = 0;
         err = esp_wifi_scan_get_ap_num(&count);
         if (err == ESP_OK && count > 0) {
-            wifi_ap_record_t *records = calloc(count, sizeof(*records));
+            wifi_ap_record_t *records = heap_caps_calloc(count,
+                                                         sizeof(*records),
+                                                         MALLOC_CAP_8BIT);
             if (!records) {
                 err = ESP_ERR_NO_MEM;
             } else {
@@ -572,7 +586,7 @@ static int scan_networks(wifi_ap_record_t **records_out,
                     found_count = count;
                     records = NULL;
                 }
-                free(records);
+                heap_caps_free(records);
             }
         }
     }
@@ -623,7 +637,8 @@ static void select_ap_record(const wifi_ap_record_t *record) {
 
 static void select_ap_record_for_boot(const wifi_ap_record_t *record) {
     select_ap_record(record);
-    selected_ap_locked = false;
+    // explicitly allow using the locked BSSID from refresh scan
+    selected_ap_locked = true;
 }
 
 static void refresh_stored_sta_ap(const prg32_wifi_config_t *config) {
@@ -641,7 +656,7 @@ static void refresh_stored_sta_ap(const prg32_wifi_config_t *config) {
                  "stored SSID refresh scan failed for %s: %s",
                  config->ssid,
                  scan_status[0] ? scan_status : "not found");
-        free(records);
+        heap_caps_free(records);
         return;
     }
 
@@ -664,7 +679,7 @@ static void refresh_stored_sta_ap(const prg32_wifi_config_t *config) {
     } else {
         ESP_LOGW(TAG, "stored SSID %s not found in refresh scan", config->ssid);
     }
-    free(records);
+    heap_caps_free(records);
 }
 
 static int confirm_sta_credentials(const prg32_wifi_config_t *config) {
@@ -776,7 +791,7 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
             choice++;
         }
         if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-            free(records);
+            heap_caps_free(records);
             prg32_input_wait_released(PRG32_BTN_A);
             return -1;
         }
@@ -784,7 +799,7 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
             ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
             copy_cstr(ssid, ssid_size, (const char *)records[choice].ssid);
             select_ap_record(&records[choice]);
-            free(records);
+            heap_caps_free(records);
             prg32_input_wait_released(PRG32_BTN_B | PRG32_BTN_SELECT);
             return 0;
         }

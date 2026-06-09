@@ -1,8 +1,9 @@
 #include "prg32.h"
 #include <stddef.h>
 #include <string.h>
+#include "esp_heap_caps.h"
 
-static uint8_t g_tile_flags[256];
+static uint8_t *g_tile_flags;
 
 typedef char actor_size_must_match_abi[
     sizeof(prg32_platform_actor_t) == PRG32_PLATFORM_ACTOR_SIZE ? 1 : -1
@@ -22,11 +23,27 @@ static int clamp_int(int value, int lo, int hi) {
     return value;
 }
 
+static int tile_flags_ready(void) {
+    if (g_tile_flags) {
+        return 1;
+    }
+    g_tile_flags = heap_caps_calloc(256,
+                                    sizeof(g_tile_flags[0]),
+                                    MALLOC_CAP_8BIT);
+    return g_tile_flags != NULL;
+}
+
 void prg32_platform_tile_flags(uint8_t tile_id, uint8_t flags) {
+    if (!tile_flags_ready()) {
+        return;
+    }
     g_tile_flags[tile_id] = flags;
 }
 
 uint8_t prg32_platform_tile_flags_get(uint8_t tile_id) {
+    if (!g_tile_flags) {
+        return 0;
+    }
     return g_tile_flags[tile_id];
 }
 
@@ -46,6 +63,9 @@ uint8_t prg32_platform_tile_at(uint8_t layer, int pixel_x, int pixel_y) {
 
 int prg32_platform_solid_at(uint8_t layer, int pixel_x, int pixel_y) {
     uint8_t tile = prg32_platform_tile_at(layer, pixel_x, pixel_y);
+    if (!g_tile_flags) {
+        return 0;
+    }
     return (g_tile_flags[tile] & PRG32_TILE_FLAG_SOLID) != 0;
 }
 
@@ -68,6 +88,9 @@ void prg32_platform_actor_init(prg32_platform_actor_t *actor,
 
 static uint8_t tile_flags_at(uint8_t layer, int pixel_x, int pixel_y) {
     uint8_t tile = prg32_platform_tile_at(layer, pixel_x, pixel_y);
+    if (!g_tile_flags) {
+        return 0;
+    }
     return g_tile_flags[tile];
 }
 

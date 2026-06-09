@@ -17,6 +17,11 @@ static void vTaskDelay(int ticks) {
 #define ASCII_LAST 126
 #define ASCII_COUNT (ASCII_LAST - ASCII_FIRST + 1)
 #define ASCII_COMMAND_COUNT 4
+#ifdef __ELF__
+#define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
+#else
+#define PRG32_FLASH_RODATA
+#endif
 
 typedef enum {
     KEY_CHAR,
@@ -48,7 +53,7 @@ typedef struct {
     key_type_t type;
 } key_view_t;
 
-static const qwerty_key_t qwerty_keys[] = {
+static const qwerty_key_t qwerty_keys[] PRG32_FLASH_RODATA = {
     {"q", "Q", 'q', 'Q', 4, 28, 28, KEY_CHAR},
     {"w", "W", 'w', 'W', 34, 28, 28, KEY_CHAR},
     {"e", "E", 'e', 'E', 64, 28, 28, KEY_CHAR},

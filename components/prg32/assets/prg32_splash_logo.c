@@ -1,7 +1,13 @@
 #include <stdint.h>
 #define PRG32_SPLASH_LOGO_W 320
 #define PRG32_SPLASH_LOGO_H 200
-const uint16_t prg32_splash_logo[] = {
+#ifdef __ELF__
+#define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
+#else
+#define PRG32_FLASH_RODATA
+#endif
+
+const uint16_t prg32_splash_logo[] PRG32_FLASH_RODATA = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,

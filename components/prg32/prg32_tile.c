@@ -1,5 +1,6 @@
 #include "prg32.h"
 #include <string.h>
+#include "esp_heap_caps.h"
 
 typedef struct {
     uint8_t bits[8];
@@ -7,12 +8,10 @@ typedef struct {
     uint16_t bg;
 } tile_t;
 
-static tile_t g_tiles[256];
-static uint8_t g_map[PRG32_TILE_ROWS][PRG32_TILE_COLS];
-static uint8_t g_dirty[PRG32_TILE_ROWS][PRG32_TILE_COLS];
-static uint8_t g_playfield[PRG32_PLAYFIELD_LAYERS]
-                           [PRG32_PLAYFIELD_ROWS]
-                           [PRG32_PLAYFIELD_COLS];
+static tile_t *g_tiles;
+static uint8_t (*g_map)[PRG32_TILE_COLS];
+static uint8_t (*g_dirty)[PRG32_TILE_COLS];
+static uint8_t (*g_playfield)[PRG32_PLAYFIELD_ROWS][PRG32_PLAYFIELD_COLS];
 static int g_scroll_x[PRG32_PLAYFIELD_LAYERS];
 static int g_scroll_y[PRG32_PLAYFIELD_LAYERS];
 static int g_parallax_x_q8[PRG32_PLAYFIELD_LAYERS] = {
@@ -28,6 +27,37 @@ static int g_camera_y;
 
 static int valid_layer(uint8_t layer) {
     return layer < PRG32_PLAYFIELD_LAYERS;
+}
+
+static int tile_grid_ready(void) {
+    if (g_tiles && g_map && g_dirty) {
+        return 1;
+    }
+    tile_t *tiles = heap_caps_calloc(256, sizeof(tile_t), MALLOC_CAP_8BIT);
+    uint8_t (*map)[PRG32_TILE_COLS] =
+        heap_caps_calloc(PRG32_TILE_ROWS, sizeof(*map), MALLOC_CAP_8BIT);
+    uint8_t (*dirty)[PRG32_TILE_COLS] =
+        heap_caps_calloc(PRG32_TILE_ROWS, sizeof(*dirty), MALLOC_CAP_8BIT);
+    if (!tiles || !map || !dirty) {
+        heap_caps_free(tiles);
+        heap_caps_free(map);
+        heap_caps_free(dirty);
+        return 0;
+    }
+    g_tiles = tiles;
+    g_map = map;
+    g_dirty = dirty;
+    return 1;
+}
+
+static int playfield_ready(void) {
+    if (g_playfield) {
+        return 1;
+    }
+    g_playfield = heap_caps_calloc(PRG32_PLAYFIELD_LAYERS,
+                                   sizeof(*g_playfield),
+                                   MALLOC_CAP_8BIT);
+    return g_playfield != NULL;
 }
 
 static int floor_div_int(int value, int divisor) {
@@ -89,8 +119,11 @@ static void draw_tile_pixels(uint8_t id,
 }
 
 void prg32_tile_clear(uint16_t color) {
-    memset(g_map, 0, sizeof(g_map));
-    memset(g_dirty, 1, sizeof(g_dirty));
+    if (!tile_grid_ready()) {
+        return;
+    }
+    memset(g_map, 0, PRG32_TILE_ROWS * sizeof(g_map[0]));
+    memset(g_dirty, 1, PRG32_TILE_ROWS * sizeof(g_dirty[0]));
     memset(g_tiles[0].bits, 0, sizeof(g_tiles[0].bits));
     g_tiles[0].fg = color;
     g_tiles[0].bg = color;
@@ -100,6 +133,9 @@ void prg32_tile_define(uint8_t id,
                        const uint8_t *bitmap8x8,
                        uint16_t fg,
                        uint16_t bg) {
+    if (!tile_grid_ready()) {
+        return;
+    }
     if (bitmap8x8) {
         memcpy(g_tiles[id].bits, bitmap8x8, 8);
     } else {
@@ -120,6 +156,9 @@ void prg32_tile_put(uint8_t tx, uint8_t ty, uint8_t id) {
     if (tx >= PRG32_TILE_COLS || ty >= PRG32_TILE_ROWS) {
         return;
     }
+    if (!tile_grid_ready()) {
+        return;
+    }
     if (g_map[ty][tx] == id) {
         return;
     }
@@ -128,6 +167,9 @@ void prg32_tile_put(uint8_t tx, uint8_t ty, uint8_t id) {
 }
 
 void prg32_tile_present(void) {
+    if (!tile_grid_ready()) {
+        return;
+    }
     for (int ty = 0; ty < PRG32_TILE_ROWS; ++ty) {
         for (int tx = 0; tx < PRG32_TILE_COLS; ++tx) {
             if (!g_dirty[ty][tx]) {
@@ -144,7 +186,12 @@ void prg32_playfield_clear(uint8_t layer, uint8_t tile_id) {
     if (!valid_layer(layer)) {
         return;
     }
-    memset(g_playfield[layer], tile_id, sizeof(g_playfield[layer]));
+    if (!playfield_ready()) {
+        return;
+    }
+    memset(g_playfield[layer],
+           tile_id,
+           PRG32_PLAYFIELD_ROWS * sizeof(g_playfield[layer][0]));
     g_scroll_x[layer] = 0;
     g_scroll_y[layer] = 0;
     g_parallax_x_q8[layer] = PRG32_PARALLAX_1X;
@@ -157,6 +204,9 @@ void prg32_playfield_put(uint8_t layer, uint8_t tx, uint8_t ty, uint8_t id) {
         ty >= PRG32_PLAYFIELD_ROWS) {
         return;
     }
+    if (!playfield_ready()) {
+        return;
+    }
     g_playfield[layer][ty][tx] = id;
 }
 
@@ -164,6 +214,9 @@ uint8_t prg32_playfield_get(uint8_t layer, uint8_t tx, uint8_t ty) {
     if (!valid_layer(layer) ||
         tx >= PRG32_PLAYFIELD_COLS ||
         ty >= PRG32_PLAYFIELD_ROWS) {
+        return 0;
+    }
+    if (!g_playfield) {
         return 0;
     }
     return g_playfield[layer][ty][tx];
@@ -208,6 +261,9 @@ int prg32_playfield_camera_y(void) {
 
 void prg32_playfield_draw(uint8_t layer, int transparent_zero) {
     if (!valid_layer(layer)) {
+        return;
+    }
+    if (!g_playfield || !tile_grid_ready()) {
         return;
     }
 

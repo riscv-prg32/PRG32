@@ -2,6 +2,7 @@
 #include "prg32_config.h"
 
 #include "cJSON.h"
+#include "esp_heap_caps.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -153,11 +154,15 @@ static int perf_buffers_alloc(void) {
     if (g_samples && g_windows) {
         return 0;
     }
-    g_samples = calloc(PRG32_PERF_MAX_SAMPLES, sizeof(prg32_perf_sample_t));
-    g_windows = calloc(PRG32_PERF_MAX_WINDOWS, sizeof(prg32_perf_window_t));
+    g_samples = heap_caps_calloc(PRG32_PERF_MAX_SAMPLES,
+                                  sizeof(prg32_perf_sample_t),
+                                  MALLOC_CAP_8BIT);
+    g_windows = heap_caps_calloc(PRG32_PERF_MAX_WINDOWS,
+                                  sizeof(prg32_perf_window_t),
+                                  MALLOC_CAP_8BIT);
     if (!g_samples || !g_windows) {
-        free(g_samples);
-        free(g_windows);
+        heap_caps_free(g_samples);
+        heap_caps_free(g_windows);
         g_samples = NULL;
         g_windows = NULL;
         return -1;
@@ -354,7 +359,7 @@ static void scene_draw_text_overlay(uint8_t screen_index,
                                     const prg32_perf_scene_t *scene,
                                     uint32_t global_frame,
                                     uint32_t local_frame) {
-    static const char *rows[] = {
+    static const char *const rows[] = {
         "REGISTER TRACE  A0 A1 A2 A3",
         "MEMORY VIEW     0000 1000 2000",
         "STACK           RA SP S0 S1",

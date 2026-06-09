@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#if __has_include("sdkconfig.h")
+#include "sdkconfig.h"
+#endif
 #include "prg32_audio.h"
 #include "prg32_metrics.h"
 #include "prg32_multiplayer.h"
@@ -95,7 +98,10 @@ extern "C" {
 #define PRG32_CART_ARCH_ESP32C6 "esp32c6"
 #define PRG32_CART_ARCH_QEMU "qemu"
 #define PRG32_CART_MAX_SIZE (32u * 1024u)
-#define PRG32_CART_RAM_SIZE (64u * 1024u)
+#ifndef CONFIG_PRG32_CART_RAM_KIB
+#define CONFIG_PRG32_CART_RAM_KIB 32
+#endif
+#define PRG32_CART_RAM_SIZE ((uint32_t)CONFIG_PRG32_CART_RAM_KIB * 1024u)
 #define PRG32_CART_NAME_LEN 32
 #define PRG32_CART_SLOT_COUNT 2
 #ifndef PRG32_FIRMWARE_VERSION

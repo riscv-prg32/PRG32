@@ -120,7 +120,7 @@ Useful options:
 | `CONFIG_PRG32_METRICS_BOARD_ID` | `prg32-board` | Board name stored with each run |
 | `CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES` | `1` | Record one sample every N frames |
 | `CONFIG_PRG32_METRICS_UPLOAD_PERIOD_MS` | `5000` | Background upload period |
-| `CONFIG_PRG32_METRICS_QUEUE_LEN` | `512` | In-RAM sample queue length |
+| `CONFIG_PRG32_METRICS_QUEUE_LEN` | `128` | Sample queue length allocated when a metrics run starts |
 
 The runtime starts a metrics run when a cartridge starts and stops the run when
 the cartridge is replaced or unloaded.

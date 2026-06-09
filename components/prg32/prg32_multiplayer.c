@@ -32,6 +32,7 @@
 #define PRG32_MP_SIGNATURE_LEN 48
 
 typedef struct {
+    uint8_t initialized;
     uint8_t joined;
     uint32_t flags;
     uint32_t player_id;
@@ -43,6 +44,8 @@ typedef struct {
 } prg32_mp_state_t;
 
 static prg32_mp_state_t g_mp;
+
+static void ensure_mp_state(void);
 
 static void copy_text(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -75,11 +78,13 @@ static int valid_signature(const char *signature) {
 }
 
 static void clear_peers(void) {
+    ensure_mp_state();
     memset(g_mp.peers, 0, sizeof(g_mp.peers));
     g_mp.peer_count = 0;
 }
 
 static void prune_peers(uint32_t now_ms) {
+    ensure_mp_state();
     int out = 0;
     for (int i = 0; i < g_mp.peer_count; ++i) {
         prg32_player_state_t peer = g_mp.peers[i];
@@ -119,11 +124,16 @@ static void remove_peer(uint32_t player_id) {
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB || !PRG32_MULTIPLAYER_TRANSPORT_ENABLE
 
 void prg32_multiplayer_init(void) {
-    if (g_mp.player_id == 0) {
+    if (!g_mp.initialized) {
         memset(&g_mp, 0, sizeof(g_mp));
+        g_mp.initialized = 1;
         g_mp.player_id = 1;
         g_mp.local.player_id = g_mp.player_id;
     }
+}
+
+static void ensure_mp_state(void) {
+    prg32_multiplayer_init();
 }
 
 bool prg32_multiplayer_available(void) {
@@ -135,6 +145,7 @@ bool prg32_multiplayer_available(void) {
 }
 
 int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags) {
+    ensure_mp_state();
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
     if (!valid_signature(cartridge_signature)) {
         return -1;
@@ -152,12 +163,14 @@ int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags) {
 }
 
 int prg32_multiplayer_leave(void) {
+    ensure_mp_state();
     g_mp.joined = 0;
     clear_peers();
     return 0;
 }
 
 void prg32_multiplayer_tick(void) {
+    ensure_mp_state();
     prune_peers(prg32_ticks_ms());
 }
 
@@ -165,6 +178,7 @@ int prg32_multiplayer_set_local_state(int16_t x,
                                       int16_t y,
                                       uint16_t sprite,
                                       uint16_t flags) {
+    ensure_mp_state();
     if (!g_mp.joined) {
         return -1;
     }
@@ -179,6 +193,7 @@ int prg32_multiplayer_set_local_state(int16_t x,
 }
 
 int prg32_multiplayer_set_input(uint32_t input) {
+    ensure_mp_state();
     if (!g_mp.joined) {
         return -1;
     }
@@ -187,11 +202,13 @@ int prg32_multiplayer_set_input(uint32_t input) {
 }
 
 int prg32_multiplayer_get_peer_count(void) {
+    ensure_mp_state();
     prune_peers(prg32_ticks_ms());
     return g_mp.peer_count;
 }
 
 int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out) {
+    ensure_mp_state();
     prune_peers(prg32_ticks_ms());
     if (!out || index < 0 || index >= g_mp.peer_count) {
         return -1;
@@ -421,8 +438,9 @@ void prg32_multiplayer_init(void) {
     if (!g_mp_lock) {
         g_mp_lock = xSemaphoreCreateMutex();
     }
-    if (g_mp.player_id == 0) {
+    if (!g_mp.initialized) {
         memset(&g_mp, 0, sizeof(g_mp));
+        g_mp.initialized = 1;
         g_mp.player_id = esp_random();
         if (g_mp.player_id == 0) {
             g_mp.player_id = 1;
@@ -431,11 +449,16 @@ void prg32_multiplayer_init(void) {
     }
 }
 
+static void ensure_mp_state(void) {
+    prg32_multiplayer_init();
+}
+
 bool prg32_multiplayer_available(void) {
     return PRG32_MULTIPLAYER_ENABLE != 0;
 }
 
 int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags) {
+    ensure_mp_state();
     if (!valid_signature(cartridge_signature) || !prg32_multiplayer_available()) {
         return -1;
     }
@@ -455,6 +478,7 @@ int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags) {
 }
 
 int prg32_multiplayer_leave(void) {
+    ensure_mp_state();
     send_leave();
     if (lock_mp() == 0) {
         g_mp.joined = 0;
@@ -465,6 +489,7 @@ int prg32_multiplayer_leave(void) {
 }
 
 void prg32_multiplayer_tick(void) {
+    ensure_mp_state();
     uint32_t now = prg32_ticks_ms();
     if (lock_mp() == 0) {
         prune_peers(now);
@@ -482,6 +507,7 @@ int prg32_multiplayer_set_local_state(int16_t x,
                                       int16_t y,
                                       uint16_t sprite,
                                       uint16_t flags) {
+    ensure_mp_state();
     if (lock_mp() != 0) {
         return -1;
     }
@@ -501,6 +527,7 @@ int prg32_multiplayer_set_local_state(int16_t x,
 }
 
 int prg32_multiplayer_set_input(uint32_t input) {
+    ensure_mp_state();
     if (lock_mp() != 0) {
         return -1;
     }
@@ -514,6 +541,7 @@ int prg32_multiplayer_set_input(uint32_t input) {
 }
 
 int prg32_multiplayer_get_peer_count(void) {
+    ensure_mp_state();
     int count = 0;
     if (lock_mp() == 0) {
         prune_peers(prg32_ticks_ms());
@@ -524,6 +552,7 @@ int prg32_multiplayer_get_peer_count(void) {
 }
 
 int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out) {
+    ensure_mp_state();
     if (!out || lock_mp() != 0) {
         return -1;
     }

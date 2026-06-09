@@ -11,6 +11,7 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "esp_heap_caps.h"
 #include "esp_partition.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -425,20 +426,20 @@ int prg32_cart_load_stored(void) {
         set_errorf("no stored cartridge in %s", slot_name(g_current_slot));
         return -1;
     }
-    uint8_t *image = malloc(image_size);
+    uint8_t *image = heap_caps_malloc(image_size, MALLOC_CAP_8BIT);
     if (!image) {
         set_error("out of memory reading cartridge");
         return -1;
     }
     esp_err_t err = esp_partition_read(part, 0, image, image_size);
     if (err != ESP_OK) {
-        free(image);
+        heap_caps_free(image);
         set_error("failed to read stored cartridge");
         return -1;
     }
 
     if (lock_cart() != 0) {
-        free(image);
+        heap_caps_free(image);
         set_error("failed to lock cartridge runtime");
         return -1;
     }
@@ -447,7 +448,7 @@ int prg32_cart_load_stored(void) {
         g_stored = true;
     }
     unlock_cart();
-    free(image);
+    heap_caps_free(image);
     return rc;
 }
 

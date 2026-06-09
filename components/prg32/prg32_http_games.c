@@ -5,6 +5,7 @@
 
 #include "cJSON.h"
 #include "esp_err.h"
+#include "esp_heap_caps.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include <stdbool.h>
@@ -380,7 +381,8 @@ static esp_err_t post_game(httpd_req_t *req) {
         httpd_resp_send_err(req, 400, msg);
         return ESP_FAIL;
     }
-    uint8_t *body = malloc((size_t)req->content_len);
+    uint8_t *body = heap_caps_malloc((size_t)req->content_len,
+                                     MALLOC_CAP_8BIT);
     if (!body) {
         httpd_resp_send_err(req, 500, "out of memory");
         return ESP_ERR_NO_MEM;
@@ -394,7 +396,7 @@ static esp_err_t post_game(httpd_req_t *req) {
             continue;
         }
         if (n <= 0) {
-            free(body);
+            heap_caps_free(body);
             httpd_resp_send_err(req, 400, "failed to read cartridge");
             return ESP_FAIL;
         }
@@ -403,14 +405,14 @@ static esp_err_t post_game(httpd_req_t *req) {
     ESP_LOGI(TAG, "POST /api/games received=%u", (unsigned)received);
     uint8_t slot = 0;
     if (request_slot(req, &slot) != 0) {
-        free(body);
+        heap_caps_free(body);
         httpd_resp_send_err(req, 400, "invalid cartridge slot");
         return ESP_FAIL;
     }
     ESP_LOGI(TAG, "POST /api/games slot=%u", (unsigned)slot);
     ESP_LOGI(TAG, "POST /api/games storing slot=%u", (unsigned)slot);
     int err = prg32_cart_store_slot(slot, body, received);
-    free(body);
+    heap_caps_free(body);
     if (err != 0) {
         httpd_resp_send_err(req, 400, prg32_cart_last_error());
         return ESP_FAIL;

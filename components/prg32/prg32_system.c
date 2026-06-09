@@ -12,6 +12,8 @@ void prg32_input_init(void);
 void prg32_audio_pwm_init(void);
 void prg32_abi_exports_keep(void);
 
+#include "nvs_flash.h"
+
 #ifndef PRG32_BOOT_SETUP_MODE
 #define PRG32_BOOT_SETUP_MODE 0
 #endif
@@ -889,7 +891,17 @@ void prg32_init(void) {
     prg32_splash_show_default();
     printf("prg32_init => prg32_input_init()\n");
     prg32_input_init();
-    prg32_multiplayer_init();
+    esp_err_t nvs_err = nvs_flash_init();
+    if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES || nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        nvs_flash_erase();
+        nvs_flash_init();
+    }
+#ifdef PRG32_STORE_SERVER_URL
+    char current_url[PRG32_STORE_URL_MAX_LEN];
+    if (prg32_store_url_get(current_url, sizeof(current_url)) != 0) {
+        prg32_store_url_set(PRG32_STORE_SERVER_URL);
+    }
+#endif
     printf("prg32_init => prg32_abi_exports_keep()\n");
     prg32_abi_exports_keep();
     printf("prg32_init => prg32_cart_init()\n");
@@ -928,12 +940,11 @@ void prg32_init(void) {
     prg32_wifi_scores_init();
     prg32_scores_api_start();
 #endif
-
     printf("prg32_init => cart_is_loaded()\n");
     printf("prg32_init => cart_stored_count()\n");
     if (!prg32_cart_is_loaded() && prg32_cart_stored_count() > 0) {
         printf("prg32_init => autoload_cartridge()\n");
-        autoload_cartridge();
+        //autoload_cartridge();
     }
     prg32_gfx_set_fullscreen(0);
     prg32_gfx_clear(PRG32_COLOR_BLACK);

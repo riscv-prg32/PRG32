@@ -5,6 +5,12 @@
 #include "prg32.h"
 #include "prg32_config.h"
 
+#ifdef __ELF__
+#define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
+#else
+#define PRG32_FLASH_RODATA
+#endif
+
 void prg32_audio_pwm_init(void) {
   if (PRG32_PIN_BUZZER < 0) {
     return;
@@ -37,7 +43,7 @@ static const uint8_t builtin_beep_wave[32] = {
 };
 #endif
 
-static const uint8_t setup_audio_wave[] = {
+static const uint8_t setup_audio_wave[] PRG32_FLASH_RODATA = {
     128, 176, 218, 245, 255, 245, 218, 176, 128, 80, 38, 11, 1, 11, 38, 80,
     128, 176, 218, 245, 255, 245, 218, 176, 128, 80, 38, 11, 1, 11, 38, 80,
 };
@@ -48,7 +54,7 @@ static uint8_t hz_to_midi_note(uint32_t hz) {
   uint8_t best_note = 60;
   uint32_t best_diff = 999999;
   for (uint8_t note = 12; note < 120; ++note) {
-    static const uint16_t octave4[12] = {
+    static const uint16_t octave4[12] PRG32_FLASH_RODATA = {
         262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494,
     };
     uint32_t freq = octave4[note % 12u];
@@ -122,7 +128,7 @@ void prg32_audio_tone(uint32_t hz, uint32_t ms, uint16_t duty) {
 }
 
 void prg32_audio_note(uint8_t midi_note, uint32_t ms) {
-  static const uint16_t octave4[12] = {
+  static const uint16_t octave4[12] PRG32_FLASH_RODATA = {
       262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494,
   };
   uint32_t freq = octave4[midi_note % 12u];

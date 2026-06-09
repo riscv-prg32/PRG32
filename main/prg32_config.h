@@ -152,6 +152,7 @@
 
 /* CartridgeStore integration constants. */
 #define PRG32_STORE_URL_MAX_LEN        128
+#define PRG32_STORE_SERVER_URL         "http://193.205.230.7:5080/"
 #define PRG32_STORE_MDNS_SERVICE       "_prg32store"
 #define PRG32_STORE_MDNS_PROTO         "_tcp"
 #define PRG32_STORE_MDNS_TIMEOUT_MS    3000

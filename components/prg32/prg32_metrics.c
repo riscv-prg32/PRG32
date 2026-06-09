@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "esp_log.h"
@@ -18,13 +19,14 @@
 
 #include "cJSON.h"
 #include "esp_err.h"
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
 #include "freertos/task.h"
 
 #ifndef CONFIG_PRG32_METRICS_QUEUE_LEN
-#define CONFIG_PRG32_METRICS_QUEUE_LEN 512
+#define CONFIG_PRG32_METRICS_QUEUE_LEN 128
 #endif
 
 #ifndef CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES
@@ -83,7 +85,7 @@ static prg32_metrics_state_config_t g_config = {
 };
 
 static portMUX_TYPE g_lock = portMUX_INITIALIZER_UNLOCKED;
-static prg32_metric_sample_t g_queue[PRG32_METRICS_QUEUE_CAP];
+static prg32_metric_sample_t *g_queue;
 static uint16_t g_head;
 static uint16_t g_tail;
 static uint16_t g_count;
@@ -133,6 +135,39 @@ static void queue_clear_locked(void) {
     g_tail = 0;
     g_count = 0;
     g_dropped_pending = 0;
+}
+
+static bool queue_alloc(void) {
+    if (g_queue) {
+        return true;
+    }
+    g_queue = heap_caps_calloc(PRG32_METRICS_QUEUE_CAP,
+                               sizeof(g_queue[0]),
+                               MALLOC_CAP_8BIT);
+    if (!g_queue) {
+        ESP_LOGW(TAG,
+                 "could not allocate metrics queue (%u samples)",
+                 (unsigned)PRG32_METRICS_QUEUE_CAP);
+        return false;
+    }
+    return true;
+}
+
+static void queue_free(void) {
+    prg32_metric_sample_t *queue = NULL;
+    taskENTER_CRITICAL(&g_lock);
+    queue = g_queue;
+    g_queue = NULL;
+    queue_clear_locked();
+    taskEXIT_CRITICAL(&g_lock);
+    heap_caps_free(queue);
+}
+
+static bool queue_empty(void) {
+    taskENTER_CRITICAL(&g_lock);
+    bool empty = g_count == 0 && g_dropped_pending == 0;
+    taskEXIT_CRITICAL(&g_lock);
+    return empty;
 }
 
 static void make_run_id(void) {
@@ -337,11 +372,15 @@ static void metrics_upload_task(void *arg) {
             }
         }
 
-        if (!g_running && g_finish_pending && g_run_registered) {
+        if (!g_running && g_finish_pending && g_run_registered && queue_empty()) {
             if (post_run_finish()) {
                 g_finish_pending = false;
                 g_run_registered = false;
+                queue_free();
             }
+        } else if (!g_running && g_finish_pending && !g_run_registered) {
+            g_finish_pending = false;
+            queue_free();
         }
     }
 }
@@ -399,6 +438,10 @@ int prg32_metrics_start_run(void) {
     if (!g_config.enabled) {
         return 0;
     }
+    if (!queue_alloc()) {
+        g_config.enabled = 0;
+        return -1;
+    }
 
     taskENTER_CRITICAL(&g_lock);
     queue_clear_locked();
@@ -430,7 +473,7 @@ int prg32_metrics_is_enabled(void) {
 }
 
 int prg32_metrics_record(const prg32_metric_sample_t *sample) {
-    if (!sample || !g_config.enabled || !g_running) {
+    if (!sample || !g_config.enabled || !g_running || !g_queue) {
         return 0;
     }
 

@@ -49,10 +49,15 @@
 #define PRG32_SPLASH_LOGO_H 200
 #define PRG32_SPLASH_WELCOME_SAMPLE_ID 63
 #define PRG32_SPLASH_WELCOME_INSTRUMENT_ID 31
+#ifdef __ELF__
+#define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
+#else
+#define PRG32_FLASH_RODATA
+#endif
 
 extern const uint16_t prg32_splash_logo[];
 
-static const uint8_t welcome_wave[] = {
+static const uint8_t welcome_wave[] PRG32_FLASH_RODATA = {
     128, 166, 202, 231, 250, 255, 246, 224,
     192, 154, 114, 76, 44, 20, 6, 0,
     6, 20, 44, 76, 114, 154, 192, 224,
@@ -98,7 +103,7 @@ static int pin_matches(int pin, const int *reserved, size_t count) {
 }
 
 static int splash_i2s_pins_safe(void) {
-    const int reserved[] = {
+    static const int reserved[] PRG32_FLASH_RODATA = {
         PRG32_PIN_LCD_MOSI,
         PRG32_PIN_LCD_MISO,
         PRG32_PIN_LCD_SCLK,

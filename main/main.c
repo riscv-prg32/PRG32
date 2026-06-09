@@ -213,7 +213,6 @@ void app_main(void) {
 #endif
 
     prg32_init();
-    prg32_configure_metrics("idle");
     if (!prg32_cart_is_loaded()) {
         prg32_console_clear();
         prg32_console_write("PRG32 READY: use setup to upload a cartridge\n");
