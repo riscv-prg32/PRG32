@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "sdkconfig.h"
 #include "prg32_audio.h"
 #include "prg32_metrics.h"
 #include "prg32_multiplayer.h"
