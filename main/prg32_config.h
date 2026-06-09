@@ -122,8 +122,17 @@
 
 /* Optional Wi-Fi score REST API. Fill credentials before flashing. */
 #define PRG32_WIFI_SCORES_ENABLE 0
+
+#if __has_include("prg32_env.h")
+#include "prg32_env.h"
+#endif
+
+#ifndef PRG32_WIFI_SSID
 #define PRG32_WIFI_SSID "YOUR_WIFI_SSID"
+#endif
+#ifndef PRG32_WIFI_PASSWORD
 #define PRG32_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#endif
 #define PRG32_SCORE_MAX 16
 #define PRG32_IDLE_HEARTBEAT_MS 5000
 

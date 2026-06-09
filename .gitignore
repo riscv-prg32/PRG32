@@ -73,6 +73,9 @@ Testing/
 .cache/
 *.prg32
 
+# Local environment configuration
+prg32_env.h
+
 # Local Python tooling
 .venv/
 __pycache__/
