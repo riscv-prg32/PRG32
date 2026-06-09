@@ -65,6 +65,19 @@ config PRG32_SPLASH_SOUND_ENABLED
         When the PRG32 I2S audio subsystem is enabled, initialize it and play a
         short welcome tone sequence while the firmware splash is visible.
 
+config PRG32_CART_RAM_KIB
+    int "Executable cartridge RAM window in KiB"
+    default 64 if PRG32_DISPLAY_QEMU_RGB
+    default 48
+    range 16 64
+    help
+        Size of the internal executable RAM window reserved for uploadable
+        cartridges. The physical ESP32-C6 build defaults to 48 KiB to leave
+        more SRAM available to the resident runtime, Wi-Fi, setup screens, and
+        classroom diagnostics. Raise this only for cartridge labs that need a
+        larger linked image, then rebuild both the resident firmware and the
+        cartridge.
+
 menu "Performance metrics"
 
 config PRG32_METRICS_ENABLE
