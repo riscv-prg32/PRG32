@@ -78,5 +78,5 @@ cartridge.
 Symptoms: `/api/games` rejects the upload with a runtime-address error, or the
 game does not start.
 
-Fix it: rebuild the cartridge against the current firmware ELF or use
-`--runtime-url http://192.168.4.1` so the tool queries the running board.
+Fix it: rebuild the cartridge with `--portable` so it uses the generated ABI
+table, then inspect the summary for ABI hash and required feature bits.

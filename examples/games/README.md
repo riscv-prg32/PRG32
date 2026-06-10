@@ -191,7 +191,7 @@ The board starts the `PRG32` Wi-Fi access point by default for cartridge uploads
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/tetris/ascii/game.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix tetris_ascii \
   --name tetris-ascii \
   --out build-esp32c6/tetris-ascii.prg32
@@ -202,7 +202,7 @@ python3 tools/prg32_game.py build \
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/tetris/graphics/game.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix tetris_graphics \
   --name tetris-graphics \
   --out build-esp32c6/tetris-graphics.prg32
@@ -213,7 +213,7 @@ python3 tools/prg32_game.py build \
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/platformer/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix platformer_c \
   --name platformer-c \
   --out build-esp32c6/platformer-c.prg32
@@ -259,7 +259,7 @@ Stop QEMU after the first successful launch. This creates
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/tetris/graphics/game.S \
-  --firmware-elf build-qemu/PRG32.elf \
+  --portable \
   --entry-prefix tetris_graphics \
   --name tetris-graphics \
   --out build-qemu/tetris-graphics.prg32

@@ -1,0 +1,798 @@
+{
+  "name": "prg32-cart-abi",
+  "major": 1,
+  "minor": 0,
+  "functions": [
+    {
+      "name": "prg32_ticks_ms",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_input_read",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_input_read_player",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_input_read_menu",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_controller_read",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_beep",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_tone",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_note",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_play_notes",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_sample_u8",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_init",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_shutdown",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_get_mode",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_play_sample",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_play_sample_pan",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_stop_channel",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_stop_all",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_note_on",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_note_on_pan",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_note_off",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_play_track",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_stop_track",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_set_tempo",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_set_master_volume",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_set_channel_volume",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_set_channel_pan",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_wifi_start_mode",
+      "return": "void",
+      "args": [],
+      "feature": "wifi",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_wifi_current_mode",
+      "return": "void",
+      "args": [],
+      "feature": "wifi",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_wifi_current_ip",
+      "return": "void",
+      "args": [],
+      "feature": "wifi",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_wifi_current_ssid",
+      "return": "void",
+      "args": [],
+      "feature": "wifi",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_wifi_setup_requested",
+      "return": "void",
+      "args": [],
+      "feature": "wifi",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_wifi_setup_run",
+      "return": "void",
+      "args": [],
+      "feature": "wifi",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_init",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_available",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_join",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_leave",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_tick",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_set_local_state",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_set_input",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_get_peer_count",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_multiplayer_get_peer",
+      "return": "void",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_cart_stored_count",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_cart_get_slot_info",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_cart_select_slot",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_cart_default_slot",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_cart_set_default_slot",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_cart_select_default",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_console_clear",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_console_putc",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_console_write",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_console_hex32",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_clear",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_present",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_set_fullscreen",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_fullscreen_enabled",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_pixel",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_rect",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_text8",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_gfx_snapshot_row_rgb565",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_set_mode",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_mode",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_mode_name",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_set_text",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_set_game_info",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_log",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_set_colors",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_use_default_colors",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_load_config",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_band_save_config",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_splash_draw",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_splash_show",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_splash_draw_game",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_splash_show_game",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_splash_show_default",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_debug_overlay_draw",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_input_wait_released",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_keyboard_init",
+      "return": "void",
+      "args": [],
+      "feature": "keyboard",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_keyboard_update",
+      "return": "void",
+      "args": [],
+      "feature": "keyboard",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_keyboard_draw",
+      "return": "void",
+      "args": [],
+      "feature": "keyboard",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_text_input",
+      "return": "void",
+      "args": [],
+      "feature": "keyboard",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_tile_clear",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_tile_define",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_tile_put",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_tile_present",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_clear",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_put",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_get",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_scroll",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_scroll_by",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_parallax",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_camera",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_camera_x",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_camera_y",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_draw",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_draw_dual",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_playfield_present",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_tile_flags",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_tile_flags_get",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_tile_at",
+      "return": "void",
+      "args": [],
+      "feature": "tilemap",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_solid_at",
+      "return": "void",
+      "args": [],
+      "feature": "platformer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_actor_init",
+      "return": "void",
+      "args": [],
+      "feature": "platformer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_actor_move",
+      "return": "void",
+      "args": [],
+      "feature": "platformer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_actor_step",
+      "return": "void",
+      "args": [],
+      "feature": "platformer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_platform_camera_follow",
+      "return": "void",
+      "args": [],
+      "feature": "platformer",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_hitbox",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_draw_8x8",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_draw_16x16",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_anim_frame",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_draw_frame",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_anim_init",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_anim_update",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_anim_draw",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_submit",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    }
+  ]
+}

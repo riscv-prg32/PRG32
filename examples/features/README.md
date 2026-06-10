@@ -111,7 +111,7 @@ prefix:
 ```bash
 python3 tools/prg32_game.py build \
   examples/features/animated_sprites/demo.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix animated_sprites \
   --name animated-sprites \
   --out build-esp32c6/animated-sprites.prg32
@@ -122,7 +122,7 @@ For the C version:
 ```bash
 python3 tools/prg32_game.py build \
   examples/features/animated_sprites/c/demo.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix animated_sprites_c \
   --name animated-sprites-c \
   --out build-esp32c6/animated-sprites-c.prg32

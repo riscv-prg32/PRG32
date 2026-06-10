@@ -688,7 +688,7 @@ Tool example:
 ```bash
 python3 tools/prg32_game.py publish \
   examples/games/tetris/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix tetris_c \
   --name tetris-c \
   --id org.uniparthenope.tetris-c \
@@ -864,7 +864,7 @@ field reference.
 
 ```bash
 python3 tools/prg32_game.py build examples/games/pong/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix pong_c \
   --out build-esp32c6/pong.prg32
 
@@ -878,7 +878,7 @@ python3 tools/prg32_game.py upload build-esp32c6/pong.prg32 \
 ```bash
 python3 tools/prg32_game.py publish \
   examples/games/tetris/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix tetris_c \
   --name tetris-c \
   --id org.uniparthenope.tetris-c \

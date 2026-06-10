@@ -121,17 +121,17 @@ compatibility.
 ## Architecture Variants
 
 A `.prg32` file contains one linked executable image. ESP32-C6 hardware and the
-QEMU graphics workflow can require different runtime addresses and import
-tables, so the Cartridge Store manages them as separate architecture variants of
-the same game/version:
+QEMU graphics workflow can use different target metadata or assets, so the
+Cartridge Store manages them as separate architecture variants of the same
+game/version:
 
 | Architecture id | Build target | Typical output |
 | --- | --- | --- |
 | `esp32c6` | physical ESP32-C6 firmware | `build-esp32c6/game.prg32` |
 | `qemu` | ESP32-C3 QEMU graphics firmware | `build-qemu/game.prg32` |
 
-Build each variant against the matching firmware ELF, then attach metadata with
-the matching `--architecture`.
+Build each variant as a portable cartridge, then attach metadata with the
+matching `--architecture`.
 
 ```bash
 python3 tools/prg32_game.py attach-metadata \

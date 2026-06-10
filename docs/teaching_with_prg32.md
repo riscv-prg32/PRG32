@@ -84,7 +84,7 @@ For assembly lessons:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/platformer/graphics/game.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix platformer_graphics \
   --name platformer-asm \
   --out build-esp32c6/platformer-asm.prg32
@@ -95,7 +95,7 @@ For C lessons:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/platformer/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix platformer_c \
   --name platformer-c \
   --out build-esp32c6/platformer-c.prg32

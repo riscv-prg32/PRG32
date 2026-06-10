@@ -42,7 +42,7 @@ cd <path_to_PRG32>
 . $HOME/esp-idf/export.sh
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
-  --firmware-elf build-qemu/PRG32.elf \
+  --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32
@@ -352,6 +352,34 @@ Flow:
 ```text
 .S source -> riscv toolchain -> .prg32 cartridge -> PRG32 runtime -> init/update/draw loop
 ```
+
+## Portable Cartridges
+
+PRG32 cartridges are portable across firmware builds that implement the same
+cartridge ABI. Portable cartridges call firmware services through a versioned
+ABI table instead of absolute firmware symbol addresses.
+
+Build a portable cartridge:
+
+```bash
+python3 tools/prg32_game.py build examples/games/pong/ascii/game.S \
+  --entry-prefix pong_ascii \
+  --portable \
+  --out build/pong.prg32
+```
+
+Inspect it:
+
+```bash
+python3 tools/prg32_game.py summary build/pong.prg32
+```
+
+The summary shows ABI major/minor, ABI hash, import model, and required or
+optional feature bits. Legacy absolute-import cartridges are still supported for
+old workflows, but they are tied to the firmware image used at build time and
+are not guaranteed to run on another firmware. ABI hash mismatches, missing
+required features, and incompatible legacy cartridges are rejected by the
+runtime with a diagnostic message.
 
 Cartridge metadata and store publishing are documented in
 [docs/cartridge_metadata.md](docs/cartridge_metadata.md),

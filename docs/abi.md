@@ -1,8 +1,13 @@
 # PRG32 ABI
 
-PRG32 cartridge programs call framework functions directly through symbols
-exported by the resident firmware. The host cartridge builder resolves those
-symbols from `/api/runtime` or from the firmware ELF.
+PRG32 portable cartridges call framework functions through a stable, versioned
+ABI table supplied by the resident firmware. The table is generated from
+`tools/prg32_abi.json`; generated files contain the function indices, ABI hash,
+and firmware table population code.
+
+Legacy cartridges can still use firmware-specific absolute imports resolved
+from `/api/runtime` or from a firmware ELF, but that mode is tied to one
+firmware image. New cartridges should be built with `--portable`.
 
 ## Register Convention
 
@@ -17,14 +22,39 @@ PRG32 follows the standard RISC-V calling convention:
 | `s0`-`s11` | callee-saved values |
 
 Assembly examples save `ra` around C calls and keep stack alignment visible.
+For portable cartridges, `a0` contains a pointer to `prg32_abi_table_t` when
+the runtime enters `init`, `update`, or `draw`. The cartridge-side stubs emitted
+by `tools/prg32_game.py --portable` store that pointer in `__prg32_abi` and keep
+the familiar `call prg32_gfx_clear` style available to examples.
+
+## Stable ABI Table
+
+The firmware exposes one `prg32_abi_table` with magic `PABI`, ABI major/minor,
+the generated ABI hash, feature bits, and an indexed function pointer array.
+Cartridges declare the ABI hash and required features in the v2 cartridge
+header.
+
+Compatibility rules:
+
+- same ABI major and matching hash: accepted
+- missing required feature bits: rejected
+- newer incompatible major: rejected
+- legacy absolute imports: supported only for firmware-specific workflows
+
+Feature bits currently cover audio, Wi-Fi, multiplayer, metrics, audio-plus,
+keyboard, tilemap, platformer, and sprites.
 
 ## Cartridge Package ABI
 
-The executable cartridge ABI remains `PRG2` major `1`, minor `0`. Store-ready
-cartridges append a backward-compatible `PRG32META` trailer after the legacy
-payload. The trailer does not change the imported function ABI, but it gives
-host tools and setup-mode clients standard blocks for `META`, `ICON`, `SCRN`,
-`SIGN`, and `COLO`.
+The executable cartridge ABI remains `PRG2` major `1`, minor `0`. Header v2
+extends the original header via `header_size` with `abi_hash`,
+`required_features`, `optional_features`, relocation placeholders, and
+`import_model`. `import_model=abi-table` marks a portable cartridge;
+`import_model=legacy-absolute` marks the older firmware-specific path.
+
+Store-ready cartridges append a backward-compatible `PRG32META` trailer after
+the payload. The trailer gives host tools and setup-mode clients standard
+blocks for `META`, `ICON`, `SCRN`, `SIGN`, and `COLO`.
 
 Metadata JSON uses `prg32-metadata-1.0`; colophon JSON uses
 `prg32-colophon-1.0`. The game colophon is shown after the cartridge is

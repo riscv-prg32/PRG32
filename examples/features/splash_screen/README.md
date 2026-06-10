@@ -56,7 +56,7 @@ physical-display bands remain outside the game viewport.
 ```bash
 python3 tools/prg32_game.py build \
   examples/features/splash_screen/demo.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix splash_screen \
   --name splash-asm \
   --out build-esp32c6/splash-asm.prg32
@@ -67,7 +67,7 @@ For the C version:
 ```bash
 python3 tools/prg32_game.py build \
   examples/features/splash_screen/c/demo.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix splash_screen_c \
   --name splash-c \
   --out build-esp32c6/splash-c.prg32

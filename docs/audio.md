@@ -244,7 +244,7 @@ Pack assets:
 ```bash
 python3 tools/prg32audio_pack.py audio.json --out build/audio.block
 python3 tools/prg32_game.py build examples/games/asteroids/graphics/game.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix asteroids_graphics \
   --audio-block build/audio.block \
   --out build-esp32c6/asteroids-audio.prg32

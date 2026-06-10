@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import io
 from pathlib import Path
+import contextlib
 import tempfile
 import unittest
 
@@ -92,6 +94,42 @@ not-a-symbol
             entries,
             ("platformer_c_init", "platformer_c_update", "platformer_c_draw"),
         )
+
+
+class PortableHeaderTests(unittest.TestCase):
+    def test_v2_header_records_abi_table_import_model(self) -> None:
+        header = prg32_game.CART_HEADER_V2.pack(
+            prg32_game.CART_MAGIC,
+            prg32_game.CART_ABI_MAJOR,
+            prg32_game.CART_ABI_MINOR,
+            prg32_game.CART_HEADER_V2.size,
+            prg32_game.PRG32_CART_FLAG_ABI_TABLE,
+            prg32_game.FALLBACK_CART_LOAD_ADDR,
+            4,
+            4,
+            0,
+            0,
+            0,
+            0,
+            b"test" + b"\0" * 28,
+            prg32_game.ABI_HASH,
+            prg32_game.FEATURE_BITS["audio"],
+            prg32_game.FEATURE_BITS["sprites"],
+            0,
+            0,
+            0,
+            prg32_game.PRG32_IMPORT_MODEL_ABI_TABLE,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            cart = Path(tmp) / "portable.prg32"
+            cart.write_bytes(header + b"\0\0\0\0")
+            buf = io.StringIO()
+            args = argparse.Namespace(cartridge=str(cart))
+            with contextlib.redirect_stdout(buf):
+                prg32_game.inspect_metadata(args)
+        text = buf.getvalue()
+        self.assertIn('"import_model": "abi-table"', text)
+        self.assertIn(f'"abi_hash": "0x{prg32_game.ABI_HASH:08x}"', text)
 
 
 class QemuUploadTests(unittest.TestCase):

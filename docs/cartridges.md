@@ -81,13 +81,12 @@ Password: prg32game
 URL:      http://192.168.4.1
 ```
 
-Build a cartridge from an assembly or C example. This example uses the firmware
-ELF from the local build to obtain the runtime addresses:
+Build a cartridge from an assembly or C example. This example uses the portable ABI table, so it does not need a firmware ELF:
 
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-esp32c6/asteroids.prg32
@@ -120,7 +119,7 @@ can also mark the package header with `PRG32_CART_FLAG_MULTIPLAYER`:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/pong/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix pong_c \
   --multiplayer \
   --name pong-mp \
@@ -136,21 +135,21 @@ On ESP32-C6, multiplayer uses Wi-Fi station mode and the standalone Node.js
 keeps the same API available with a local offline stub so the cartridge still
 builds and runs on the desktop path.
 
-## Runtime Query Workflow
+## Portable Build Workflow
 
-If the board is already running and the host can reach its HTTP API, the build
-tool can query the runtime directly:
+Portable cartridges use the generated ABI table contract and do not need a
+firmware ELF or runtime HTTP query at build time:
 
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
-  --runtime-url http://192.168.4.1 \
+  --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-esp32c6/asteroids.prg32
 ```
 
-Useful runtime endpoint:
+Useful runtime endpoint for diagnostics:
 
 ```bash
 curl http://192.168.4.1/api/runtime
@@ -165,12 +164,12 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
 ```
 
-Build a cartridge against the QEMU firmware ELF:
+Build a portable cartridge for QEMU staging:
 
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
-  --firmware-elf build-qemu/PRG32.elf \
+  --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32
@@ -229,12 +228,12 @@ workflow:
 ```bash
 # Physical board variant.
 python3 tools/prg32_game.py build ... \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --out build-esp32c6/game.prg32
 
 # QEMU variant.
 python3 tools/prg32_game.py build ... \
-  --firmware-elf build-qemu/PRG32.elf \
+  --portable \
   --out build-qemu/game.prg32
 ```
 
@@ -358,7 +357,7 @@ them as small freestanding C modules:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/platformer/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix platformer_c \
   --name platformer-c \
   --out build-esp32c6/platformer-c.prg32
@@ -391,7 +390,7 @@ Attach it to a cartridge:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix asteroids_graphics \
   --audio-block build/audio.block \
   --name asteroids-audio \

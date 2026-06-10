@@ -143,7 +143,7 @@ On Windows:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/asteroids/graphics/game.S \
-  --firmware-elf build-qemu/PRG32.elf \
+  --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32

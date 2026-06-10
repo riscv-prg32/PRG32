@@ -146,7 +146,7 @@ Use the same cartridge build command for every run in the series. Example:
 ```bash
 python3 tools/prg32_game.py build \
   examples/games/pong/graphics/game.S \
-  --firmware-elf build-esp32c6-metrics/PRG32.elf \
+  --portable \
   --entry-prefix pong_graphics \
   --name pong \
   --out build-esp32c6-metrics/pong.prg32

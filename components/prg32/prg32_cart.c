@@ -20,6 +20,7 @@
 #define PRG32_CART_META_MAGIC_LEN 9
 
 typedef void (*prg32_cart_entry_t)(void);
+typedef void (*prg32_cart_abi_entry_t)(const prg32_abi_table_t *abi);
 
 typedef struct __attribute__((packed)) {
     char magic[PRG32_CART_META_MAGIC_LEN];
@@ -49,6 +50,7 @@ static const uint8_t g_cart_subtypes[PRG32_CART_SLOT_COUNT] = {
 static const esp_partition_t *g_cart_partitions[PRG32_CART_SLOT_COUNT];
 static SemaphoreHandle_t g_cart_lock;
 static prg32_cart_header_t g_header;
+static uint32_t g_import_model;
 static prg32_cart_entry_t g_init;
 static prg32_cart_entry_t g_update;
 static prg32_cart_entry_t g_draw;
@@ -266,8 +268,37 @@ static int validate_header(const prg32_cart_header_t *h,
         set_error("invalid cartridge header size");
         return -1;
     }
+    uint32_t import_model = PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE;
+    if (h->header_size >= sizeof(prg32_cart_header_v2_t)) {
+        const prg32_cart_header_v2_t *v2 = (const prg32_cart_header_v2_t *)h;
+        import_model = v2->import_model;
+        if (v2->abi_hash != PRG32_ABI_HASH) {
+            set_errorf("cartridge ABI hash mismatch expected=0x%08lx got=0x%08lx",
+                       (unsigned long)PRG32_ABI_HASH,
+                       (unsigned long)v2->abi_hash);
+            return -1;
+        }
+        if ((v2->required_features & ~prg32_abi_table.provided_features) != 0u) {
+            set_errorf("cartridge requires missing feature bits 0x%08lx",
+                       (unsigned long)(v2->required_features & ~prg32_abi_table.provided_features));
+            return -1;
+        }
+        if (import_model != PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE &&
+            import_model != PRG32_IMPORT_MODEL_ABI_TABLE) {
+            set_errorf("unsupported cartridge import model %lu",
+                       (unsigned long)import_model);
+            return -1;
+        }
+        if (import_model == PRG32_IMPORT_MODEL_ABI_TABLE &&
+            (h->flags & PRG32_CART_FLAG_ABI_TABLE) == 0u) {
+            set_error("ABI-table cartridge is missing ABI flag");
+            return -1;
+        }
+    }
     if (h->load_addr != (uint32_t)(uintptr_t)prg32_cart_exec) {
-        set_error("cartridge linked for a different runtime address");
+        set_error(import_model == PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE
+                      ? "legacy cartridge uses firmware-specific absolute imports; rebuild it with --portable"
+                      : "cartridge linked for a different runtime address");
         return -1;
     }
     if (image_size > PRG32_CART_MAX_SIZE) {
@@ -349,6 +380,12 @@ static int load_image_locked(const void *image, size_t image_size) {
     __asm__ volatile("fence.i" ::: "memory");
 
     memcpy(&g_header, h, sizeof(g_header));
+    if (h->header_size >= sizeof(prg32_cart_header_v2_t)) {
+        const prg32_cart_header_v2_t *v2 = (const prg32_cart_header_v2_t *)h;
+        g_import_model = v2->import_model;
+    } else {
+        g_import_model = PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE;
+    }
     if (audio_block && audio_size) {
         if (prg32_audio_load_block(audio_block, audio_size) != 0) {
             g_loaded = false;
@@ -827,7 +864,11 @@ static int call_entry(prg32_cart_entry_t entry) {
         unlock_cart();
         return -1;
     }
-    entry();
+    if (g_import_model == PRG32_IMPORT_MODEL_ABI_TABLE) {
+        ((prg32_cart_abi_entry_t)entry)(&prg32_abi_table);
+    } else {
+        entry();
+    }
     unlock_cart();
     return 0;
 }

@@ -82,7 +82,7 @@ Build and publish a C cartridge directly:
 ```bash
 python3 tools/prg32_game.py publish \
   examples/games/tetris/c/game.c \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix tetris_c \
   --name tetris-c \
   --id org.uniparthenope.tetris-c \

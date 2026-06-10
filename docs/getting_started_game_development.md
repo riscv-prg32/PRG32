@@ -9,12 +9,11 @@ PRG32 has two related development loops:
 - resident firmware development, where `idf.py` or PlatformIO builds the PRG32
   runtime for the board or QEMU;
 - cartridge game development, where `tools/prg32_game.py` links a small RISC-V
-  assembly or C program against a resident firmware ELF and produces a
+  assembly or C program against the portable PRG32 ABI table and produces a
   `.prg32` game package.
 
-The resident firmware must be rebuilt when the runtime ABI changes. Cartridges
-must then be rebuilt against the matching `PRG32.elf` so function addresses and
-the cartridge RAM address stay correct.
+The resident firmware and cartridges must agree on the portable ABI major,
+hash, and required feature bits. Incompatible cartridges are rejected cleanly.
 
 ## 1. Choose The Environment
 
@@ -336,7 +335,7 @@ Every call into PRG32 C helpers saves and restores `ra`, and the stack remains
 ```bash
 python3 tools/prg32_game.py build \
   work/hello_world/hello_world.S \
-  --firmware-elf build-qemu/PRG32.elf \
+  --portable \
   --entry-prefix hello_world \
   --name hello_world \
   --out build-qemu/hello_world.prg32
@@ -439,20 +438,19 @@ The board should show the PRG32 splash and then setup if no cartridge is stored.
 
 ## 12. Build The Physical ESP32-C6 Cartridge
 
-Build the same source against the physical firmware ELF:
+Build the same source as a portable cartridge for the physical board:
 
 ```bash
 python3 tools/prg32_game.py build \
   work/hello_world/hello_world.S \
-  --firmware-elf build-esp32c6/PRG32.elf \
+  --portable \
   --entry-prefix hello_world \
   --name hello_world \
   --out build-esp32c6/hello_world.prg32
 ```
 
-Do not upload the QEMU cartridge to the ESP32-C6 board. QEMU and hardware use
-the same package format, but each cartridge must be linked against the matching
-resident firmware ELF.
+QEMU and hardware use the same package format and portable ABI. Keep separate
+outputs when the surrounding metadata or target-specific assets differ.
 
 ## 13. Upload The Cartridge To The Physical Board
 

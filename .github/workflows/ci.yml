@@ -24,6 +24,9 @@ jobs:
       - name: Run host smoke test
         run: bash scripts/ci_smoke_test.sh
 
+      - name: Check portable ABI generated files
+        run: python3 tools/prg32_abi_gen.py --check
+
   esp-idf-build:
     name: ESP-IDF firmware build
     runs-on: ubuntu-latest

@@ -9,6 +9,7 @@
 #include "prg32_audio.h"
 #include "prg32_metrics.h"
 #include "prg32_multiplayer.h"
+#include "prg32_abi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,6 +87,10 @@ extern "C" {
 #define PRG32_CART_ABI_MINOR 0
 #define PRG32_CART_FLAG_AUDIO_BLOCK (1u << 0)
 #define PRG32_CART_FLAG_MULTIPLAYER (1u << 1)
+#define PRG32_CART_FLAG_ABI_TABLE (1u << 2)
+#define PRG32_CART_FLAG_RELOCATABLE (1u << 3)
+#define PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE 0u
+#define PRG32_IMPORT_MODEL_ABI_TABLE 1u
 #define PRG32_CART_META_MAGIC "PRG32META"
 #define PRG32_CART_META_VERSION 1
 #define PRG32_CART_META_ABI "prg32-metadata-1.0"
@@ -97,6 +102,7 @@ extern "C" {
 #define PRG32_CART_META_BLOCK_COLOPHON "COLO"
 #define PRG32_CART_ARCH_ESP32C6 "esp32c6"
 #define PRG32_CART_ARCH_QEMU "qemu"
+#define PRG32_CART_LOAD_ADDR 0x40800000u
 #define PRG32_CART_MAX_SIZE (32u * 1024u)
 #ifndef CONFIG_PRG32_CART_RAM_KIB
 #define CONFIG_PRG32_CART_RAM_KIB 32
@@ -123,6 +129,29 @@ typedef struct __attribute__((packed)) {
     uint32_t payload_crc32;
     char name[PRG32_CART_NAME_LEN];
 } prg32_cart_header_t;
+
+typedef struct __attribute__((packed)) {
+    char magic[4];
+    uint16_t abi_major;
+    uint16_t abi_minor;
+    uint16_t header_size;
+    uint16_t flags;
+    uint32_t load_addr;
+    uint32_t code_size;
+    uint32_t mem_size;
+    uint32_t init_offset;
+    uint32_t update_offset;
+    uint32_t draw_offset;
+    uint32_t payload_crc32;
+    char name[PRG32_CART_NAME_LEN];
+    uint32_t abi_hash;
+    uint32_t required_features;
+    uint32_t optional_features;
+    uint32_t isa_flags;
+    uint32_t relocation_offset;
+    uint32_t relocation_count;
+    uint32_t import_model;
+} prg32_cart_header_v2_t;
 
 typedef struct {
     char slot_name[8];
