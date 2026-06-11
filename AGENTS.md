@@ -43,6 +43,11 @@ Named contributor metadata used across project docs:
   `riscv-prg32/MetricsServer`.
 - In-tree setup performance report tooling: `tools/prg32_metrics_paper.py`.
 - Uploadable game cartridge tool: `tools/prg32_game.py`.
+- Bulk portable example publishing helper:
+  `tools/prg32_build_portable_examples.py`.
+- Legacy resident firmware publishing/flashing helpers:
+  `tools/prg32_prepare_legacy_firmware.py` and
+  `tools/prg32_flash_legacy_firmware.py`.
 - Media conversion tools: `tools/prg32_image_convert.py`,
   `tools/prg32_image_prepare.py`, and `tools/prg32_audio_convert.py`.
 - Student VS Code setup: `.vscode` and `PRG32.code-workspace`.
@@ -441,6 +446,9 @@ Companion repository: https://github.com/riscv-prg32/CartridgeStore
 - Portable cartridges must not link against firmware-specific symbol addresses.
 - Legacy absolute-import cartridges may remain supported, but new examples and
   documentation should prefer portable ABI-table cartridges.
+- Upload, QEMU staging, CartridgeStore downloads, and firmware setup downloads
+  should reject incompatible cartridges before deployment whenever the ABI
+  contract can be checked.
 
 For cartridge/ABI work, run the relevant available checks before finishing:
 

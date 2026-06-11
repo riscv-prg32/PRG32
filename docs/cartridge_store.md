@@ -67,6 +67,21 @@ QEMU and physical firmware use different architecture strings. Publish the
 matching `qemu` or `esp32c6` variant before expecting it to appear as
 compatible.
 
+The host tools and firmware validate the cartridge ABI before deployment. Store
+downloads are rejected when the cartridge ABI major, ABI hash, required feature
+bits, import model, or legacy load address are not compatible with the current
+runtime. Rebuild incompatible cartridges with `--portable` from the matching
+PRG32 checkout.
+
+To prepare all checked-in examples for store publishing:
+
+```bash
+python3 tools/prg32_build_portable_examples.py --clean
+```
+
+The generated zip files under `build-portable-examples` are ready for
+`tools/prg32_game.py publish-bundle` or manual CartridgeStore upload.
+
 ## 4. Publishing from the developer machine
 
 ```bash

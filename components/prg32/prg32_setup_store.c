@@ -351,6 +351,60 @@ static int game_is_compatible(const store_game_t *game) {
   return game && strstr(game->arch, current_arch()) != NULL;
 }
 
+static int validate_download_header(const uint8_t *data, size_t len, char *status,
+                                    size_t status_len) {
+  if (!data || len < sizeof(prg32_cart_header_t)) {
+    snprintf(status, status_len, "SHORT HEADER");
+    return -1;
+  }
+  const prg32_cart_header_t *h = (const prg32_cart_header_t *)data;
+  if (memcmp(h->magic, PRG32_CART_MAGIC, sizeof(h->magic)) != 0) {
+    snprintf(status, status_len, "BAD MAGIC");
+    return -1;
+  }
+  if (h->abi_major != PRG32_CART_ABI_MAJOR) {
+    snprintf(status, status_len, "ABI MAJOR %u!=%u", (unsigned)h->abi_major,
+             (unsigned)PRG32_CART_ABI_MAJOR);
+    return -1;
+  }
+  uint32_t import_model = PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE;
+  if (h->header_size >= sizeof(prg32_cart_header_v2_t)) {
+    if (len < sizeof(prg32_cart_header_v2_t)) {
+      snprintf(status, status_len, "SHORT ABI");
+      return -1;
+    }
+    const prg32_cart_header_v2_t *v2 = (const prg32_cart_header_v2_t *)data;
+    import_model = v2->import_model;
+    if (import_model == PRG32_IMPORT_MODEL_ABI_TABLE) {
+      if (v2->abi_hash != PRG32_ABI_HASH) {
+        snprintf(status, status_len, "ABI HASH");
+        return -1;
+      }
+      uint32_t missing = v2->required_features & ~prg32_abi_table.provided_features;
+      if (missing != 0u) {
+        snprintf(status, status_len, "ABI FEAT 0x%lx",
+                 (unsigned long)missing);
+        return -1;
+      }
+      if ((h->flags & PRG32_CART_FLAG_ABI_TABLE) == 0u) {
+        snprintf(status, status_len, "ABI FLAG");
+        return -1;
+      }
+      return 0;
+    }
+  }
+  if (import_model == PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE &&
+      h->load_addr != PRG32_CART_LOAD_ADDR) {
+    snprintf(status, status_len, "LEGACY REBUILD");
+    return -1;
+  }
+  if (import_model != PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE) {
+    snprintf(status, status_len, "IMPORT MODEL");
+    return -1;
+  }
+  return 0;
+}
+
 static int stream_download(const char *base_url, const store_game_t *game,
                            uint8_t slot, char *status, size_t status_len) {
   char url[256];
@@ -389,12 +443,6 @@ static int stream_download(const char *base_url, const store_game_t *game,
     esp_http_client_cleanup(client);
     return -1;
   }
-  if (prg32_cart_stream_begin(slot, (size_t)content_len) != 0) {
-    snprintf(status, status_len, "%s", prg32_cart_last_error());
-    esp_http_client_close(client);
-    esp_http_client_cleanup(client);
-    return -1;
-  }
   uint8_t *chunk = heap_caps_malloc(PRG32_STORE_CHUNK_BYTES, MALLOC_CAP_8BIT);
   if (!chunk) {
     snprintf(status, status_len, "NO MEM");
@@ -403,6 +451,41 @@ static int stream_download(const char *base_url, const store_game_t *game,
     return -1;
   }
   size_t offset = 0;
+  size_t header_len = 0;
+  while (header_len < sizeof(prg32_cart_header_v2_t) &&
+         header_len < (size_t)content_len) {
+    int read = esp_http_client_read(client, (char *)chunk + header_len,
+                                    PRG32_STORE_CHUNK_BYTES - header_len);
+    if (read <= 0) {
+      snprintf(status, status_len, "TIMEOUT");
+      heap_caps_free(chunk);
+      esp_http_client_close(client);
+      esp_http_client_cleanup(client);
+      return -1;
+    }
+    header_len += (size_t)read;
+  }
+  if (validate_download_header(chunk, header_len, status, status_len) != 0) {
+    heap_caps_free(chunk);
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+    return -1;
+  }
+  if (prg32_cart_stream_begin(slot, (size_t)content_len) != 0) {
+    snprintf(status, status_len, "%s", prg32_cart_last_error());
+    heap_caps_free(chunk);
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+    return -1;
+  }
+  if (prg32_cart_stream_write(slot, 0, chunk, header_len) != 0) {
+    snprintf(status, status_len, "%s", prg32_cart_last_error());
+    heap_caps_free(chunk);
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+    return -1;
+  }
+  offset = header_len;
   while (offset < (size_t)content_len) {
     int read = esp_http_client_read(client, (char *)chunk, PRG32_STORE_CHUNK_BYTES);
     if (read <= 0) {

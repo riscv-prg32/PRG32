@@ -146,10 +146,33 @@ class QemuUploadTests(unittest.TestCase):
             cart = tmp_path / "game.prg32"
             partitions = tmp_path / "partitions.csv"
 
-            flash.write_bytes(b"\x00" * 64)
-            cart.write_bytes(b"PRG2")
+            payload = b"\0\0\0\0"
+            header = prg32_game.CART_HEADER_V2.pack(
+                prg32_game.CART_MAGIC,
+                prg32_game.CART_ABI_MAJOR,
+                prg32_game.CART_ABI_MINOR,
+                prg32_game.CART_HEADER_V2.size,
+                prg32_game.PRG32_CART_FLAG_ABI_TABLE,
+                prg32_game.FALLBACK_CART_LOAD_ADDR,
+                len(payload),
+                len(payload),
+                0,
+                0,
+                0,
+                0,
+                b"test" + b"\0" * 28,
+                prg32_game.ABI_HASH,
+                0,
+                0,
+                0,
+                0,
+                0,
+                prg32_game.PRG32_IMPORT_MODEL_ABI_TABLE,
+            )
+            flash.write_bytes(b"\x00" * 256)
+            cart.write_bytes(header + payload)
             partitions.write_text(
-                "cart0, data, 0x40, 0x10, 8,\n",
+                "cart0, data, 0x40, 0x10, 128,\n",
                 encoding="utf-8",
             )
 
@@ -163,7 +186,8 @@ class QemuUploadTests(unittest.TestCase):
 
             data = flash.read_bytes()
             self.assertEqual(data[0x10:0x14], b"PRG2")
-            self.assertEqual(data[0x14:0x18], b"\xff" * 4)
+            erased = data[0x10 + len(header) + len(payload):0x10 + 128]
+            self.assertEqual(erased, b"\xff" * len(erased))
 
 
 class DoctorTests(unittest.TestCase):

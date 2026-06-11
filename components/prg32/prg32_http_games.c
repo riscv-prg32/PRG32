@@ -72,7 +72,7 @@ static esp_err_t send_api_index(httpd_req_t *req) {
 }
 
 static esp_err_t send_runtime(httpd_req_t *req) {
-    char json[768];
+    char json[896];
     prg32_cart_info_t info;
     bool have_cart = prg32_cart_get_info(&info) == 0;
     bool qemu =
@@ -90,6 +90,8 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                            "\"cart_magic\":\"%s\","
                            "\"cart_abi_major\":%u,"
                            "\"cart_abi_minor\":%u,"
+                           "\"cart_abi_hash\":%lu,"
+                           "\"cart_abi_features\":%lu,"
                            "\"cart_load_addr\":%lu,"
                            "\"cart_max_size\":%lu,"
                            "\"cart_ram_size\":%lu,"
@@ -114,6 +116,8 @@ static esp_err_t send_runtime(httpd_req_t *req) {
                            PRG32_CART_MAGIC,
                            (unsigned)PRG32_CART_ABI_MAJOR,
                            (unsigned)PRG32_CART_ABI_MINOR,
+                           (unsigned long)PRG32_ABI_HASH,
+                           (unsigned long)prg32_abi_table.provided_features,
                            (unsigned long)(uint32_t)prg32_cart_load_addr(),
                            (unsigned long)(uint32_t)PRG32_CART_MAX_SIZE,
                            (unsigned long)(uint32_t)prg32_cart_ram_size(),

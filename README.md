@@ -379,7 +379,25 @@ optional feature bits. Legacy absolute-import cartridges are still supported for
 old workflows, but they are tied to the firmware image used at build time and
 are not guaranteed to run on another firmware. ABI hash mismatches, missing
 required features, and incompatible legacy cartridges are rejected by the
-runtime with a diagnostic message.
+runtime, store download path, QEMU staging path, and HTTP upload tool with a
+diagnostic message.
+
+Build all checked-in examples as portable cartridges and CartridgeStore bundles:
+
+```bash
+python3 tools/prg32_build_portable_examples.py --clean
+```
+
+Prepare or flash a published single-file legacy firmware image:
+
+```bash
+python3 tools/prg32_prepare_legacy_firmware.py
+python3 tools/prg32_flash_legacy_firmware.py \
+  publish/legacy-firmware/PRG32-legacy-esp32c6.json \
+  --port /dev/cu.usbmodem5ABA0099241
+```
+
+See [docs/publishing_and_flashing_legacy_firmware.md](docs/publishing_and_flashing_legacy_firmware.md).
 
 Cartridge metadata and store publishing are documented in
 [docs/cartridge_metadata.md](docs/cartridge_metadata.md),
@@ -575,6 +593,12 @@ for a step-by-step scientific-paper measurement workflow with screenshots.
 - `tools/prg32_game.py publish`: build a cartridge and submit a store bundle.
 - `tools/prg32_game.py pack-bundle`: create a flat multi-architecture zip.
 - `tools/prg32_game.py publish-bundle`: submit a prepared bundle.
+- `tools/prg32_build_portable_examples.py`: build every checked-in example as
+  portable `.prg32` cartridges and CartridgeStore bundles.
+- `tools/prg32_prepare_legacy_firmware.py`: merge a physical firmware build into
+  one publishable binary.
+- `tools/prg32_flash_legacy_firmware.py`: flash a published single-file legacy
+  firmware image.
 
 See [docs/assets.md](docs/assets.md).
 

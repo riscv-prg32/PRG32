@@ -98,6 +98,11 @@ Upload it to the board:
 python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
 ```
 
+The upload tool reads `/api/runtime` before deployment and rejects incompatible
+cartridges before sending them. The error message names the incompatible ABI
+major, ABI hash, missing feature bits, or legacy load address. The firmware
+performs the same ABI contract check when it receives or loads a cartridge.
+
 The firmware stores the cartridge in `cart0` by default and starts running it
 from the main loop. Upload to `cart1` with:
 
@@ -242,6 +247,16 @@ for the emulator build. The Cartridge Store groups those artifacts by metadata
 `id` and `version`, then offers the correct architecture to firmware or QEMU
 clients.
 
+Build every checked-in game and feature example as a portable cartridge and
+prepare flat CartridgeStore bundles:
+
+```bash
+python3 tools/prg32_build_portable_examples.py --clean
+```
+
+The output directory defaults to `build-portable-examples`. For each example the
+script writes a `.prg32` file plus `esp32c6` and `qemu` publishing bundles.
+
 See [cartridge_metadata.md](cartridge_metadata.md) for the binary trailer and
 metadata ABI, [colophon_abi.md](colophon_abi.md) for the colophon ABI, and
 [setup_mode_cartridge_store.md](setup_mode_cartridge_store.md) for the
@@ -259,6 +274,11 @@ Two installation paths are available:
   download it into `cart0` or `cart1`.
 - Host tool: run `python3 tools/prg32_game.py store-download ...` and then
   upload the downloaded `.prg32` with `python3 tools/prg32_game.py upload ...`.
+
+Both paths validate the ABI contract. A cartridge with the wrong ABI major,
+wrong ABI hash, unsupported required feature bits, unsupported import model, or
+wrong legacy load address is rejected with a clear diagnostic instead of being
+deployed silently.
 
 ## HTTP API
 

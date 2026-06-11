@@ -134,6 +134,81 @@ def catalog_items(body) -> list[dict]:
     return []
 
 
+def cartridge_contract(data: bytes) -> dict:
+    if len(data) < CART_HEADER.size:
+        raise SystemExit("cartridge is too small to contain a PRG32 header")
+    fields = CART_HEADER.unpack_from(data, 0)
+    if fields[0] != CART_MAGIC:
+        raise SystemExit("cartridge is not a PRG32 .prg32 image")
+    header = {
+        "abi_major": fields[1],
+        "abi_minor": fields[2],
+        "header_size": fields[3],
+        "flags": fields[4],
+        "load_addr": fields[5],
+        "code_size": fields[6],
+        "mem_size": fields[7],
+        "import_model": PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE,
+        "abi_hash": None,
+        "required_features": 0,
+    }
+    if header["header_size"] >= CART_HEADER_V2.size:
+        if len(data) < CART_HEADER_V2.size:
+            raise SystemExit("cartridge v2 header is truncated")
+        v2 = CART_HEADER_V2.unpack_from(data, 0)
+        header.update({
+            "abi_hash": v2[13],
+            "required_features": v2[14],
+            "import_model": v2[19],
+        })
+    return header
+
+
+def validate_cartridge_contract(
+    data: bytes,
+    *,
+    runtime: dict | None = None,
+    context: str = "cartridge",
+) -> None:
+    h = cartridge_contract(data)
+    expected_major = int((runtime or {}).get("cart_abi_major", CART_ABI_MAJOR))
+    expected_hash = int((runtime or {}).get("cart_abi_hash", ABI_HASH))
+    default_features = 0
+    for bit in FEATURE_BITS.values():
+        default_features |= int(bit)
+    provided_features = int((runtime or {}).get("cart_abi_features", default_features))
+    load_addr = int((runtime or {}).get("cart_load_addr", FALLBACK_CART_LOAD_ADDR))
+    if h["abi_major"] != expected_major:
+        raise SystemExit(
+            f"{context} rejected: cartridge ABI major {h['abi_major']} "
+            f"is not compatible with runtime ABI major {expected_major}"
+        )
+    if h["import_model"] == PRG32_IMPORT_MODEL_ABI_TABLE:
+        if h["abi_hash"] != expected_hash:
+            raise SystemExit(
+                f"{context} rejected: portable ABI hash "
+                f"0x{int(h['abi_hash'] or 0):08x} does not match runtime "
+                f"0x{expected_hash:08x}; rebuild the cartridge with this PRG32 checkout"
+            )
+        missing = int(h["required_features"]) & ~provided_features
+        if missing:
+            raise SystemExit(
+                f"{context} rejected: cartridge requires unsupported ABI "
+                f"feature bits 0x{missing:08x}"
+            )
+        return
+    if h["import_model"] != PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE:
+        raise SystemExit(
+            f"{context} rejected: unsupported cartridge import model {h['import_model']}"
+        )
+    if h["load_addr"] != load_addr:
+        raise SystemExit(
+            f"{context} rejected: legacy cartridge was linked for "
+            f"0x{h['load_addr']:08x}, but this runtime loads cartridges at "
+            f"0x{load_addr:08x}; rebuild with --portable or against this firmware"
+        )
+
+
 def multipart_request(url: str,
                       fields: dict[str, str],
                       files: dict[str, tuple[str, bytes, str]],
@@ -614,6 +689,8 @@ def build(args: argparse.Namespace) -> None:
 def upload(args: argparse.Namespace) -> None:
     data = Path(args.cartridge).read_bytes()
     ensure_cart_max_size(data)
+    runtime = fetch_runtime(args.url)
+    validate_cartridge_contract(data, runtime=runtime, context="upload")
     endpoint = args.url.rstrip("/") + "/api/games?slot=" + args.slot
     request = urllib.request.Request(
         endpoint,
@@ -728,6 +805,12 @@ def store_download(args: argparse.Namespace) -> None:
         raise SystemExit(f"download failed: HTTP {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
         raise SystemExit(f"download failed: {exc}") from exc
+    data = out.read_bytes()
+    try:
+        validate_cartridge_contract(data, context="store download")
+    except SystemExit:
+        out.unlink(missing_ok=True)
+        raise
     print(f"saved {out}")
 
 
@@ -849,6 +932,7 @@ def upload_qemu(args: argparse.Namespace) -> None:
     flash = Path(args.flash)
     data = Path(args.cartridge).read_bytes()
     ensure_cart_max_size(data)
+    validate_cartridge_contract(data, context="QEMU staging")
     partitions = Path(args.partitions)
     cart_offset, cart_size = read_partition_slot(partitions, args.slot)
     if len(data) > cart_size:
@@ -1111,9 +1195,13 @@ def main(argv: list[str]) -> int:
 
     p = sub.add_parser("publish", help="build and publish a cartridge bundle")
     p.add_argument("source")
-    p.add_argument("--firmware-elf", required=True)
+    p.add_argument("--firmware-elf")
     p.add_argument("--entry-prefix", required=True)
     p.add_argument("--name", required=True)
+    p.add_argument("--portable", action="store_true")
+    p.add_argument("--legacy-absolute-imports", action="store_true")
+    p.add_argument("--required-feature", action="append", default=[])
+    p.add_argument("--optional-feature", action="append", default=[])
     p.add_argument("--store-url")
     p.add_argument("--architecture", choices=sorted(ARCHITECTURE_PROFILES))
     p.add_argument("--id")
