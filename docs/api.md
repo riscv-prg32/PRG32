@@ -122,7 +122,7 @@ Typical response fields:
   "cart_abi_hash": 3117075842,
   "cart_abi_features": 511,
   "cart_load_addr": 1107296256,
-  "cart_max_size": 32768,
+  "cart_max_size": 65536,
   "cart_ram_size": 65536,
   "cart_loaded": true,
   "qemu": false,
@@ -258,7 +258,7 @@ Success response:
 Expected behavior:
 
 - upload is accepted only when `PRG32_GAME_UPLOAD_ENABLE` is enabled;
-- the request body must fit in the 32 KiB cartridge package limit;
+- the request body must fit in the 64 KiB cartridge package limit;
 - invalid cartridge images return `400` with the cartridge validation error;
 - disabled upload support returns `403`.
 

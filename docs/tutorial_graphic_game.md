@@ -208,7 +208,10 @@ After the focused demos, try the fuller game examples:
 - `examples/games/raycaster/c/game.c` for the playable fixed-point raycaster.
 - `examples/games/wing_commander/graphics/game.S` for a dual-playfield cockpit
   with a scrolling starfield and fixed foreground dashboard.
-- `examples/games/frogger/c/game.c` for 24x24 multicolor sprites and hitboxes.
+- `examples/games/frogger/graphics/game.S` for the assembly 24x24 multicolor
+  sprite helper.
+- `examples/games/frogger/c/game.c` for the same 24x24 sprite pattern with
+  hitboxes and restart state.
 
 ## Break and Fix Exercise
 

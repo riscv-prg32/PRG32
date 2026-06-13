@@ -65,6 +65,16 @@ frogger_graphics_update:
     beqz t3, .Lfrogger_graphics_no_right
     addi t1, t1, 24
 .Lfrogger_graphics_no_right:
+    blt t1, zero, .Lfrogger_graphics_min_x
+    li t3, 296
+    bgt t1, t3, .Lfrogger_graphics_max_x
+    j .Lfrogger_graphics_store_x
+.Lfrogger_graphics_min_x:
+    li t1, 0
+    j .Lfrogger_graphics_store_x
+.Lfrogger_graphics_max_x:
+    li t1, 296
+.Lfrogger_graphics_store_x:
     sw t1, 0(t0)
 
     la t0, frogger_graphics_y
@@ -77,6 +87,16 @@ frogger_graphics_update:
     beqz t3, .Lfrogger_graphics_no_down
     addi t1, t1, 24
 .Lfrogger_graphics_no_down:
+    blt t1, zero, .Lfrogger_graphics_min_y
+    li t3, 176
+    bgt t1, t3, .Lfrogger_graphics_max_y
+    j .Lfrogger_graphics_store_y
+.Lfrogger_graphics_min_y:
+    li t1, 0
+    j .Lfrogger_graphics_store_y
+.Lfrogger_graphics_max_y:
+    li t1, 176
+.Lfrogger_graphics_store_y:
     sw t1, 0(t0)
 
     la t0, frogger_graphics_car_x

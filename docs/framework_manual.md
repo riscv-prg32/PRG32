@@ -231,7 +231,7 @@ Important constants:
 - `PRG32_CART_META_MAGIC`: optional metadata trailer magic, `PRG32META`.
 - `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
 - `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
-- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, currently 32 KiB.
+- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, currently 64 KiB.
 - `PRG32_CART_RAM_SIZE`: statically placed executable cartridge RAM window,
   configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 builds
   default to the 32 KiB classroom profile to leave more SRAM to the resident
@@ -450,7 +450,8 @@ Useful calls:
 
 - `prg32_sprite_draw_8x8(x, y, bits, fg, bg)`: draw a monochrome sprite.
 - `prg32_sprite_draw_16x16(x, y, rgb565)`: draw a 16x16 RGB565 sprite.
-- `prg32_sprite_draw_24x24(x, y, rgb565)`: draw a 24x24 RGB565 sprite.
+- `prg32_sprite_draw_24x24(x, y, rgb565)`: draw a 24x24 RGB565 sprite from
+  `24 * 24` contiguous halfwords.
 - `prg32_sprite_hitbox(...)`: test two axis-aligned rectangles.
 - `prg32_sprite_anim_frame(now_ms, frame_count, frame_ms)`: compute a frame.
 - `prg32_sprite_draw_frame(...)`: draw one frame from a sprite sheet.
@@ -460,6 +461,10 @@ sizes or another transparency key, `prg32_sprite_draw_frame` accepts width,
 height, a pointer to contiguous RGB565 frames, the frame index, and a
 transparent color. This keeps animated sprites usable from assembly without
 requiring a C object.
+
+See `examples/games/frogger/graphics/game.S` for the assembly call sequence and
+`examples/games/frogger/c/game.c` for a fuller game that pairs the 24x24 sprite
+with `prg32_sprite_hitbox`.
 
 ## Audio
 

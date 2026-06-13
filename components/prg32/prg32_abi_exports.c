@@ -142,13 +142,13 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_sprite_hitbox,
     (prg32_any_fn_t)prg32_sprite_draw_8x8,
     (prg32_any_fn_t)prg32_sprite_draw_16x16,
-    (prg32_any_fn_t)prg32_sprite_draw_24x24,
     (prg32_any_fn_t)prg32_sprite_anim_frame,
     (prg32_any_fn_t)prg32_sprite_draw_frame,
     (prg32_any_fn_t)prg32_sprite_anim_init,
     (prg32_any_fn_t)prg32_sprite_anim_update,
     (prg32_any_fn_t)prg32_sprite_anim_draw,
     (prg32_any_fn_t)prg32_score_submit,
+    (prg32_any_fn_t)prg32_sprite_draw_24x24,
 };
 
 void prg32_abi_exports_keep(void) {

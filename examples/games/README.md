@@ -68,6 +68,7 @@ C versions are best for:
 - playing the fuller versions of the DeviceDemo cartridge ideas, especially the
   platformer tile-engine course, the fixed-point raycaster, and the
   dual-playfield space cockpit
+- studying 24x24 multicolor sprite assets and hitboxes with `frogger_c`
 
 The same source can be used in two ways:
 
