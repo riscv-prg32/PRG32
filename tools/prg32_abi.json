@@ -1,7 +1,7 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 0,
+  "minor": 2,
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -789,6 +789,62 @@
     },
     {
       "name": "prg32_score_submit",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_draw_24x24",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_player_get",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_player_set",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_player_prompt",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_submit_current_player",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_count",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_score_get",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_scoreboard_show",
       "return": "void",
       "args": [],
       "feature": "core",

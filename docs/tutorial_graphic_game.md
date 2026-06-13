@@ -19,6 +19,7 @@ on the physical ILI9341 display and on the QEMU virtual RGB screen.
 - `prg32_gfx_text8(x, y, text, fg, bg)`
 - `prg32_gfx_present()`
 - `prg32_sprite_hitbox(ax, ay, aw, ah, bx, by, bw, bh)`
+- `prg32_sprite_draw_24x24(x, y, rgb565)`
 - `prg32_sprite_anim_frame(now_ms, frame_count, frame_ms)`
 - `prg32_sprite_draw_frame(x, y, w, h, frames, frame, transparent)`
 - `prg32_playfield_scroll(layer, x, y)`
@@ -207,6 +208,10 @@ After the focused demos, try the fuller game examples:
 - `examples/games/raycaster/c/game.c` for the playable fixed-point raycaster.
 - `examples/games/wing_commander/graphics/game.S` for a dual-playfield cockpit
   with a scrolling starfield and fixed foreground dashboard.
+- `examples/games/frogger/graphics/game.S` for the assembly 24x24 multicolor
+  sprite helper.
+- `examples/games/frogger/c/game.c` for the same 24x24 sprite pattern with
+  hitboxes and restart state.
 
 ## Break and Fix Exercise
 

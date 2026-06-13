@@ -127,6 +127,14 @@ li a2, 1200
 call prg32_score_submit
 ```
 
+Games that want the player to type a name can use the firmware UI from C glue:
+
+```c
+prg32_score_player_prompt();
+prg32_score_submit_current_player("pong", score);
+prg32_scoreboard_show("pong", "PONG SCORES");
+```
+
 For a classroom server, run
 [ScoreServer](https://github.com/riscv-prg32/ScoreServer) and call
 `prg32_score_submit_remote` from C glue code or a wrapper.
@@ -180,6 +188,10 @@ assembly lessons to:
   renderer on RISC-V.
 - `examples/games/wing_commander/c/game.c` for a playable dual-playfield
   cockpit with starfield, enemies, shield, and score.
+- `examples/games/frogger/graphics/game.S` for the 24x24 multicolor sprite
+  helper from assembly.
+- `examples/games/frogger/c/game.c` for the same sprite pattern with hitboxes
+  and restart state.
 
 Suggested order:
 

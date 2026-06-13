@@ -27,6 +27,7 @@ examples/games/<game>/
 | `platformer` | `platformer_ascii` | `platformer_graphics` | `platformer_c` |
 | `raycaster` | `raycaster_ascii` | `raycaster_graphics` | `raycaster_c` |
 | `wing_commander` | `wing_commander_ascii` | `wing_commander_graphics` | `wing_commander_c` |
+| `frogger` | `frogger_ascii` | `frogger_graphics` | `frogger_c` |
 
 Use the prefix to find the three exported symbols:
 
@@ -67,6 +68,7 @@ C versions are best for:
 - playing the fuller versions of the DeviceDemo cartridge ideas, especially the
   platformer tile-engine course, the fixed-point raycaster, and the
   dual-playfield space cockpit
+- studying 24x24 multicolor sprite assets and hitboxes with `frogger_c`
 
 The same source can be used in two ways:
 

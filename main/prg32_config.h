@@ -31,6 +31,9 @@
 #define PRG32_GAME_WING_ASCII          25
 #define PRG32_GAME_WING_GRAPHICS       26
 #define PRG32_GAME_WING_C              27
+#define PRG32_GAME_FROGGER_ASCII       28
+#define PRG32_GAME_FROGGER_GRAPHICS    29
+#define PRG32_GAME_FROGGER_C           30
 
 /* Runtime console mode. */
 #define PRG32_MODE_UART_ONLY       0
@@ -80,7 +83,7 @@
 #define PRG32_PIN_LCD_RST    0
 #define PRG32_PIN_LCD_BL     5
 
-#define PRG32_LCD_SPI_CLOCK_HZ 40000000
+#define PRG32_LCD_SPI_CLOCK_HZ 32000000
 #define PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL 1
 #define PRG32_LCD_BOOT_TEST_MS 0
 #define PRG32_LCD_SOFT_SPI 0

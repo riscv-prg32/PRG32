@@ -31,7 +31,7 @@ examples/games/<name>/
 
 Use these for Computing Architecture and C Programming classes.
 
-The platformer, raycaster, and wing commander C examples are the fuller
+The platformer, raycaster, wing commander, and frogger C examples are the fuller
 playable companions to the DeviceDemo cartridge pages. The assembly versions
 remain compact so students can trace registers, stack frames, and ABI calls
 without losing the main idea.

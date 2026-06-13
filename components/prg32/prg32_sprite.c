@@ -46,14 +46,14 @@ void prg32_sprite_draw_16x16(int x, int y, const uint16_t *rgb565) {
     if (!rgb565) {
         return;
     }
-    for (int row = 0; row < 16; ++row) {
-        for (int col = 0; col < 16; ++col) {
-            uint16_t color = rgb565[row * 16 + col];
-            if (color != PRG32_COLOR_WHITE) {
-                prg32_gfx_pixel(x + col, y + row, color);
-            }
-        }
+    prg32_sprite_draw_frame(x, y, 16, 16, rgb565, 0, PRG32_COLOR_WHITE);
+}
+
+void prg32_sprite_draw_24x24(int x, int y, const uint16_t *rgb565) {
+    if (!rgb565) {
+        return;
     }
+    prg32_sprite_draw_frame(x, y, 24, 24, rgb565, 0, PRG32_COLOR_WHITE);
 }
 
 uint32_t prg32_sprite_anim_frame(uint32_t now_ms,

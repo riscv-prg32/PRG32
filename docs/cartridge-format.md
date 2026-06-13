@@ -19,6 +19,8 @@ The `.prg32` header starts with magic `PRG2` and stores:
 - code payload CRC32
 - cartridge name
 
+Current executable cartridge ABI version: major `1`, minor `1`.
+
 `PRG32_CART_FLAG_AUDIO_BLOCK` marks a cartridge that has a trailing AUDIO block.
 `PRG32_CART_FLAG_MULTIPLAYER` marks a cartridge that intentionally uses the
 multiplayer service. The game still calls `prg32_multiplayer_join()` at runtime

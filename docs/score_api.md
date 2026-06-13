@@ -5,6 +5,10 @@ standalone [ScoreServer](https://github.com/riscv-prg32/ScoreServer). This is
 useful for competitions and for teaching the boundary between assembly, C, and
 network services.
 
+Games can use the score feature without Wi-Fi. The local firmware keeps an
+in-RAM scoreboard, includes an on-screen player-name prompt, and provides a
+simple scoreboard screen that cartridges can call directly.
+
 ## Enable Wi-Fi
 
 Edit `main/prg32_config.h`:
@@ -50,7 +54,7 @@ Response:
 
 ## Assembly usage
 
-Assembly code should normally call a C helper at the end of a game:
+Assembly code can submit an explicit player name at the end of a game:
 
 ```asm
 la a0, game_name      # const char *game
@@ -60,6 +64,29 @@ call prg32_score_submit
 ```
 
 This is a clean ABI example: arguments in `a0`, `a1`, `a2`, return value in `a0`.
+
+For a cartridge that lets the runtime remember the current player name, call
+the prompt once from C or assembly glue before play starts:
+
+```c
+prg32_score_player_prompt();
+```
+
+Then submit the score with the remembered player:
+
+```c
+prg32_score_submit_current_player("breakout", score);
+```
+
+To show the local scoreboard from a game:
+
+```c
+prg32_scoreboard_show("breakout", "BREAKOUT SCORES");
+```
+
+The lower-level helpers `prg32_score_player_get`,
+`prg32_score_player_set`, `prg32_score_count`, and `prg32_score_get` are also
+available to cartridges that want to draw their own scoreboard UI.
 
 ## Remote classroom server
 
@@ -93,8 +120,9 @@ prg32_score_submit_remote("http://192.168.1.20:5000",
 
 ## Current implementation
 
-The board-local implementation stores a small in-RAM scoreboard. The standalone
-ScoreServer persists records in SQLite.
+The board-local implementation stores a small in-RAM scoreboard. It is cleared
+when the firmware restarts. The standalone ScoreServer and Cartridge Store
+persist records in SQLite.
 
 The same board HTTP server also hosts the cartridge upload API when
 `PRG32_GAME_UPLOAD_ENABLE` is enabled. See `docs/cartridges.md`.

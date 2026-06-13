@@ -148,6 +148,14 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_sprite_anim_update,
     (prg32_any_fn_t)prg32_sprite_anim_draw,
     (prg32_any_fn_t)prg32_score_submit,
+    (prg32_any_fn_t)prg32_sprite_draw_24x24,
+    (prg32_any_fn_t)prg32_score_player_get,
+    (prg32_any_fn_t)prg32_score_player_set,
+    (prg32_any_fn_t)prg32_score_player_prompt,
+    (prg32_any_fn_t)prg32_score_submit_current_player,
+    (prg32_any_fn_t)prg32_score_count,
+    (prg32_any_fn_t)prg32_score_get,
+    (prg32_any_fn_t)prg32_scoreboard_show,
 };
 
 void prg32_abi_exports_keep(void) {

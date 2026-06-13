@@ -525,6 +525,7 @@ C versions of:
 - `platformer`
 - `raycaster`
 - `wing_commander`
+- `frogger`
 
 See [examples/games/README.md](examples/games/README.md) for step-by-step
 instructions to run each game embedded in firmware or as an uploadable

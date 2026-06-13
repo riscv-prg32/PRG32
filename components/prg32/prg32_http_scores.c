@@ -1,17 +1,36 @@
 #include "prg32.h"
 #include "prg32_config.h"
 
-#if PRG32_WIFI_ENABLE
-
-#include "cJSON.h"
-#include "esp_err.h"
-#include "esp_http_client.h"
-#include "esp_http_server.h"
 #include <stdio.h>
 #include <string.h>
 
+#if PRG32_WIFI_ENABLE
+#include "cJSON.h"
+#include "esp_http_client.h"
+#include "esp_http_server.h"
+#endif
+
+#if __has_include("esp_err.h")
+#include "esp_err.h"
+#else
+#define ESP_OK 0
+#define ESP_FAIL -1
+#define ESP_ERR_INVALID_ARG -2
+#endif
+
+#if __has_include("freertos/FreeRTOS.h")
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#else
+#define pdMS_TO_TICKS(ms) (ms)
+static void vTaskDelay(int ticks) {
+    (void)ticks;
+}
+#endif
+
 static prg32_score_t scores[PRG32_SCORE_MAX];
 static int score_count;
+static char current_player[sizeof(scores[0].player)] = "PLAYER";
 
 static void copy_cstr(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -23,6 +42,168 @@ static void copy_cstr(char *dst, size_t dst_size, const char *src) {
     strncpy(dst, src, dst_size - 1);
     dst[dst_size - 1] = '\0';
 }
+
+static int score_matches_game(const prg32_score_t *record, const char *game) {
+    return record && (!game || !game[0] || strcmp(record->game, game) == 0);
+}
+
+static int score_visible_index(const char *game, int visible_index) {
+    int seen = 0;
+    for (int i = 0; i < score_count; ++i) {
+        if (!score_matches_game(&scores[i], game)) {
+            continue;
+        }
+        if (seen == visible_index) {
+            return i;
+        }
+        seen++;
+    }
+    return -1;
+}
+
+int prg32_score_player_get(char *out_player, size_t max_len) {
+    if (!out_player || max_len == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    copy_cstr(out_player, max_len, current_player);
+    return ESP_OK;
+}
+
+int prg32_score_player_set(const char *player) {
+    if (!player || !player[0]) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    copy_cstr(current_player, sizeof(current_player), player);
+    return ESP_OK;
+}
+
+int prg32_score_player_prompt(void) {
+    char player[sizeof(current_player)];
+    copy_cstr(player, sizeof(player), current_player);
+    int len = prg32_text_input(player, sizeof(player), "PLAYER NAME");
+    if (len < 0) {
+        return len;
+    }
+    if (player[0]) {
+        prg32_score_player_set(player);
+    }
+    return (int)strlen(current_player);
+}
+
+int prg32_score_submit(const char *game, const char *player, uint32_t score) {
+    if (!game || !game[0] || !player || !player[0]) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (score_count >= PRG32_SCORE_MAX) {
+        score_count = PRG32_SCORE_MAX - 1;
+    }
+    memmove(&scores[1], &scores[0], sizeof(scores[0]) * score_count);
+    copy_cstr(scores[0].game, sizeof(scores[0].game), game);
+    copy_cstr(scores[0].player, sizeof(scores[0].player), player);
+    scores[0].score = score;
+    if (score_count < PRG32_SCORE_MAX) {
+        score_count++;
+    }
+    return ESP_OK;
+}
+
+int prg32_score_submit_current_player(const char *game, uint32_t score) {
+    return prg32_score_submit(game, current_player, score);
+}
+
+int prg32_score_count(const char *game) {
+    int count = 0;
+    for (int i = 0; i < score_count; ++i) {
+        if (score_matches_game(&scores[i], game)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int prg32_score_get(const char *game, int index, prg32_score_t *out_score) {
+    if (!out_score || index < 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    int raw = score_visible_index(game, index);
+    if (raw < 0) {
+        return ESP_FAIL;
+    }
+    *out_score = scores[raw];
+    return ESP_OK;
+}
+
+static int top_score_index(const char *game, const int *used, int used_count) {
+    int best = -1;
+    for (int i = 0; i < score_count; ++i) {
+        if (!score_matches_game(&scores[i], game)) {
+            continue;
+        }
+        int already_used = 0;
+        for (int j = 0; j < used_count; ++j) {
+            if (used[j] == i) {
+                already_used = 1;
+                break;
+            }
+        }
+        if (already_used) {
+            continue;
+        }
+        if (best < 0 ||
+            scores[i].score > scores[best].score ||
+            (scores[i].score == scores[best].score && i < best)) {
+            best = i;
+        }
+    }
+    return best;
+}
+
+int prg32_scoreboard_show(const char *game, const char *title) {
+    int used[PRG32_SCORE_MAX];
+
+    prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
+    while (1) {
+        uint32_t input = prg32_input_read_menu();
+        if (input & (PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT)) {
+            prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
+            return 0;
+        }
+
+        prg32_gfx_clear(PRG32_COLOR_BLACK);
+        prg32_gfx_text8(8, 8, title ? title : "SCOREBOARD", PRG32_COLOR_WHITE, 0);
+        prg32_gfx_text8(8,
+                        24,
+                        game && game[0] ? game : "ALL GAMES",
+                        PRG32_COLOR_CYAN,
+                        0);
+
+        int used_count = 0;
+        for (int row = 0; row < 8; ++row) {
+            int index = top_score_index(game, used, used_count);
+            if (index < 0) {
+                if (row == 0) {
+                    prg32_gfx_text8(8, 64, "NO SCORES YET", PRG32_COLOR_YELLOW, 0);
+                }
+                break;
+            }
+            used[used_count++] = index;
+            char line[48];
+            snprintf(line,
+                     sizeof(line),
+                     "%2d %-16s %lu",
+                     row + 1,
+                     scores[index].player,
+                     (unsigned long)scores[index].score);
+            prg32_gfx_text8(8, 48 + row * 18, line, PRG32_COLOR_WHITE, 0);
+        }
+
+        prg32_gfx_text8(8, 224, "A / B / SELECT BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_present();
+        vTaskDelay(pdMS_TO_TICKS(80));
+    }
+}
+
+#if PRG32_WIFI_ENABLE
 
 static int copy_json_string(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0 || !src) {
@@ -51,23 +232,6 @@ static int copy_json_string(char *dst, size_t dst_size, const char *src) {
         }
     }
     dst[out] = '\0';
-    return ESP_OK;
-}
-
-int prg32_score_submit(const char *game, const char *player, uint32_t score) {
-    if (!game || !player) {
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (score_count >= PRG32_SCORE_MAX) {
-        score_count = PRG32_SCORE_MAX - 1;
-    }
-    memmove(&scores[1], &scores[0], sizeof(scores[0]) * score_count);
-    copy_cstr(scores[0].game, sizeof(scores[0].game), game);
-    copy_cstr(scores[0].player, sizeof(scores[0].player), player);
-    scores[0].score = score;
-    if (score_count < PRG32_SCORE_MAX) {
-        score_count++;
-    }
     return ESP_OK;
 }
 
@@ -106,7 +270,7 @@ int prg32_score_submit_remote(const char *base_url,
     esp_http_client_config_t cfg = {
         .url = url,
         .method = HTTP_METHOD_POST,
-        .timeout_ms = 3000
+        .timeout_ms = 3000,
     };
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     if (!client) {
@@ -226,12 +390,12 @@ void prg32_http_register_score_handlers(httpd_handle_t server) {
     httpd_uri_t gs = {
         .uri = "/api/scores",
         .method = HTTP_GET,
-        .handler = get_scores
+        .handler = get_scores,
     };
     httpd_uri_t ps = {
         .uri = "/api/scores",
         .method = HTTP_POST,
-        .handler = post_score
+        .handler = post_score,
     };
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &gs));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &ps));
@@ -241,13 +405,6 @@ void prg32_http_register_score_handlers(httpd_handle_t server) {
 }
 
 #else
-
-int prg32_score_submit(const char *game, const char *player, uint32_t score) {
-    (void)game;
-    (void)player;
-    (void)score;
-    return 0;
-}
 
 int prg32_score_submit_remote(const char *base_url,
                               const char *game,

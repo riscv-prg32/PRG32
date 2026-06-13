@@ -19,6 +19,7 @@ The assembly ABI does not change. A game still calls:
 - `prg32_gfx_text8`
 - `prg32_gfx_present`
 - `prg32_playfield_draw_dual`
+- `prg32_sprite_draw_24x24`
 - `prg32_sprite_draw_frame`
 
 Only the display backend changes.

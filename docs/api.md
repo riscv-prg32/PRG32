@@ -118,11 +118,11 @@ Typical response fields:
   "firmware_version": "1.0.0",
   "cart_magic": "PRG32CART",
   "cart_abi_major": 1,
-  "cart_abi_minor": 0,
+  "cart_abi_minor": 1,
   "cart_abi_hash": 3117075842,
   "cart_abi_features": 511,
   "cart_load_addr": 1107296256,
-  "cart_max_size": 32768,
+  "cart_max_size": 65536,
   "cart_ram_size": 65536,
   "cart_loaded": true,
   "qemu": false,
@@ -258,7 +258,7 @@ Success response:
 Expected behavior:
 
 - upload is accepted only when `PRG32_GAME_UPLOAD_ENABLE` is enabled;
-- the request body must fit in the 32 KiB cartridge package limit;
+- the request body must fit in the 64 KiB cartridge package limit;
 - invalid cartridge images return `400` with the cartridge validation error;
 - disabled upload support returns `403`.
 
@@ -360,6 +360,10 @@ GET /api/scores
 
 Returns the board-local in-RAM scoreboard.
 
+Games can also access the same in-RAM records directly through
+`prg32_score_count` and `prg32_score_get`, or show the built-in on-device
+scoreboard with `prg32_scoreboard_show`.
+
 Example:
 
 ```bash
@@ -408,6 +412,8 @@ Success response:
 Expected behavior:
 
 - scores are stored in RAM by the board-local API;
+- each score record associates a short game identifier, player name, and
+  numeric score;
 - rebooting the board clears board-local scores;
 - use the external ScoreServer for persistent classroom leaderboards.
 

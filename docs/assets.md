@@ -16,6 +16,13 @@ python3 tools/prg32_image_convert.py player.png \
   --out build/player_sprite.c
 ```
 
+For a 24x24 multicolor sprite, use `--width 24 --height 24`. The generated
+array must contain `24 * 24` RGB565 halfwords and can be drawn with
+`prg32_sprite_draw_24x24(x, y, sprite)`. White pixels (`0xffff`,
+`PRG32_COLOR_WHITE`) are transparent in the fixed-size 16x16 and 24x24 sprite
+helpers, which lets simple classroom assets keep a visible background without a
+separate alpha mask.
+
 Convert an animated GIF to assembly frames:
 
 ```bash
@@ -70,7 +77,7 @@ python3 -m pip install pillow mido
 ```
 
 Generated arrays can be included in firmware examples or packaged into
-uploadable cartridges when they fit inside the 32 KiB cartridge package limit.
+uploadable cartridges when they fit inside the 64 KiB cartridge package limit.
 
 ## Cartridge AUDIO Blocks
 

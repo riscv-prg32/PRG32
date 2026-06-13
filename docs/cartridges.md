@@ -427,7 +427,7 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Cartridges are linked for one PRG32 firmware build.
 - If the firmware is rebuilt, rebuild the cartridges.
-- Cartridge package size is 32 KiB.
+- Cartridge package size is 64 KiB.
 - Cartridge RAM is selected by `CONFIG_PRG32_CART_RAM_PROFILE`: physical
   classroom builds default to 32 KiB, while QEMU and extended builds use
   64 KiB unless a custom profile is selected.
