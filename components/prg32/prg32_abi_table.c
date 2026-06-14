@@ -134,6 +134,7 @@ const prg32_abi_table_t prg32_abi_table = {
         [PRG32_ABI_FN_PRG32_SCORE_PLAYER_SET] = (const void *)prg32_score_player_set,
         [PRG32_ABI_FN_PRG32_SCORE_PLAYER_PROMPT] = (const void *)prg32_score_player_prompt,
         [PRG32_ABI_FN_PRG32_SCORE_SUBMIT_CURRENT_PLAYER] = (const void *)prg32_score_submit_current_player,
+        [PRG32_ABI_FN_PRG32_SCORE_SYNC_REMOTE] = (const void *)prg32_score_sync_remote,
         [PRG32_ABI_FN_PRG32_SCORE_COUNT] = (const void *)prg32_score_count,
         [PRG32_ABI_FN_PRG32_SCORE_GET] = (const void *)prg32_score_get,
         [PRG32_ABI_FN_PRG32_SCOREBOARD_SHOW] = (const void *)prg32_scoreboard_show,

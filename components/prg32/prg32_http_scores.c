@@ -18,6 +18,10 @@
 #define ESP_ERR_INVALID_ARG -2
 #endif
 
+#ifndef CONFIG_PRG32_STORE_URL
+#define CONFIG_PRG32_STORE_URL ""
+#endif
+
 #if __has_include("freertos/FreeRTOS.h")
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -28,9 +32,18 @@ static void vTaskDelay(int ticks) {
 }
 #endif
 
-static prg32_score_t scores[PRG32_SCORE_MAX];
+typedef struct {
+    prg32_score_t score;
+    uint8_t pending_remote;
+} score_entry_t;
+
+static score_entry_t scores[PRG32_SCORE_MAX];
 static int score_count;
-static char current_player[sizeof(scores[0].player)] = "PLAYER";
+static char current_player[sizeof(scores[0].score.player)] = "PLAYER";
+
+#if PRG32_WIFI_ENABLE
+static int resolve_configured_store_url(char *out_url, size_t max_len);
+#endif
 
 static void copy_cstr(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -47,10 +60,14 @@ static int score_matches_game(const prg32_score_t *record, const char *game) {
     return record && (!game || !game[0] || strcmp(record->game, game) == 0);
 }
 
+static int score_entry_matches_game(const score_entry_t *entry, const char *game) {
+    return entry && score_matches_game(&entry->score, game);
+}
+
 static int score_visible_index(const char *game, int visible_index) {
     int seen = 0;
     for (int i = 0; i < score_count; ++i) {
-        if (!score_matches_game(&scores[i], game)) {
+        if (!score_entry_matches_game(&scores[i], game)) {
             continue;
         }
         if (seen == visible_index) {
@@ -94,16 +111,71 @@ int prg32_score_submit(const char *game, const char *player, uint32_t score) {
     if (!game || !game[0] || !player || !player[0]) {
         return ESP_ERR_INVALID_ARG;
     }
-    if (score_count >= PRG32_SCORE_MAX) {
-        score_count = PRG32_SCORE_MAX - 1;
+
+    int insert_at = score_count;
+    int game_seen = 0;
+    int game_insert_rank = 0;
+    for (int i = 0; i < score_count; ++i) {
+        if (!score_entry_matches_game(&scores[i], game)) {
+            continue;
+        }
+        if (score <= scores[i].score.score) {
+            game_insert_rank++;
+            game_seen++;
+            continue;
+        }
+        insert_at = i;
+        break;
     }
-    memmove(&scores[1], &scores[0], sizeof(scores[0]) * score_count);
-    copy_cstr(scores[0].game, sizeof(scores[0].game), game);
-    copy_cstr(scores[0].player, sizeof(scores[0].player), player);
-    scores[0].score = score;
+    if (insert_at == score_count) {
+        game_insert_rank = game_seen;
+    }
+
+    if (game_insert_rank >= PRG32_SCOREBOARD_TOP_MAX) {
+        return ESP_OK;
+    }
+
+    int drop_at = -1;
+    int game_rank = 0;
+    for (int i = 0; i < score_count; ++i) {
+        if (!score_entry_matches_game(&scores[i], game)) {
+            continue;
+        }
+        if (game_rank == PRG32_SCOREBOARD_TOP_MAX - 1) {
+            drop_at = i;
+            break;
+        }
+        game_rank++;
+    }
+
+    if (drop_at >= 0) {
+        memmove(&scores[drop_at],
+                &scores[drop_at + 1],
+                sizeof(scores[0]) * (score_count - drop_at - 1));
+        score_count--;
+        if (insert_at > drop_at) {
+            insert_at--;
+        }
+    } else if (score_count >= PRG32_SCORE_MAX) {
+        score_count--;
+        if (insert_at > score_count) {
+            insert_at = score_count;
+        }
+    }
+
+    memmove(&scores[insert_at + 1],
+            &scores[insert_at],
+            sizeof(scores[0]) * (score_count - insert_at));
+    copy_cstr(scores[insert_at].score.game, sizeof(scores[insert_at].score.game), game);
+    copy_cstr(scores[insert_at].score.player,
+              sizeof(scores[insert_at].score.player),
+              player);
+    scores[insert_at].score.score = score;
+    scores[insert_at].pending_remote = 1;
     if (score_count < PRG32_SCORE_MAX) {
         score_count++;
     }
+    prg32_score_sync_remote();
     return ESP_OK;
 }
 
@@ -111,10 +183,36 @@ int prg32_score_submit_current_player(const char *game, uint32_t score) {
     return prg32_score_submit(game, current_player, score);
 }
 
+int prg32_score_sync_remote(void) {
+#if PRG32_WIFI_ENABLE
+    char store_url[128];
+    if (resolve_configured_store_url(store_url, sizeof(store_url)) != 0) {
+        return 0;
+    }
+
+    int synced = 0;
+    for (int i = 0; i < score_count; ++i) {
+        if (!scores[i].pending_remote) {
+            continue;
+        }
+        if (prg32_score_submit_remote(store_url,
+                                      scores[i].score.game,
+                                      scores[i].score.player,
+                                      scores[i].score.score) == ESP_OK) {
+            scores[i].pending_remote = 0;
+            synced++;
+        }
+    }
+    return synced;
+#else
+    return 0;
+#endif
+}
+
 int prg32_score_count(const char *game) {
     int count = 0;
     for (int i = 0; i < score_count; ++i) {
-        if (score_matches_game(&scores[i], game)) {
+        if (score_entry_matches_game(&scores[i], game)) {
             count++;
         }
     }
@@ -129,38 +227,11 @@ int prg32_score_get(const char *game, int index, prg32_score_t *out_score) {
     if (raw < 0) {
         return ESP_FAIL;
     }
-    *out_score = scores[raw];
+    *out_score = scores[raw].score;
     return ESP_OK;
 }
 
-static int top_score_index(const char *game, const int *used, int used_count) {
-    int best = -1;
-    for (int i = 0; i < score_count; ++i) {
-        if (!score_matches_game(&scores[i], game)) {
-            continue;
-        }
-        int already_used = 0;
-        for (int j = 0; j < used_count; ++j) {
-            if (used[j] == i) {
-                already_used = 1;
-                break;
-            }
-        }
-        if (already_used) {
-            continue;
-        }
-        if (best < 0 ||
-            scores[i].score > scores[best].score ||
-            (scores[i].score == scores[best].score && i < best)) {
-            best = i;
-        }
-    }
-    return best;
-}
-
 int prg32_scoreboard_show(const char *game, const char *title) {
-    int used[PRG32_SCORE_MAX];
-
     prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
     while (1) {
         uint32_t input = prg32_input_read_menu();
@@ -177,23 +248,25 @@ int prg32_scoreboard_show(const char *game, const char *title) {
                         PRG32_COLOR_CYAN,
                         0);
 
-        int used_count = 0;
-        for (int row = 0; row < 8; ++row) {
-            int index = top_score_index(game, used, used_count);
-            if (index < 0) {
-                if (row == 0) {
-                    prg32_gfx_text8(8, 64, "NO SCORES YET", PRG32_COLOR_YELLOW, 0);
-                }
+        int shown = prg32_score_count(game);
+        if (shown == 0) {
+            prg32_gfx_text8(8, 64, "NO SCORES YET", PRG32_COLOR_YELLOW, 0);
+        }
+        if (shown > PRG32_SCOREBOARD_TOP_MAX) {
+            shown = PRG32_SCOREBOARD_TOP_MAX;
+        }
+        for (int row = 0; row < shown; ++row) {
+            prg32_score_t score;
+            if (prg32_score_get(game, row, &score) != ESP_OK) {
                 break;
             }
-            used[used_count++] = index;
             char line[48];
             snprintf(line,
                      sizeof(line),
                      "%2d %-16s %lu",
                      row + 1,
-                     scores[index].player,
-                     (unsigned long)scores[index].score);
+                     score.player,
+                     (unsigned long)score.score);
             prg32_gfx_text8(8, 48 + row * 18, line, PRG32_COLOR_WHITE, 0);
         }
 
@@ -204,6 +277,21 @@ int prg32_scoreboard_show(const char *game, const char *title) {
 }
 
 #if PRG32_WIFI_ENABLE
+
+static int resolve_configured_store_url(char *out_url, size_t max_len) {
+    if (!out_url || max_len == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (prg32_store_url_get(out_url, max_len) == 0) {
+        return ESP_OK;
+    }
+    if (CONFIG_PRG32_STORE_URL[0]) {
+        copy_cstr(out_url, max_len, CONFIG_PRG32_STORE_URL);
+        return ESP_OK;
+    }
+    out_url[0] = '\0';
+    return ESP_FAIL;
+}
 
 static int copy_json_string(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0 || !src) {
@@ -303,9 +391,9 @@ static esp_err_t get_scores(httpd_req_t *req) {
             httpd_resp_send_err(req, 500, "out of memory");
             return ESP_ERR_NO_MEM;
         }
-        cJSON_AddStringToObject(o, "game", scores[i].game);
-        cJSON_AddStringToObject(o, "player", scores[i].player);
-        cJSON_AddNumberToObject(o, "score", scores[i].score);
+        cJSON_AddStringToObject(o, "game", scores[i].score.game);
+        cJSON_AddStringToObject(o, "player", scores[i].score.player);
+        cJSON_AddNumberToObject(o, "score", scores[i].score.score);
         cJSON_AddItemToArray(root, o);
     }
     char *json = cJSON_PrintUnformatted(root);

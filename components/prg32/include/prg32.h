@@ -19,6 +19,7 @@ extern "C" {
 #define PRG32_LCD_H 240
 #define PRG32_GAME_W 320
 #define PRG32_GAME_H 200
+#define PRG32_SCOREBOARD_TOP_MAX 5
 #define PRG32_TEXT_COLS 40
 #define PRG32_TEXT_ROWS 25
 #define PRG32_TILE_W 8
@@ -279,6 +280,7 @@ int prg32_score_player_set(const char *player);
 int prg32_score_player_prompt(void);
 int prg32_score_submit(const char *game, const char *player, uint32_t score);
 int prg32_score_submit_current_player(const char *game, uint32_t score);
+int prg32_score_sync_remote(void);
 int prg32_score_count(const char *game);
 int prg32_score_get(const char *game, int index, prg32_score_t *out_score);
 int prg32_scoreboard_show(const char *game, const char *title);

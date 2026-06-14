@@ -235,6 +235,7 @@ Setup screens and cartridge programs use the same button bitmasks:
 | `prg32_score_player_set` | set the current scoreboard player name |
 | `prg32_score_player_prompt` | show the on-screen player-name entry UI |
 | `prg32_score_submit_current_player` | submit a score for the current player |
+| `prg32_score_sync_remote` | retry pending local scores against the configured Cartridge Store |
 | `prg32_score_count` | count local scoreboard records, optionally by game |
 | `prg32_score_get` | copy one local scoreboard record |
 | `prg32_scoreboard_show` | show the built-in local scoreboard screen |

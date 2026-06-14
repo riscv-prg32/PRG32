@@ -358,7 +358,9 @@ Expected behavior:
 GET /api/scores
 ```
 
-Returns the board-local in-RAM scoreboard.
+Returns the board-local in-RAM scoreboard. The firmware keeps the five best
+local records for each game even when no Cartridge Store URL has been
+configured.
 
 Games can also access the same in-RAM records directly through
 `prg32_score_count` and `prg32_score_get`, or show the built-in on-device
@@ -412,8 +414,11 @@ Success response:
 Expected behavior:
 
 - scores are stored in RAM by the board-local API;
+- only the five best local records for each game are kept;
 - each score record associates a short game identifier, player name, and
   numeric score;
+- pending local records can be retried with `prg32_score_sync_remote` once a
+  Cartridge Store URL is configured;
 - rebooting the board clears board-local scores;
 - use the external ScoreServer for persistent classroom leaderboards.
 

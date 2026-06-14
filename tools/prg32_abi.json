@@ -830,6 +830,13 @@
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
+      "name": "prg32_score_sync_remote",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
       "name": "prg32_score_count",
       "return": "void",
       "args": [],

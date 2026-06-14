@@ -5,9 +5,9 @@ standalone [ScoreServer](https://github.com/riscv-prg32/ScoreServer). This is
 useful for competitions and for teaching the boundary between assembly, C, and
 network services.
 
-Games can use the score feature without Wi-Fi. The local firmware keeps an
-in-RAM scoreboard, includes an on-screen player-name prompt, and provides a
-simple scoreboard screen that cartridges can call directly.
+Games can use the score feature without Wi-Fi. The local firmware keeps the
+five best in-RAM scores for each game, includes an on-screen player-name prompt,
+and provides a simple scoreboard screen that cartridges can call directly.
 
 ## Enable Wi-Fi
 
@@ -88,6 +88,12 @@ The lower-level helpers `prg32_score_player_get`,
 `prg32_score_player_set`, `prg32_score_count`, and `prg32_score_get` are also
 available to cartridges that want to draw their own scoreboard UI.
 
+When a Cartridge Store URL has been saved in setup or compiled with
+`CONFIG_PRG32_STORE_URL`, local submissions are also marked for remote upload.
+`prg32_score_sync_remote()` retries pending local top-five records without
+requiring the game to know whether a store has been configured yet. If no store
+URL exists, the local scoreboard still works normally.
+
 ## Remote classroom server
 
 Clone and run the standalone Flask + SQLite server:
@@ -120,9 +126,9 @@ prg32_score_submit_remote("http://192.168.1.20:5000",
 
 ## Current implementation
 
-The board-local implementation stores a small in-RAM scoreboard. It is cleared
-when the firmware restarts. The standalone ScoreServer and Cartridge Store
-persist records in SQLite.
+The board-local implementation stores the top five in-RAM scores per game. It is
+cleared when the firmware restarts. The standalone ScoreServer and Cartridge
+Store persist uploaded records in SQLite.
 
 The same board HTTP server also hosts the cartridge upload API when
 `PRG32_GAME_UPLOAD_ENABLE` is enabled. See `docs/cartridges.md`.

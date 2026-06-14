@@ -2,7 +2,7 @@
 
 ABI_MAJOR = 1
 ABI_MINOR = 2
-ABI_HASH = 0x23fced32
+ABI_HASH = 0xec21efe2
 IMPORT_NAMES = [
     'prg32_ticks_ms',
     'prg32_input_read',
@@ -122,6 +122,7 @@ IMPORT_NAMES = [
     'prg32_score_player_set',
     'prg32_score_player_prompt',
     'prg32_score_submit_current_player',
+    'prg32_score_sync_remote',
     'prg32_score_count',
     'prg32_score_get',
     'prg32_scoreboard_show',
