@@ -40,13 +40,13 @@ Open a second terminal (source ESP-IDF again), then stage a demo cartridge:
 ```bash
 cd <path_to_PRG32>
 . $HOME/esp-idf/export.sh
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-qemu/asteroids.prg32
-python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/qemu_flash.bin
+python3 -m prg32 upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/qemu_flash.bin
 ```
 
 Run everything with one command next time:
@@ -362,7 +362,7 @@ ABI table instead of absolute firmware symbol addresses.
 Build a portable cartridge:
 
 ```bash
-python3 tools/prg32_game.py build examples/games/pong/ascii/game.S \
+python3 -m prg32 build examples/games/pong/ascii/game.S \
   --entry-prefix pong_ascii \
   --portable \
   --out build/pong.prg32
@@ -371,7 +371,7 @@ python3 tools/prg32_game.py build examples/games/pong/ascii/game.S \
 Inspect it:
 
 ```bash
-python3 tools/prg32_game.py summary build/pong.prg32
+python3 -m prg32 summary build/pong.prg32
 ```
 
 The summary shows ABI major/minor, ABI hash, import model, and required or
@@ -391,8 +391,8 @@ python3 tools/prg32_build_portable_examples.py --clean
 Prepare or flash a published single-file legacy firmware image:
 
 ```bash
-python3 tools/prg32_prepare_legacy_firmware.py
-python3 tools/prg32_flash_legacy_firmware.py \
+python3 -m prg32 esp32c6 prepare-legacy
+python3 -m prg32 esp32c6 flash-legacy \
   publish/legacy-firmware/PRG32-legacy-esp32c6.json \
   --port /dev/cu.usbmodem5ABA0099241
 ```
@@ -436,7 +436,7 @@ download server is the standalone **Cartridge Store** in
   cartridge is too large. Run QEMU once, then rerun `upload-qemu`.
 - `riscv32-esp-elf-gcc` missing: re-run `./install.sh esp32c3,esp32c6` and
   source the ESP-IDF export script.
-- Partition mismatch errors: run `tools/prg32_game.py doctor` and verify
+- Partition mismatch errors: run `python3 -m prg32 doctor` and verify
   `partitions_prg32.csv` plus the selected cartridge slot.
 
 ## Learning Path
@@ -584,21 +584,21 @@ for a step-by-step scientific-paper measurement workflow with screenshots.
 - `tools/midi2prg32audio.py`: convert simple MIDI notes to tracker JSON.
 - `tools/prg32audio_pack.py`: pack samples, instruments, and tracks into an
   AUDIO block for `.prg32` cartridges.
-- `tools/prg32_game.py attach-metadata`: append a deterministic `PRG32META`
+- `python3 -m prg32 attach-metadata`: append a deterministic `PRG32META`
   trailer for Cartridge Store publishing.
-- `tools/prg32_game.py inspect-metadata`: inspect metadata, assets, signature,
+- `python3 -m prg32 inspect-metadata`: inspect metadata, assets, signature,
   colophon, and unknown trailer blocks.
-- `tools/prg32_game.py store-discover`: find CartridgeStore instances via mDNS.
-- `tools/prg32_game.py store-list`: print a CartridgeStore catalog table.
-- `tools/prg32_game.py store-download`: download a `.prg32` from a store.
-- `tools/prg32_game.py publish`: build a cartridge and submit a store bundle.
-- `tools/prg32_game.py pack-bundle`: create a flat multi-architecture zip.
-- `tools/prg32_game.py publish-bundle`: submit a prepared bundle.
+- `python3 -m prg32 store-discover`: find CartridgeStore instances via mDNS.
+- `python3 -m prg32 store-list`: print a CartridgeStore catalog table.
+- `python3 -m prg32 store-download`: download a `.prg32` from a store.
+- `python3 -m prg32 publish`: build a cartridge and submit a store bundle.
+- `python3 -m prg32 pack-bundle`: create a flat multi-architecture zip.
+- `python3 -m prg32 publish-bundle`: submit a prepared bundle.
 - `tools/prg32_build_portable_examples.py`: build every checked-in example as
   portable `.prg32` cartridges and CartridgeStore bundles.
-- `tools/prg32_prepare_legacy_firmware.py`: merge a physical firmware build into
+- `python3 -m prg32 esp32c6 prepare-legacy`: merge a physical firmware build into
   one publishable binary.
-- `tools/prg32_flash_legacy_firmware.py`: flash a published single-file legacy
+- `python3 -m prg32 esp32c6 flash-legacy`: flash a published single-file legacy
   firmware image.
 
 See [docs/assets.md](docs/assets.md).
@@ -608,7 +608,7 @@ See [docs/assets.md](docs/assets.md).
 - Doctor check:
 
 ```bash
-python3 tools/prg32_game.py doctor
+python3 -m prg32 doctor
 ```
 
 - One-shot QEMU demo:
@@ -660,7 +660,7 @@ See `docs/images/README.md` for capture instructions.
 - `main`: default firmware app
 - `examples/games`: assembly and C game demos
 - `examples/features`: focused firmware feature demos
-- `tools/prg32_game.py`: cartridge tooling
+- `python3 -m prg32`: cartridge tooling
 - `tools/prg32_image_convert.py`: image and animation converter
 - `tools/prg32_audio_convert.py`: sample and MIDI converter
 - `tools/prg32audio_pack.py`: AUDIO block packer

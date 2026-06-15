@@ -2,7 +2,7 @@
 
 PRG32 portable cartridges call framework functions through a stable, versioned
 ABI table supplied by the resident firmware. The table is generated from
-`tools/prg32_abi.json`; generated files contain the function indices, ABI hash,
+`prg32/abi/prg32_abi.json`; generated files contain the function indices, ABI hash,
 and firmware table population code.
 
 Legacy cartridges can still use firmware-specific absolute imports resolved
@@ -24,7 +24,7 @@ PRG32 follows the standard RISC-V calling convention:
 Assembly examples save `ra` around C calls and keep stack alignment visible.
 For portable cartridges, `a0` contains a pointer to `prg32_abi_table_t` when
 the runtime enters `init`, `update`, or `draw`. The cartridge-side stubs emitted
-by `tools/prg32_game.py --portable` store that pointer in `__prg32_abi` and keep
+by `python3 -m prg32 --portable` store that pointer in `__prg32_abi` and keep
 the familiar `call prg32_gfx_clear` style available to examples.
 
 ## Stable ABI Table

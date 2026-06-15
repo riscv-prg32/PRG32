@@ -318,7 +318,7 @@ against the same API and exercise setup screens.
 
 PRG32 multiplayer is a cartridge-level state-sharing service. A cartridge opts
 in by calling `prg32_multiplayer_join(signature, flags)` from its own code, or
-by being packaged with `tools/prg32_game.py build --multiplayer`. Use short
+by being packaged with `python3 -m prg32 build --multiplayer`. Use short
 ASCII signatures such as `pong-v1` or `mygame:lab`. Players only see peers that
 joined the same cartridge signature, so different games or different cartridge
 revisions do not share a playfield.

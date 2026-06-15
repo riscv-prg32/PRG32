@@ -59,20 +59,20 @@ URL: http://192.168.4.1
 Build and upload a game:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
   --name asteroids \
   --out build-esp32c6/asteroids.prg32
 
-python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
+python3 -m prg32 upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
 ```
 
 Use `--slot cart1` to upload a second cartridge:
 
 ```bash
-python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
+python3 -m prg32 upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
 ```
 
 See `docs/cartridges.md`.
@@ -113,7 +113,7 @@ QEMU cartridge testing uses the same `.prg32` package but stages it into
 `build-qemu/qemu_flash.bin`:
 
 ```bash
-python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32
+python3 -m prg32 upload-qemu build-qemu/asteroids.prg32
 ```
 
 Shortcut scripts:

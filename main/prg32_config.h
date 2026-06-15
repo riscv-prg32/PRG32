@@ -116,7 +116,7 @@
  *
  * Physical-board builds enable a small SoftAP + HTTP API by default so the
  * firmware can be flashed once and games can be replaced from a host tool.
- * QEMU builds keep Wi-Fi disabled and use tools/prg32_game.py to patch the
+ * QEMU builds keep Wi-Fi disabled and use python3 -m prg32 to patch the
  * emulator flash image.
  */
 #ifndef PRG32_GAME_UPLOAD_ENABLE

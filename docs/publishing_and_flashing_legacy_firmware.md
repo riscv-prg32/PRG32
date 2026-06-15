@@ -9,7 +9,7 @@ file instead of tracking the bootloader, partition table, and app offsets.
 Build and merge the physical firmware:
 
 ```bash
-python3 tools/prg32_prepare_legacy_firmware.py
+python3 -m prg32 esp32c6 prepare-legacy
 ```
 
 The script runs the ESP-IDF build for `build-esp32c6`, reads
@@ -26,7 +26,7 @@ Use `--skip-build` only when `build-esp32c6/flasher_args.json` already belongs
 to the exact firmware you want to publish:
 
 ```bash
-python3 tools/prg32_prepare_legacy_firmware.py --skip-build
+python3 -m prg32 esp32c6 prepare-legacy --skip-build
 ```
 
 Checkpoint: keep the `.bin` and `.json` together. The JSON records the target,
@@ -37,13 +37,31 @@ flash settings, source files, and the `0x0` write offset used by the flasher.
 Connect the ESP32-C6 board and flash the published image:
 
 ```bash
-python3 tools/prg32_flash_legacy_firmware.py \
+python3 -m prg32 esp32c6 flash-legacy \
   publish/legacy-firmware/PRG32-legacy-esp32c6.json \
   --port /dev/cu.usbmodem5ABA0099241
 ```
 
-On Linux the port is usually similar to `/dev/ttyACM0`. On Windows it is usually
-similar to `COM5`.
+If you are unsure which port your ESP32-C6 is connected to, you can list the available serial ports depending on your operating system:
+
+**macOS:**
+```bash
+ls -1 /dev/cu.*
+```
+Look for a device starting with `/dev/cu.usbmodem` or `/dev/cu.usbserial`.
+
+**Linux:**
+```bash
+ls -1 /dev/ttyACM* /dev/ttyUSB*
+```
+Look for a device like `/dev/ttyACM0` or `/dev/ttyUSB0`.
+
+**Windows:**
+Open PowerShell and run:
+```powershell
+[System.IO.Ports.SerialPort]::GetPortNames()
+```
+Or use the Device Manager to find the `COM` port assigned to your USB device.
 
 After flashing, reset the board and hold A+B during boot to enter setup mode.
 

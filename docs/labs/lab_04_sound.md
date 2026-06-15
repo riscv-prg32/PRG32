@@ -39,7 +39,7 @@ board.
 3. Replace the generated square sample with a short WAV converted through
    `tools/wav2prg32sample.py`.
 4. Pack the sample with `tools/prg32audio_pack.py`.
-5. Build a cartridge with `tools/prg32_game.py build --audio-block`.
+5. Build a cartridge with `python3 -m prg32 build --audio-block`.
 
 Checkpoint: the cartridge can call `prg32_audio_play_sample(0, 255, 1024)` and
 hear sample `0` without reflashing the resident firmware.

@@ -100,7 +100,7 @@ Commands include `NOTE_ON`, `NOTE_OFF`, `SET_VOLUME`, `SET_PAN`, `SET_TEMPO`,
 ```bash
 python3 tools/wav2prg32sample.py input.wav --rate 22050 --out build/input.raw
 python3 tools/prg32audio_pack.py audio.json --out build/audio.block
-python3 tools/prg32_game.py build game.S \
+python3 -m prg32 build game.S \
   --portable \
   --entry-prefix mygame \
   --audio-block build/audio.block \

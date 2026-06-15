@@ -8,7 +8,7 @@ PRG32 has two related development loops:
 
 - resident firmware development, where `idf.py` or PlatformIO builds the PRG32
   runtime for the board or QEMU;
-- cartridge game development, where `tools/prg32_game.py` links a small RISC-V
+- cartridge game development, where `python3 -m prg32` links a small RISC-V
   assembly or C program against the portable PRG32 ABI table and produces a
   `.prg32` game package.
 
@@ -57,7 +57,7 @@ cmake --version
 ninja --version
 idf.py --version
 riscv32-esp-elf-gcc --version
-python3 tools/prg32_game.py doctor
+python3 -m prg32 doctor
 ```
 
 If `idf.py` or `riscv32-esp-elf-gcc` is missing, the usual fix is to install the
@@ -178,7 +178,7 @@ alias get_idf=". $HOME/esp-idf/export.sh"
 ```
 
 Run `get_idf` in each new terminal before using `idf.py`,
-`riscv32-esp-elf-gcc`, or `tools/prg32_game.py build`.
+`riscv32-esp-elf-gcc`, or `python3 -m prg32 build`.
 
 Optional PlatformIO CLI:
 
@@ -200,7 +200,7 @@ cd "$HOME/prg32-work"
 git clone https://github.com/raffmont/PRG32.git
 cd PRG32
 . "$HOME/esp-idf/export.sh"
-python3 tools/prg32_game.py doctor
+python3 -m prg32 doctor
 ```
 
 Windows ESP-IDF PowerShell:
@@ -333,7 +333,7 @@ Every call into PRG32 C helpers saves and restores `ra`, and the stack remains
 ## 9. Build The Hello World Cartridge For QEMU
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   work/hello_world/hello_world.S \
   --portable \
   --entry-prefix hello_world \
@@ -363,7 +363,7 @@ idf.py -B build-qemu \
 Quit QEMU with `Ctrl+]`, then stage the cartridge:
 
 ```bash
-python3 tools/prg32_game.py upload-qemu \
+python3 -m prg32 upload-qemu \
   build-qemu/hello_world.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```
@@ -441,7 +441,7 @@ The board should show the PRG32 splash and then setup if no cartridge is stored.
 Build the same source as a portable cartridge for the physical board:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   work/hello_world/hello_world.S \
   --portable \
   --entry-prefix hello_world \
@@ -466,7 +466,7 @@ URL:      http://192.168.4.1
 Connect the development computer to the `PRG32` Wi-Fi network, then upload:
 
 ```bash
-python3 tools/prg32_game.py upload \
+python3 -m prg32 upload \
   build-esp32c6/hello_world.prg32 \
   --url http://192.168.4.1
 ```
@@ -474,7 +474,7 @@ python3 tools/prg32_game.py upload \
 Upload to the second slot with:
 
 ```bash
-python3 tools/prg32_game.py upload \
+python3 -m prg32 upload \
   build-esp32c6/hello_world.prg32 \
   --slot cart1 \
   --url http://192.168.4.1
@@ -486,7 +486,7 @@ contain cartridges, use setup to run a slot or save a default cartridge.
 Useful runtime checks:
 
 ```bash
-python3 tools/prg32_game.py runtime --url http://192.168.4.1
+python3 -m prg32 runtime --url http://192.168.4.1
 curl http://192.168.4.1/api/games
 curl http://192.168.4.1/api/screenshot.bmp --output hello_world.bmp
 ```
@@ -606,7 +606,7 @@ Download the published physical artifact for a final smoke test:
 curl "$PRG32_STORE_URL/api/games/org.uniparthenope.hello-world/download?architecture=esp32c6&version=1.0.0" \
   --output build-esp32c6/hello_world_from_store.prg32
 
-python3 tools/prg32_game.py upload \
+python3 -m prg32 upload \
   build-esp32c6/hello_world_from_store.prg32 \
   --url http://192.168.4.1
 ```
