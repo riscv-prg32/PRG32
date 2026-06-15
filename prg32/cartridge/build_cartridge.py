@@ -150,7 +150,7 @@ def build_cartridge_core(source: str,
                          tool_prefix : str,
                          march : str,
                          mabi: str,
-                         portable: bool = False,
+                         portable: bool = True,
                          legacy_absolute_imports: bool = False,
                          required_features: list[str] = [],
                          optional_features: list[str] = [],
@@ -351,22 +351,25 @@ def build_cartridge_core(source: str,
 
 def build_cartridge_cli(args: argparse.Namespace) -> None:
     """
-    You can either specify a target or override single options (firmware_elf).
+    You can either specify an architecture or override single options (firmware_elf).
     This is to simplify common commands.
     """
 
-    target = args.target
-    if args.portable:
+    architecture = args.architecture
+    portable = args.portable or (not args.firmware_elf and not getattr(args, "legacy_absolute_imports", False))
+
+    if portable:
         firmware_elf = args.firmware_elf
         build_dir = args.build_dir
     else:
-        firmware_elf = args.firmware_elf or (TARGET_DEFAULTS[target]["firmware_elf"] if target else None)
-        build_dir = args.build_dir or (TARGET_DEFAULTS[target]["build_dir"] if target else None)
+        firmware_elf = args.firmware_elf or (TARGET_DEFAULTS[architecture]["firmware_elf"] if architecture else None)
+        build_dir = args.build_dir or (TARGET_DEFAULTS[architecture]["build_dir"] if architecture else None)
         if not firmware_elf:
-            die("Must specify --target or --firmware-elf when not using --portable")
+            die("Must specify --architecture or --firmware-elf when not building portable cartridges")
             
-    log_info(f"Building for target: {target}")
+    log_info(f"Building for architecture: {architecture}")
     log_info(f"Using Firmware ELF: {firmware_elf}")
+    log_info(f"Portable: {portable}")
     
 
     if not Path(args.source).exists():
@@ -385,7 +388,7 @@ def build_cartridge_cli(args: argparse.Namespace) -> None:
                          tool_prefix=args.tool_prefix,
                          march=args.march,
                          mabi=args.mabi,
-                         portable=args.portable,
+                         portable=portable,
                          legacy_absolute_imports=args.legacy_absolute_imports,
                          required_features=args.required_feature,
                          optional_features=args.optional_feature,
