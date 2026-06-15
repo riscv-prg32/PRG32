@@ -109,7 +109,7 @@ After building the resident firmware, package a feature demo with its entry
 prefix:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/features/animated_sprites/demo.S \
   --portable \
   --entry-prefix animated_sprites \
@@ -120,7 +120,7 @@ python3 tools/prg32_game.py build \
 For the C version:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/features/animated_sprites/c/demo.c \
   --portable \
   --entry-prefix animated_sprites_c \
@@ -131,7 +131,7 @@ python3 tools/prg32_game.py build \
 Upload to hardware:
 
 ```bash
-python3 tools/prg32_game.py upload \
+python3 -m prg32 upload \
   build-esp32c6/animated-sprites.prg32 \
   --url http://192.168.4.1
 ```
@@ -139,7 +139,7 @@ python3 tools/prg32_game.py upload \
 For QEMU, build against `build-qemu/PRG32.elf` and stage the cartridge:
 
 ```bash
-python3 tools/prg32_game.py upload-qemu \
+python3 -m prg32 upload-qemu \
   build-qemu/animated-sprites.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```

@@ -134,7 +134,7 @@ Build each variant as a portable cartridge, then attach metadata with the
 matching `--architecture`.
 
 ```bash
-python3 tools/prg32_game.py attach-metadata \
+python3 -m prg32 attach-metadata \
   build-esp32c6/game.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -143,7 +143,7 @@ python3 tools/prg32_game.py attach-metadata \
   --architecture esp32c6 \
   --out dist/game-esp32c6.prg32
 
-python3 tools/prg32_game.py attach-metadata \
+python3 -m prg32 attach-metadata \
   build-qemu/game.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -155,7 +155,7 @@ python3 tools/prg32_game.py attach-metadata \
 Use `inspect-metadata` to verify a monolithic cartridge:
 
 ```bash
-python3 tools/prg32_game.py inspect-metadata dist/game-esp32c6.prg32
+python3 -m prg32 inspect-metadata dist/game-esp32c6.prg32
 ```
 
 The builder serializes JSON blocks deterministically with sorted keys and compact

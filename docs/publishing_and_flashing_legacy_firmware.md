@@ -9,7 +9,7 @@ file instead of tracking the bootloader, partition table, and app offsets.
 Build and merge the physical firmware:
 
 ```bash
-python3 tools/prg32_prepare_legacy_firmware.py
+python3 -m prg32 esp32c6 prepare-legacy
 ```
 
 The script runs the ESP-IDF build for `build-esp32c6`, reads
@@ -26,7 +26,7 @@ Use `--skip-build` only when `build-esp32c6/flasher_args.json` already belongs
 to the exact firmware you want to publish:
 
 ```bash
-python3 tools/prg32_prepare_legacy_firmware.py --skip-build
+python3 -m prg32 esp32c6 prepare-legacy --skip-build
 ```
 
 Checkpoint: keep the `.bin` and `.json` together. The JSON records the target,
@@ -37,7 +37,7 @@ flash settings, source files, and the `0x0` write offset used by the flasher.
 Connect the ESP32-C6 board and flash the published image:
 
 ```bash
-python3 tools/prg32_flash_legacy_firmware.py \
+python3 -m prg32 esp32c6 flash-legacy \
   publish/legacy-firmware/PRG32-legacy-esp32c6.json \
   --port /dev/cu.usbmodem5ABA0099241
 ```

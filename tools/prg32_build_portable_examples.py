@@ -110,8 +110,9 @@ def main(argv: list[str]) -> int:
         cart = out_dir / f"{name}.prg32"
         run([
             sys.executable,
-            "tools/prg32_game.py",
-            "build",
+            "-m",
+            "prg32",
+            "build-cartridge",
             str(source.relative_to(ROOT)),
             "--portable",
             "--entry-prefix",

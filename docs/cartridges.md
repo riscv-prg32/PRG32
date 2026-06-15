@@ -27,7 +27,7 @@ game.prg32
 ```
 
 The firmware exports the PRG32 API addresses and the cartridge RAM address.
-`tools/prg32_game.py` links a game against those addresses and creates a
+`python3 -m prg32` links a game against those addresses and creates a
 `.prg32` package. The firmware validates the package, persists it in the chosen
 slot, loads any optional AUDIO block, copies code into executable cartridge RAM,
 and calls:
@@ -84,7 +84,7 @@ URL:      http://192.168.4.1
 Build a cartridge from an assembly or C example. This example uses the portable ABI table, so it does not need a firmware ELF:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -95,7 +95,7 @@ python3 tools/prg32_game.py build \
 Upload it to the board:
 
 ```bash
-python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
+python3 -m prg32 upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
 ```
 
 The upload tool reads `/api/runtime` before deployment and rejects incompatible
@@ -107,7 +107,7 @@ The firmware stores the cartridge in `cart0` by default and starts running it
 from the main loop. Upload to `cart1` with:
 
 ```bash
-python3 tools/prg32_game.py upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
+python3 -m prg32 upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
 ```
 
 After reset, one stored cartridge starts automatically. When both slots contain
@@ -122,7 +122,7 @@ A cartridge opts in to multiplayer by calling
 can also mark the package header with `PRG32_CART_FLAG_MULTIPLAYER`:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/pong/c/game.c \
   --portable \
   --entry-prefix pong_c \
@@ -146,7 +146,7 @@ Portable cartridges use the generated ABI table contract and do not need a
 firmware ELF or runtime HTTP query at build time:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -172,7 +172,7 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 Build a portable cartridge for QEMU staging:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -183,7 +183,7 @@ python3 tools/prg32_game.py build \
 Stage it into the QEMU flash image:
 
 ```bash
-python3 tools/prg32_game.py upload-qemu \
+python3 -m prg32 upload-qemu \
   build-qemu/asteroids.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```
@@ -210,7 +210,7 @@ signature, and an optional colophon.
 Create the executable cartridge first, then append metadata:
 
 ```bash
-python3 tools/prg32_game.py attach-metadata \
+python3 -m prg32 attach-metadata \
   build-esp32c6/asteroids.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -223,7 +223,7 @@ python3 tools/prg32_game.py attach-metadata \
 Inspect the trailer:
 
 ```bash
-python3 tools/prg32_game.py inspect-metadata dist/asteroids-esp32c6.prg32
+python3 -m prg32 inspect-metadata dist/asteroids-esp32c6.prg32
 ```
 
 A `.prg32` artifact contains one linked cartridge architecture. Build and
@@ -232,12 +232,12 @@ workflow:
 
 ```bash
 # Physical board variant.
-python3 tools/prg32_game.py build ... \
+python3 -m prg32 build ... \
   --portable \
   --out build-esp32c6/game.prg32
 
 # QEMU variant.
-python3 tools/prg32_game.py build ... \
+python3 -m prg32 build ... \
   --portable \
   --out build-qemu/game.prg32
 ```
@@ -272,8 +272,8 @@ Two installation paths are available:
 
 - On-device: enter setup, open `BROWSE STORE`, choose a compatible game, and
   download it into `cart0` or `cart1`.
-- Host tool: run `python3 tools/prg32_game.py store-download ...` and then
-  upload the downloaded `.prg32` with `python3 tools/prg32_game.py upload ...`.
+- Host tool: run `python3 -m prg32 store-download ...` and then
+  upload the downloaded `.prg32` with `python3 -m prg32 upload ...`.
 
 Both paths validate the ABI contract. A cartridge with the wrong ABI major,
 wrong ABI hash, unsupported required feature bits, unsupported import model, or
@@ -375,7 +375,7 @@ Build them with the same tool. The builder detects `.c` sources and compiles
 them as small freestanding C modules:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/platformer/c/game.c \
   --portable \
   --entry-prefix platformer_c \
@@ -408,7 +408,7 @@ python3 tools/prg32audio_pack.py audio.json --out build/audio.block
 Attach it to a cartridge:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \

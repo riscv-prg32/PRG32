@@ -42,7 +42,7 @@ run_step() {
   fi
 }
 
-run_step "doctor" python3 tools/prg32_game.py doctor
+run_step "doctor" python3 -m prg32 doctor
 
 run_step "set-target-esp32c3" \
   idf.py -B "$QEMU_BUILD_DIR" -D "SDKCONFIG=$QEMU_SDKCONFIG" -D "SDKCONFIG_DEFAULTS=$QEMU_DEFAULTS" set-target esp32c3
@@ -56,7 +56,7 @@ fi
 ok "firmware-artifact"
 
 run_step "build-demo-cartridge" \
-  python3 tools/prg32_game.py build \
+  python3 -m prg32 build \
     examples/games/pong/graphics/game.S \
     --firmware-elf "$QEMU_BUILD_DIR/PRG32.elf" \
     --entry-prefix pong_graphics \
@@ -109,7 +109,7 @@ fi
 ok "qemu-flash-image"
 
 run_step "stage-cartridge-qemu" \
-  python3 tools/prg32_game.py upload-qemu \
+  python3 -m prg32 upload-qemu \
     "$QEMU_BUILD_DIR/pong.prg32" \
     --flash "$QEMU_BUILD_DIR/qemu_flash.bin"
 

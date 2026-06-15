@@ -46,7 +46,7 @@ if [[ ! -f "$QEMU_BUILD_DIR/PRG32.elf" ]]; then
 fi
 
 info "Building demo cartridge"
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   "$DEMO_SOURCE" \
   --firmware-elf "$QEMU_BUILD_DIR/PRG32.elf" \
   --entry-prefix "$DEMO_PREFIX" \
@@ -58,7 +58,7 @@ if [[ ! -f "$DEMO_FLASH" ]]; then
 fi
 
 info "Staging demo cartridge into QEMU flash"
-python3 tools/prg32_game.py upload-qemu "$DEMO_CART" --flash "$DEMO_FLASH"
+python3 -m prg32 upload-qemu "$DEMO_CART" --flash "$DEMO_FLASH"
 
 info "Starting QEMU screen"
 info "Input: arrows or W/A/S/D = joystick 1, Enter/Space = SELECT, J/Z = A, K/X = B"

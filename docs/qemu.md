@@ -142,7 +142,7 @@ flash image before starting QEMU:
 
 On Windows:
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -153,7 +153,7 @@ If `build-qemu/qemu_flash.bin` does not exist yet, start QEMU once so ESP-IDF
 generates the flash image, quit QEMU, then run:
 
 ```bash
-python3 tools/prg32_game.py upload-qemu build-qemu/asteroids.prg32
+python3 -m prg32 upload-qemu build-qemu/asteroids.prg32
 ```
 
 Then run `PRG32: qemu screen`.

@@ -144,7 +144,7 @@ runtime network mode you selected.
 Use the same cartridge build command for every run in the series. Example:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/pong/graphics/game.S \
   --portable \
   --entry-prefix pong_graphics \
@@ -155,7 +155,7 @@ python3 tools/prg32_game.py build \
 Upload it to the board:
 
 ```bash
-python3 tools/prg32_game.py upload \
+python3 -m prg32 upload \
   build-esp32c6-metrics/pong.prg32 \
   --url http://192.168.4.1
 ```
@@ -164,7 +164,7 @@ For QEMU:
 
 On Windows:
 ```bash
-python3 tools/prg32_game.py upload-qemu \
+python3 -m prg32 upload-qemu \
   build-qemu/pong.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```

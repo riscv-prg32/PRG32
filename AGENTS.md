@@ -42,12 +42,12 @@ Named contributor metadata used across project docs:
 - Standalone metrics server and streaming export tooling:
   `riscv-prg32/MetricsServer`.
 - In-tree setup performance report tooling: `tools/prg32_metrics_paper.py`.
-- Uploadable game cartridge tool: `tools/prg32_game.py`.
+- Uploadable game cartridge tool: `python3 -m prg32`.
 - Bulk portable example publishing helper:
   `tools/prg32_build_portable_examples.py`.
 - Legacy resident firmware publishing/flashing helpers:
-  `tools/prg32_prepare_legacy_firmware.py` and
-  `tools/prg32_flash_legacy_firmware.py`.
+  `python3 -m prg32 esp32c6 prepare-legacy` and
+  `python3 -m prg32 esp32c6 flash-legacy`.
 - Media conversion tools: `tools/prg32_image_convert.py`,
   `tools/prg32_image_prepare.py`, and `tools/prg32_audio_convert.py`.
 - Student VS Code setup: `.vscode` and `PRG32.code-workspace`.
@@ -76,7 +76,7 @@ Named contributor metadata used across project docs:
 |-- hardware/                       Wiring, Wi-Fi, PCB/enclosure scaffold
 |-- tools/qemu.sh                   macOS/Linux QEMU screen shortcut
 |-- tools/qemu.ps1                  Windows PowerShell QEMU screen shortcut
-|-- tools/prg32_game.py             Cartridge build/upload/staging tool
+|-- python3 -m prg32             Cartridge build/upload/staging tool
 |-- tools/prg32_image_convert.py    Image/GIF/sprite/tile conversion
 |-- tools/prg32_audio_convert.py    WAV/MIDI conversion
 |-- .vscode/                        Student-ready VS Code tasks/settings
@@ -158,7 +158,7 @@ Useful checks:
 
 ```bash
 git diff --check
-python3 -m py_compile tools/prg32_game.py
+python3 -m py_compile python3 -m prg32
 python3 -m py_compile tools/prg32_metrics_paper.py
 ```
 
@@ -349,9 +349,9 @@ Tasks should remain simple wrappers around:
 - `idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor`
 - `idf.py -B build-qemu gdb`
 - `tools/qemu.sh` and `tools/qemu.ps1`
-- `python3 tools/prg32_game.py build ...`
-- `python3 tools/prg32_game.py upload ...`
-- `python3 tools/prg32_game.py upload-qemu ...`
+- `python3 -m prg32 build ...`
+- `python3 -m prg32 upload ...`
+- `python3 -m prg32 upload-qemu ...`
 
 Do not hard-code one instructor machine path. Use workspace-relative paths and
 standard ESP-IDF configuration variables where possible.
@@ -430,15 +430,15 @@ Companion repository: https://github.com/riscv-prg32/CartridgeStore
 | `components/prg32/prg32_setup_store.c` | Setup menu screens: config + browser |
 | `components/prg32/include/prg32.h` | `prg32_store_*` public declarations |
 | `main/prg32_config.h` | `PRG32_STORE_*` compile-time constants |
-| `tools/prg32_game.py` | `publish`, `pack-bundle`, `publish-bundle`, `store-*` |
+| `python3 -m prg32` | `publish`, `pack-bundle`, `publish-bundle`, `store-*` |
 | `docs/cartridge_store.md` | End-user integration guide |
 
 ## PRG32 Cartridge ABI Compatibility
 
-- Treat `tools/prg32_abi.json` as the single source of truth for the portable
+- Treat `prg32/abi/prg32_abi.json` as the single source of truth for the portable
   cartridge ABI.
 - Do not edit generated ABI files manually. Regenerate or check them with
-  `python3 tools/prg32_abi_gen.py` and `python3 tools/prg32_abi_gen.py --check`.
+  `python3 python3 -m prg32 abi gen` and `python3 python3 -m prg32 abi gen --check`.
 - ABI function indices are append-only. Never reorder, remove, or change
   existing function prototypes within the same ABI major version.
 - Any incompatible ABI change requires increasing `PRG32_ABI_MAJOR`.
@@ -453,8 +453,8 @@ Companion repository: https://github.com/riscv-prg32/CartridgeStore
 For cartridge/ABI work, run the relevant available checks before finishing:
 
 ```bash
-python3 tools/prg32_abi_gen.py --check
-python3 tools/prg32_game.py summary build/<example>.prg32
+python3 python3 -m prg32 abi gen --check
+python3 -m prg32 summary build/<example>.prg32
 git diff --check
 ```
 
@@ -478,11 +478,11 @@ Before reporting completion, try the relevant subset:
 
 ```bash
 git diff --check
-python3 tools/prg32_game.py doctor
-python3 -m py_compile tools/prg32_game.py
+python3 -m prg32 doctor
+python3 -m py_compile python3 -m prg32
 python3 -m py_compile tools/prg32_metrics_paper.py
 # if zeroconf available on host:
-python3 tools/prg32_game.py store-discover --timeout 2
+python3 -m prg32 store-discover --timeout 2
 idf.py build
 idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
 ```

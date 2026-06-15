@@ -182,7 +182,7 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "tools/prg32_game.py",
+        "python3 -m prg32",
         "build",
         "${input:prg32GameSource}",
         "--firmware-elf",
@@ -201,7 +201,7 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "tools/prg32_game.py",
+        "python3 -m prg32",
         "upload",
         "${input:prg32CartOut}",
         "--url",
@@ -214,7 +214,7 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "tools/prg32_game.py",
+        "python3 -m prg32",
         "upload-qemu",
         "${input:prg32QemuCartOut}",
         "--flash",
@@ -227,7 +227,7 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "tools/prg32_game.py",
+        "python3 -m prg32",
         "runtime",
         "--url",
         "${input:prg32HardwareUrl}"

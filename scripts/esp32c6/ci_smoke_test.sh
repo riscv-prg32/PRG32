@@ -11,13 +11,13 @@ git diff --check
 
 echo "[CI] Compiling Python tools"
 python3 -m py_compile \
-  tools/prg32_game.py \
+  python3 -m prg32 \
   tools/prg32_metrics_paper.py
 
 echo "[CI] Running unit tests"
 python3 -m unittest discover -s tests
 
 echo "[CI] Running host-only cartridge doctor"
-python3 tools/prg32_game.py doctor --host-only
+python3 -m prg32 doctor --host-only
 
 echo "[CI] Host smoke test passed"

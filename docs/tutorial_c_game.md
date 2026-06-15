@@ -125,7 +125,7 @@ Restore the default `main/CMakeLists.txt` and `main/main.c` after the lab.
 After the resident firmware is built, package the same C source as a cartridge:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/pong/c/game.c \
   --portable \
   --entry-prefix pong_c \
@@ -136,7 +136,7 @@ python3 tools/prg32_game.py build \
 Upload to the board:
 
 ```bash
-python3 tools/prg32_game.py upload build-esp32c6/pong-c.prg32 --url http://192.168.4.1
+python3 -m prg32 upload build-esp32c6/pong-c.prg32 --url http://192.168.4.1
 ```
 
 For QEMU

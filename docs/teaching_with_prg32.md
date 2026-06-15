@@ -82,7 +82,7 @@ explain how `prg32_platform_actor_t` changes every frame.
 For assembly lessons:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/platformer/graphics/game.S \
   --portable \
   --entry-prefix platformer_graphics \
@@ -93,7 +93,7 @@ python3 tools/prg32_game.py build \
 For C lessons:
 
 ```bash
-python3 tools/prg32_game.py build \
+python3 -m prg32 build \
   examples/games/platformer/c/game.c \
   --portable \
   --entry-prefix platformer_c \
@@ -104,7 +104,7 @@ python3 tools/prg32_game.py build \
 Upload either cartridge with:
 
 ```bash
-python3 tools/prg32_game.py upload build-esp32c6/platformer-c.prg32 --url http://192.168.4.1
+python3 -m prg32 upload build-esp32c6/platformer-c.prg32 --url http://192.168.4.1
 ```
 
 For QEMU

@@ -58,7 +58,7 @@ curl http://192.168.4.1/api/runtime
 10. Build and upload one `.prg32` cartridge with:
 
 ```bash
-python3 tools/prg32_game.py build examples/games/pong/c/game.c \
+python3 -m prg32 build examples/games/pong/c/game.c \
   --out build/pong.prg32 --entry-prefix pong_c --multiplayer
 ```
 

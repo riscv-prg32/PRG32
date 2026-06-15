@@ -80,10 +80,10 @@ Run these checks before opening a pull request:
 ```bash
 git diff --check
 PYTHONPYCACHEPREFIX=/tmp/prg32-pycache python3 -m py_compile \
-  tools/prg32_game.py \
+  python3 -m prg32 \
   tools/prg32_metrics_paper.py
 PYTHONPYCACHEPREFIX=/tmp/prg32-pycache python3 -m unittest discover -s tests
-python3 tools/prg32_game.py doctor --host-only
+python3 -m prg32 doctor --host-only
 ```
 
 When ESP-IDF is available, also run:

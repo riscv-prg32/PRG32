@@ -14,7 +14,7 @@ PRG32 examples are split into game examples and focused feature examples.
 
 Run audio examples as temporary firmware apps while validating hardware. For
 uploadable cartridges, pack assets with `tools/prg32audio_pack.py` and pass
-`--audio-block` to `tools/prg32_game.py build`.
+`--audio-block` to `python3 -m prg32 build`.
 
 ## Game Examples
 

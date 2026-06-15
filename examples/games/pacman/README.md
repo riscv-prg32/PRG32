@@ -8,7 +8,7 @@ This directory contains RISC-V assembly and C versions of the game:
 
 Build one version by adding the corresponding source file to
 `main/CMakeLists.txt`, or package it as a `.prg32` cartridge with
-`tools/prg32_game.py`.
+`python3 -m prg32`.
 
 In QEMU, use the monitor terminal keyboard mapping described in `docs/qemu.md`.
 

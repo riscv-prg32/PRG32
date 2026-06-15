@@ -1,46 +1,26 @@
-#!/usr/bin/env python3
-"""Prepare a single-file legacy PRG32 firmware image for publishing."""
-
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import sys
+from prg32.utilities.env_variables import ROOT_DIR, ESP32C6_BUILD_DIR
+from prg32.utilities.runtime_handler import run
 
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def run(cmd: list[str]) -> None:
-    print("+ " + " ".join(cmd))
-    subprocess.run(cmd, cwd=ROOT, check=True)
-
-
-def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--build-dir", default="build-esp32c6")
-    parser.add_argument("--out-dir", default="publish/legacy-firmware")
-    parser.add_argument("--name", default="PRG32-legacy-esp32c6")
-    parser.add_argument("--skip-build", action="store_true")
-    args = parser.parse_args(argv)
-
-    build_dir = ROOT / args.build_dir
-    out_dir = ROOT / args.out_dir
+def prepare_legacy_esp32c6(args: argparse.Namespace) -> None:
+    build_dir = ROOT_DIR / args.build_dir
+    out_dir = ROOT_DIR / args.out_dir
     flasher_args = build_dir / "flasher_args.json"
     if not args.skip_build:
         run([
             "idf.py",
             "-B",
-            str(build_dir.relative_to(ROOT)),
+            str(build_dir.relative_to(ROOT_DIR)),
             "-D",
             f"SDKCONFIG={args.build_dir}/sdkconfig",
             "-D",
             "SDKCONFIG_DEFAULTS=sdkconfig.defaults",
             "build",
-        ])
+        ], cwd=ROOT_DIR)
     if not flasher_args.exists():
         raise SystemExit(f"missing {flasher_args}; run an ESP-IDF build first")
 
@@ -70,7 +50,7 @@ def main(argv: list[str]) -> int:
     ]
     for offset, filename in sorted(flash_files.items(), key=lambda item: int(item[0], 0)):
         cmd.extend([offset, str(build_dir / filename)])
-    run(cmd)
+    run(cmd, cwd=ROOT_DIR)
 
     manifest = {
         "name": args.name,
@@ -86,8 +66,3 @@ def main(argv: list[str]) -> int:
     shutil.copy2(flasher_args, out_dir / "flasher_args.json")
     print(f"prepared {image}")
     print(f"manifest {manifest_path}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
