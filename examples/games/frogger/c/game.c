@@ -1,5 +1,4 @@
 #include "prg32.h"
-#include <stdio.h>
 
 #define FROG_W 24
 #define FROG_H 24
@@ -20,6 +19,47 @@ static uint32_t last_input;
 static uint32_t score;
 static int state;
 static car_t cars[4];
+
+// --- PRG32 NOSTDLIB COMPATIBILITY HELPERS ---
+
+// Satisfies the compiler's implicit need for memcpy during struct assignment
+void *memcpy(void *dest, const void *src, size_t n) {
+    char *d = dest;
+    const char *s = src;
+    while (n--) {
+        *d++ = *s++;
+    }
+    return dest;
+}
+
+// Replaces snprintf for formatting "SCORE X"
+static void format_score(char *buf, uint32_t s) {
+    char temp[10];
+    int i = 0;
+    
+    // Convert number to string (in reverse)
+    if (s == 0) {
+        temp[i++] = '0';
+    } else {
+        while (s > 0) {
+            temp[i++] = (s % 10) + '0';
+            s /= 10;
+        }
+    }
+    
+    // Copy "SCORE " prefix
+    const char *prefix = "SCORE ";
+    while (*prefix) {
+        *buf++ = *prefix++;
+    }
+    
+    // Reverse the digits into the final buffer
+    while (i > 0) {
+        *buf++ = temp[--i];
+    }
+    *buf = '\0'; // Null-terminate
+}
+// --------------------------------------------
 
 static const uint16_t frog_sprite[FROG_W * FROG_H] = {
     0xffff,0xffff,0xffff,0xffff,0xffff,0x07e0,0x07e0,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0x07e0,0x07e0,0xffff,0xffff,0xffff,0xffff,0xffff,
@@ -134,7 +174,8 @@ void frogger_c_draw(void) {
 
     prg32_sprite_draw_24x24(frog_x, frog_y, frog_sprite);
 
-    snprintf(text, sizeof(text), "SCORE %lu", (unsigned long)score);
+    format_score(text, score);
+    
     prg32_gfx_text8(8, 8, text, PRG32_COLOR_WHITE, 0x05e0);
     if (state < 0) {
         prg32_gfx_text8(96, 92, "CRASH - A", PRG32_COLOR_WHITE, PRG32_COLOR_RED);
