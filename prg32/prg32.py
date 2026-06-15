@@ -58,19 +58,19 @@ def main(argv: list[str]) -> int:
 
     p = esp32c6_sub.add_parser("upload", 
         help="upload a cartridge to the ESP32C6 SoC over HTTP", 
-        usage="%(prog)s CARTRIDGE [--url URL][--slot SLOT]"
+        usage="%(prog)s CARTRIDGE [options]"
     )
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
     p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload into")
     p.set_defaults(func=upload_esp32c6)
 
-    p = esp32c6_sub.add_parser("run", help="run a previously loaded cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!")
+    p = esp32c6_sub.add_parser("run", help="run a previously loaded cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s [options]")
     p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to run")
     p.set_defaults(func=run_esp32c6)
 
-    p = esp32c6_sub.add_parser("upload-and-run", help="upload and run a cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!")
+    p = esp32c6_sub.add_parser("upload-and-run", help="upload and run a cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
     p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload and run into")
@@ -82,14 +82,14 @@ def main(argv: list[str]) -> int:
     p = esp32c6_sub.add_parser("reset", help=f"erase flash and re-flash {ESP32C6_IMAGE} to ESP32C6 over USB")
     p.set_defaults(func=reset_esp32c6)
 
-    p = esp32c6_sub.add_parser("prepare-legacy", help="prepare a single-file legacy PRG32 firmware image for publishing")
+    p = esp32c6_sub.add_parser("prepare-legacy", help="prepare a single-file legacy PRG32 firmware image for publishing", usage="%(prog)s [options]")
     p.add_argument("--build-dir", default="build-esp32c6", help="Path to the build directory")
     p.add_argument("--out-dir", default="publish/legacy-firmware", help="Path to the output directory")
     p.add_argument("--name", default="PRG32-legacy-esp32c6", help="Name of the output binary")
     p.add_argument("--skip-build", action="store_true", help="Skip the ESP-IDF build step")
     p.set_defaults(func=prepare_legacy_esp32c6)
 
-    p = esp32c6_sub.add_parser("flash-legacy", help="flash a published single-file legacy PRG32 firmware image")
+    p = esp32c6_sub.add_parser("flash-legacy", help="flash a published single-file legacy PRG32 firmware image", usage="%(prog)s MANIFEST --port PORT [options]")
     p.add_argument("manifest", help="JSON produced by prepare-legacy")
     p.add_argument("--port", required=True, help="Serial port to flash to")
     p.add_argument("--baud", default="460800", help="Baud rate for flashing")
@@ -122,7 +122,7 @@ def main(argv: list[str]) -> int:
 
     p = qemu_sub.add_parser("upload", 
         help="stage a cartridge into QEMU flash",
-        usage="%(prog)s CARTRIDGE [--flash FLASH_IMAGE] [--partitions PARTITION_TABLE] [--slot SLOT]"
+        usage="%(prog)s CARTRIDGE [options]"
     )
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
     p.add_argument("--flash", default=QEMU_IMAGE, help="Path to the QEMU flash image")
@@ -140,8 +140,7 @@ def main(argv: list[str]) -> int:
         "build-cartridge", 
         help="build a .prg32 cartridge from assembly or C",
         # You choose either --target OR --firmware-elf
-        usage="%(prog)s SOURCE_PATH --out OUT_PATH --name NAME --entry-prefix PREFIX "
-              "(--target {esp32c6,qemu} | --firmware-elf FIRMWARE_ELF) [options]"
+        usage="%(prog)s SOURCE_PATH --out OUT_PATH --name NAME --entry-prefix PREFIX [options]"
     )
     p.add_argument("source", help="Source file path (.c or .S)")
     p.add_argument("--out", required=True, help="Output path for the compiled cartridge (.prg32)")
@@ -161,9 +160,9 @@ def main(argv: list[str]) -> int:
     p.add_argument("--march", default="rv32imc_zicsr_zifencei", help="RISC-V architecture string")
     p.add_argument("--mabi", default="ilp32", help="RISC-V ABI string")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the RISC-V GCC toolchain")
-    target_group = p.add_mutually_exclusive_group(required=False)
-    target_group.add_argument("--target", choices=["esp32c6", "qemu"], help="Target environment")
-    target_group.add_argument("--firmware-elf", help="Path to custom firmware ELF")
+    arch_group = p.add_mutually_exclusive_group(required=False)
+    arch_group.add_argument("--architecture", choices=["esp32c6", "qemu"], help="Target architecture (esp32c6 or qemu)")
+    arch_group.add_argument("--firmware-elf", help="Path to custom firmware ELF (disables portable build by default)")
 
     p.set_defaults(func=build_cartridge_cli)
 
@@ -188,6 +187,7 @@ def main(argv: list[str]) -> int:
     p = store_sub.add_parser(
         "attach-metadata",
         help="append or replace a PRG32META metadata trailer",
+        usage="%(prog)s CARTRIDGE --out OUT_PATH --metadata METADATA --icon ICON [options]"
     )
     p.add_argument("cartridge", help="Path to the target cartridge file")
     p.add_argument("--out", required=True, help="Path to write the updated cartridge")
@@ -206,20 +206,21 @@ def main(argv: list[str]) -> int:
     p = store_sub.add_parser(
         "inspect-metadata",
         help="print the PRG32META trailer summary for a cartridge",
+        usage="%(prog)s CARTRIDGE [options]"
     )
     p.add_argument("cartridge", help="Path to the target cartridge file")
     p.set_defaults(func=inspect_metadata)
 
-    p = store_sub.add_parser("discover", help="find CartridgeStore instances with mDNS")
+    p = store_sub.add_parser("discover", help="find CartridgeStore instances with mDNS", usage="%(prog)s [options]")
     p.add_argument("--timeout", type=float, default=5, help="mDNS discovery timeout in seconds")
     p.set_defaults(func=store_discover)
 
-    p = store_sub.add_parser("list", help="list cartridges from a CartridgeStore")
+    p = store_sub.add_parser("list", help="list cartridges from a CartridgeStore", usage="%(prog)s [options]")
     p.add_argument("--store-url", help="URL of the CartridgeStore")
     p.add_argument("--architecture", choices=sorted(ARCHITECTURE_PROFILES), help="Filter by architecture")
     p.set_defaults(func=store_list)
 
-    p = store_sub.add_parser("download", help="download a cartridge from a CartridgeStore")
+    p = store_sub.add_parser("download", help="download a cartridge from a CartridgeStore", usage="%(prog)s GAME_ID --architecture ARCH --out OUT_PATH [options]")
     p.add_argument("game_id", help="ID of the game to download")
     p.add_argument("--store-url", help="URL of the CartridgeStore")
     p.add_argument("--architecture", required=True, choices=sorted(ARCHITECTURE_PROFILES), help="Target architecture profile")
@@ -227,7 +228,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out", required=True, help="Output path for the downloaded cartridge")
     p.set_defaults(func=store_download)
 
-    p = store_sub.add_parser("publish", help="build and publish a cartridge bundle")
+    p = store_sub.add_parser("publish", help="build and publish a cartridge bundle", usage="%(prog)s SOURCE --firmware-elf ELF --entry-prefix PREFIX --name NAME [options]")
     p.add_argument("source", help="Source directory containing the game files")
     p.add_argument("--firmware-elf", required=True, help="Path to the runtime firmware ELF")
     p.add_argument("--entry-prefix", required=True, help="Prefix for the entry point functions")
@@ -244,19 +245,19 @@ def main(argv: list[str]) -> int:
     p.add_argument("--token", help="Authentication token for the store")
     p.set_defaults(func=publish)
 
-    p = store_sub.add_parser("pack-bundle", help="pack a flat CartridgeStore zip bundle")
+    p = store_sub.add_parser("pack-bundle", help="pack a flat CartridgeStore zip bundle", usage="%(prog)s --manifest MANIFEST --out OUT_PATH [options]")
     p.add_argument("--manifest", required=True, help="Path to the bundle manifest JSON")
     p.add_argument("--out", required=True, help="Output path for the bundle zip")
     p.set_defaults(func=pack_bundle)
 
-    p = store_sub.add_parser("publish-bundle", help="publish a CartridgeStore zip bundle")
+    p = store_sub.add_parser("publish-bundle", help="publish a CartridgeStore zip bundle", usage="%(prog)s BUNDLE [options]")
     p.add_argument("bundle", help="Path to the bundle zip file")
     p.add_argument("--store-url", help="URL of the CartridgeStore")
     p.add_argument("--token", help="Authentication token for the store")
     p.set_defaults(func=publish_bundle)
 
 
-    p = sub.add_parser("doctor", help="check local toolchain prerequisites")
+    p = sub.add_parser("doctor", help="check local toolchain prerequisites", usage="%(prog)s [options]")
     p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Path to the partition table CSV")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to check")
     p.add_argument(
@@ -267,7 +268,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the toolchain")
     p.set_defaults(func=doctor)
 
-    p = sub.add_parser("runtime", help="print runtime linker information")
+    p = sub.add_parser("runtime", help="print runtime linker information", usage="%(prog)s [options]")
     p.add_argument("--url", help="URL of a device to fetch runtime metadata from")
     p.add_argument("--firmware-elf", help="Path to the firmware ELF to analyze")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the toolchain")
