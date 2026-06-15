@@ -32,9 +32,9 @@ ILI9341 pins before the splash screen is drawn.
 The default firmware is a resident PRG32 runtime. On the physical ESP32-C6
 build it shows the full 320x240 splash screen, samples the joystick, and enters
 setup mode when A and B are held or when no cartridge is stored. If one
-cartridge is stored, it starts automatically. If both `cart0` and `cart1`
-contain cartridges, setup lets the user run one immediately or save a default
-boot cartridge.
+cartridge is stored, it starts automatically. If multiple slots among `cart0`
+through `cart3` contain cartridges, setup lets the user run one immediately or
+save a default boot cartridge.
 
 In setup mode, choose access-point mode for the standard cartridge upload
 workflow, or infrastructure mode to scan nearby SSIDs and connect the board to
@@ -69,7 +69,7 @@ python3 -m prg32 build \
 python3 -m prg32 upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
 ```
 
-Use `--slot cart1` to upload a second cartridge:
+Use `--slot` to upload another cartridge into one of the four persistent slots:
 
 ```bash
 python3 -m prg32 upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1

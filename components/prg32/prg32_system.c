@@ -195,6 +195,96 @@ static void draw_cartridge_status(int y) {
     prg32_gfx_text8(8, y + 16, line, PRG32_COLOR_CYAN, 0);
 }
 
+typedef enum {
+    CART_ACTION_NONE,
+    CART_ACTION_RUN,
+    CART_ACTION_REFRESH,
+} cart_action_result_t;
+
+static cart_action_result_t cartridge_context_menu(uint8_t slot) {
+    static const char *const actions[] = {
+        "RUN CARTRIDGE",
+        "RESET LOCAL SCOREBOARD",
+        "REMOVE FROM SLOT",
+    };
+    const int action_count = (int)(sizeof(actions) / sizeof(actions[0]));
+    int choice = 0;
+    prg32_cart_info_t info;
+    prg32_cart_get_slot_info(slot, &info);
+
+    prg32_input_wait_released(SETUP_KEYS);
+    uint32_t last = 0;
+    while (1) {
+        uint32_t input = prg32_input_read_menu();
+        if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
+            choice--;
+        }
+        if ((input & PRG32_BTN_DOWN) &&
+            !(last & PRG32_BTN_DOWN) &&
+            choice + 1 < action_count) {
+            choice++;
+        }
+        if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+            prg32_input_wait_released(SETUP_CANCEL);
+            return CART_ACTION_NONE;
+        }
+        if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
+            ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+            prg32_input_wait_released(SETUP_ACCEPT);
+            if (choice == 0) {
+                return CART_ACTION_RUN;
+            }
+            if (choice == 1) {
+                int removed = prg32_score_reset_local(info.name[0] ? info.name : NULL);
+                char line[48];
+                snprintf(line,
+                         sizeof(line),
+                         removed == 1 ? "1 SCORE REMOVED" : "%d SCORES REMOVED",
+                         removed);
+                show_setup_message("LOCAL SCOREBOARD",
+                                   line,
+                                   PRG32_COLOR_GREEN,
+                                   1000);
+                return CART_ACTION_NONE;
+            }
+            if (prg32_cart_erase_slot(slot) == 0) {
+                show_setup_message("RUN CARTRIDGE",
+                                   "CARTRIDGE REMOVED",
+                                   PRG32_COLOR_GREEN,
+                                   1000);
+                return CART_ACTION_REFRESH;
+            }
+            show_setup_message("RUN CARTRIDGE",
+                               prg32_cart_last_error(),
+                               PRG32_COLOR_RED,
+                               1400);
+            return CART_ACTION_NONE;
+        }
+
+        prg32_gfx_clear(PRG32_COLOR_BLACK);
+        prg32_gfx_text8(8, 8, "CARTRIDGE MENU", PRG32_COLOR_WHITE, 0);
+        prg32_gfx_text8(8, 28, info.slot_name, PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(72,
+                        28,
+                        info.name[0] ? info.name : "(unnamed)",
+                        PRG32_COLOR_WHITE,
+                        0);
+        for (int i = 0; i < action_count; ++i) {
+            int y = 64 + i * 22;
+            prg32_gfx_text8(24, y, actions[i], PRG32_COLOR_WHITE, 0);
+            prg32_gfx_text8(8,
+                             y,
+                             i == choice ? ">" : " ",
+                             PRG32_COLOR_GREEN,
+                             0);
+        }
+        prg32_gfx_text8(8, 216, "UP/DOWN CHOOSE  SELECT/B OK  A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_present();
+        last = input;
+        vTaskDelay(pdMS_TO_TICKS(80));
+    }
+}
+
 static int cartridge_picker(const char *title, bool force_choice) {
     uint8_t slots[PRG32_CART_SLOT_COUNT];
     int count = stored_slots(slots, PRG32_CART_SLOT_COUNT);
@@ -226,12 +316,28 @@ static int cartridge_picker(const char *title, bool force_choice) {
             choice + 1 < count) {
             choice++;
         }
-        if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-            ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-            prg32_input_wait_released(SETUP_ACCEPT);
+        if ((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) {
+            cart_action_result_t action = cartridge_context_menu(slots[choice]);
+            if (action == CART_ACTION_RUN) {
+                return prg32_cart_select_slot(slots[choice]);
+            }
+            if (action == CART_ACTION_REFRESH) {
+                count = stored_slots(slots, PRG32_CART_SLOT_COUNT);
+                if (count <= 0) {
+                    return -1;
+                }
+                if (choice >= count) {
+                    choice = count - 1;
+                }
+            }
+            last = 0;
+            continue;
+        }
+        if ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B)) {
+            prg32_input_wait_released(PRG32_BTN_B);
             return prg32_cart_select_slot(slots[choice]);
         }
-        if (!force_choice && (input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+        if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
             prg32_input_wait_released(SETUP_CANCEL);
             return -1;
         }
@@ -255,7 +361,7 @@ static int cartridge_picker(const char *title, bool force_choice) {
                              0);
         }
         draw_setup_status(144);
-        prg32_gfx_text8(8, 216, "UP/DOWN CHOOSE  SELECT/B RUN  A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 216, "B RUN  SELECT MENU  A BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         last = input;
         vTaskDelay(pdMS_TO_TICKS(80));

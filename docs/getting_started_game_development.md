@@ -471,7 +471,7 @@ python3 -m prg32 upload \
   --url http://192.168.4.1
 ```
 
-Upload to the second slot with:
+Upload to another slot with:
 
 ```bash
 python3 -m prg32 upload \
@@ -480,7 +480,7 @@ python3 -m prg32 upload \
   --url http://192.168.4.1
 ```
 
-The firmware stores the cartridge and can run it immediately. If both slots
+The firmware stores the cartridge and can run it immediately. If multiple slots
 contain cartridges, use setup to run a slot or save a default cartridge.
 
 Useful runtime checks:

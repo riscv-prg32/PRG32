@@ -9,6 +9,8 @@
 #include "esp_http_client.h"
 #include "esp_http_server.h"
 #endif
+#include "nvs.h"
+#include "nvs_flash.h"
 
 #if __has_include("esp_err.h")
 #include "esp_err.h"
@@ -37,9 +39,25 @@ typedef struct {
     uint8_t pending_remote;
 } score_entry_t;
 
+#define SCORE_NVS_PARTITION "scores"
+#define SCORE_NVS_NAMESPACE "prg32score"
+#define SCORE_NVS_MAGIC 0x50533332u
+#define SCORE_NVS_VERSION 1u
+
+typedef struct {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t count;
+    char current_player[sizeof(((prg32_score_t *)0)->player)];
+    score_entry_t entries[PRG32_SCORE_MAX];
+} score_store_t;
+
 static score_entry_t scores[PRG32_SCORE_MAX];
 static int score_count;
 static char current_player[sizeof(scores[0].score.player)] = "PLAYER";
+static int scores_loaded;
+static int scores_persistence_available = 1;
+static int scores_nvs_ready;
 
 #if PRG32_WIFI_ENABLE
 static int resolve_configured_store_url(char *out_url, size_t max_len);
@@ -78,10 +96,91 @@ static int score_visible_index(const char *game, int visible_index) {
     return -1;
 }
 
+static esp_err_t scores_nvs_init(void) {
+    if (scores_nvs_ready) {
+        return ESP_OK;
+    }
+    if (!scores_persistence_available) {
+        return ESP_FAIL;
+    }
+    esp_err_t err = nvs_flash_init_partition(SCORE_NVS_PARTITION);
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
+        err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase_partition(SCORE_NVS_PARTITION));
+        err = nvs_flash_init_partition(SCORE_NVS_PARTITION);
+    }
+    if (err != ESP_OK) {
+        scores_persistence_available = 0;
+    } else {
+        scores_nvs_ready = 1;
+    }
+    return err;
+}
+
+static void scores_load_once(void) {
+    if (scores_loaded) {
+        return;
+    }
+    scores_loaded = 1;
+    if (scores_nvs_init() != ESP_OK) {
+        return;
+    }
+
+    nvs_handle_t nvs;
+    if (nvs_open_from_partition(SCORE_NVS_PARTITION,
+                                SCORE_NVS_NAMESPACE,
+                                NVS_READONLY,
+                                &nvs) != ESP_OK) {
+        return;
+    }
+    score_store_t store;
+    size_t size = sizeof(store);
+    esp_err_t err = nvs_get_blob(nvs, "scores", &store, &size);
+    nvs_close(nvs);
+    if (err != ESP_OK ||
+        size != sizeof(store) ||
+        store.magic != SCORE_NVS_MAGIC ||
+        store.version != SCORE_NVS_VERSION ||
+        store.count > PRG32_SCORE_MAX) {
+        return;
+    }
+
+    score_count = (int)store.count;
+    memcpy(scores, store.entries, sizeof(scores));
+    copy_cstr(current_player, sizeof(current_player), store.current_player);
+}
+
+static void scores_save(void) {
+    if (!scores_loaded || scores_nvs_init() != ESP_OK) {
+        return;
+    }
+
+    score_store_t store;
+    memset(&store, 0, sizeof(store));
+    store.magic = SCORE_NVS_MAGIC;
+    store.version = SCORE_NVS_VERSION;
+    store.count = (uint16_t)score_count;
+    copy_cstr(store.current_player, sizeof(store.current_player), current_player);
+    memcpy(store.entries, scores, sizeof(scores));
+
+    nvs_handle_t nvs;
+    if (nvs_open_from_partition(SCORE_NVS_PARTITION,
+                                SCORE_NVS_NAMESPACE,
+                                NVS_READWRITE,
+                                &nvs) != ESP_OK) {
+        return;
+    }
+    if (nvs_set_blob(nvs, "scores", &store, sizeof(store)) == ESP_OK) {
+        nvs_commit(nvs);
+    }
+    nvs_close(nvs);
+}
+
 int prg32_score_player_get(char *out_player, size_t max_len) {
     if (!out_player || max_len == 0) {
         return ESP_ERR_INVALID_ARG;
     }
+    scores_load_once();
     copy_cstr(out_player, max_len, current_player);
     return ESP_OK;
 }
@@ -90,7 +189,9 @@ int prg32_score_player_set(const char *player) {
     if (!player || !player[0]) {
         return ESP_ERR_INVALID_ARG;
     }
+    scores_load_once();
     copy_cstr(current_player, sizeof(current_player), player);
+    scores_save();
     return ESP_OK;
 }
 
@@ -111,6 +212,7 @@ int prg32_score_submit(const char *game, const char *player, uint32_t score) {
     if (!game || !game[0] || !player || !player[0]) {
         return ESP_ERR_INVALID_ARG;
     }
+    scores_load_once();
 
     int insert_at = score_count;
     int game_seen = 0;
@@ -175,6 +277,7 @@ int prg32_score_submit(const char *game, const char *player, uint32_t score) {
     if (score_count < PRG32_SCORE_MAX) {
         score_count++;
     }
+    scores_save();
     prg32_score_sync_remote();
     return ESP_OK;
 }
@@ -184,6 +287,7 @@ int prg32_score_submit_current_player(const char *game, uint32_t score) {
 }
 
 int prg32_score_sync_remote(void) {
+    scores_load_once();
 #if PRG32_WIFI_ENABLE
     char store_url[128];
     if (resolve_configured_store_url(store_url, sizeof(store_url)) != 0) {
@@ -203,13 +307,39 @@ int prg32_score_sync_remote(void) {
             synced++;
         }
     }
+    if (synced > 0) {
+        scores_save();
+    }
     return synced;
 #else
     return 0;
 #endif
 }
 
+int prg32_score_reset_local(const char *game) {
+    scores_load_once();
+    int write = 0;
+    int removed = 0;
+    for (int read = 0; read < score_count; ++read) {
+        if (score_entry_matches_game(&scores[read], game)) {
+            removed++;
+            continue;
+        }
+        if (write != read) {
+            scores[write] = scores[read];
+        }
+        write++;
+    }
+    if (removed > 0) {
+        memset(&scores[write], 0, sizeof(scores[0]) * (PRG32_SCORE_MAX - write));
+        score_count = write;
+        scores_save();
+    }
+    return removed;
+}
+
 int prg32_score_count(const char *game) {
+    scores_load_once();
     int count = 0;
     for (int i = 0; i < score_count; ++i) {
         if (score_entry_matches_game(&scores[i], game)) {
@@ -223,6 +353,7 @@ int prg32_score_get(const char *game, int index, prg32_score_t *out_score) {
     if (!out_score || index < 0) {
         return ESP_ERR_INVALID_ARG;
     }
+    scores_load_once();
     int raw = score_visible_index(game, index);
     if (raw < 0) {
         return ESP_FAIL;
@@ -232,6 +363,7 @@ int prg32_score_get(const char *game, int index, prg32_score_t *out_score) {
 }
 
 int prg32_scoreboard_show(const char *game, const char *title) {
+    scores_load_once();
     prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
     while (1) {
         uint32_t input = prg32_input_read_menu();

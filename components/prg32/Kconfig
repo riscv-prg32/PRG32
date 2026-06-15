@@ -84,8 +84,9 @@ config PRG32_CART_RAM_CLASSROOM
 config PRG32_CART_RAM_EXTENDED
     bool "Extended profile, 64 KiB"
     help
-        Reserve the historical large cartridge window. Use this only for labs
-        or demos that intentionally need larger linked cartridge images.
+        Reserve a larger cartridge execution window. QEMU uses this profile by
+        default; physical builds can enable it for labs that intentionally need
+        larger linked cartridge images.
 
 config PRG32_CART_RAM_CUSTOM
     bool "Custom profile"

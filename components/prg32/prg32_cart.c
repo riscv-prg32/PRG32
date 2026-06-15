@@ -41,10 +41,14 @@ uint8_t prg32_cart_exec[PRG32_CART_RAM_SIZE] __attribute__((section(".iram1.data
 static const char *const g_cart_labels[PRG32_CART_SLOT_COUNT] = {
     "cart0",
     "cart1",
+    "cart2",
+    "cart3",
 };
 static const uint8_t g_cart_subtypes[PRG32_CART_SLOT_COUNT] = {
     0x40,
     0x41,
+    0x42,
+    0x43,
 };
 
 static const esp_partition_t *g_cart_partitions[PRG32_CART_SLOT_COUNT];
@@ -610,6 +614,37 @@ int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size) {
 
     set_error("ok");
     ESP_LOGI(TAG, "cart store: done %s", slot_name(slot));
+    return 0;
+}
+
+int prg32_cart_erase_slot(uint8_t slot) {
+    if (slot >= PRG32_CART_SLOT_COUNT) {
+        set_error("invalid cartridge slot");
+        return -1;
+    }
+    const esp_partition_t *part = cart_partition_by_slot(slot);
+    if (!part) {
+        set_errorf("%s partition not found", slot_name(slot));
+        return -1;
+    }
+    if (lock_cart() != 0) {
+        set_error("failed to lock cartridge storage");
+        return -1;
+    }
+    esp_err_t err = esp_partition_erase_range(part, 0, part->size);
+    if (err == ESP_OK && g_current_slot == slot) {
+        g_stored = false;
+    }
+    unlock_cart();
+    if (err != ESP_OK) {
+        set_errorf("failed to erase cartridge slot: %s", esp_err_to_name(err));
+        return -1;
+    }
+    if (prg32_cart_default_slot() == (int)slot) {
+        prg32_cart_set_default_slot(-1);
+    }
+    set_error("ok");
+    ESP_LOGI(TAG, "cart erase: done %s", slot_name(slot));
     return 0;
 }
 

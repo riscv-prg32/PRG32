@@ -123,7 +123,7 @@ Typical response fields:
   "cart_abi_features": 511,
   "cart_load_addr": 1107296256,
   "cart_max_size": 65536,
-  "cart_ram_size": 65536,
+  "cart_ram_size": 32768,
   "cart_loaded": true,
   "qemu": false,
   "cart": {
@@ -224,7 +224,7 @@ Parameters:
 
 | Parameter | Required | Meaning |
 |---|---:|---|
-| `slot` | no | Cartridge slot name such as `cart0` or `cart1`; defaults to `cart0` |
+| `slot` | no | Cartridge slot name from `cart0` through `cart3`; defaults to `cart0` |
 
 Example with the host tool:
 
@@ -258,7 +258,7 @@ Success response:
 Expected behavior:
 
 - upload is accepted only when `PRG32_GAME_UPLOAD_ENABLE` is enabled;
-- the request body must fit in the 64 KiB cartridge package limit;
+- the request body must fit in the 128 KiB cartridge package limit;
 - invalid cartridge images return `400` with the cartridge validation error;
 - disabled upload support returns `403`.
 
@@ -358,11 +358,11 @@ Expected behavior:
 GET /api/scores
 ```
 
-Returns the board-local in-RAM scoreboard. The firmware keeps the five best
+Returns the board-local persistent scoreboard. The firmware keeps the five best
 local records for each game even when no Cartridge Store URL has been
 configured.
 
-Games can also access the same in-RAM records directly through
+Games can also access the same local records directly through
 `prg32_score_count` and `prg32_score_get`, or show the built-in on-device
 scoreboard with `prg32_scoreboard_show`.
 
@@ -413,14 +413,14 @@ Success response:
 
 Expected behavior:
 
-- scores are stored in RAM by the board-local API;
+- scores are stored in a dedicated local NVS partition by the board-local API;
 - only the five best local records for each game are kept;
 - each score record associates a short game identifier, player name, and
   numeric score;
 - pending local records can be retried with `prg32_score_sync_remote` once a
   Cartridge Store URL is configured;
-- rebooting the board clears board-local scores;
-- use the external ScoreServer for persistent classroom leaderboards.
+- board-local scores survive reboot and cartridge replacement;
+- use the external ScoreServer for shared classroom leaderboards.
 
 ## ScoreServer API
 
@@ -929,7 +929,7 @@ python3 tools/prg32_metrics_paper.py prg32_performance.json \
 | `404` on a board endpoint | Wi-Fi API not enabled or wrong base URL | Check firmware config and board IP |
 | `403` on `POST /api/games` | Upload support disabled | Enable `PRG32_GAME_UPLOAD_ENABLE` |
 | `400` during upload | Invalid image, oversized image, or bad slot | Rebuild the cartridge and check `slot` |
-| Empty board score list after reboot | Board-local scores are RAM-only | Use ScoreServer for persistence |
+| Empty board score list after reflashing with an erased score partition | Local score partition was erased | Re-submit scores or sync from the classroom service |
 | Store discovery finds nothing | mDNS blocked or QEMU build | Enter the store URL manually |
 | Store download missing architecture | Only another target was published | Publish `esp32c6` or `qemu` as needed |
 | `401` on publish | Missing or invalid Bearer token | Add `--token` or `store_token` |

@@ -231,13 +231,13 @@ Important constants:
 - `PRG32_CART_META_MAGIC`: optional metadata trailer magic, `PRG32META`.
 - `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
 - `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
-- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, currently 64 KiB.
+- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, currently 128 KiB.
 - `PRG32_CART_RAM_SIZE`: statically placed executable cartridge RAM window,
-  configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 builds
-  default to the 32 KiB classroom profile to leave more SRAM to the resident
-  runtime; QEMU defaults to the 64 KiB extended profile for desktop
-  compatibility. The window remains static because cartridges are linked to
-  the exported `prg32_cart_exec` address.
+  configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 classroom
+  builds default to 32 KiB to preserve setup/Wi-Fi heap, while QEMU defaults to
+  the 64 KiB extended profile for desktop experiments. The window remains
+  static because cartridges are linked to the exported `prg32_cart_exec`
+  address.
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
 Important functions:
@@ -245,7 +245,8 @@ Important functions:
 - `prg32_cart_load_addr()`: runtime address used by the host linker.
 - `prg32_cart_install(image, size, persist)`: validate, load, and optionally store.
 - `prg32_cart_store_slot(slot, image, size)`: validate and store an image without running it.
-- `prg32_cart_install_slot(slot, image, size, persist)`: install to `cart0` or `cart1`.
+- `prg32_cart_install_slot(slot, image, size, persist)`: install to one of
+  `cart0` through `cart3`.
 - `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot.
 - `prg32_cart_default_slot()`: read the saved default boot cartridge.
 - `prg32_cart_set_default_slot(slot)`: save a default slot, or pass `-1` to clear it.

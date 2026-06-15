@@ -17,7 +17,9 @@ PRG32 firmware
 |-- cartridge loader
 |-- executable cartridge RAM
 |-- cart0 flash partition
-`-- cart1 flash partition
+|-- cart1 flash partition
+|-- cart2 flash partition
+`-- cart3 flash partition
 
 game.prg32
 |-- PRG32 cartridge header
@@ -44,6 +46,9 @@ and calls:
 factory: resident PRG32 firmware
 cart0:   uploaded cartridge slot 0
 cart1:   uploaded cartridge slot 1
+cart2:   uploaded cartridge slot 2
+cart3:   uploaded cartridge slot 3
+scores:  persistent local scoreboard storage
 ```
 
 This partition table is selected by `sdkconfig.defaults` and
@@ -51,17 +56,17 @@ This partition table is selected by `sdkconfig.defaults` and
 
 ## Slot Count
 
-The checked-in classroom firmware supports two persistent slots:
-`cart0` and `cart1`. Only one cartridge is loaded into executable RAM at a time,
-so additional slots cost flash space, not runtime RAM.
+The checked-in classroom firmware supports four persistent slots:
+`cart0`, `cart1`, `cart2`, and `cart3`. Each slot stores a `.prg32` package up
+to 128 KiB. Only one cartridge is loaded into executable RAM at a time, so
+additional slots cost flash space, not runtime RAM.
 
-With the current 4 MB flash image layout, a third 512 KiB slot can fit after
-`cart1` if the partition table and loader slot metadata are extended. On an
-8 MB ESP32-C6 module, the same 512 KiB slot size can support about eleven total
-slots after updating the ESP-IDF flash size, `partitions_prg32.csv`,
-`PRG32_CART_SLOT_COUNT`, the slot labels/subtypes in the cartridge loader, and
-the host tooling/docs. Keep fewer slots for labs unless the course explicitly
-needs a cartridge library; two slots are easier for students to reason about.
+The resident firmware reserves one executable cartridge RAM window. Physical
+classroom builds default to 32 KiB to preserve setup/Wi-Fi heap, while QEMU
+uses the 64 KiB extended profile. Portable cartridges built for the existing
+ABI table continue to run without recompilation as long as they fit in the
+runtime's executable RAM window and require only ABI features provided by the
+firmware.
 
 ## Hardware Workflow
 
@@ -104,16 +109,19 @@ major, ABI hash, missing feature bits, or legacy load address. The firmware
 performs the same ABI contract check when it receives or loads a cartridge.
 
 The firmware stores the cartridge in `cart0` by default and starts running it
-from the main loop. Upload to `cart1` with:
+from the main loop. Upload to another slot with:
 
 ```bash
 python3 -m prg32 upload build-esp32c6/asteroids.prg32 --slot cart1 --url http://192.168.4.1
 ```
 
-After reset, one stored cartridge starts automatically. When both slots contain
-games, PRG32 enters setup unless a default cartridge has been saved. Use
+After reset, one stored cartridge starts automatically. When multiple slots
+contain games, PRG32 enters setup unless a default cartridge has been saved. Use
 `DEFAULT CARTRIDGE` in setup to choose the slot that should boot automatically,
-or `RUN CARTRIDGE` to launch a slot immediately.
+or `RUN CARTRIDGE` to inspect slots. In the run-cartridge picker, B launches the
+highlighted cartridge, SELECT opens the slot context menu, and A returns to
+setup. The context menu can run the cartridge, reset that cartridge's local
+scoreboard, or erase the cartridge from its slot.
 
 ## Multiplayer Cartridges
 
@@ -198,8 +206,8 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 ```
 
 QEMU does not emulate the classroom Wi-Fi upload path. Instead, it uses the same
-cartridge package and writes it into `cart0` by default, or `cart1` when
-`upload-qemu --slot cart1` is used.
+cartridge package and writes it into `cart0` by default, or another slot when
+`upload-qemu --slot cart1`, `cart2`, or `cart3` is used.
 
 ## Store-Ready Metadata
 
@@ -271,7 +279,7 @@ troubleshooting details.
 Two installation paths are available:
 
 - On-device: enter setup, open `BROWSE STORE`, choose a compatible game, and
-  download it into `cart0` or `cart1`.
+  download it into `cart0`, `cart1`, `cart2`, or `cart3`.
 - Host tool: run `python3 -m prg32 store-download ...` and then
   upload the downloaded `.prg32` with `python3 -m prg32 upload ...`.
 
@@ -302,7 +310,7 @@ Returns:
 GET /api/games
 ```
 
-Returns the `cart0` and `cart1` cartridge states.
+Returns the `cart0` through `cart3` cartridge states.
 
 ### Upload Game
 
@@ -313,8 +321,8 @@ Content-Type: application/octet-stream
 <game.prg32 bytes>
 ```
 
-Validates and stores the cartridge without starting it. Use `slot=cart1` for
-the second slot.
+Validates and stores the cartridge without starting it. Use `slot=cart1`,
+`slot=cart2`, or `slot=cart3` for alternate slots.
 
 ### Select Stored Game
 
@@ -427,12 +435,14 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Cartridges are linked for one PRG32 firmware build.
 - If the firmware is rebuilt, rebuild the cartridges.
-- Cartridge package size is 64 KiB.
+- Cartridge package size is 128 KiB.
 - Cartridge RAM is selected by `CONFIG_PRG32_CART_RAM_PROFILE`: physical
-  classroom builds default to 32 KiB, while QEMU and extended builds use
-  64 KiB unless a custom profile is selected.
+  classroom builds default to 32 KiB, while QEMU uses the 64 KiB extended
+  profile unless a custom profile is selected.
 - AUDIO blocks are stored after the code payload and count against cartridge
   package size and partition size, not cartridge executable RAM.
-- Two flash slots, `cart0` and `cart1`, are available. Only one cartridge is
-  loaded into executable RAM at a time.
+- Four flash slots, `cart0` through `cart3`, are available. Only one cartridge
+  is loaded into executable RAM at a time.
+- Local scoreboard records persist in the dedicated `scores` NVS partition and
+  are not erased when a cartridge slot is replaced.
 - QEMU staging requires QEMU to be stopped before patching `qemu_flash.bin`.

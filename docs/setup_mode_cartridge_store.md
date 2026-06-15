@@ -56,7 +56,7 @@ A complete setup page should provide:
 - connection test;
 - browsing games after connection;
 - viewing metadata and colophon;
-- selecting `cart0` or `cart1`;
+- selecting `cart0`, `cart1`, `cart2`, or `cart3`;
 - downloading and installing the chosen game/version/architecture.
 
 Firmware-side sketch:

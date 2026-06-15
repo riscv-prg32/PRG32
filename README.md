@@ -2,6 +2,13 @@
 
 PRG32 is an educational runtime for RISC-V assembly and C games.
 
+The resident firmware keeps games decoupled from the default app: cartridges
+are stored in four 128 KiB flash slots, one selected cartridge is copied into
+the configured executable RAM window, and local scoreboard records persist in a
+dedicated flash partition until they can be synchronized with Cartridge Store or
+ScoreServer APIs. Physical classroom builds default to a smaller RAM window to
+preserve setup/Wi-Fi heap; QEMU keeps the 64 KiB extended profile.
+
 ## Academic Profile
 
 - Project domain: Embedded Systems and Computer Architecture Education

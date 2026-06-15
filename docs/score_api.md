@@ -6,8 +6,9 @@ useful for competitions and for teaching the boundary between assembly, C, and
 network services.
 
 Games can use the score feature without Wi-Fi. The local firmware keeps the
-five best in-RAM scores for each game, includes an on-screen player-name prompt,
-and provides a simple scoreboard screen that cartridges can call directly.
+five best persistent local scores for each game, includes an on-screen
+player-name prompt, and provides a simple scoreboard screen that cartridges can
+call directly.
 
 ## Enable Wi-Fi
 
@@ -126,9 +127,12 @@ prg32_score_submit_remote("http://192.168.1.20:5000",
 
 ## Current implementation
 
-The board-local implementation stores the top five in-RAM scores per game. It is
-cleared when the firmware restarts. The standalone ScoreServer and Cartridge
-Store persist uploaded records in SQLite.
+The board-local implementation stores the top five scores per game in a
+dedicated local NVS partition. Local scores survive shutdown, reboot, and
+cartridge replacement. Pending records remain marked for retry until
+`prg32_score_sync_remote()` can submit them to the configured Cartridge Store
+score API. The standalone ScoreServer and Cartridge Store persist uploaded
+records in SQLite.
 
 The same board HTTP server also hosts the cartridge upload API when
 `PRG32_GAME_UPLOAD_ENABLE` is enabled. See `docs/cartridges.md`.

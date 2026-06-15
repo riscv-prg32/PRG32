@@ -104,13 +104,13 @@ extern "C" {
 #define PRG32_CART_ARCH_ESP32C6 "esp32c6"
 #define PRG32_CART_ARCH_QEMU "qemu"
 #define PRG32_CART_LOAD_ADDR 0x40800000u
-#define PRG32_CART_MAX_SIZE (64u * 1024u)
+#define PRG32_CART_MAX_SIZE (128u * 1024u)
 #ifndef CONFIG_PRG32_CART_RAM_KIB
 #define CONFIG_PRG32_CART_RAM_KIB 32
 #endif
 #define PRG32_CART_RAM_SIZE ((uint32_t)CONFIG_PRG32_CART_RAM_KIB * 1024u)
 #define PRG32_CART_NAME_LEN 32
-#define PRG32_CART_SLOT_COUNT 2
+#define PRG32_CART_SLOT_COUNT 4
 #ifndef PRG32_FIRMWARE_VERSION
 #define PRG32_FIRMWARE_VERSION "dev"
 #endif
@@ -281,6 +281,7 @@ int prg32_score_player_prompt(void);
 int prg32_score_submit(const char *game, const char *player, uint32_t score);
 int prg32_score_submit_current_player(const char *game, uint32_t score);
 int prg32_score_sync_remote(void);
+int prg32_score_reset_local(const char *game);
 int prg32_score_count(const char *game);
 int prg32_score_get(const char *game, int index, prg32_score_t *out_score);
 int prg32_scoreboard_show(const char *game, const char *title);
@@ -311,6 +312,7 @@ int prg32_cart_install_slot(uint8_t slot,
                             size_t image_size,
                             int persist);
 int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size);
+int prg32_cart_erase_slot(uint8_t slot);
 size_t prg32_cart_slot_size(uint8_t slot);
 int prg32_cart_stream_begin(uint8_t slot, size_t image_size);
 int prg32_cart_stream_write(uint8_t slot, size_t offset, const void *data, size_t len);
