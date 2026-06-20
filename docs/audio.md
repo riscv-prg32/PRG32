@@ -21,6 +21,11 @@ PRG32 program
 `-- ESP-IDF I2S output to MAX98357A amplifier boards
 ```
 
+The ESP32-P4 DEV-KIT follows the same I2S contract, but routes the output to
+its speaker connector/audio path rather than the C6 reference MAX98357A
+breakout. This is a resident-firmware choice: portable cartridges keep using
+the same `prg32_audio_*` functions and AUDIO blocks.
+
 The runtime uses unsigned 8-bit mono samples as source assets and mixes them as
 signed 16-bit PCM internally. Integer and fixed-point arithmetic keep the real
 time path teachable and avoid floating point inside the mixer.
@@ -90,6 +95,20 @@ Pan range:
 ## Supported Hardware
 
 The reference audio amplifier is a MAX98357A I2S DAC/amplifier breakout.
+
+### ESP32-P4-Module DEV-KIT speaker
+
+The Waveshare ESP32-P4-Module DEV-KIT provides a connector for an 8 ohm, 2 W
+speaker. The P4 emits I2S digital audio; it is not safe to connect a passive
+speaker to GPIO pins. Configure the board's verified BCLK, LRCLK/WS, and DATA
+pins in `sdkconfig.defaults.p4` or menuconfig before flashing. Keep the mode
+mono unless the board audio path has been validated for separate channels.
+
+The resident P4 runtime must expose the same mono/stereo availability through
+`prg32_audio_get_mode()`. Therefore existing C and assembly cartridges need no
+audio changes. Until the pin mapping is verified on the exact board revision,
+the P4 audio defaults are configuration placeholders rather than a tested
+wiring recipe.
 
 Required for mono:
 

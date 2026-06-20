@@ -488,7 +488,9 @@ technique rather than game rules.
 
 ## Audio
 
-PRG32 supports retro-style digital audio through I2S.
+PRG32 supports retro-style digital audio through I2S. The C6 reference uses a
+MAX98357A amplifier; the P4 DEV-KIT can use its speaker connector/audio path
+with a board-verified I2S pin mapping. Both use the same cartridge audio ABI.
 
 The default configuration uses one MAX98357A I2S DAC/amplifier breakout for
 mono output. Optional stereo output, called PRG32 Audio Plus, uses two

@@ -69,6 +69,11 @@ ABI table continue to run without recompilation as long as they fit in the
 runtime's executable RAM window and require only ABI features provided by the
 firmware.
 
+Audio is portable too: games call the stable `prg32_audio_*` ABI. The C6
+runtime can use a MAX98357A I2S amplifier, while the P4 runtime can route the
+same mixed I2S stream to the DEV-KIT speaker connector once its pin mapping is
+configured. Cartridge sources and AUDIO blocks do not change.
+
 ## Hardware Workflow
 
 Flash the resident firmware one time:

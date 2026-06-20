@@ -65,6 +65,14 @@ VU meter.
 
 ## Mono Audio
 
+### ESP32-P4-Module DEV-KIT
+
+The P4 DEV-KIT speaker connector is an alternative audio output for PRG32. It
+uses the same resident I2S mixer and cartridge ABI as the C6/MAX98357A setup.
+Set the exact board-revision BCLK, LRCLK, and DATA pins in the P4 build before
+connecting or testing the supplied 8 ohm speaker; do not drive the speaker from
+GPIO directly. The C6 wiring table below remains the reference breadboard path.
+
 | ESP32-C6 | MAX98357A |
 |---|---|
 | 3V3 or 5V | VIN |
