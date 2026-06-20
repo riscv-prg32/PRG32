@@ -70,6 +70,38 @@
 #define PRG32_PIN_RGB_LED -1
 
 #define PRG32_GAME_UPLOAD_ENABLE 0
+#elif defined(CONFIG_IDF_TARGET_ESP32P4) && CONFIG_IDF_TARGET_ESP32P4
+/*
+ * ESP32-P4 with the same classroom ILI9341 SPI harness as ESP32-C6.
+ * These are wiring defaults, not pins dedicated by the P4 board: adjust a
+ * local configuration if the chosen header wiring differs.
+ */
+#define PRG32_PIN_LCD_MOSI   7
+#define PRG32_PIN_LCD_MISO   2
+#define PRG32_PIN_LCD_SCLK   6
+#define PRG32_PIN_LCD_CS     10
+#define PRG32_PIN_LCD_DC     1
+#define PRG32_PIN_LCD_RST    0
+#define PRG32_PIN_LCD_BL     5
+#define PRG32_LCD_SPI_CLOCK_HZ 32000000
+#define PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL 1
+#define PRG32_LCD_BOOT_TEST_MS 0
+#define PRG32_LCD_SOFT_SPI 0
+
+#define PRG32_PIN_BTN_LEFT   -1
+#define PRG32_PIN_BTN_RIGHT  -1
+#define PRG32_PIN_BTN_UP     -1
+#define PRG32_PIN_BTN_DOWN   -1
+#define PRG32_PIN_BTN_A      -1
+#define PRG32_PIN_BTN_B      -1
+#define PRG32_PIN_BTN_START  -1
+#define PRG32_PIN_SETUP      -1
+#define PRG32_PIN_BUZZER     -1
+#define PRG32_PIN_RGB_LED    -1
+#define PRG32_BOOT_DIAGNOSTIC_DELAY_MS 0
+
+/* USB HID gamepads are merged into prg32_input_read() by the P4 backend. */
+#define PRG32_USB_GAMEPAD_ENABLE 1
 #else
 /*
  * ESP32-C6 breadboard wiring for the physical ILI9341 build.
@@ -109,6 +141,10 @@
  * free in your hardware variant.
  */
 #define PRG32_PIN_RGB_LED 8
+#endif
+
+#ifndef PRG32_USB_GAMEPAD_ENABLE
+#define PRG32_USB_GAMEPAD_ENABLE 0
 #endif
 
 /*

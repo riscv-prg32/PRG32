@@ -14,3 +14,8 @@ dependencies:
     require: no
     rules:
       - if: "target != esp32c3"
+  espressif/usb:
+    version: "^2.0.0"
+    require: no
+    rules:
+      - if: "target == esp32p4"

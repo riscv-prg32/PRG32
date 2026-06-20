@@ -89,7 +89,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--architecture",
         action="append",
-        choices=["esp32c6", "qemu"],
+        choices=["esp32c6", "esp32p4", "qemu"],
         help="architecture bundle to generate; repeatable, default is both",
     )
     parser.add_argument("--clean", action="store_true")
@@ -99,7 +99,7 @@ def main(argv: list[str]) -> int:
     if args.clean and out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    architectures = args.architecture or ["esp32c6", "qemu"]
+    architectures = args.architecture or ["esp32c6", "esp32p4", "qemu"]
     examples = discover_examples()
     if not examples:
         raise SystemExit("no examples found")

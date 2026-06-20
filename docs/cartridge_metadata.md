@@ -128,6 +128,7 @@ game/version:
 | Architecture id | Build target | Typical output |
 | --- | --- | --- |
 | `esp32c6` | physical ESP32-C6 firmware | `build-esp32c6/game.prg32` |
+| `esp32p4` | physical ESP32-P4 firmware | `build-esp32p4/game.prg32` |
 | `qemu` | ESP32-C3 QEMU graphics firmware | `build-qemu/game.prg32` |
 
 Build each variant as a portable cartridge, then attach metadata with the

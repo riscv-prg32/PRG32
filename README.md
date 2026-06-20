@@ -7,12 +7,14 @@ are stored in four 128 KiB flash slots, one selected cartridge is copied into
 the configured executable RAM window, and local scoreboard records persist in a
 dedicated flash partition until they can be synchronized with Cartridge Store or
 ScoreServer APIs. Physical classroom builds default to a smaller RAM window to
-preserve setup/Wi-Fi heap; QEMU keeps the 64 KiB extended profile.
+preserve setup/Wi-Fi heap; ESP32-C6 reserves 128 KiB and ESP32-P4 reserves
+256 KiB. QEMU keeps the 64 KiB extended profile.
 
 ## Academic Profile
 
 - Project domain: Embedded Systems and Computer Architecture Education
-- Platform focus: ESP32-C6 (hardware) and ESP32-C3 QEMU path (desktop emulation)
+- Platform focus: ESP32-C6 and ESP32-P4 hardware, plus ESP32-C3 QEMU
+  (desktop emulation)
 - Course style: first-year/early undergraduate assembly and systems labs
 - Academic supervisor / project lead: Raffaele Montella - UniParthenope
 - Contributor (student): Ivan Cafiero - UniParthenope - Computer Science student
@@ -28,7 +30,7 @@ brew install git cmake ninja dfu-util ccache libusb python
 cd $HOME
 git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
-./install.sh esp32c3,esp32c6
+./install.sh esp32c3,esp32c6,esp32p4
 . ./export.sh
 
 # 3) Project
@@ -74,6 +76,8 @@ Core workflow documents:
 
 - [docs/deployment.md](docs/deployment.md): build, flash, monitor, setup mode,
   QEMU, and the resident firmware deployment model.
+- [docs/choosing_boards.md](docs/choosing_boards.md): choose between the C6
+  classroom board and the higher-capacity P4 board.
 - [docs/qemu.md](docs/qemu.md): desktop virtual-screen setup, ESP32-C3 QEMU
   target notes, cartridge staging, and QEMU troubleshooting.
 - [docs/cartridges.md](docs/cartridges.md): `.prg32` cartridge build/upload

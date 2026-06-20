@@ -56,9 +56,14 @@ PRG32_IMPORT_MODEL_ABI_TABLE = 1
 AUDIO_BLOCK_MAGIC = b"AUD0"
 DEFAULT_PARTITION_TABLE = ROOT / "partitions_prg32.csv"
 DEFAULT_CART_SLOT = "cart0"
-FALLBACK_CART_RAM_SIZE = 32 * 1024
+FALLBACK_CART_RAM_SIZE = 128 * 1024
 FALLBACK_CART_MAX_SIZE = 128 * 1024
 FALLBACK_CART_LOAD_ADDR = 0x40800000
+PORTABLE_TARGETS = {
+    "esp32c6": (128 * 1024, 128 * 1024),
+    "esp32p4": (256 * 1024, 512 * 1024),
+    "qemu": (64 * 1024, 128 * 1024),
+}
 STORE_DISCOVERY_ABI = "prg32-store-discovery-1.0"
 STORE_METADATA_ABI = "prg32-metadata-1.0"
 STORE_CONFIG = Path.home() / ".prg32" / "config.json"
@@ -500,10 +505,11 @@ def build(args: argparse.Namespace) -> None:
     if args.portable and args.legacy_absolute_imports:
         raise SystemExit("--portable and --legacy-absolute-imports are mutually exclusive")
     if args.portable:
+        ram_size, max_size = PORTABLE_TARGETS[args.architecture]
         runtime = {
             "cart_load_addr": FALLBACK_CART_LOAD_ADDR,
-            "cart_ram_size": FALLBACK_CART_RAM_SIZE,
-            "cart_max_size": FALLBACK_CART_MAX_SIZE,
+            "cart_ram_size": ram_size,
+            "cart_max_size": max_size,
             "imports": {},
         }
     elif args.runtime_url:
@@ -821,6 +827,8 @@ def infer_architecture(firmware_elf: str | None) -> str:
             text = sdkconfig.read_text(encoding="utf-8", errors="replace")
             if "CONFIG_PRG32_DISPLAY_QEMU_RGB=y" in text:
                 return "qemu"
+            if "CONFIG_IDF_TARGET_ESP32P4=y" in text:
+                return "esp32p4"
     return "esp32c6"
 
 
@@ -1097,6 +1105,12 @@ def main(argv: list[str]) -> int:
         "--portable",
         action="store_true",
         help="build a firmware-portable ABI-table cartridge",
+    )
+    p.add_argument(
+        "--architecture",
+        choices=sorted(PORTABLE_TARGETS),
+        default="esp32c6",
+        help="target cartridge memory profile (default: esp32c6)",
     )
     p.add_argument(
         "--legacy-absolute-imports",

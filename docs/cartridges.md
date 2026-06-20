@@ -7,6 +7,7 @@ firmware.
 The same cartridge format is used on:
 
 - real ESP32-C6 hardware, uploaded over the PRG32 Wi-Fi HTTP API
+- real ESP32-P4 hardware using the same SPI ILI9341 display harness
 - QEMU, staged into the emulator flash image
 
 ## Mental Model
@@ -61,9 +62,9 @@ The checked-in classroom firmware supports four persistent slots:
 to 128 KiB. Only one cartridge is loaded into executable RAM at a time, so
 additional slots cost flash space, not runtime RAM.
 
-The resident firmware reserves one executable cartridge RAM window. Physical
-classroom builds default to 32 KiB to preserve setup/Wi-Fi heap, while QEMU
-uses the 64 KiB extended profile. Portable cartridges built for the existing
+The resident firmware reserves one executable cartridge RAM window. ESP32-C6
+builds reserve 128 KiB, ESP32-P4 builds reserve 256 KiB, while QEMU uses the
+64 KiB extended profile. Portable cartridges built for the existing
 ABI table continue to run without recompilation as long as they fit in the
 runtime's executable RAM window and require only ABI features provided by the
 firmware.

@@ -20,6 +20,7 @@
 static const char *TAG = "prg32_controller";
 
 uint32_t prg32_qemu_input_read(void);
+uint32_t prg32_usb_gamepad_read(void);
 
 /*
  * PRG32 controller layer.
@@ -64,6 +65,7 @@ static uint32_t read_gpio_buttons(void) {
 uint32_t prg32_controller_read(void) {
     uint32_t v = read_gpio_buttons();
     v |= prg32_qemu_input_read();
+    v |= prg32_usb_gamepad_read();
     v |= prg32_diag_input_state();
 #if PRG32_RESTART_HOTKEY_ENABLE
     if ((v & PRG32_RESTART_HOTKEY_P1) == PRG32_RESTART_HOTKEY_P1) {

@@ -58,6 +58,14 @@ ARCHITECTURE_PROFILES: dict[str, dict[str, str]] = {
         "display": "ili9341",
         "isa": "RV32I",
     },
+    "esp32p4": {
+        "id": "esp32p4",
+        "label": "ESP32-P4 hardware",
+        "platform": "PRG32",
+        "target": "esp32p4",
+        "display": "ili9341",
+        "isa": "RV32I",
+    },
     "qemu": {
         "id": "qemu",
         "label": "QEMU virtual screen",

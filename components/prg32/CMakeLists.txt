@@ -20,6 +20,10 @@ if(IDF_TARGET STREQUAL "esp32c6")
     list(APPEND PRG32_PRIV_REQUIRES esp_websocket_client mdns)
 endif()
 
+if(IDF_TARGET STREQUAL "esp32p4")
+    list(APPEND PRG32_PRIV_REQUIRES usb mdns)
+endif()
+
 if(CONFIG_PRG32_DISPLAY_QEMU_RGB)
     set(PRG32_DISPLAY_SRC "prg32_display_qemu_rgb.c")
 endif()
@@ -54,6 +58,7 @@ idf_component_register(
         "prg32_store.c"
         "prg32_system.c"
         "prg32_tile.c"
+        "prg32_usb_gamepad.c"
         "prg32_wifi.c"
     INCLUDE_DIRS "include"
     REQUIRES prg32_audio
