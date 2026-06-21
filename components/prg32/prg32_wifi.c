@@ -475,9 +475,8 @@ static int choose_mode(prg32_wifi_config_t *config) {
     uint32_t last = 0;
     prg32_input_wait_released(PRG32_BTN_UP |
                               PRG32_BTN_DOWN |
-                              PRG32_BTN_A |
-                              PRG32_BTN_B |
-                              PRG32_BTN_SELECT);
+                              MENU_ACCEPT |
+                              MENU_CANCEL);
     while (1) {
         uint32_t input = prg32_input_read_menu();
         if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP)) {
@@ -486,13 +485,12 @@ static int choose_mode(prg32_wifi_config_t *config) {
         if ((input & PRG32_BTN_DOWN) && !(last & PRG32_BTN_DOWN)) {
             choice = 1;
         }
-        if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-            ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-            prg32_input_wait_released(PRG32_BTN_B | PRG32_BTN_SELECT);
+        if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
+            prg32_input_wait_released(MENU_ACCEPT);
             return choice;
         }
-        if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-            prg32_input_wait_released(PRG32_BTN_A);
+        if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+            prg32_input_wait_released(MENU_CANCEL);
             return -1;
         }
         if (config) {
@@ -512,7 +510,7 @@ static int choose_mode(prg32_wifi_config_t *config) {
                          PRG32_COLOR_WHITE,
                          0);
         draw_status(config);
-        prg32_gfx_text8(8, 204, "UP/DOWN CHOOSE  SELECT/B OK  A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 204, "UP/DOWN CHOOSE  SELECT/A OK  B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         last = input;
         vTaskDelay(pdMS_TO_TICKS(80));
@@ -689,25 +687,24 @@ static int confirm_sta_credentials(const prg32_wifi_config_t *config) {
         prg32_gfx_text8(8, 8, "CONFIRM WIFI", PRG32_COLOR_WHITE, 0);
         prg32_gfx_text8(8, 40, "ENTERPRISE WIFI IS NOT SUPPORTED", PRG32_COLOR_YELLOW, 0);
         prg32_gfx_text8(8, 64, "USE WPA/WPA2 PERSONAL", PRG32_COLOR_CYAN, 0);
-        prg32_gfx_text8(8, 204, "A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 204, "B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
-        prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
-        while ((prg32_input_read_menu() & PRG32_BTN_A) == 0) {
+        prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
+        while ((prg32_input_read_menu() & MENU_CANCEL) == 0) {
             vTaskDelay(pdMS_TO_TICKS(80));
         }
-        prg32_input_wait_released(PRG32_BTN_A);
+        prg32_input_wait_released(PRG32_BTN_B);
         return -1;
     }
-    prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
+    prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
     while (1) {
         uint32_t input = prg32_input_read_menu();
-        if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-            ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-            prg32_input_wait_released(PRG32_BTN_B | PRG32_BTN_SELECT);
+        if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
+            prg32_input_wait_released(MENU_ACCEPT);
             return 0;
         }
-        if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-            prg32_input_wait_released(PRG32_BTN_A);
+        if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+            prg32_input_wait_released(MENU_CANCEL);
             return -1;
         }
 
@@ -728,7 +725,7 @@ static int confirm_sta_credentials(const prg32_wifi_config_t *config) {
         if (auth_mode_is_enterprise(selected_authmode)) {
             prg32_gfx_text8(8, 152, "ENTERPRISE WIFI IS NOT SUPPORTED", PRG32_COLOR_YELLOW, 0);
         }
-        prg32_gfx_text8(8, 204, "SELECT/B CONNECT  A EDIT", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 204, "SELECT/A CONNECT  B EDIT", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         last = input;
         vTaskDelay(pdMS_TO_TICKS(80));
@@ -763,10 +760,10 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
                          scan_status[0] ? scan_status : "NO NETWORKS FOUND",
                          PRG32_COLOR_YELLOW,
                          0);
-        prg32_gfx_text8(8, 96, "A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 96, "B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         while (1) {
-            if (prg32_input_read_menu() & PRG32_BTN_A) {
+            if (prg32_input_read_menu() & PRG32_BTN_B) {
                 return -1;
             }
             vTaskDelay(pdMS_TO_TICKS(80));
@@ -777,9 +774,8 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
     uint32_t last = 0;
     prg32_input_wait_released(PRG32_BTN_UP |
                               PRG32_BTN_DOWN |
-                              PRG32_BTN_A |
-                              PRG32_BTN_B |
-                              PRG32_BTN_SELECT);
+                              MENU_ACCEPT |
+                              MENU_CANCEL);
     while (1) {
         uint32_t input = prg32_input_read_menu();
         if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
@@ -790,17 +786,16 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
             choice + 1 < count) {
             choice++;
         }
-        if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+        if ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B)) {
             heap_caps_free(records);
-            prg32_input_wait_released(PRG32_BTN_A);
+            prg32_input_wait_released(PRG32_BTN_B);
             return -1;
         }
-        if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-            ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+        if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
             copy_cstr(ssid, ssid_size, (const char *)records[choice].ssid);
             select_ap_record(&records[choice]);
             heap_caps_free(records);
-            prg32_input_wait_released(PRG32_BTN_B | PRG32_BTN_SELECT);
+            prg32_input_wait_released(MENU_ACCEPT);
             return 0;
         }
 
@@ -850,7 +845,7 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
                              PRG32_COLOR_YELLOW,
                              0);
         }
-        prg32_gfx_text8(8, 184, "UP/DOWN  SELECT/B OK  A BACK", PRG32_COLOR_CYAN, 0);
+        prg32_gfx_text8(8, 184, "UP/DOWN  SELECT/A OK  B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         last = input;
         vTaskDelay(pdMS_TO_TICKS(80));
@@ -917,13 +912,13 @@ int prg32_wifi_setup_run(void) {
             draw_status(&config);
             prg32_gfx_text8(8,
                              204,
-                             rc == 0 ? "A BACK" : "WIFI FAILED",
+                             rc == 0 ? "B BACK" : "WIFI FAILED",
                              PRG32_COLOR_CYAN,
                              0);
             prg32_gfx_present();
             if (rc != 0 ||
                 strcmp(active_status, "CONNECTED") == 0 ||
-                (prg32_input_read_menu() & PRG32_BTN_A)) {
+                (prg32_input_read_menu() & PRG32_BTN_B)) {
                 break;
             }
             if (prg32_ticks_ms() - start > 30000) {

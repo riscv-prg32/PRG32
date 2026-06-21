@@ -1,5 +1,3 @@
-#include "prg32.h"
-#include "prg32_config.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -13,14 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STORE_ACCEPT (PRG32_BTN_SELECT | PRG32_BTN_B)
-#define STORE_CANCEL PRG32_BTN_A
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #define STORE_MAX_GAMES 40
 #else
 #define STORE_MAX_GAMES 64
 #endif
-#define STORE_PAGE_SIZE 4
+#define STORE_PAGE_SIZE 8
 
 typedef struct {
   char id[48];
@@ -37,32 +33,30 @@ static store_game_t *games;
 static int game_count;
 
 static int store_buffers_alloc(char *status, size_t status_len) {
-    if (catalog_body && games) {
-        return 0;
-    }
-    catalog_body = heap_caps_calloc(1,
-                                    PRG32_STORE_CATALOG_MAX_BYTES,
-                                    MALLOC_CAP_8BIT);
-    games = heap_caps_calloc(STORE_MAX_GAMES,
-                             sizeof(store_game_t),
-                             MALLOC_CAP_8BIT);
-    if (!catalog_body || !games) {
-        heap_caps_free(catalog_body);
-        heap_caps_free(games);
-        catalog_body = NULL;
-        games = NULL;
-        snprintf(status, status_len, "NO MEM");
-        return -1;
-    }
+  if (catalog_body && games) {
     return 0;
-}
-
-static void store_buffers_free(void) {
+  }
+  catalog_body =
+      heap_caps_calloc(1, PRG32_STORE_CATALOG_MAX_BYTES, MALLOC_CAP_8BIT);
+  games =
+      heap_caps_calloc(STORE_MAX_GAMES, sizeof(store_game_t), MALLOC_CAP_8BIT);
+  if (!catalog_body || !games) {
     heap_caps_free(catalog_body);
     heap_caps_free(games);
     catalog_body = NULL;
     games = NULL;
-    game_count = 0;
+    snprintf(status, status_len, "NO MEM");
+    return -1;
+  }
+  return 0;
+}
+
+static void store_buffers_free(void) {
+  heap_caps_free(catalog_body);
+  heap_caps_free(games);
+  catalog_body = NULL;
+  games = NULL;
+  game_count = 0;
 }
 
 static void wait_and_show(const char *line, uint32_t ms) {
@@ -239,32 +233,31 @@ static int contains_casefold(const char *text, const char *needle) {
 }
 
 static int filter_catalog(const char *query) {
-    if (!catalog_body || !games) {
-        return 0;
-    }
-    store_game_t *all_games = heap_caps_malloc(
-        STORE_MAX_GAMES * sizeof(store_game_t),
-        MALLOC_CAP_8BIT);
-    if (!all_games) {
-        game_count = 0;
-        return 0;
-    }
-    int all_count = parse_catalog(catalog_body);
-    memcpy(all_games, games, STORE_MAX_GAMES * sizeof(store_game_t));
-    if (!query || !query[0]) {
-        heap_caps_free(all_games);
-        return all_count;
-    }
+  if (!catalog_body || !games) {
+    return 0;
+  }
+  store_game_t *all_games =
+      heap_caps_malloc(STORE_MAX_GAMES * sizeof(store_game_t), MALLOC_CAP_8BIT);
+  if (!all_games) {
     game_count = 0;
-    for (int i = 0; i < all_count && game_count < STORE_MAX_GAMES; ++i) {
-        if (contains_casefold(all_games[i].title, query) ||
-            contains_casefold(all_games[i].tags, query) ||
-            contains_casefold(all_games[i].id, query)) {
-            games[game_count++] = all_games[i];
-        }
-    }
+    return 0;
+  }
+  int all_count = parse_catalog(catalog_body);
+  memcpy(all_games, games, STORE_MAX_GAMES * sizeof(store_game_t));
+  if (!query || !query[0]) {
     heap_caps_free(all_games);
-    return game_count;
+    return all_count;
+  }
+  game_count = 0;
+  for (int i = 0; i < all_count && game_count < STORE_MAX_GAMES; ++i) {
+    if (contains_casefold(all_games[i].title, query) ||
+        contains_casefold(all_games[i].tags, query) ||
+        contains_casefold(all_games[i].id, query)) {
+      games[game_count++] = all_games[i];
+    }
+  }
+  heap_caps_free(all_games);
+  return game_count;
 }
 
 static int fetch_catalog(const char *base_url, char *status,
@@ -351,8 +344,8 @@ static int game_is_compatible(const store_game_t *game) {
   return game && strstr(game->arch, current_arch()) != NULL;
 }
 
-static int validate_download_header(const uint8_t *data, size_t len, char *status,
-                                    size_t status_len) {
+static int validate_download_header(const uint8_t *data, size_t len,
+                                    char *status, size_t status_len) {
   if (!data || len < sizeof(prg32_cart_header_t)) {
     snprintf(status, status_len, "SHORT HEADER");
     return -1;
@@ -380,10 +373,10 @@ static int validate_download_header(const uint8_t *data, size_t len, char *statu
         snprintf(status, status_len, "ABI HASH");
         return -1;
       }
-      uint32_t missing = v2->required_features & ~prg32_abi_table.provided_features;
+      uint32_t missing =
+          v2->required_features & ~prg32_abi_table.provided_features;
       if (missing != 0u) {
-        snprintf(status, status_len, "ABI FEAT 0x%lx",
-                 (unsigned long)missing);
+        snprintf(status, status_len, "ABI FEAT 0x%lx", (unsigned long)missing);
         return -1;
       }
       if ((h->flags & PRG32_CART_FLAG_ABI_TABLE) == 0u) {
@@ -487,7 +480,8 @@ static int stream_download(const char *base_url, const store_game_t *game,
   }
   offset = header_len;
   while (offset < (size_t)content_len) {
-    int read = esp_http_client_read(client, (char *)chunk, PRG32_STORE_CHUNK_BYTES);
+    int read =
+        esp_http_client_read(client, (char *)chunk, PRG32_STORE_CHUNK_BYTES);
     if (read <= 0) {
       snprintf(status, status_len, "TIMEOUT");
       heap_caps_free(chunk);
@@ -539,7 +533,7 @@ static void draw_store_list(int selected, int page, const char *note) {
   if (note && note[0]) {
     prg32_gfx_text8(8, 190, note, PRG32_COLOR_YELLOW, 0);
   }
-  prg32_gfx_text8(8, 216, "U/D SCROLL L/R PAGE SELECT DETAILS A BACK",
+  prg32_gfx_text8(8, 216, "U/D SCROLL L/R PAGE SELECT DETAILS B BACK",
                   PRG32_COLOR_CYAN, 0);
   prg32_gfx_present();
 }
@@ -547,7 +541,7 @@ static void draw_store_list(int selected, int page, const char *note) {
 static int run_detail(const char *base_url, int index) {
   uint8_t slot = 0;
   const store_game_t *g = &games[index];
-  prg32_input_wait_released(STORE_ACCEPT | STORE_CANCEL);
+  prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
   while (1) {
     char line[48];
     uint16_t action_color =
@@ -565,7 +559,7 @@ static int run_detail(const char *base_url, int index) {
       prg32_gfx_text8(8, 154, "NOT COMPATIBLE WITH THIS FIRMWARE",
                       PRG32_COLOR_YELLOW, 0);
     }
-    prg32_gfx_text8(8, 216, "U/D SLOT SELECT DOWNLOAD  A BACK", action_color,
+    prg32_gfx_text8(8, 216, "U/D SLOT SELECT DOWNLOAD  B BACK", action_color,
                     0);
     prg32_gfx_present();
     uint32_t input = prg32_input_read_menu();
@@ -575,10 +569,10 @@ static int run_detail(const char *base_url, int index) {
     } else if (input & PRG32_BTN_DOWN) {
       slot = (slot + 1) % PRG32_CART_SLOT_COUNT;
       prg32_input_wait_released(PRG32_BTN_DOWN);
-    } else if (input & STORE_CANCEL) {
-      prg32_input_wait_released(STORE_CANCEL);
+    } else if (input & MENU_CANCEL) {
+      prg32_input_wait_released(MENU_CANCEL);
       return 0;
-    } else if ((input & STORE_ACCEPT) && game_is_compatible(g)) {
+    } else if ((input & MENU_ACCEPT) && game_is_compatible(g)) {
       char status[48];
       wait_and_show("DOWNLOADING...", 10);
       if (stream_download(base_url, g, slot, status, sizeof(status)) == 0) {
@@ -586,7 +580,7 @@ static int run_detail(const char *base_url, int index) {
         while (1) {
           prg32_gfx_clear(PRG32_COLOR_BLACK);
           prg32_gfx_text8(8, 8, "INSTALLED", PRG32_COLOR_GREEN, 0);
-          prg32_gfx_text8(8, 216, "SELECT RUN NOW  A BACK", PRG32_COLOR_CYAN,
+          prg32_gfx_text8(8, 216, "SELECT RUN NOW  B BACK", PRG32_COLOR_CYAN,
                           0);
           prg32_gfx_present();
           uint32_t run_input = prg32_input_read_menu();
@@ -595,8 +589,8 @@ static int run_detail(const char *base_url, int index) {
             prg32_input_wait_released(PRG32_BTN_SELECT);
             return 1;
           }
-          if (run_input & STORE_CANCEL) {
-            prg32_input_wait_released(STORE_CANCEL);
+          if (run_input & MENU_CANCEL) {
+            prg32_input_wait_released(MENU_CANCEL);
             break;
           }
           vTaskDelay(pdMS_TO_TICKS(10));
@@ -612,96 +606,99 @@ static int run_detail(const char *base_url, int index) {
 }
 
 void prg32_setup_store_run(void) {
-    int choice = 0;
-    static const char *const items[] = {
-        "AUTO-DISCOVER",
-        "MANUAL ENTRY",
-        "CLEAR SAVED URL",
-        "BACK",
-    };
-    prg32_input_wait_released(STORE_ACCEPT | STORE_CANCEL);
+  int choice = 0;
+  static const char *const items[] = {
+      "AUTO-DISCOVER",
+      "MANUAL ENTRY",
+      "CLEAR SAVED URL",
+      "BACK",
+  };
+  prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
+  while (1) {
+    char current[PRG32_STORE_URL_MAX_LEN];
+    int has_current = prg32_store_url_resolve(current, sizeof(current)) == 0;
+    uint32_t last = prg32_input_read_menu();
     while (1) {
-        char current[PRG32_STORE_URL_MAX_LEN];
-        int has_current = prg32_store_url_resolve(current, sizeof(current)) == 0;
-        uint32_t last = prg32_input_read_menu();
-        while (1) {
-            uint32_t input = prg32_input_read_menu();
-            if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
-                choice--;
+      uint32_t input = prg32_input_read_menu();
+      if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
+        choice--;
+      }
+      if ((input & PRG32_BTN_DOWN) && !(last & PRG32_BTN_DOWN) && choice < 3) {
+        choice++;
+      }
+      if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+        prg32_input_wait_released(MENU_CANCEL);
+        return;
+      }
+      if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
+          ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+        prg32_input_wait_released(MENU_ACCEPT);
+        if (choice == 0) {
+          char found[PRG32_STORE_URL_MAX_LEN];
+          wait_and_show("SCANNING...", 10);
+          if (prg32_store_discover(found, sizeof(found)) == 0) {
+            while (1) {
+              uint32_t save_input = prg32_input_read_menu();
+              prg32_gfx_clear(PRG32_COLOR_BLACK);
+              prg32_gfx_text8(8, 8, "CARTRIDGE STORE", PRG32_COLOR_WHITE, 0);
+              prg32_gfx_text8(8, 40, "FOUND:", PRG32_COLOR_GREEN, 0);
+              prg32_gfx_text8(8, 58, found, PRG32_COLOR_WHITE, 0);
+              prg32_gfx_text8(8, 216, "SELECT SAVE  B DISCARD",
+                              PRG32_COLOR_CYAN, 0);
+              prg32_gfx_present();
+              if (save_input & PRG32_BTN_SELECT) {
+                prg32_store_url_set(found);
+                prg32_input_wait_released(MENU_ACCEPT);
+                wait_and_show("SAVED", 1000);
+                break;
+              }
+              if (save_input & MENU_CANCEL) {
+                prg32_input_wait_released(MENU_CANCEL);
+                break;
+              }
+              vTaskDelay(pdMS_TO_TICKS(10));
             }
-            if ((input & PRG32_BTN_DOWN) && !(last & PRG32_BTN_DOWN) && choice < 3) {
-                choice++;
-            }
-            if ((input & STORE_CANCEL) && !(last & STORE_CANCEL)) {
-                prg32_input_wait_released(STORE_CANCEL);
-                return;
-            }
-            if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-                ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-                prg32_input_wait_released(STORE_ACCEPT);
-                if (choice == 0) {
-                    char found[PRG32_STORE_URL_MAX_LEN];
-                    wait_and_show("SCANNING...", 10);
-                    if (prg32_store_discover(found, sizeof(found)) == 0) {
-                        while (1) {
-                            uint32_t save_input = prg32_input_read_menu();
-                            prg32_gfx_clear(PRG32_COLOR_BLACK);
-                            prg32_gfx_text8(8, 8, "CARTRIDGE STORE", PRG32_COLOR_WHITE, 0);
-                            prg32_gfx_text8(8, 40, "FOUND:", PRG32_COLOR_GREEN, 0);
-                            prg32_gfx_text8(8, 58, found, PRG32_COLOR_WHITE, 0);
-                            prg32_gfx_text8(8, 216, "SELECT SAVE  A DISCARD", PRG32_COLOR_CYAN, 0);
-                            prg32_gfx_present();
-                            if (save_input & PRG32_BTN_SELECT) {
-                                prg32_store_url_set(found);
-                                prg32_input_wait_released(STORE_ACCEPT);
-                                wait_and_show("SAVED", 1000);
-                                break;
-                            }
-                            if (save_input & STORE_CANCEL) {
-                                prg32_input_wait_released(STORE_CANCEL);
-                                break;
-                            }
-                            vTaskDelay(pdMS_TO_TICKS(10));
-                        }
-                    } else {
-                        wait_and_show("NOT FOUND", 2000);
-                    }
-                    break;
-                }
-                if (choice == 1) {
-                    char url[PRG32_STORE_URL_MAX_LEN] = "";
-                    if (prg32_text_input(url, sizeof(url), "STORE URL") >= 0 && url[0]) {
-                        normalize_store_url(url, sizeof(url));
-                        if (prg32_store_url_set(url) == 0) {
-                            wait_and_show("SAVED", 1000);
-                        } else {
-                            wait_and_show("SAVE FAILED", 1000);
-                        }
-                    }
-                    break;
-                }
-                if (choice == 2) {
-                    prg32_store_url_clear();
-                    wait_and_show("CLEARED", 1000);
-                    break;
-                }
-                return;
-            }
-            prg32_gfx_clear(PRG32_COLOR_BLACK);
-            prg32_gfx_text8(8, 8, "CARTRIDGE STORE", PRG32_COLOR_WHITE, 0);
-            for (int i = 0; i < 4; ++i) {
-                int y = 42 + i * 18;
-                prg32_gfx_text8(8, y, i == choice ? ">" : " ", PRG32_COLOR_GREEN, 0);
-                prg32_gfx_text8(24, y, items[i], PRG32_COLOR_WHITE, 0);
-            }
-            prg32_gfx_text8(8, 144, "CURRENT:", PRG32_COLOR_YELLOW, 0);
-            prg32_gfx_text8(8, 162, has_current ? current : "(not configured)", PRG32_COLOR_CYAN, 0);
-            prg32_gfx_text8(8, 216, "UP/DOWN MOVE  SELECT/B OK  A BACK", PRG32_COLOR_CYAN, 0);
-            prg32_gfx_present();
-            last = input;
-            vTaskDelay(pdMS_TO_TICKS(10));
+          } else {
+            wait_and_show("NOT FOUND", 2000);
+          }
+          break;
         }
+        if (choice == 1) {
+          char url[PRG32_STORE_URL_MAX_LEN] = "";
+          if (prg32_text_input(url, sizeof(url), "STORE URL") >= 0 && url[0]) {
+            normalize_store_url(url, sizeof(url));
+            if (prg32_store_url_set(url) == 0) {
+              wait_and_show("SAVED", 1000);
+            } else {
+              wait_and_show("SAVE FAILED", 1000);
+            }
+          }
+          break;
+        }
+        if (choice == 2) {
+          prg32_store_url_clear();
+          wait_and_show("CLEARED", 1000);
+          break;
+        }
+        return;
+      }
+      prg32_gfx_clear(PRG32_COLOR_BLACK);
+      prg32_gfx_text8(8, 8, "CARTRIDGE STORE", PRG32_COLOR_WHITE, 0);
+      for (int i = 0; i < 4; ++i) {
+        int y = 42 + i * 18;
+        prg32_gfx_text8(8, y, i == choice ? ">" : " ", PRG32_COLOR_GREEN, 0);
+        prg32_gfx_text8(24, y, items[i], PRG32_COLOR_WHITE, 0);
+      }
+      prg32_gfx_text8(8, 144, "CURRENT:", PRG32_COLOR_YELLOW, 0);
+      prg32_gfx_text8(8, 162, has_current ? current : "(not configured)",
+                      PRG32_COLOR_CYAN, 0);
+      prg32_gfx_text8(8, 216, "UP/DOWN MOVE  SELECT/A OK  B BACK",
+                      PRG32_COLOR_CYAN, 0);
+      prg32_gfx_present();
+      last = input;
+      vTaskDelay(pdMS_TO_TICKS(10));
     }
+  }
 }
 
 void prg32_setup_store_browse_run(void) {
@@ -738,12 +735,12 @@ void prg32_setup_store_browse_run(void) {
   int selected = 0;
   int page = 0;
   const char *note = strcmp(status, "OK") == 0 ? "" : status;
-  prg32_input_wait_released(STORE_ACCEPT | STORE_CANCEL);
+  prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
   while (1) {
     draw_store_list(selected, page, note);
     uint32_t input = prg32_input_read_menu();
-    if (input & STORE_CANCEL) {
-      prg32_input_wait_released(STORE_CANCEL);
+    if (input & MENU_CANCEL) {
+      prg32_input_wait_released(MENU_CANCEL);
       goto done;
     }
     if (input & PRG32_BTN_UP) {
@@ -776,7 +773,7 @@ void prg32_setup_store_browse_run(void) {
         selected = page * STORE_PAGE_SIZE;
       }
       prg32_input_wait_released(PRG32_BTN_RIGHT);
-    } else if (input & STORE_ACCEPT) {
+    } else if (input & MENU_ACCEPT) {
       if (selected < 0) {
         char query[40] = "";
         if (prg32_text_input(query, sizeof(query), "SEARCH STORE") >= 0) {
@@ -785,11 +782,11 @@ void prg32_setup_store_browse_run(void) {
           page = 0;
           note = query[0] ? "filtered" : "";
         }
-        prg32_input_wait_released(STORE_ACCEPT);
+        prg32_input_wait_released(MENU_ACCEPT);
       } else if (run_detail(url, selected)) {
         goto done;
       } else {
-        prg32_input_wait_released(STORE_ACCEPT);
+        prg32_input_wait_released(MENU_ACCEPT);
       }
     }
     vTaskDelay(pdMS_TO_TICKS(10));

@@ -1,4 +1,5 @@
 #include "prg32.h"
+#include "prg32_config.h"
 #if __has_include("freertos/FreeRTOS.h")
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -390,16 +391,12 @@ int prg32_keyboard_update(prg32_keyboard_t *keyboard, uint32_t input_mask) {
     }
 
     int result = 0;
-    if (key_is_new(input_mask, last, PRG32_BTN_A)) {
+    if (key_is_new(input_mask, last, MENU_CANCEL)) {
         keyboard->cancelled = 1;
         keyboard->done = 1;
         result = -2;
     }
-    if (key_is_new(input_mask, last, PRG32_BTN_B)) {
-        keyboard->done = 1;
-        result = -1;
-    }
-    if (key_is_new(input_mask, last, PRG32_BTN_SELECT)) {
+    if (key_is_new(input_mask, last, MENU_ACCEPT)) {
         result = activate_key(keyboard);
     }
 
@@ -436,9 +433,8 @@ int prg32_text_input(char *buffer, size_t capacity, const char *title) {
                               PRG32_BTN_RIGHT |
                               PRG32_BTN_UP |
                               PRG32_BTN_DOWN |
-                              PRG32_BTN_A |
-                              PRG32_BTN_B |
-                              PRG32_BTN_SELECT);
+                              MENU_ACCEPT |
+                              MENU_CANCEL);
 
     while (!keyboard.done) {
         uint32_t input = prg32_input_read_menu();
@@ -447,15 +443,15 @@ int prg32_text_input(char *buffer, size_t capacity, const char *title) {
         prg32_gfx_text8(8, 8, title ? title : "TEXT INPUT", 0xffff, 0);
         prg32_keyboard_draw(&keyboard, 8, 24);
         prg32_gfx_text8(8, 150, "D-PAD MOVE  SELECT KEY", 0xffff, 0);
-        prg32_gfx_text8(8, 166, "A BACK  B RETURN", 0x07ff, 0);
+        prg32_gfx_text8(8, 166, "B BACK  A/SELECT TYPE", 0x07ff, 0);
         prg32_gfx_present();
         vTaskDelay(pdMS_TO_TICKS(80));
     }
 
     if (keyboard.cancelled) {
-        prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
+        prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
         return -1;
     }
-    prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
+    prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
     return (int)keyboard.length;
 }

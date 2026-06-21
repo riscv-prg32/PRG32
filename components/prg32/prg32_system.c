@@ -38,11 +38,9 @@ void prg32_abi_exports_keep(void);
 #define CONFIG_PRG32_AUDIO_I2S_SD_GPIO -1
 #endif
 
-#define SETUP_ACCEPT (PRG32_BTN_SELECT | PRG32_BTN_B)
-#define SETUP_CANCEL PRG32_BTN_A
 #define SETUP_NAV (PRG32_BTN_UP | PRG32_BTN_DOWN)
 #define SETUP_ADJUST (PRG32_BTN_LEFT | PRG32_BTN_RIGHT)
-#define SETUP_KEYS (SETUP_ACCEPT | SETUP_CANCEL | SETUP_NAV | SETUP_ADJUST)
+#define SETUP_KEYS (MENU_ACCEPT | MENU_CANCEL | SETUP_NAV | SETUP_ADJUST)
 
 typedef enum {
   SETUP_OPTION_RUN_CART,
@@ -206,13 +204,12 @@ static cart_action_result_t cartridge_context_menu(uint8_t slot) {
         choice + 1 < action_count) {
       choice++;
     }
-    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-      prg32_input_wait_released(SETUP_CANCEL);
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+      prg32_input_wait_released(MENU_CANCEL);
       return CART_ACTION_NONE;
     }
-    if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-        ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-      prg32_input_wait_released(SETUP_ACCEPT);
+    if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
+      prg32_input_wait_released(MENU_ACCEPT);
       if (choice == 0) {
         return CART_ACTION_RUN;
       }
@@ -245,7 +242,7 @@ static cart_action_result_t cartridge_context_menu(uint8_t slot) {
       prg32_gfx_text8(24, y, actions[i], PRG32_COLOR_WHITE, 0);
       prg32_gfx_text8(8, y, i == choice ? ">" : " ", PRG32_COLOR_GREEN, 0);
     }
-    prg32_gfx_text8(8, 216, "UP/DOWN CHOOSE  SELECT/B OK  A BACK",
+    prg32_gfx_text8(8, 216, "UP/DOWN CHOOSE  SELECT/A OK  B BACK",
                     PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     last = input;
@@ -300,12 +297,12 @@ static int cartridge_picker(const char *title, bool force_choice) {
       last = 0;
       continue;
     }
-    if ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B)) {
-      prg32_input_wait_released(PRG32_BTN_B);
+    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+      prg32_input_wait_released(PRG32_BTN_A);
       return prg32_cart_select_slot(slots[choice]);
     }
-    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-      prg32_input_wait_released(SETUP_CANCEL);
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+      prg32_input_wait_released(MENU_CANCEL);
       return -1;
     }
 
@@ -322,7 +319,7 @@ static int cartridge_picker(const char *title, bool force_choice) {
                       PRG32_COLOR_WHITE, 0);
     }
     draw_setup_status(144);
-    prg32_gfx_text8(8, 216, "B RUN  SELECT MENU  A BACK", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 216, "A RUN  SELECT MENU  B BACK", PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     last = input;
     vTaskDelay(pdMS_TO_TICKS(80));
@@ -357,13 +354,12 @@ static int default_cartridge_picker(void) {
         choice < count) {
       choice++;
     }
-    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-      prg32_input_wait_released(SETUP_CANCEL);
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+      prg32_input_wait_released(MENU_CANCEL);
       return -1;
     }
-    if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-        ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-      prg32_input_wait_released(SETUP_ACCEPT);
+    if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
+      prg32_input_wait_released(MENU_ACCEPT);
       int rc = choice < count ? prg32_cart_set_default_slot(slots[choice])
                               : prg32_cart_set_default_slot(-1);
       show_setup_message("DEFAULT CARTRIDGE",
@@ -390,7 +386,7 @@ static int default_cartridge_picker(void) {
                     0);
     prg32_gfx_text8(40, clear_y, "NO DEFAULT", PRG32_COLOR_WHITE, 0);
     draw_setup_status(144);
-    prg32_gfx_text8(8, 216, "SELECT/B SAVE  A BACK", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 216, "SELECT/A SAVE  B BACK", PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     last = input;
     vTaskDelay(pdMS_TO_TICKS(80));
@@ -572,8 +568,8 @@ static void audio_menu(void) {
         choice + 1 < rows) {
       choice++;
     }
-    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-      prg32_input_wait_released(SETUP_CANCEL);
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+      prg32_input_wait_released(MENU_CANCEL);
       return;
     }
     if ((input & PRG32_BTN_LEFT) && !(last & PRG32_BTN_LEFT) && choice == 0 &&
@@ -586,17 +582,16 @@ static void audio_menu(void) {
       g_setup_audio_volume += 8;
       prg32_audio_set_master_volume(g_setup_audio_volume);
     }
-    if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-        ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+    if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
       if (choice == 1 && prg32_rgb_led_available()) {
         prg32_audio_led_vu_enable(!prg32_audio_led_vu_enabled());
       } else if (choice == 2) {
         play_audio_test_tune(output);
       } else if (choice == 3) {
-        prg32_input_wait_released(SETUP_ACCEPT);
+        prg32_input_wait_released(MENU_ACCEPT);
         return;
       }
-      prg32_input_wait_released(SETUP_ACCEPT);
+      prg32_input_wait_released(MENU_ACCEPT);
     }
 
     char line[72];
@@ -632,7 +627,7 @@ static void audio_menu(void) {
     prg32_gfx_text8(24, 138, "PLAY TEST TUNE", PRG32_COLOR_WHITE, 0);
     prg32_gfx_text8(8, 166, choice == 3 ? ">" : " ", PRG32_COLOR_GREEN, 0);
     prg32_gfx_text8(24, 166, "BACK", PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 216, "LEFT/RIGHT VOLUME  SELECT/B OK  A BACK",
+    prg32_gfx_text8(8, 216, "LEFT/RIGHT VOLUME  SELECT/A OK  B BACK",
                     PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     last = input;
@@ -665,9 +660,9 @@ static void developer_menu(void) {
         choice + 1 < rows) {
       choice++;
     }
-    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
       prg32_band_save_config();
-      prg32_input_wait_released(SETUP_CANCEL);
+      prg32_input_wait_released(MENU_CANCEL);
       return;
     }
 
@@ -678,11 +673,10 @@ static void developer_menu(void) {
     if ((input & PRG32_BTN_RIGHT) && !(last & PRG32_BTN_RIGHT)) {
       adjust = 1;
     }
-    if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-        ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+    if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
       if (choice == 2) {
         prg32_band_save_config();
-        prg32_input_wait_released(SETUP_ACCEPT);
+        prg32_input_wait_released(MENU_ACCEPT);
         return;
       }
       adjust = 1;
@@ -696,7 +690,7 @@ static void developer_menu(void) {
                                       : "PRG32 BOTTOM STATUS");
       }
       prg32_band_save_config();
-      prg32_input_wait_released(SETUP_ACCEPT | SETUP_ADJUST);
+      prg32_input_wait_released(MENU_ACCEPT | SETUP_ADJUST);
     }
 
     char line[64];
@@ -714,9 +708,9 @@ static void developer_menu(void) {
     prg32_gfx_text8(24, 104, line, PRG32_COLOR_WHITE, 0);
     prg32_gfx_text8(8, 128, choice == 2 ? ">" : " ", PRG32_COLOR_GREEN, 0);
     prg32_gfx_text8(24, 128, "SAVE AND BACK", PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 164, "LEFT/RIGHT OR SELECT/B CYCLE", PRG32_COLOR_YELLOW,
+    prg32_gfx_text8(8, 164, "LEFT/RIGHT OR SELECT/A CYCLE", PRG32_COLOR_YELLOW,
                     0);
-    prg32_gfx_text8(8, 180, "A BACK", PRG32_COLOR_YELLOW, 0);
+    prg32_gfx_text8(8, 180, "B BACK", PRG32_COLOR_YELLOW, 0);
     prg32_gfx_present();
     last = input;
     vTaskDelay(pdMS_TO_TICKS(80));
@@ -731,10 +725,9 @@ static void about_menu(void) {
            PRG32_FIRMWARE_VERSION);
   while (1) {
     uint32_t input = prg32_input_read_menu();
-    if (((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) ||
-        ((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-        ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-      prg32_input_wait_released(SETUP_ACCEPT | SETUP_CANCEL);
+    if (((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) ||
+        ((input & MENU_CANCEL) && !(last & MENU_CANCEL))) {
+      prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
       return;
     }
 
@@ -778,13 +771,12 @@ static void settings_menu(void) {
         choice + 1 < option_count) {
       choice++;
     }
-    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-      prg32_input_wait_released(SETUP_CANCEL);
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+      prg32_input_wait_released(MENU_CANCEL);
       return;
     }
-    if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-        ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
-      prg32_input_wait_released(SETUP_ACCEPT);
+    if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
+      prg32_input_wait_released(MENU_ACCEPT);
       if (choice == 0) {
         prg32_wifi_setup_run();
         prg32_scores_api_start();
@@ -805,7 +797,7 @@ static void settings_menu(void) {
       prg32_gfx_text8(8, y, i == choice ? ">" : " ", PRG32_COLOR_GREEN, 0);
       prg32_gfx_text8(24, y, options[i], PRG32_COLOR_WHITE, 0);
     }
-    prg32_gfx_text8(8, 216, "UP/DOWN MOVE  SELECT/B OK  A BACK",
+    prg32_gfx_text8(8, 216, "UP/DOWN MOVE  SELECT/A OK  B BACK",
                     PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     last = input;
@@ -868,9 +860,9 @@ static int setup_menu(void) {
           choice + 1 < option_count) {
         choice++;
       }
-      if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
-        printf("setup_menu => input_wait_released(SETUP_CANCEL)\n");
-        prg32_input_wait_released(SETUP_CANCEL);
+      if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+        printf("setup_menu => input_wait_released(MENU_CANCEL)\n");
+        prg32_input_wait_released(MENU_CANCEL);
         printf("setup_menu => cart_is_loaded()\n");
         printf("setup_menu => autoload_cartridge()\n");
         if (prg32_cart_is_loaded() || autoload_cartridge() == 0) {
@@ -878,11 +870,10 @@ static int setup_menu(void) {
         }
         return -1;
       }
-      if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-          ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+      if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
         setup_option_id_t selected = options[choice].id;
-        printf("setup_menu => input_wait_released(SETUP_ACCEPT)\n");
-        prg32_input_wait_released(SETUP_ACCEPT);
+        printf("setup_menu => input_wait_released(MENU_ACCEPT)\n");
+        prg32_input_wait_released(MENU_ACCEPT);
         if (selected == SETUP_OPTION_RUN_CART) {
           if (cartridge_picker("RUN CARTRIDGE", true) == 0) {
             return 0;
@@ -932,7 +923,7 @@ static int setup_menu(void) {
         prg32_gfx_text8(8, y, i == choice ? ">" : " ", PRG32_COLOR_GREEN, 0);
         prg32_gfx_text8(24, y, options[i].label, PRG32_COLOR_WHITE, 0);
       }
-      prg32_gfx_text8(8, 228, "UP/DOWN MOVE  SELECT/B OK  A BACK",
+      prg32_gfx_text8(8, 228, "UP/DOWN MOVE  SELECT/A OK  B BACK",
                       PRG32_COLOR_CYAN, 0);
       printf("setup_menu => prg32_gfx_present()\n");
       prg32_gfx_present();
