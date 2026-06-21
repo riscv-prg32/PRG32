@@ -111,10 +111,10 @@ def main(argv: list[str]) -> int:
     )
     p.set_defaults(func=build_qemu)
 
-    p =  qemu_sub.add_parser("flash", help="flash QEMU")
+    p =  qemu_sub.add_parser("run", help="flash QEMU")
     p.set_defaults(func=flash_qemu)
 
-    p =  qemu_sub.add_parser("build-and-flash", help="build and flash QEMU")
+    p =  qemu_sub.add_parser("build-and-run", help="build and flash QEMU")
     p.add_argument("--skip-target", action="store_true", 
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
