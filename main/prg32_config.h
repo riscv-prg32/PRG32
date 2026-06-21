@@ -34,6 +34,9 @@
 #define PRG32_GAME_FROGGER_ASCII       28
 #define PRG32_GAME_FROGGER_GRAPHICS    29
 #define PRG32_GAME_FROGGER_C           30
+#define PRG32_GAME_PRG32_BOUNCE_ASCII    31
+#define PRG32_GAME_PRG32_BOUNCE_GRAPHICS 32
+#define PRG32_GAME_PRG32_BOUNCE_C        33
 
 /* Runtime console mode. */
 #define PRG32_MODE_UART_ONLY       0

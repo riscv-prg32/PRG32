@@ -167,7 +167,7 @@ def build_cartridge_core(source: str,
         runtime = {
             "cart_load_addr": 0x40800000,
             "cart_ram_size": FALLBACK_CART_RAM_SIZE,
-            "cart_max_size": 64 * 1024,
+            "cart_max_size": 128 * 1024,
             "imports": {},
         }
     elif runtime_url:

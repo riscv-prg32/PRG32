@@ -1,0 +1,4 @@
+# ESP32-C6 large-cartridge profile. Combine this after sdkconfig.defaults.
+# Rebuild both the resident firmware and every cartridge after selecting it.
+CONFIG_PRG32_CART_RAM_LARGE_128=y
+CONFIG_PRG32_CART_MAX_KIB=128

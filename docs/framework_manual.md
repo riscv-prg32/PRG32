@@ -235,7 +235,10 @@ Important constants:
 - `PRG32_CART_RAM_SIZE`: statically placed executable cartridge RAM window,
   configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 classroom
   builds default to 32 KiB to preserve setup/Wi-Fi heap, while QEMU defaults to
-  the 64 KiB extended profile for desktop experiments. The window remains
+  the 64 KiB extended profile for desktop experiments. The optional
+  `PRG32_CART_RAM_LARGE_128` profile reserves 128 KiB on ESP32-C6 when built
+  with `sdkconfig.defaults.esp32c6_128k`; it requires matching rebuilt
+  cartridges. The window remains
   static because cartridges are linked to the exported `prg32_cart_exec`
   address.
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.

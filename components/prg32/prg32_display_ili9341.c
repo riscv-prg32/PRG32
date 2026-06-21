@@ -50,7 +50,9 @@ static int g_band_color_set;
 static int g_band_area_valid;
 static uint16_t g_band_color;
 static uint16_t g_last_band_color;
-static uint16_t g_fb[PRG32_LCD_W * PRG32_LCD_H];
+/* Keep only the 320x200 game viewport in RAM. The physical status bands are
+ * rendered into g_flush_buf while presenting, saving 25,600 bytes. */
+static uint16_t g_game_fb[PRG32_GAME_W * PRG32_GAME_H];
 #if PRG32_LCD_BOOT_TEST_MS > 0
 static uint16_t g_line_buf[PRG32_LCD_W];
 #endif
@@ -232,13 +234,9 @@ static void dirty_add_raw(int x, int y, int w, int h) {
     if (y + h - 1 > g_dirty_y1) g_dirty_y1 = y + h - 1;
 }
 
-static int logical_h(void) {
-    return g_fullscreen ? PRG32_LCD_H : PRG32_GAME_H;
-}
+static int logical_h(void) { return PRG32_GAME_H; }
 
-static int logical_y_to_raw(int y) {
-    return g_fullscreen ? y : y + PRG32_VIEWPORT_Y;
-}
+static int logical_y_to_raw(int y) { return y + PRG32_VIEWPORT_Y; }
 
 static void dirty_add(int x, int y, int w, int h) {
     if (x < 0) { w += x; x = 0; }
@@ -283,54 +281,25 @@ static void fill_raw_rect(int x, int y, int w, int h, uint16_t color) {
         return;
     }
     for (int py = y; py < y + h; ++py) {
+        if (py < PRG32_VIEWPORT_Y ||
+            py >= PRG32_VIEWPORT_Y + PRG32_GAME_H) {
+            continue;
+        }
         for (int px = x; px < x + w; ++px) {
-            g_fb[py * PRG32_LCD_W + px] = fb_color(color);
+            g_game_fb[(py - PRG32_VIEWPORT_Y) * PRG32_GAME_W + px] =
+                fb_color(color);
         }
     }
     dirty_add_raw(x, y, w, h);
 }
 
-static void text8_raw(int x, int y, const char *s, uint16_t fg, uint16_t bg) {
-    if (!s) {
-        return;
-    }
-    int start_x = x;
-    int chars = 0;
-    while (*s && x < PRG32_LCD_W) {
-        const uint8_t *glyph = font_glyph((unsigned char)*s++);
-        for (int row = 0; row < 8; ++row) {
-            int py = y + row;
-            if ((unsigned)py >= PRG32_LCD_H) {
-                continue;
-            }
-            uint8_t bits = glyph[row];
-            for (int col = 0; col < 8; ++col) {
-                int px = x + col;
-                if ((unsigned)px >= PRG32_LCD_W) {
-                    continue;
-                }
-                g_fb[py * PRG32_LCD_W + px] =
-                    fb_color((bits & (1u << (7 - col))) ? fg : bg);
-            }
-        }
-        x += 8;
-        chars++;
-    }
-    if (chars > 0) {
-        dirty_add_raw(start_x, y, chars * 8, 8);
-    }
-}
-
 static void draw_band_overlays(void) {
-    if (g_fullscreen) {
-        return;
-    }
     uint32_t now = prg32_ticks_ms();
     for (uint8_t band = PRG32_BAND_TOP; band <= PRG32_BAND_BOTTOM; ++band) {
         int y = band == PRG32_BAND_TOP ? 0 : PRG32_VIEWPORT_Y + PRG32_GAME_H;
         if (!prg32_band_visible(band)) {
             if (g_band_cache_valid[band]) {
-                fill_raw_rect(0, y, PRG32_LCD_W, PRG32_VIEWPORT_Y, g_last_band_color);
+                dirty_add_raw(0, y, PRG32_LCD_W, PRG32_VIEWPORT_Y);
                 g_band_cache_valid[band] = 0;
                 g_band_text_cache[band][0] = '\0';
             }
@@ -345,12 +314,7 @@ static void draw_band_overlays(void) {
             strcmp(g_band_text_cache[band], text) == 0) {
             continue;
         }
-        fill_raw_rect(0, y, PRG32_LCD_W, PRG32_VIEWPORT_Y, bg);
-        text8_raw(4,
-                  y + 6,
-                  text,
-                  fg,
-                  bg);
+        dirty_add_raw(0, y, PRG32_LCD_W, PRG32_VIEWPORT_Y);
         snprintf(g_band_text_cache[band],
                  sizeof(g_band_text_cache[band]),
                  "%s",
@@ -358,6 +322,49 @@ static void draw_band_overlays(void) {
         g_band_fg_cache[band] = fg;
         g_band_bg_cache[band] = bg;
         g_band_cache_valid[band] = 1;
+    }
+}
+
+/* g_game_fb stores ILI9341 wire-order pixels. Band pixels only exist during
+ * a transfer, so this helper synthesizes one raw LCD row in the same order. */
+static void render_raw_row(int raw_y, int x0, int width, uint16_t *out) {
+    if (raw_y >= PRG32_VIEWPORT_Y &&
+        raw_y < PRG32_VIEWPORT_Y + PRG32_GAME_H) {
+        const uint16_t *src = &g_game_fb[
+            (raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x0];
+        memcpy(out, src, (size_t)width * sizeof(*out));
+        return;
+    }
+
+    uint8_t band = raw_y < PRG32_VIEWPORT_Y ? PRG32_BAND_TOP : PRG32_BAND_BOTTOM;
+    uint16_t bg = g_band_cache_valid[band]
+        ? g_band_bg_cache[band] : g_last_band_color;
+    uint16_t fg = g_band_cache_valid[band]
+        ? g_band_fg_cache[band] : PRG32_COLOR_WHITE;
+    uint16_t wire_bg = fb_color(bg);
+    for (int x = 0; x < width; ++x) {
+        out[x] = wire_bg;
+    }
+    if (!g_band_cache_valid[band]) {
+        return;
+    }
+
+    int band_y = band == PRG32_BAND_TOP ? 0 : PRG32_VIEWPORT_Y + PRG32_GAME_H;
+    int glyph_row = raw_y - (band_y + 6);
+    if (glyph_row < 0 || glyph_row >= 8) {
+        return;
+    }
+    const char *text = g_band_text_cache[band];
+    for (int character = 0; text[character]; ++character) {
+        int glyph_x = 4 + character * 8;
+        const uint8_t *glyph = font_glyph((unsigned char)text[character]);
+        uint8_t bits = glyph[glyph_row];
+        for (int col = 0; col < 8; ++col) {
+            int x = glyph_x + col;
+            if (x >= x0 && x < x0 + width) {
+                out[x - x0] = fb_color((bits & (1u << (7 - col))) ? fg : bg);
+            }
+        }
     }
 }
 
@@ -846,12 +853,10 @@ uint32_t prg32_ticks_ms(void) {
 
 void prg32_gfx_set_fullscreen(int enabled) {
     prg32_gfx_lock();
-    g_fullscreen = enabled ? 1 : 0;
-    if (g_fullscreen) {
-        g_band_area_valid = 0;
-        g_band_cache_valid[PRG32_BAND_TOP] = 0;
-        g_band_cache_valid[PRG32_BAND_BOTTOM] = 0;
+    if (enabled) {
+        ESP_LOGW(TAG, "fullscreen requested; low-memory renderer uses 320x200 viewport");
     }
+    g_fullscreen = 0;
     prg32_gfx_unlock();
 }
 
@@ -869,23 +874,11 @@ void prg32_gfx_set_band_color(uint16_t color) {
     g_band_color_set = 1;
     g_band_cache_valid[PRG32_BAND_TOP] = 0;
     g_band_cache_valid[PRG32_BAND_BOTTOM] = 0;
-    if (!g_fullscreen) {
-        for (int y = 0; y < PRG32_VIEWPORT_Y; ++y) {
-            for (int x = 0; x < PRG32_LCD_W; ++x) {
-                g_fb[y * PRG32_LCD_W + x] = fb_color(color);
-            }
-        }
-        for (int y = PRG32_VIEWPORT_Y + PRG32_GAME_H; y < PRG32_LCD_H; ++y) {
-            for (int x = 0; x < PRG32_LCD_W; ++x) {
-                g_fb[y * PRG32_LCD_W + x] = fb_color(color);
-            }
-        }
-        dirty_add_raw(0, 0, PRG32_LCD_W, PRG32_VIEWPORT_Y);
-        dirty_add_raw(0,
-                      PRG32_VIEWPORT_Y + PRG32_GAME_H,
-                      PRG32_LCD_W,
-                      PRG32_VIEWPORT_Y);
-    }
+    dirty_add_raw(0, 0, PRG32_LCD_W, PRG32_VIEWPORT_Y);
+    dirty_add_raw(0,
+                  PRG32_VIEWPORT_Y + PRG32_GAME_H,
+                  PRG32_LCD_W,
+                  PRG32_VIEWPORT_Y);
     prg32_gfx_unlock();
 }
 
@@ -899,25 +892,13 @@ void prg32_gfx_use_background_bands(void) {
 
 void prg32_gfx_clear(uint16_t color) {
     prg32_gfx_lock();
-    if (g_fullscreen) {
-        g_last_band_color = color;
-        g_band_area_valid = 0;
-        for (int i = 0; i < PRG32_LCD_W * PRG32_LCD_H; ++i) {
-            g_fb[i] = fb_color(color);
-        }
-        dirty_add_raw(0, 0, PRG32_LCD_W, PRG32_LCD_H);
-        prg32_gfx_unlock();
-        return;
-    }
-
     uint16_t band = g_band_color_set ? g_band_color : color;
     if (!g_band_area_valid || band != g_last_band_color) {
-        fill_raw_rect(0, 0, PRG32_LCD_W, PRG32_VIEWPORT_Y, band);
-        fill_raw_rect(0,
+        dirty_add_raw(0, 0, PRG32_LCD_W, PRG32_VIEWPORT_Y);
+        dirty_add_raw(0,
                       PRG32_VIEWPORT_Y + PRG32_GAME_H,
                       PRG32_LCD_W,
-                      PRG32_VIEWPORT_Y,
-                      band);
+                      PRG32_VIEWPORT_Y);
         g_last_band_color = band;
         g_band_area_valid = 1;
         g_band_cache_valid[PRG32_BAND_TOP] = 0;
@@ -934,7 +915,7 @@ void prg32_gfx_pixel(int x, int y, uint16_t color) {
         return;
     }
     int raw_y = logical_y_to_raw(y);
-    g_fb[raw_y * PRG32_LCD_W + x] = fb_color(color);
+    g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x] = fb_color(color);
     dirty_add(x, y, 1, 1);
     prg32_gfx_unlock();
 }
@@ -960,7 +941,8 @@ void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color) {
     for (int py = y0; py < y1; ++py) {
         int raw_y = logical_y_to_raw(py);
         for (int px = x0; px < x1; ++px) {
-            g_fb[raw_y * PRG32_LCD_W + px] = fb_color(color);
+            g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + px] =
+                fb_color(color);
         }
     }
     dirty_add(x0, y0, x1 - x0, y1 - y0);
@@ -987,7 +969,7 @@ void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg) {
                 if ((unsigned)px >= PRG32_GAME_W) {
                     continue;
                 }
-                g_fb[raw_y * PRG32_LCD_W + px] =
+                g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + px] =
                     fb_color((bits & (1u << (7 - col))) ? fg : bg);
             }
         }
@@ -1003,9 +985,8 @@ int prg32_gfx_snapshot_row_rgb565(int y, uint16_t *out, size_t pixels) {
         prg32_gfx_unlock();
         return -1;
     }
-    for (int x = 0; x < PRG32_LCD_W; ++x) {
-        out[x] = rgb565_wire(g_fb[y * PRG32_LCD_W + x]);
-    }
+    render_raw_row(y, 0, PRG32_LCD_W, out);
+    for (int x = 0; x < PRG32_LCD_W; ++x) out[x] = rgb565_wire(out[x]);
     prg32_gfx_unlock();
     return PRG32_LCD_W;
 }
@@ -1033,17 +1014,13 @@ void prg32_gfx_present(void) {
         if (rows > PRG32_LCD_FLUSH_ROWS) {
             rows = PRG32_LCD_FLUSH_ROWS;
         }
-        if (width == PRG32_LCD_W && x0 == 0) {
-            lcd_data(&g_fb[y * PRG32_LCD_W], width * rows * (int)sizeof(g_fb[0]));
-        } else {
-            for (int row = 0; row < rows; ++row) {
-                for (int x = 0; x < width; ++x) {
-                    g_flush_buf[row * width + x] =
-                        g_fb[(y + row) * PRG32_LCD_W + x0 + x];
-                }
-            }
-            lcd_data(g_flush_buf, width * rows * (int)sizeof(g_flush_buf[0]));
+        for (int row = 0; row < rows; ++row) {
+            render_raw_row(y + row,
+                           x0,
+                           width,
+                           &g_flush_buf[row * width]);
         }
+        lcd_data(g_flush_buf, width * rows * (int)sizeof(g_flush_buf[0]));
 #if PRG32_LCD_SOFT_SPI
         vTaskDelay(pdMS_TO_TICKS(1));
 #endif
