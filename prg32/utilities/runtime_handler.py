@@ -84,10 +84,10 @@ def fetch_runtime(url: str) -> dict:
         raise SystemExit(f"failed to read runtime from {endpoint}: {exc}") from exc
 
 def ensure_cart_max_size(data: bytes) -> None:
-    if len(data) > 64 * 1024:
+    if len(data) > 128 * 1024:
         raise SystemExit(
             f"cartridge is {len(data)} bytes, which exceeds the PRG32 hardware "
-            "limit of 64KB (65536 bytes)."
+            "limit of 128 KiB (131072 bytes)."
         )
 
 def runtime(args: argparse.Namespace) -> None:
@@ -136,6 +136,18 @@ def validate_cartridge_contract(
     context: str = "cartridge",
 ) -> None:
     h = cartridge_contract(data)
+    runtime_max_size = int((runtime or {}).get("cart_max_size", 128 * 1024))
+    if len(data) > runtime_max_size:
+        raise SystemExit(
+            f"{context} rejected: cartridge is {len(data)} bytes, but the "
+            f"runtime accepts at most {runtime_max_size} bytes"
+        )
+    runtime_ram_size = int((runtime or {}).get("cart_ram_size", FALLBACK_CART_RAM_SIZE))
+    if h["mem_size"] > runtime_ram_size:
+        raise SystemExit(
+            f"{context} rejected: cartridge needs {h['mem_size']} bytes of "
+            f"executable RAM, but the runtime has {runtime_ram_size} bytes"
+        )
     expected_major = int((runtime or {}).get("cart_abi_major", CART_ABI_MAJOR))
     expected_hash = int((runtime or {}).get("cart_abi_hash", ABI_HASH))
     default_features = 0

@@ -122,7 +122,7 @@ Typical response fields:
   "cart_abi_hash": 3117075842,
   "cart_abi_features": 511,
   "cart_load_addr": 1107296256,
-  "cart_max_size": 65536,
+  "cart_max_size": 131072,
   "cart_ram_size": 32768,
   "cart_loaded": true,
   "qemu": false,

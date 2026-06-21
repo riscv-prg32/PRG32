@@ -72,7 +72,8 @@ choice PRG32_CART_RAM_PROFILE
     help
         Choose how much internal executable RAM the resident firmware reserves
         for uploadable cartridges. This memory has a fixed exported address so
-        host tools can link cartridges against prg32_cart_exec.
+        host tools can link cartridges against prg32_cart_exec. The 128 KiB
+        profile requires the low-memory ILI9341 renderer.
 
 config PRG32_CART_RAM_CLASSROOM
     bool "Classroom profile, 32 KiB"
@@ -88,6 +89,13 @@ config PRG32_CART_RAM_EXTENDED
         default; physical builds can enable it for labs that intentionally need
         larger linked cartridge images.
 
+config PRG32_CART_RAM_LARGE_128
+    bool "Large profile, 128 KiB"
+    help
+        Reserve a 128 KiB executable cartridge window for large games. This
+        is intended for optimized ESP32-C6 physical builds. Rebuild resident
+        firmware and cartridges after changing this profile.
+
 config PRG32_CART_RAM_CUSTOM
     bool "Custom profile"
     help
@@ -100,7 +108,7 @@ config PRG32_CART_RAM_CUSTOM_KIB
     int "Custom executable cartridge RAM window in KiB"
     depends on PRG32_CART_RAM_CUSTOM
     default 48
-    range 16 64
+    range 16 128
     help
         Custom size for the statically placed cartridge execution window.
         Rebuild both the resident firmware and cartridges after changing it.
@@ -109,8 +117,19 @@ config PRG32_CART_RAM_KIB
     int
     default 32 if PRG32_CART_RAM_CLASSROOM
     default 64 if PRG32_CART_RAM_EXTENDED
+    default 128 if PRG32_CART_RAM_LARGE_128
     default PRG32_CART_RAM_CUSTOM_KIB if PRG32_CART_RAM_CUSTOM
     default 32
+
+config PRG32_CART_MAX_KIB
+    int "Maximum stored cartridge image size in KiB"
+    default 128 if PRG32_CART_RAM_LARGE_128
+    default 128
+    range 32 128
+    help
+        Maximum accepted .prg32 image size. Keep this at or below the size of
+        every cartridge partition. The large 128 KiB RAM profile needs a
+        matching 128 KiB image limit and rebuilt cartridges.
 
 menu "Performance metrics"
 

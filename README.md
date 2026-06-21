@@ -533,6 +533,7 @@ C versions of:
 - `raycaster`
 - `wing_commander`
 - `frogger`
+- `prg32_bounce`
 
 See [examples/games/README.md](examples/games/README.md) for step-by-step
 instructions to run each game embedded in firmware or as an uploadable

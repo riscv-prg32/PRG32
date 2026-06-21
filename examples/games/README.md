@@ -28,6 +28,7 @@ examples/games/<game>/
 | `raycaster` | `raycaster_ascii` | `raycaster_graphics` | `raycaster_c` |
 | `wing_commander` | `wing_commander_ascii` | `wing_commander_graphics` | `wing_commander_c` |
 | `frogger` | `frogger_ascii` | `frogger_graphics` | `frogger_c` |
+| `prg32_bounce` | `prg32_bounce_ascii` | `prg32_bounce_graphics` | `prg32_bounce_c` |
 
 Use the prefix to find the three exported symbols:
 

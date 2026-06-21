@@ -438,7 +438,10 @@ This is intentionally a classroom loader, not a general dynamic linker.
 - Cartridge package size is 128 KiB.
 - Cartridge RAM is selected by `CONFIG_PRG32_CART_RAM_PROFILE`: physical
   classroom builds default to 32 KiB, while QEMU uses the 64 KiB extended
-  profile unless a custom profile is selected.
+  profile unless a custom profile is selected. ESP32-C6 builds can opt into
+  the 128 KiB profile with `sdkconfig.defaults.esp32c6_128k`; combine it with
+  the normal defaults, rebuild the resident firmware, and rebuild every
+  cartridge for that runtime.
 - AUDIO blocks are stored after the code payload and count against cartridge
   package size and partition size, not cartridge executable RAM.
 - Four flash slots, `cart0` through `cart3`, are available. Only one cartridge
@@ -446,3 +449,25 @@ This is intentionally a classroom loader, not a general dynamic linker.
 - Local scoreboard records persist in the dedicated `scores` NVS partition and
   are not erased when a cartridge slot is replaced.
 - QEMU staging requires QEMU to be stopped before patching `qemu_flash.bin`.
+
+### 128 KiB ESP32-C6 profile
+
+The optional physical-board profile reserves 128 KiB of executable cartridge
+RAM and uses the ILI9341 low-memory renderer: the persistent framebuffer is
+the 320x200 game viewport, while the two 20-pixel status bands are generated
+during LCD transfer. This keeps the game coordinate system unchanged. Full
+320x240 framebuffer drawing is therefore not available in this profile.
+
+Build it with a separate directory so the normal classroom configuration stays
+unchanged:
+
+```bash
+idf.py -B build-esp32c6-128k \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp32c6_128k" \
+  set-target esp32c6
+idf.py -B build-esp32c6-128k build
+```
+
+Then use that firmware ELF or its `/api/runtime` response when building and
+uploading large cartridges. The setup resource screen reports `CART RAM` so
+the active profile can be checked on the board.

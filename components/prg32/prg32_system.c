@@ -121,6 +121,11 @@ static void draw_setup_resources(int y) {
              bytes_to_kib(esp_get_free_heap_size()),
              bytes_to_kib(setup_available_cart_flash()));
     prg32_gfx_text8(8, y, line, PRG32_COLOR_YELLOW, 0);
+    snprintf(line,
+             sizeof(line),
+             "CART RAM: %luK",
+             bytes_to_kib(prg32_cart_ram_size()));
+    prg32_gfx_text8(8, y + 8, line, PRG32_COLOR_YELLOW, 0);
 }
 
 static int stored_slots(uint8_t *slots, int max_slots) {
