@@ -262,8 +262,8 @@ static int filter_catalog(const char *query) {
 
 static int fetch_catalog(const char *base_url, char *status,
                          size_t status_len) {
-  char url[PRG32_STORE_URL_MAX_LEN + 16];
-  snprintf(url, sizeof(url), "%s/api/games", base_url);
+  char url[PRG32_STORE_URL_MAX_LEN + 32];
+  snprintf(url, sizeof(url), "%s/api/games?limit=%d", base_url, STORE_MAX_GAMES);
   ESP_LOGI(TAG, "fetch catalog: %s heap=%lu", url,
            (unsigned long)esp_get_free_heap_size());
   if (!catalog_body || !games) {

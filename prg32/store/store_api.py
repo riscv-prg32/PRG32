@@ -52,7 +52,7 @@ def store_discover(args: argparse.Namespace) -> None:
 
 
 def store_list(args: argparse.Namespace) -> None:
-    body = json_request(store_url(args) + "/api/games")
+    body = json_request(store_url(args) + "/api/games?limit=100")
     rows = catalog_items(body)
     print(f"{'ID':32} {'Title':24} {'Version':8} Architectures")
     for item in rows:
