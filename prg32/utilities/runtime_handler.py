@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 from prg32.utilities.env_variables import *
-from prg32.abi.abi_generated import ABI_HASH, FEATURE_BITS
+from prg32.abi.abi_generated import ABI_HASH, FEATURE_BITS, IMPORT_NAMES
 import urllib.error
 import urllib.request
 import json
