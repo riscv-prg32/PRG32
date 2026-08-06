@@ -1,6 +1,6 @@
 # Contributors
 
-This file tracks human contributors in a format suitable for academic project
+This file tracks human contributors in a format suitable for an academic project
 submissions and coursework documentation.
 
 ## Core Contributors
@@ -8,7 +8,6 @@ submissions and coursework documentation.
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
 - Simone Boscaglia - UniParthenope - Computer Science student
 - Ivan Cafiero - UniParthenope - Computer Science student
-- Simone Boscaglia - UniParthenope - Computer Science student
 
 ## Notes
 
