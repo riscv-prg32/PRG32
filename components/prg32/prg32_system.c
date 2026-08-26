@@ -12,6 +12,39 @@ void prg32_input_init(void);
 void prg32_audio_pwm_init(void);
 void prg32_abi_exports_keep(void);
 
+#ifdef CONFIG_HEAP_TASK_TRACKING
+#include "esp_heap_caps.h"
+
+typedef struct {
+    const char *name;
+    int32_t diff_bytes;
+} prg32_boot_checkpoint_t;
+
+#define MAX_BOOT_CHECKPOINTS 16
+static prg32_boot_checkpoint_t g_boot_checkpoints[MAX_BOOT_CHECKPOINTS];
+static size_t g_boot_checkpoint_count = 0;
+static uint32_t g_last_boot_mem = 0;
+
+#define PRG32_MEM_CHECKPOINT(name_str) do { \
+    uint32_t current_mem = heap_caps_get_free_size(MALLOC_CAP_8BIT); \
+    if (g_last_boot_mem != 0 && g_boot_checkpoint_count < MAX_BOOT_CHECKPOINTS) { \
+        g_boot_checkpoints[g_boot_checkpoint_count].name = name_str; \
+        g_boot_checkpoints[g_boot_checkpoint_count].diff_bytes = (int32_t)g_last_boot_mem - (int32_t)current_mem; \
+        g_boot_checkpoint_count++; \
+    } \
+    g_last_boot_mem = current_mem; \
+} while(0)
+
+size_t prg32_system_get_boot_checkpoints(prg32_boot_checkpoint_t **out_checkpoints) {
+    if (out_checkpoints) {
+        *out_checkpoints = g_boot_checkpoints;
+    }
+    return g_boot_checkpoint_count;
+}
+#else
+#define PRG32_MEM_CHECKPOINT(name) do {} while(0)
+#endif
+
 #include "nvs_flash.h"
 
 #ifndef PRG32_BOOT_SETUP_MODE
@@ -935,22 +968,29 @@ static int setup_menu(void) {
 
 void prg32_init(void) {
   printf("prg32_init()\n");
+  PRG32_MEM_CHECKPOINT("prg32_init_start");
   printf("prg32_init => prg32_display_init()\n");
   prg32_display_init();
+  PRG32_MEM_CHECKPOINT("prg32_display_init");
   printf("prg32_init => prg32_rgb_led_init()\n");
   prg32_rgb_led_init(PRG32_PIN_RGB_LED);
+  PRG32_MEM_CHECKPOINT("prg32_rgb_led_init");
   printf("prg32_init => prg32_audio_pwm_init()\n");
   prg32_audio_pwm_init();
+  PRG32_MEM_CHECKPOINT("prg32_audio_pwm");
   printf("prg32_init => prg32_splash_show_default()\n");
   prg32_splash_show_default();
+  PRG32_MEM_CHECKPOINT("prg32_splash");
   printf("prg32_init => prg32_input_init()\n");
   prg32_input_init();
+  PRG32_MEM_CHECKPOINT("prg32_input");
   esp_err_t nvs_err = nvs_flash_init();
   if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES ||
       nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
     nvs_flash_erase();
     nvs_flash_init();
   }
+  PRG32_MEM_CHECKPOINT("nvs_flash");
 #ifdef PRG32_STORE_SERVER_URL
   char current_url[PRG32_STORE_URL_MAX_LEN];
   if (prg32_store_url_get(current_url, sizeof(current_url)) != 0) {
@@ -961,6 +1001,7 @@ void prg32_init(void) {
   prg32_abi_exports_keep();
   printf("prg32_init => prg32_cart_init()\n");
   prg32_cart_init();
+  PRG32_MEM_CHECKPOINT("prg32_cart");
   printf("prg32_init => prg32_band_load_config()\n");
   prg32_band_load_config();
   printf("prg32_init => prg32_input_read_menu()\n");
@@ -983,8 +1024,10 @@ void prg32_init(void) {
     prg32_wifi_scores_init();
     printf("prg32_init => scores_api_start()\n");
     prg32_scores_api_start();
+    PRG32_MEM_CHECKPOINT("wifi/scores/api");
     printf("prg32_init => setup_menu()\n");
     setup_menu();
+    PRG32_MEM_CHECKPOINT("setup_menu");
   }
 
   printf("prg32_init => wifi_scores_init()\n");
@@ -992,6 +1035,7 @@ void prg32_init(void) {
 #if PRG32_WIFI_SCORES_ENABLE
   prg32_wifi_scores_init();
   prg32_scores_api_start();
+  PRG32_MEM_CHECKPOINT("wifi_scores");
 #endif
   printf("prg32_init => cart_is_loaded()\n");
   printf("prg32_init => cart_stored_count()\n");

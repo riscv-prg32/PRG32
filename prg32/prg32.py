@@ -14,6 +14,7 @@ from prg32.esp32c6.build_esp32c6 import set_target_esp32c6, build_esp32c6, flash
 from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6, upload_and_run_esp32c6
 from prg32.esp32c6.prepare_legacy import prepare_legacy_esp32c6
 from prg32.esp32c6.flash_legacy import flash_legacy_esp32c6
+from prg32.esp32c6.memory_esp32c6 import memory_esp32c6
 
 
 from prg32.qemu.launch_qemu import launch_qemu
@@ -45,6 +46,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--skip-target", action="store_true", 
         help="Skip setting target to ESP32C6 (it takes less time to build and it is useless if you have set the target before)"
     )
+    p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.set_defaults(func=build_esp32c6)
 
     p = esp32c6_sub.add_parser("flash", help="flash the ESP32C6 image. Does not do anything when a cartridge is running!")
@@ -54,6 +56,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--skip-target", action="store_true", 
         help="Skip setting target to ESP32C6 (it takes less time to build and it is useless if you have set the target before)"
     )
+    p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.set_defaults(func=build_and_flash_esp32c6)
 
     p = esp32c6_sub.add_parser("upload", 
@@ -94,6 +97,13 @@ def main(argv: list[str]) -> int:
     p.add_argument("--port", required=True, help="Serial port to flash to")
     p.add_argument("--baud", default="460800", help="Baud rate for flashing")
     p.set_defaults(func=flash_legacy_esp32c6)
+
+    p = esp32c6_sub.add_parser("memory", help="get static and dynamic memory analysis of the ESP32C6 SoC", usage="%(prog)s [options]")
+    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.add_argument("--details", help="Print per-file sizes for the given component (e.g. prg32, or 'all' for everything)")
+    p.add_argument("--top-symbols", type=int, metavar="N", help="Print the top N largest variables/functions in the firmware using nm")
+    p.add_argument("--symbol-filter", help="Filter top symbols by type. Options: 'ram', 'flash', 'bss', 'data', 'code', or exact nm type characters (e.g. 'BbDd')")
+    p.set_defaults(func=memory_esp32c6)
 
     # ==========================================
     # 'qemu' Subcommand Menu

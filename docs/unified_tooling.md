@@ -65,6 +65,7 @@ The `esp32c6` subcommand also wraps ESP-IDF functions:
 - `python3 -m prg32 esp32c6 build` 
 - `python3 -m prg32 esp32c6 flash` 
 - `python3 -m prg32 esp32c6 build-and-flash`
+- `python3 -m prg32 esp32c6 memory` (See [docs/memory.md](memory.md))
 - `python3 -m prg32 esp32c6 reset`
 - `python3 -m prg32 esp32c6 erase-flash`
 
