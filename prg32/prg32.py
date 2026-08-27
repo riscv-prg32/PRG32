@@ -15,7 +15,8 @@ from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6, upload_and
 from prg32.esp32c6.prepare_legacy import prepare_legacy_esp32c6
 from prg32.esp32c6.flash_legacy import flash_legacy_esp32c6
 from prg32.esp32c6.memory_esp32c6 import memory_esp32c6
-
+from prg32.esp32c6.screenshot_esp32c6 import screenshot_esp32c6
+from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
@@ -44,7 +45,7 @@ def main(argv: list[str]) -> int:
 
     p = esp32c6_sub.add_parser("build", help="build the ESP32C6 firmware")
     p.add_argument("--skip-target", action="store_true", 
-        help="Skip setting target to ESP32C6 (it takes less time to build and it is useless if you have set the target before)"
+        help="Skip setting target to ESP32C6 (it takes more time to build and it is useless if you have set the target before)"
     )
     p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.set_defaults(func=build_esp32c6)
@@ -59,10 +60,15 @@ def main(argv: list[str]) -> int:
     p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.set_defaults(func=build_and_flash_esp32c6)
 
+    p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
+    p.set_defaults(func=erase_flash_esp32c6)
+
+    p = esp32c6_sub.add_parser("reset", help=f"erase flash and re-flash {ESP32C6_IMAGE} to ESP32C6 over USB")
+    p.set_defaults(func=reset_esp32c6)
+
     p = esp32c6_sub.add_parser("upload", 
         help="upload a cartridge to the ESP32C6 SoC over HTTP", 
-        usage="%(prog)s CARTRIDGE [options]"
-    )
+        usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
     p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload into")
@@ -79,11 +85,13 @@ def main(argv: list[str]) -> int:
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload and run into")
     p.set_defaults(func=upload_and_run_esp32c6)
 
-    p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
-    p.set_defaults(func=erase_flash_esp32c6)
+    p = esp32c6_sub.add_parser("performance", help="Get ESP32C6 performance data over HTTP. Must be used in Performance Test", usage="%(prog)s [--url URL] [options]")
+    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.set_defaults(func=get_performance_esp32c6)
 
-    p = esp32c6_sub.add_parser("reset", help=f"erase flash and re-flash {ESP32C6_IMAGE} to ESP32C6 over USB")
-    p.set_defaults(func=reset_esp32c6)
+    p = esp32c6_sub.add_parser("screenshot", help="Get screenshot of ESP32C6 over HTTP", usage="%(prog)s [--url URL] [options]")
+    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.set_defaults(func=screenshot_esp32c6)
 
     p = esp32c6_sub.add_parser("prepare-legacy", help="prepare a single-file legacy PRG32 firmware image for publishing", usage="%(prog)s [options]")
     p.add_argument("--build-dir", default="build-esp32c6", help="Path to the build directory")
