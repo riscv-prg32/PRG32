@@ -7,6 +7,9 @@ from prg32.utilities.env_variables import ESP32C6_BUILD_DIR, ESP32C6_SDKCONFIG, 
 
 def set_target_esp32c6(args: argparse.Namespace):
     step("Configuring ESP32C6 target (esp32c6)...")
+    import os, shutil
+    if os.path.exists(ESP32C6_BUILD_DIR):
+        shutil.rmtree(ESP32C6_BUILD_DIR, ignore_errors=True)
     subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "set-target", "esp32c6"])
 
 def build_esp32c6(args: argparse.Namespace):
@@ -14,6 +17,15 @@ def build_esp32c6(args: argparse.Namespace):
         log_info("Skipping setting target to ESP32C6...")
     else:
         set_target_esp32c6(args)
+
+    import os
+    enable_tracking = getattr(args, 'enable_heap_tracking', False)
+    
+    # Force configurations by directly appending to the generated sdkconfig.
+    # Kconfig uses the last defined value in the file.
+    if os.path.exists(ESP32C6_SDKCONFIG):
+        with open(ESP32C6_SDKCONFIG, "a") as f:
+            f.write(f"\nCONFIG_HEAP_TASK_TRACKING={'y' if enable_tracking else 'n'}\n")
 
     step("Building ESP32C6...")
     subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "build"])

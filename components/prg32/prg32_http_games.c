@@ -8,6 +8,17 @@
 #include "esp_heap_caps.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "esp_timer.h"
+#include "esp_vfs.h"
+
+#ifdef CONFIG_HEAP_TASK_TRACKING
+typedef struct {
+    const char *name;
+    int32_t diff_bytes;
+} prg32_boot_checkpoint_t;
+extern size_t prg32_system_get_boot_checkpoints(prg32_boot_checkpoint_t **out_checkpoints);
+#include "esp_heap_task_info.h"
+#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +70,12 @@ static esp_err_t send_api_index(httpd_req_t *req) {
 #else
                        "false"
 #endif
+                       "{\"method\":\"GET\",\"path\":\"/api/scores\",\"available\":"
+#if PRG32_WIFI_SCORES_ENABLE
+                       "true"
+#else
+                       "false"
+#endif
                        "},"
                        "{\"method\":\"POST\",\"path\":\"/api/scores\",\"available\":"
 #if PRG32_WIFI_SCORES_ENABLE
@@ -66,7 +83,8 @@ static esp_err_t send_api_index(httpd_req_t *req) {
 #else
                        "false"
 #endif
-                       "}"
+                       "},"
+                       "{\"method\":\"GET\",\"path\":\"/api/memory\",\"available\":true}"
                        "]}");
     return ESP_OK;
 }
@@ -139,6 +157,87 @@ static esp_err_t send_runtime(httpd_req_t *req) {
     }
     httpd_resp_set_type(req, "application/json");
     return httpd_resp_sendstr(req, json);
+}
+
+static esp_err_t get_memory(httpd_req_t *req) {
+    prg32_memory_stats_t stats;
+    prg32_memory_get_stats(&stats);
+    
+    cJSON *root = cJSON_CreateObject();
+    if (!root) {
+        httpd_resp_send_err(req, 500, "out of memory");
+        return ESP_ERR_NO_MEM;
+    }
+    
+    add_json_u32(root, "static_bss_bytes", stats.static_bss_bytes);
+    add_json_u32(root, "static_data_bytes", stats.static_data_bytes);
+    add_json_u32(root, "heap_total_bytes", stats.heap_total_bytes);
+    add_json_u32(root, "heap_free_bytes", stats.heap_free_bytes);
+    add_json_u32(root, "heap_allocated_bytes", stats.heap_allocated_bytes);
+    add_json_u32(root, "heap_largest_free_block", stats.heap_largest_free_block);
+
+#ifdef CONFIG_HEAP_TASK_TRACKING
+    heap_task_info_params_t info_params = {0};
+    info_params.caps[0] = MALLOC_CAP_8BIT;
+    info_params.mask[0] = MALLOC_CAP_8BIT;
+    
+    size_t num_totals = 0;
+    size_t max_totals = 32; // Limit to 32 tasks
+    heap_task_totals_t *totals = heap_caps_malloc(sizeof(heap_task_totals_t) * max_totals, MALLOC_CAP_8BIT);
+    
+    if (totals) {
+        info_params.totals = totals;
+        info_params.num_totals = &num_totals;
+        info_params.max_totals = max_totals;
+        
+        heap_caps_get_per_task_info(&info_params);
+        
+        cJSON *tasks = cJSON_CreateArray();
+        if (tasks) {
+            for (size_t i = 0; i < num_totals; i++) {
+                cJSON *task_obj = cJSON_CreateObject();
+                if (task_obj) {
+                    const char *task_name = totals[i].task ? pcTaskGetName(totals[i].task) : "Unknown";
+                    cJSON_AddStringToObject(task_obj, "name", task_name);
+                    add_json_u32(task_obj, "allocated_bytes", totals[i].size[0]);
+                    cJSON_AddItemToArray(tasks, task_obj);
+                }
+            }
+            cJSON_AddItemToObject(root, "tasks", tasks);
+        }
+        heap_caps_free(totals);
+
+        prg32_boot_checkpoint_t *checkpoints = NULL;
+        size_t count = prg32_system_get_boot_checkpoints(&checkpoints);
+        if (count > 0 && checkpoints != NULL) {
+            cJSON *cps = cJSON_CreateArray();
+            if (cps) {
+                for (size_t i = 0; i < count; i++) {
+                    cJSON *cp_obj = cJSON_CreateObject();
+                    if (cp_obj) {
+                        cJSON_AddStringToObject(cp_obj, "name", checkpoints[i].name);
+                        cJSON_AddNumberToObject(cp_obj, "bytes", checkpoints[i].diff_bytes);
+                        cJSON_AddItemToArray(cps, cp_obj);
+                    }
+                }
+                cJSON_AddItemToObject(root, "checkpoints", cps);
+            }
+        }
+    }
+#endif
+
+
+
+    char *json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    httpd_resp_set_type(req, "application/json");
+    if (!json) {
+        httpd_resp_sendstr(req, "{}");
+        return ESP_OK;
+    }
+    httpd_resp_sendstr(req, json);
+    cJSON_free(json);
+    return ESP_OK;
 }
 
 static esp_err_t get_games(httpd_req_t *req) {
@@ -530,6 +629,11 @@ void prg32_scores_api_start(void) {
         .method = HTTP_GET,
         .handler = get_performance_json
     };
+    httpd_uri_t memory_json = {
+        .uri = "/api/memory",
+        .method = HTTP_GET,
+        .handler = get_memory
+    };
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &api_root));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &api));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &rt));
@@ -538,6 +642,7 @@ void prg32_scores_api_start(void) {
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &games_select));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &screenshot));
     ESP_ERROR_CHECK(httpd_register_uri_handler(server, &performance));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(server, &memory_json));
 
     prg32_http_register_score_handlers(server);
 }
