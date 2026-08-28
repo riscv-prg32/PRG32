@@ -31,17 +31,23 @@ They are the same display wiring used by the Arduino/Adafruit validation sketch.
 
 | ESP32-C6 | Input |
 |---|---|
-| GPIO18 | P1 LEFT |
-| GPIO19 | P1 RIGHT |
-| GPIO3 | P1 UP |
-| GPIO13 | P1 DOWN |
-| GPIO20 | P1 SELECT |
-| GPIO21 | P1 A |
-| GPIO22 | P1 B |
-| GPIO15 | passive buzzer |
+| GPIO18 | P1 LEFT, switch to GND |
+| GPIO19 | P1 RIGHT, switch to GND |
+| GPIO3 | P1 UP, switch to GND |
+| GPIO13 | P1 DOWN, switch to GND |
+| GPIO20 | P1 START / SELECT, switch to GND |
+| GPIO21 | P1 A, switch to GND |
+| GPIO22 | P1 B, switch to GND |
+| GPIO14 | SETUP, optional switch to GND |
 
-GPIO14 is still accepted by the firmware as an older START/SELECT wiring
-alias, but new classroom harnesses should use GPIO20 for SELECT.
+The firmware enables the internal pull-up on every button input, so a pressed
+button connects its GPIO to GND. START and SELECT are names for the same
+GPIO20 input in the default configuration. Holding A+B during startup or
+holding the optional GPIO14 SETUP input low enters setup mode. Setup mode also
+opens automatically when the firmware cannot select a cartridge to boot.
+
+`PRG32_PIN_BUZZER` is `-1` in the current physical configuration, so no passive
+buzzer is wired or initialized. Audio uses the I2S amplifier described below.
 
 The LCD backlight defaults to active-high. If a specific breakout uses an
 active-low backlight transistor, set `PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL` to `0`
@@ -56,12 +62,11 @@ prg32_rgb_led_init(gpio);
 prg32_rgb_led_set(red, green, blue);
 ```
 
-Many ESP32-C6 development boards wire the onboard RGB LED to GPIO8. The
-reference PRG32 display harness already uses GPIO8 for LCD D/C, so
-`PRG32_PIN_RGB_LED` defaults to `-1` and the LED is disabled. Enable it only
-when your board exposes the LED on a free GPIO or your display wiring has been
-changed accordingly. The setup audio menu can use the LED as a spectrum-style
-VU meter.
+The physical firmware sets `PRG32_PIN_RGB_LED` to GPIO8 for the WS2812-style
+onboard LED. GPIO8 does not overlap the current display harness, whose LCD D/C
+line is GPIO1. The setup audio menu can use the LED as a spectrum-style VU
+meter. QEMU builds set the RGB LED pin to `-1` and do not initialize physical
+LED hardware.
 
 ## Mono Audio
 
@@ -93,8 +98,10 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build flash monitor
 ```
 
-The QEMU defaults are for the ESP32-C3 virtual display path and intentionally
-disable physical I2S audio output.
+The QEMU defaults are for the ESP32-C3 virtual display path. They set all
+physical display, button, setup, buzzer, and RGB LED pins to `-1`; keyboard
+input arrives through the QEMU UART console. Audio remains enabled in the QEMU
+configuration but does not use the ESP32-C6 classroom wiring documented here.
 
 ## Stereo Audio
 
