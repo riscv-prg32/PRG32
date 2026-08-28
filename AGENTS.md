@@ -24,8 +24,8 @@ Treat this repository as an academic-style software artifact:
 Named contributor metadata used across project docs:
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
-- Ivan Cafiero - UniParthenope - Computer Science student
 - Simone Boscaglia - UniParthenope - Computer Science student
+- Ivan Cafiero - UniParthenope - Computer Science student
 
 ## Project Snapshot
 
@@ -349,7 +349,7 @@ Tasks should remain simple wrappers around:
 - `idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor`
 - `idf.py -B build-qemu gdb`
 - `tools/qemu.sh` and `tools/qemu.ps1`
-- `python3 -m prg32 build ...`
+- `python3 -m prg32 cartridge build ...`
 - `python3 -m prg32 upload ...`
 - `python3 -m prg32 upload-qemu ...`
 
@@ -454,7 +454,7 @@ For cartridge/ABI work, run the relevant available checks before finishing:
 
 ```bash
 python3 python3 -m prg32 abi gen --check
-python3 -m prg32 summary build/<example>.prg32
+python3 -m prg32 cartridge summary build/<example>.prg32
 git diff --check
 ```
 

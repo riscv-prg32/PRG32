@@ -6,11 +6,11 @@ authors:
   - family-names: "Montella"
     given-names: "Raffaele"
     affiliation: "UniParthenope"
-  - family-names: "Cafiero"
-    given-names: "Ivan"
-    affiliation: "UniParthenope"
   - family-names: "Boscaglia"
     given-names: "Simone"
+    affiliation: "UniParthenope"
+  - family-names: "Cafiero"
+    given-names: "Ivan"
     affiliation: "UniParthenope"
 keywords:
   - embedded-systems

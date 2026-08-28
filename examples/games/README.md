@@ -192,7 +192,7 @@ The board starts the `PRG32` Wi-Fi access point by default for cartridge uploads
 ### 2. Build an ASCII Cartridge
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/tetris/ascii/game.S \
   --portable \
   --entry-prefix tetris_ascii \
@@ -203,7 +203,7 @@ python3 -m prg32 build \
 ### 3. Build a Graphics Cartridge
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/tetris/graphics/game.S \
   --portable \
   --entry-prefix tetris_graphics \
@@ -214,7 +214,7 @@ python3 -m prg32 build \
 ### 3b. Build a C Cartridge
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/platformer/c/game.c \
   --portable \
   --entry-prefix platformer_c \
@@ -260,7 +260,7 @@ Stop QEMU after the first successful launch. This creates
 ### 3. Build a QEMU Cartridge
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/tetris/graphics/game.S \
   --portable \
   --entry-prefix tetris_graphics \

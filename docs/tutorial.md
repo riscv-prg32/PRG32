@@ -208,7 +208,7 @@ Suggested order:
 After the resident firmware has been flashed once, build the game as a cartridge:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/pong/graphics/game.S \
   --portable \
   --entry-prefix pong_graphics \

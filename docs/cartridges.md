@@ -89,7 +89,7 @@ URL:      http://192.168.4.1
 Build a cartridge from an assembly or C example. This example uses the portable ABI table, so it does not need a firmware ELF:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -130,7 +130,7 @@ A cartridge opts in to multiplayer by calling
 can also mark the package header with `PRG32_CART_FLAG_MULTIPLAYER`:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/pong/c/game.c \
   --portable \
   --entry-prefix pong_c \
@@ -154,7 +154,7 @@ Portable cartridges use the generated ABI table contract and do not need a
 firmware ELF or runtime HTTP query at build time:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -180,7 +180,7 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdk
 Build a portable cartridge for QEMU staging:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \
@@ -240,12 +240,12 @@ workflow:
 
 ```bash
 # Physical board variant.
-python3 -m prg32 build ... \
+python3 -m prg32 cartridge build ... \
   --portable \
   --out build-esp32c6/game.prg32
 
 # QEMU variant.
-python3 -m prg32 build ... \
+python3 -m prg32 cartridge build ... \
   --portable \
   --out build-qemu/game.prg32
 ```
@@ -383,7 +383,7 @@ Build them with the same tool. The builder detects `.c` sources and compiles
 them as small freestanding C modules:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/platformer/c/game.c \
   --portable \
   --entry-prefix platformer_c \
@@ -416,7 +416,7 @@ python3 tools/prg32audio_pack.py audio.json --out build/audio.block
 Attach it to a cartridge:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \

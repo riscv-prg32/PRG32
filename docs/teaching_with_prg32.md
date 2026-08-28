@@ -82,7 +82,7 @@ explain how `prg32_platform_actor_t` changes every frame.
 For assembly lessons:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/platformer/graphics/game.S \
   --portable \
   --entry-prefix platformer_graphics \
@@ -93,7 +93,7 @@ python3 -m prg32 build \
 For C lessons:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/platformer/c/game.c \
   --portable \
   --entry-prefix platformer_c \

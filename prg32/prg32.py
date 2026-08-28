@@ -151,10 +151,13 @@ def main(argv: list[str]) -> int:
 
 
     # ==========================================
-    # GLOBAL COMMANDS
+    # 'cartridge' Subcommand Menu
     # ==========================================
-    p = sub.add_parser(
-        "build-cartridge", 
+    cartridge_p = sub.add_parser("cartridge", help="Cartridge tasks (build, summary, etc.)")
+    cartridge_sub = cartridge_p.add_subparsers(dest="sub_cmd", required=True)
+
+    p = cartridge_sub.add_parser(
+        "build", 
         help="build a .prg32 cartridge from assembly or C",
         # You choose either --target OR --firmware-elf
         usage="%(prog)s SOURCE_PATH --out OUT_PATH --name NAME --entry-prefix PREFIX [options]"
@@ -180,8 +183,11 @@ def main(argv: list[str]) -> int:
     arch_group = p.add_mutually_exclusive_group(required=False)
     arch_group.add_argument("--architecture", choices=["esp32c6", "qemu"], help="Target architecture (esp32c6 or qemu)")
     arch_group.add_argument("--firmware-elf", help="Path to custom firmware ELF (disables portable build by default)")
-
     p.set_defaults(func=build_cartridge_cli)
+
+    p = cartridge_sub.add_parser("summary", help="print the PRG32 cartridge summary (ABI, feature bits, etc.)", usage="%(prog)s CARTRIDGE [options]")
+    p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
+    p.set_defaults(func=inspect_metadata)
 
     # ==========================================
     # 'abi' Subcommand Menu

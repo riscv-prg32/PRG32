@@ -172,5 +172,5 @@ contributor, update:
 Current named contributors:
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
+- Simone Boscaglia - UniParthenope - Computer Science student
 - Ivan Cafiero - UniParthenope - Computer Science student
-- Simone Boscaglia - Uniparthenope - Computer Science student

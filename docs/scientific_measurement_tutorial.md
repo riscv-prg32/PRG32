@@ -144,7 +144,7 @@ runtime network mode you selected.
 Use the same cartridge build command for every run in the series. Example:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/pong/graphics/game.S \
   --portable \
   --entry-prefix pong_graphics \

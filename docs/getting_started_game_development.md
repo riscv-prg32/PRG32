@@ -333,7 +333,7 @@ Every call into PRG32 C helpers saves and restores `ra`, and the stack remains
 ## 9. Build The Hello World Cartridge For QEMU
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   work/hello_world/hello_world.S \
   --portable \
   --entry-prefix hello_world \
@@ -441,7 +441,7 @@ The board should show the PRG32 splash and then setup if no cartridge is stored.
 Build the same source as a portable cartridge for the physical board:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   work/hello_world/hello_world.S \
   --portable \
   --entry-prefix hello_world \
