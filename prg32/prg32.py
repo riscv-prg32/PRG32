@@ -20,7 +20,7 @@ from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
-from prg32.qemu.build_qemu import build_qemu, flash_qemu, build_and_flash_qemu, set_target_qemu
+from prg32.qemu.build_qemu import build_qemu, flash_qemu, build_and_flash_qemu, build_and_launch_qemu, set_target_qemu
 
 from prg32.store.metadata import attach_metadata, inspect_metadata
 from prg32.store.store_api import store_discover, store_list, store_download
@@ -123,20 +123,20 @@ def main(argv: list[str]) -> int:
     p =  qemu_sub.add_parser("set-target", help="flash QEMU")
     p.set_defaults(func=set_target_qemu)
     
-    p =  qemu_sub.add_parser("build", help="build QEMU")
-    p.add_argument("--skip-target", action="store_true", 
-        help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
-    )
-    p.set_defaults(func=build_qemu)
-
-    p =  qemu_sub.add_parser("run", help="flash QEMU")
-    p.set_defaults(func=flash_qemu)
-
-    p =  qemu_sub.add_parser("build-and-run", help="build and flash QEMU")
+    p =  qemu_sub.add_parser("build", help="build QEMU and generate the flash image")
     p.add_argument("--skip-target", action="store_true", 
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
     p.set_defaults(func=build_and_flash_qemu)
+
+    p = qemu_sub.add_parser("run", help="run the QEMU emulator environment")
+    p.set_defaults(func=launch_qemu)
+    
+    p =  qemu_sub.add_parser("build-and-run", help="build QEMU, generate flash image, and run the emulator")
+    p.add_argument("--skip-target", action="store_true", 
+        help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
+    )
+    p.set_defaults(func=build_and_launch_qemu)
 
     p = qemu_sub.add_parser("upload", 
         help="stage a cartridge into QEMU flash",
@@ -148,8 +148,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to stage into")
     p.set_defaults(func=upload_qemu)
 
-    p = qemu_sub.add_parser("launch", help="launch the QEMU emulator environment")
-    p.set_defaults(func=launch_qemu)
+
 
     # ==========================================
     # GLOBAL COMMANDS

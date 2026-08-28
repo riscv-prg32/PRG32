@@ -36,7 +36,11 @@ def ensure_qemu_efuse():
     if not out_path.exists():
         # replicate small Python snippet from original
         import importlib.util
-        qemu_ext_path = Path(os.environ.get("IDF_PATH", "")) / "tools" / "idf_py_actions" / "qemu_ext.py"
+        import sys
+        idf_tools_path = Path(os.environ.get("IDF_PATH", "")) / "tools"
+        if str(idf_tools_path) not in sys.path:
+            sys.path.insert(0, str(idf_tools_path))
+        qemu_ext_path = idf_tools_path / "idf_py_actions" / "qemu_ext.py"
         if not qemu_ext_path.exists():
             die(f"qemu_ext.py not found at {qemu_ext_path}")
         spec = importlib.util.spec_from_file_location("qemu_ext", str(qemu_ext_path))
