@@ -49,6 +49,38 @@ Wikipedia](https://en.wikipedia.org/wiki/Breadboard#Bus_and_terminal_strips) for
 an illustration of the internal strips. Wire colors are visual aids only;
 connector labels and the tables below define the electrical connections.
 
+### Breadboard Power Distribution
+
+Use the buses exactly as shown in the breadboard figure. Do not interchange the
+3V3 and 5V rails.
+
+| Breadboard bus | Voltage | Connections |
+|---|---:|---|
+| Upper blue bus | GND | ESP32-C6 GND, ILI9341 GND, joystick/button grounds |
+| Upper red bus | 3V3 | ESP32-C6 3V3 and ILI9341 VCC |
+| Lower blue bus | GND | Both MAX98357A GND pins |
+| Lower red bus | 5V | ESP32-C6 5V and both MAX98357A VIN pins |
+
+Install the black jumper at column 61 between the upper and lower blue buses so
+the display, controls, ESP32-C6, and amplifiers share one ground reference. If
+the breadboard has a midpoint break in either bus, add a jumper across each
+used split as well. The upper red 3V3 bus and lower red 5V bus must remain
+separate.
+
+For a reproducible classroom build:
+
+1. Disconnect USB and all other power sources.
+2. Place the ESP32-C6 horizontally across the center trench. Confirm that each
+   header row is in a different five-hole terminal-strip half.
+3. Wire the two ground buses and the column-61 ground bridge first.
+4. Wire ESP32-C6 3V3 and the display only to the upper red bus.
+5. Wire ESP32-C6 5V and both MAX98357A VIN pins only to the lower red bus.
+6. Add each signal jumper to an unused hole in the same five-hole group as its
+   corresponding ESP32-C6 pin. Never use the matching numbered group on the
+   opposite side of the trench as though it were connected.
+7. Before applying power, use continuity mode to verify both ground buses are
+   common and verify there is no continuity between the 3V3 and 5V buses.
+
 ## Base Hardware
 
 | Quantity | Item | Purpose |
