@@ -106,17 +106,7 @@ inputs. They are bridged speaker outputs.
 
 ## MAX98357A Wiring
 
-Default PRG32 audio Kconfig pins:
-
-| ESP32-C6 | MAX98357A |
-|---|---|
-| 3V3 or 5V | VIN |
-| GND | GND |
-| GPIO4 | BCLK |
-| GPIO11 | LRC / WS |
-| GPIO23 | DIN |
-| not wired by default | SD / MODE, optional |
-| GND or default | GAIN |
+See [`hardware.md`](hardware.md) for the PRG32 audio pin configurations.
 
 The required I2S pins avoid the reference LCD, joystick, and passive buzzer
 wiring. If a MAX98357A breakout needs explicit shutdown control, assign
@@ -135,16 +125,7 @@ setup menu reports mono I2S when the firmware is built for physical ESP32-C6,
 audio is enabled, and the I2S driver starts on the configured pins. QEMU display
 builds intentionally disable I2S output.
 
-Stereo wiring shares the same I2S signals:
-
-| ESP32-C6 | Left MAX98357A | Right MAX98357A |
-|---|---|---|
-| 3V3 or 5V | VIN | VIN |
-| GND | GND | GND |
-| GPIO4 / BCLK | BCLK | BCLK |
-| GPIO11 / LRCLK | LRC / WS | LRC / WS |
-| GPIO23 / DATA | DIN | DIN |
-| optional SD GPIO | SD | SD |
+Stereo wiring shares the same I2S signals across two boards (Left and Right). See [`hardware.md`](hardware.md) for the full diagram.
 
 Configure the left board for the left I2S channel and the right board for the
 right channel. Breakout labels vary: common names include `L/R`, `GAIN`,

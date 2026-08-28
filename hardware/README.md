@@ -27,41 +27,7 @@ WebSocket server; the reference hardware keeps local input to one joystick.
 
 ## Reference wiring
 
-| ESP32-C6 signal | Display / device |
-|---|---|
-| 3V3 | TFT VCC |
-| GND | TFT GND |
-| GPIO7 | TFT MOSI |
-| GPIO2 | TFT MISO / touch DO |
-| GPIO6 | TFT SCLK |
-| GPIO10 | TFT CS |
-| GPIO8 | TFT DC |
-| GPIO9 | TFT RST |
-| GPIO5 | TFT BL |
-| GPIO18 | P1 joystick LEFT to GND |
-| GPIO19 | P1 joystick RIGHT to GND |
-| GPIO3 | P1 joystick UP to GND |
-| GPIO13 | P1 joystick DOWN to GND |
-| GPIO20 | P1 SELECT to GND |
-| GPIO21 | P1 A to GND |
-| GPIO22 | P1 B to GND |
-| GPIO15 | Passive buzzer |
-
-GPIO14 remains supported as an older START/SELECT alias in firmware, but new
-student wiring should use GPIO20 for SELECT.
-
-## MAX98357A audio wiring
-
-Mono audio uses one MAX98357A:
-
-| ESP32-C6 signal | MAX98357A |
-|---|---|
-| 3V3 or 5V | VIN |
-| GND | GND |
-| GPIO4 default | BCLK |
-| GPIO11 default | LRC / WS |
-| GPIO23 default | DIN |
-| not wired by default | SD / MODE, optional |
+For the definitive pin connections, including the display, joystick, and MAX98357A audio, please see [`/hardware.md`](../docs/hardware.md).
 
 Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for
