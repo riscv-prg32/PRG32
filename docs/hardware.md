@@ -32,12 +32,22 @@ the canonical GPIO assignments listed below.
 
 *Breadboard prototype using the same connections as the electrical schematic.*
 
-In the breadboard view, the ESP32-C6 straddles the center trench. The joystick
-is placed on the left, A and B are placed on the right, and the display remains
-above the breadboard so its header and screen stay visible. The two audio
-channels are routed toward their corresponding left and right speakers. Wire
-colors are visual aids only; connector labels and the tables below define the
-electrical connections.
+In the breadboard view, the ESP32-C6 is horizontal with its long axis parallel
+to the center trench. Its two header rows occupy opposite terminal-strip halves,
+so the trench keeps the two rows electrically separate. The joystick is placed
+on the left, A and B are placed on the right, and the display remains above the
+breadboard so its header and screen stay visible. The two audio channels are
+routed toward their corresponding left and right speakers.
+
+The drawing follows standard solderless-breadboard continuity: the red and blue
+power rails run horizontally, while each numbered five-hole terminal group is
+connected vertically on only one side of the center trench. No connection is
+assumed across that trench. Some physical breadboards split a power rail near
+its midpoint; bridge that split with a jumper when the selected board does not
+provide a continuous rail. See the [breadboard design overview on
+Wikipedia](https://en.wikipedia.org/wiki/Breadboard#Bus_and_terminal_strips) for
+an illustration of the internal strips. Wire colors are visual aids only;
+connector labels and the tables below define the electrical connections.
 
 ## Base Hardware
 
