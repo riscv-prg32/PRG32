@@ -18,6 +18,27 @@ The right-channel mode resistor is placed beside the right MAX98357A on the
 rear. Through-hole pads remain visible from both PCB sides even when the module
 body is mounted on the indicated side.
 
+## Reference Prototype Figures
+
+The following figures are exported from the schematic and breadboard views of
+`hardware/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
+the canonical GPIO assignments listed below.
+
+![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](images/prg32-electrical-schematic.svg)
+
+*Electrical schematic for the current firmware configuration.*
+
+![PRG32 breadboard prototype with the ESP32-C6 centered across the breadboard, display above it, joystick and buttons at the front, and stereo audio components at the sides](images/prg32-breadboard-prototype.svg)
+
+*Breadboard prototype using the same connections as the electrical schematic.*
+
+In the breadboard view, the ESP32-C6 straddles the center trench. The joystick
+is placed on the left, A and B are placed on the right, and the display remains
+above the breadboard so its header and screen stay visible. The two audio
+channels are routed toward their corresponding left and right speakers. Wire
+colors are visual aids only; connector labels and the tables below define the
+electrical connections.
+
 ## Base Hardware
 
 | Quantity | Item | Purpose |
