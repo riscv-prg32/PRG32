@@ -59,6 +59,13 @@
 #define PRG32_PIN_LCD_RST -1
 #define PRG32_PIN_LCD_BL -1
 
+#define PRG32_LCD_SPI_CLOCK_HZ -1
+#define PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL -1
+#define PRG32_LCD_BOOT_TEST_MS -1
+#define PRG32_LCD_SOFT_SPI -1
+#define PRG32_BOOT_SIGNAL_ENABLE -1
+#define PRG32_BOOT_DIAGNOSTIC_DELAY_MS 0
+
 #define PRG32_PIN_BTN_LEFT -1
 #define PRG32_PIN_BTN_RIGHT -1
 #define PRG32_PIN_BTN_UP -1
@@ -66,18 +73,20 @@
 #define PRG32_PIN_BTN_A -1
 #define PRG32_PIN_BTN_B -1
 #define PRG32_PIN_BTN_START -1
+
 #define PRG32_PIN_SETUP -1
+
 #define PRG32_PIN_BUZZER -1
-#define PRG32_BOOT_DIAGNOSTIC_DELAY_MS 0
 
 #define PRG32_PIN_RGB_LED -1
 
 #define PRG32_GAME_UPLOAD_ENABLE 0
-#else
-/*
- * ESP32-C6 breadboard wiring for the physical ILI9341 build.
- * These pins match the classroom display harness tested with Arduino/Adafruit.
- */
+
+#define PRG32_WIFI_SCORES_ENABLE 0
+
+#else /* Physical ESP32-C6 build. */
+
+// Display ILI9341
 #define PRG32_PIN_LCD_MOSI 7
 #define PRG32_PIN_LCD_MISO 2
 #define PRG32_PIN_LCD_SCLK 6
@@ -93,6 +102,7 @@
 #define PRG32_BOOT_SIGNAL_ENABLE 0
 #define PRG32_BOOT_DIAGNOSTIC_DELAY_MS 0
 
+// Joystick
 #define PRG32_PIN_BTN_UP 3
 #define PRG32_PIN_BTN_DOWN 13
 #define PRG32_PIN_BTN_LEFT 18
@@ -103,16 +113,14 @@
 
 #define PRG32_PIN_SETUP 14
 
+// Buzzer is deactivated
 #define PRG32_PIN_BUZZER -1
 
 /*
  * Many ESP32-C6 boards route the onboard addressable RGB LED to GPIO8. The
- * reference PRG32 ILI9341 harness also uses GPIO8 for LCD D/C, so the RGB LED
- * is disabled by default. Set this to the board LED GPIO only when that pin is
- * free in your hardware variant.
+ * reference PRG32 ILI9341 harness uses GPIO1 for LCD D/C, leaving GPIO8 free.
  */
 #define PRG32_PIN_RGB_LED 8
-#endif
 
 /*
  * Uploadable game cartridges.
@@ -122,10 +130,19 @@
  * QEMU builds keep Wi-Fi disabled and use python3 -m prg32 to patch the
  * emulator flash image.
  */
-#ifndef PRG32_GAME_UPLOAD_ENABLE
 #define PRG32_GAME_UPLOAD_ENABLE 1
+
 #endif
 
+/* Keep examples and board documentation tied to the configured audio values. */
+#define PRG32_PIN_AUDIO_BCLK CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO
+#define PRG32_PIN_AUDIO_LRCLK CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO
+#define PRG32_PIN_AUDIO_DATA CONFIG_PRG32_AUDIO_I2S_DATA_GPIO
+#define PRG32_PIN_AUDIO_SD CONFIG_PRG32_AUDIO_I2S_SD_GPIO
+#define PRG32_AUDIO_SAMPLE_RATE CONFIG_PRG32_AUDIO_SAMPLE_RATE
+#define PRG32_AUDIO_MAX_VOICES CONFIG_PRG32_AUDIO_MAX_VOICES
+
+/* Wifi Configuration */
 /* Optional Wi-Fi score REST API. Fill credentials before flashing. */
 #define PRG32_WIFI_SCORES_ENABLE 0
 

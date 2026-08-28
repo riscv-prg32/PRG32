@@ -119,6 +119,15 @@ Stereo uses two MAX98357A boards on the same I2S bus:
 Configure the left board for left output and the right board for right output.
 Breakout pin labels vary; verify the vendor pinout before soldering.
 
+By changing the voltage on the SD pin, you are telling the amplifier which data stream (that the LRC pin just identified) to output to your speaker:
+- Left + Right Average: Voltage between 0.16V and 0.77V
+- Right Channel Only: Voltage between 0.77V and 1.4V
+- Left Channel Only: Voltage higher than 1.4V
+- Shutdown (Mute): Grounded (Under 0.16V)
+
+Instead of using an additional GPIO for the SD, you can use the VIN with no resistance for the left channel speaker and with an appropriate resistance to target the right channel speaker.
+
+
 ## Safety Notes
 
 - Do not connect speaker outputs to headphones or line inputs.

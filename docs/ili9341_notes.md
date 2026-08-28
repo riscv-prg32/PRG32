@@ -10,17 +10,7 @@ rectangle tracking. The initialization sequence follows the common
 Adafruit-compatible ILI9341 power, VCOM, pixel format, gamma, sleep-out, and
 display-on setup used by many low-cost 2.8 inch modules.
 
-Reference ESP32-C6 wiring:
-
-| ESP32-C6 | ILI9341 |
-|---|---|
-| GPIO7 | MOSI |
-| GPIO2 | MISO / touch DO |
-| GPIO6 | SCLK |
-| GPIO10 | CS |
-| GPIO8 | DC |
-| GPIO9 | RST |
-| GPIO5 | BL |
+Reference wiring: See [`hardware.md`](hardware.md) for the pin connections.
 
 The physical ILI9341 backend is selected by default with
 `CONFIG_PRG32_DISPLAY_ILI9341`. Desktop QEMU builds use
