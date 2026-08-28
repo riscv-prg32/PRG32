@@ -111,7 +111,8 @@
 #define PRG32_PIN_BTN_A 21
 #define PRG32_PIN_BTN_B 22
 
-#define PRG32_PIN_SETUP 14
+/* Enter setup by holding A+B during boot; no dedicated setup GPIO is wired. */
+#define PRG32_PIN_SETUP -1
 
 // Buzzer is deactivated
 #define PRG32_PIN_BUZZER -1
@@ -197,9 +198,8 @@
 
 /*
  * SELECT is the classroom-facing name; START remains a source-compatible alias.
- * GPIO14 remains the safe default for classroom wiring. Set
- * PRG32_ENABLE_SEPARATE_SELECT_PIN to 1 in a local build only when the
- * optional 7-button harness wires SELECT to GPIO20.
+ * Set PRG32_ENABLE_SEPARATE_SELECT_PIN to 1 in a local build only when an
+ * optional harness provides a distinct SELECT input on GPIO20.
  */
 #ifndef PRG32_ENABLE_SEPARATE_SELECT_PIN
 #define PRG32_ENABLE_SEPARATE_SELECT_PIN 0

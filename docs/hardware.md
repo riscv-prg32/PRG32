@@ -3,6 +3,21 @@
 This page summarizes the classroom reference wiring. See `hardware/README.md`
 for the hardware directory map and board scaffolds.
 
+## PCB Component Layout
+
+The Fritzing reference board is a 210 x 75 mm landscape PCB. Components are
+arranged to keep the game controls accessible on the front and the compute and
+audio hardware on the rear:
+
+- Front, from left to right: digital joystick, landscape ILI9341 display, A
+  button, and B button.
+- Rear, from left to right when viewed from the rear: left speaker, left
+  MAX98357A, ESP32-C6 development board, right MAX98357A, and right speaker.
+
+The right-channel mode resistor is placed beside the right MAX98357A on the
+rear. Through-hole pads remain visible from both PCB sides even when the module
+body is mounted on the indicated side.
+
 ## Base Hardware
 
 | Quantity | Item | Purpose |
@@ -10,7 +25,6 @@ for the hardware directory map and board scaffolds.
 | 1 | ESP32-C6 development board | PRG32 RISC-V host |
 | 1 | ILI9341 SPI TFT or supported display | video output |
 | 1 | digital joystick module | local input |
-| 1 | optional setup button | force setup mode without holding A+B |
 
 ## Reference Display And Input Wiring
 
@@ -38,13 +52,12 @@ They are the same display wiring used by the Arduino/Adafruit validation sketch.
 | GPIO20 | P1 START / SELECT, switch to GND |
 | GPIO21 | P1 A, switch to GND |
 | GPIO22 | P1 B, switch to GND |
-| GPIO14 | SETUP, optional switch to GND |
 
 The firmware enables the internal pull-up on every button input, so a pressed
 button connects its GPIO to GND. START and SELECT are names for the same
-GPIO20 input in the default configuration. Holding A+B during startup or
-holding the optional GPIO14 SETUP input low enters setup mode. Setup mode also
-opens automatically when the firmware cannot select a cartridge to boot.
+GPIO20 input in the default configuration. The reference hardware has no
+dedicated SETUP button: hold A+B during startup to enter setup mode. Setup mode
+also opens automatically when the firmware cannot select a cartridge to boot.
 
 `PRG32_PIN_BUZZER` is `-1` in the current physical configuration, so no passive
 buzzer is wired or initialized. Audio uses the I2S amplifier described below.

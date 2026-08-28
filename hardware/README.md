@@ -5,8 +5,6 @@
 - ESP32-C6 development board
 - ILI9341 2.8 inch SPI TFT, 320x240
 - one 5-way digital joystick module for player 1
-- one setup button, or use the joystick push switch when the wiring allows it
-- Passive buzzer
 - one MAX98357A I2S DAC/amplifier breakout and one 4-8 ohm speaker for mono
   PRG32 audio
 - optional second MAX98357A and speaker for stereo PRG32 Audio Plus
@@ -14,7 +12,7 @@
 
 Desktop QEMU can emulate the PRG32 graphics viewport for early software tests,
 but it does not replace this hardware validation. Use the physical board for
-LCD wiring, GPIO buttons, buzzer/I2S output, and Wi-Fi station testing.
+LCD wiring, GPIO buttons, I2S output, and Wi-Fi station testing.
 
 The resident firmware also starts the `PRG32` Wi-Fi AP for cartridge uploads.
 Keep the antenna area of the ESP32-C6 module clear in the enclosure.
@@ -33,9 +31,9 @@ Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for
 right-channel output using the breakout-specific jumper or mode pin.
 
-The default audio GPIOs avoid the reference display, joystick, and passive
-buzzer wiring. If a MAX98357A breakout needs explicit shutdown control, choose
-an unused SD GPIO in menuconfig before flashing.
+The default audio GPIOs avoid the reference display and joystick wiring. If a
+MAX98357A breakout needs explicit shutdown control, choose an unused SD GPIO
+in menuconfig before flashing.
 
 On the Adafruit MAX98357A breakout, `SD` also selects shutdown/channel mode.
 Leave it in the breakout's default enabled state for mono, or drive it high from
