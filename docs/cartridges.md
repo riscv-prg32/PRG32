@@ -168,6 +168,22 @@ Useful runtime endpoint for diagnostics:
 curl http://192.168.4.1/api/runtime
 ```
 
+## Inspecting Cartridges
+
+You can inspect a built cartridge via:
+
+```bash
+python3 -m prg32 cartridge summary CARTRIDGE
+```
+
+The summary shows ABI major/minor, ABI hash, import model, and required or
+optional feature bits. Legacy absolute-import cartridges are still supported for
+old workflows, but they are tied to the firmware image used at build time and
+are not guaranteed to run on another firmware. ABI hash mismatches, missing
+required features, and incompatible legacy cartridges are rejected by the
+runtime, store download path, QEMU staging path, and HTTP upload tool with a
+diagnostic message.
+
 ## QEMU Workflow
 
 Build the resident QEMU firmware:

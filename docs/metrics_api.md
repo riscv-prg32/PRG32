@@ -239,3 +239,9 @@ plots when `matplotlib` is installed.
 4. Export the run and compare update, draw, and present time.
 5. Increase `CONFIG_PRG32_METRICS_SAMPLE_PERIOD_FRAMES` to 5 and repeat.
 6. Explain how measurement overhead and network conditions affect the results.
+
+
+(?)
+- For reproducible scientific measurements, use
+  `sdkconfig.defaults;sdkconfig.defaults.metrics` as described in
+  `docs/scientific_measurement_tutorial.md`.
