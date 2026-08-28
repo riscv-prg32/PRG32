@@ -22,7 +22,7 @@ jobs:
           python-version: "3.11"
 
       - name: Run host smoke test
-        run: bash scripts/ci_smoke_test.sh
+        run: python3 -m prg32.esp32c6.ci_smoke_test
 
       - name: Check portable ABI generated files
         run: python3 tools/prg32_abi_gen.py --check

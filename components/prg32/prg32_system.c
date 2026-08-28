@@ -16,8 +16,8 @@ void prg32_abi_exports_keep(void);
 #include "esp_heap_caps.h"
 
 typedef struct {
-    const char *name;
-    int32_t diff_bytes;
+  const char *name;
+  int32_t diff_bytes;
 } prg32_boot_checkpoint_t;
 
 #define MAX_BOOT_CHECKPOINTS 16
@@ -25,24 +25,30 @@ static prg32_boot_checkpoint_t g_boot_checkpoints[MAX_BOOT_CHECKPOINTS];
 static size_t g_boot_checkpoint_count = 0;
 static uint32_t g_last_boot_mem = 0;
 
-#define PRG32_MEM_CHECKPOINT(name_str) do { \
-    uint32_t current_mem = heap_caps_get_free_size(MALLOC_CAP_8BIT); \
-    if (g_last_boot_mem != 0 && g_boot_checkpoint_count < MAX_BOOT_CHECKPOINTS) { \
-        g_boot_checkpoints[g_boot_checkpoint_count].name = name_str; \
-        g_boot_checkpoints[g_boot_checkpoint_count].diff_bytes = (int32_t)g_last_boot_mem - (int32_t)current_mem; \
-        g_boot_checkpoint_count++; \
-    } \
-    g_last_boot_mem = current_mem; \
-} while(0)
+#define PRG32_MEM_CHECKPOINT(name_str)                                         \
+  do {                                                                         \
+    uint32_t current_mem = heap_caps_get_free_size(MALLOC_CAP_8BIT);           \
+    if (g_last_boot_mem != 0 &&                                                \
+        g_boot_checkpoint_count < MAX_BOOT_CHECKPOINTS) {                      \
+      g_boot_checkpoints[g_boot_checkpoint_count].name = name_str;             \
+      g_boot_checkpoints[g_boot_checkpoint_count].diff_bytes =                 \
+          (int32_t)g_last_boot_mem - (int32_t)current_mem;                     \
+      g_boot_checkpoint_count++;                                               \
+    }                                                                          \
+    g_last_boot_mem = current_mem;                                             \
+  } while (0)
 
-size_t prg32_system_get_boot_checkpoints(prg32_boot_checkpoint_t **out_checkpoints) {
-    if (out_checkpoints) {
-        *out_checkpoints = g_boot_checkpoints;
-    }
-    return g_boot_checkpoint_count;
+size_t
+prg32_system_get_boot_checkpoints(prg32_boot_checkpoint_t **out_checkpoints) {
+  if (out_checkpoints) {
+    *out_checkpoints = g_boot_checkpoints;
+  }
+  return g_boot_checkpoint_count;
 }
 #else
-#define PRG32_MEM_CHECKPOINT(name) do {} while(0)
+#define PRG32_MEM_CHECKPOINT(name)                                             \
+  do {                                                                         \
+  } while (0)
 #endif
 
 #include "nvs_flash.h"
@@ -773,7 +779,7 @@ static void about_menu(void) {
     prg32_gfx_text8(8, 104, "UNIPARTHENOPE", PRG32_COLOR_GREEN, 0);
     prg32_gfx_text8(8, 120, "ACADEMIC SUPERVISOR / PROJECT LEAD",
                     PRG32_COLOR_CYAN, 0);
-    prg32_gfx_text8(8, 152, "IVAN CAFIERO & SIMONE BOSCAGLIA",
+    prg32_gfx_text8(8, 152, "SIMONE BOSCAGLIA & IVAN CAFIERO",
                     PRG32_COLOR_WHITE, 0);
     prg32_gfx_text8(8, 168, "UNIPARTHENOPE", PRG32_COLOR_GREEN, 0);
     prg32_gfx_text8(8, 184, "COMPUTER SCIENCE STUDENTS", PRG32_COLOR_CYAN, 0);

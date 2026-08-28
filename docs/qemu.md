@@ -142,7 +142,7 @@ flash image before starting QEMU:
 
 On Windows:
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \

@@ -24,10 +24,10 @@ python3 -m prg32 <command> [subcommand] [options]
 
 ## Cartridge Building
 
-The build command has moved from `tools/prg32_game.py build` to `python3 -m prg32 build-cartridge`.
+The build command has moved from `tools/prg32_game.py build` to `python3 -m prg32 cartridge build`.
 
 ```bash
-python3 -m prg32 build-cartridge examples/games/asteroids/graphics/game.S \
+python3 -m prg32 cartridge build examples/games/asteroids/graphics/game.S \
     --out build-esp32c6/asteroids.prg32 \
     --name asteroids \
     --entry-prefix asteroids \
@@ -37,7 +37,7 @@ python3 -m prg32 build-cartridge examples/games/asteroids/graphics/game.S \
 To build a **portable** cartridge that can run on any PRG32 host (QEMU, physical ESP32-C6) that supports the ABI Table, use `--portable`:
 
 ```bash
-python3 -m prg32 build-cartridge examples/games/pacman/c/game.c \
+python3 -m prg32 cartridge build examples/games/pacman/c/game.c \
     --out build-portable-examples/pacman.prg32 \
     --name pacman \
     --entry-prefix pacman_c \

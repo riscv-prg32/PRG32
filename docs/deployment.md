@@ -59,7 +59,7 @@ URL: http://192.168.4.1
 Build and upload a game:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
   --portable \
   --entry-prefix asteroids_graphics \

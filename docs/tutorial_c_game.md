@@ -125,7 +125,7 @@ Restore the default `main/CMakeLists.txt` and `main/main.c` after the lab.
 After the resident firmware is built, package the same C source as a cartridge:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/games/pong/c/game.c \
   --portable \
   --entry-prefix pong_c \

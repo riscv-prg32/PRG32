@@ -878,7 +878,7 @@ field reference.
 ### Upload A Local Cartridge To A Board
 
 ```bash
-python3 -m prg32 build examples/games/pong/c/game.c \
+python3 -m prg32 cartridge build examples/games/pong/c/game.c \
   --portable \
   --entry-prefix pong_c \
   --out build-esp32c6/pong.prg32

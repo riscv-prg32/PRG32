@@ -46,7 +46,7 @@ if [[ ! -f "$QEMU_BUILD_DIR/PRG32.elf" ]]; then
 fi
 
 info "Building demo cartridge"
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   "$DEMO_SOURCE" \
   --firmware-elf "$QEMU_BUILD_DIR/PRG32.elf" \
   --entry-prefix "$DEMO_PREFIX" \

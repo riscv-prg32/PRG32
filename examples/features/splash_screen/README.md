@@ -54,7 +54,7 @@ physical-display bands remain outside the game viewport.
 ## Run As A Cartridge
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/features/splash_screen/demo.S \
   --portable \
   --entry-prefix splash_screen \
@@ -65,7 +65,7 @@ python3 -m prg32 build \
 For the C version:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/features/splash_screen/c/demo.c \
   --portable \
   --entry-prefix splash_screen_c \

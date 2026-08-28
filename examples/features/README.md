@@ -109,7 +109,7 @@ After building the resident firmware, package a feature demo with its entry
 prefix:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/features/animated_sprites/demo.S \
   --portable \
   --entry-prefix animated_sprites \
@@ -120,7 +120,7 @@ python3 -m prg32 build \
 For the C version:
 
 ```bash
-python3 -m prg32 build \
+python3 -m prg32 cartridge build \
   examples/features/animated_sprites/c/demo.c \
   --portable \
   --entry-prefix animated_sprites_c \

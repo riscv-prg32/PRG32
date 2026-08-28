@@ -56,7 +56,7 @@ fi
 ok "firmware-artifact"
 
 run_step "build-demo-cartridge" \
-  python3 -m prg32 build \
+  python3 -m prg32 cartridge build \
     examples/games/pong/graphics/game.S \
     --firmware-elf "$QEMU_BUILD_DIR/PRG32.elf" \
     --entry-prefix pong_graphics \
