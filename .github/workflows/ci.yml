@@ -25,7 +25,7 @@ jobs:
         run: python3 -m prg32.esp32c6.ci_smoke_test
 
       - name: Check portable ABI generated files
-        run: python3 tools/prg32_abi_gen.py --check
+        run: python3 -m prg32 abi check
 
   esp-idf-build:
     name: ESP-IDF firmware build
