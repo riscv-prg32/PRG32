@@ -58,9 +58,7 @@ Store-ready cartridges append a backward-compatible `PRG32META` trailer after
 the payload. The trailer gives host tools and setup-mode clients standard
 blocks for `META`, `ICON`, `SCRN`, `SIGN`, and `COLO`.
 
-Metadata JSON uses `prg32-metadata-1.0`; colophon JSON uses
-`prg32-colophon-1.0`. The game colophon is shown after the cartridge is
-activated, before the player starts a new play.
+Please refer to the [Colophon ABI](colophon_abi.md) for full documentation on cartridge metadata and colophon formats.
 
 ## Audio ABI Calls
 

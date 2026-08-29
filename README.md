@@ -26,8 +26,9 @@ PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hard
 2. Download and run the Espressif ESP-IDF Tools Installer for Windows.
 3. Select an ESP-IDF 5.4 or newer release.
 4. Include support for `esp32c3` and `esp32c6`.
-5. Open the "ESP-IDF PowerShell" shortcut created by the installer.
-6. Clone the project and verify your setup from that shell:
+5. (Optional) Check the QEMU RISC-V emulator box during installation if you want to use the QEMU desktop emulator.
+6. Open the "ESP-IDF PowerShell" shortcut created by the installer.
+7. Clone the project and verify your setup from that shell:
 
 ```powershell
 cd $HOME\Documents
@@ -54,6 +55,11 @@ sudo apt update
 sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 curl zip
 ```
 
+Install QEMU native libraries (optional, required for QEMU desktop emulator only):
+```bash
+sudo apt install -y libgcrypt20 libglib2.0-0 libpixman-1-0 libsdl2-2.0-0 libslirp0
+```
+
 Install ESP-IDF:
 ```bash
 cd $HOME
@@ -61,6 +67,8 @@ git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
+# Optional: install QEMU desktop emulator
+python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
 ```
 
 Clone the project and verify your setup:
@@ -90,6 +98,11 @@ Install dependencies:
 brew install git cmake ninja dfu-util ccache libusb python curl zip
 ```
 
+Install QEMU native libraries (optional, required for QEMU desktop emulator only):
+```bash
+brew install libgcrypt glib pixman sdl2 libslirp
+```
+
 Install ESP-IDF:
 ```bash
 cd $HOME
@@ -97,6 +110,8 @@ git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
+# Optional: install QEMU desktop emulator
+python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
 ```
 
 Clone the project and verify your setup:
@@ -148,12 +163,12 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep
 using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 </details>
 
-> After installing PRG32, read [Getting Started With PRG32](docs/usage/getting_started.md) to learn how to run your first cartridge.
+> After installing PRG32, read [Getting Started With PRG32](/docs/users/usage/getting_started.md) to learn how to run your first cartridge.
 
 ## Documentation Index
 
 **Guides & Workflows:**
-- [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
+- [Getting Started With PRG32](getting_started.md): End-to-end setup and manual.
 - [Deployment Guide](docs/usage/deployment.md: Build, flash, monitor, setup mode, and QEMU.
 - [QEMU Virtual Screen](docs/usage/qemu.md: Desktop testing and troubleshooting.
 - [Cartridges](docs/usage/cartridges.md: The `.prg32` build/upload workflow.

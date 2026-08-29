@@ -43,7 +43,7 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports the `--skip-target` option.
 - `upload`: upload a cartridge to QEMU
 
-For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](../usage/qemu.md).
+For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qemu.md).
 ## Cartridge Tasks (`cartridge`)
 - `build`: build a `.prg32` cartridge from assembly or C source code.
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)

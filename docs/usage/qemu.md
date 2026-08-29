@@ -1,229 +1,94 @@
 # PRG32 QEMU Screen Emulator
 
-PRG32 can run on a desktop with Espressif QEMU and show the 320x240 PRG32
-screen in a virtual RGB framebuffer window. This is
-intended for students who want to compile and test graphics before flashing real ESP32-C6 hardware. 
+PRG32 can run on a desktop with Espressif QEMU and show the 320x240 PRG32 screen in a virtual RGB framebuffer window. This is intended for students who want to compile and test graphics before flashing real ESP32-C6 hardware.
 
-QEMU uses the Espressif ESP32-C3 RISC-V emulator target instead of ESP32-C6 and a PRG32 virtual RGB display backend. Framework screens use the full
-resolution; game code still draws into the centered 320x200 viewport. 
+## Architecture Overview
 
-The QEMU build uses ESP32-C3 as the emulator target because Espressif documents the maintained RISC-V QEMU graphics path for ESP32-C3. 
+While the physical PRG32 board uses an ESP32-C6 target with an ILI9341 SPI display, the QEMU emulator targets the **ESP32-C3** using a virtual RGB display backend (`CONFIG_PRG32_DISPLAY_QEMU_RGB`). This is because Espressif's maintained RISC-V QEMU graphics path requires the ESP32-C3.
 
-PRG32  cartridges all use the same 32-bit RISC-V calling convention and PRG32 ABI, for both the physical hardware and QEMU targets. Only the display backend changes.
+- **Separate Build Environment**: QEMU uses a separate build directory (`build-qemu`) and defaults file (`sdkconfig.defaults.qemu`) to ensure physical board configurations remain untouched.
+- **Unified ABI**: Both physical and QEMU targets share the same 32-bit RISC-V calling convention and PRG32 ABI. Only the display backend changes.
+- **Screen Resolution**: Framework screens use the full 320x240 resolution, while game code draws into a centered 320x200 viewport.
 
-## Supported Hosts
+## How It Works
 
-Espressif provides QEMU RISC-V packages for:
+- **Display Backends**: `components/prg32/Kconfig` switches between the physical ILI9341 SPI TFT (`CONFIG_PRG32_DISPLAY_ILI9341`) and the Espressif QEMU virtual RGB panel (`CONFIG_PRG32_DISPLAY_QEMU_RGB`).
+- **Dependencies**: The `components/prg32/idf_component.yml` manifest pulls the `espressif/esp_lcd_qemu_rgb` component exclusively when the target is ESP32-C3.
+- **Screenshots**: The QEMU backend exposes the same framebuffer snapshot API, meaning the `/api/screenshot.bmp` endpoint generates identical 320x240 BMPs as the real hardware.
 
-- macOS Intel
-- macOS Apple Silicon
-- Windows x64
-- Linux x86_64
-- Linux arm64
+## Prerequisites and Installation
 
-Use ESP-IDF 5.4 or newer; the `esp_lcd_qemu_rgb` component declares that
-minimum IDF version. Install ESP-IDF first, then install QEMU:
+### Supported Hosts
+Espressif provides QEMU RISC-V packages for: macOS (Intel/Apple Silicon), Windows (x64), and Linux (x86_64, arm64).
 
-```bash
-python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
-```
+### 1. Install ESP-IDF and QEMU
+Read the Install & Setup section in the main [README](/README.md).
 
-After installing QEMU, reactivate ESP-IDF:
+## Running QEMU
 
-```bash
-. $IDF_PATH/export.sh
-```
+There are several ways to run the QEMU emulator, depending on your preferred workflow.
 
-On Windows, use the ESP-IDF PowerShell or Command Prompt shortcut, or run the
-matching ESP-IDF export script from your ESP-IDF installation.
+### Option A: Python Tooling (Recommended)
 
-## Linux and macOS Runtime Libraries
-
-Linux and macOS hosts also need the native libraries used by the QEMU window.
-
-Ubuntu or Debian:
+The unified Python tooling is the easiest way to build and launch QEMU on any platform:
 
 ```bash
-sudo apt-get install -y libgcrypt20 libglib2.0-0 libpixman-1-0 libsdl2-2.0-0 libslirp0
+python3 -m prg32 qemu build-and-run
 ```
 
-macOS with Homebrew:
+### Option B: VS Code Tasks
 
-```bash
-brew install libgcrypt glib pixman sdl2 libslirp
-```
-
-## First QEMU Run
-
-Use a separate build directory so the physical board configuration and the QEMU
-configuration do not overwrite each other.
-
-On Windows:
-```bash
-cd <path_to_PRG32>
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
-```
-
-On Linux or MacOS:
-```bash
-cd <path_to_PRG32>
-./scripts/qemu/build_qemu.sh
-```
-
-The second command builds the firmware if needed, starts QEMU, opens the virtual
-screen window, and attaches the serial monitor.
-
-Shortcut scripts are also provided:
-
-```bash
-tools/qemu.sh
-```
-
-Windows PowerShell from an ESP-IDF shell:
-
-```powershell
-tools/qemu.ps1
-```
-
-## VS Code Tasks
-
-Open `PRG32.code-workspace` and run these tasks:
-
+If you are using the provided `PRG32.code-workspace`, run these tasks via the command palette:
 1. `PRG32: qemu set target esp32c3`
 2. `PRG32: qemu build`
 3. `PRG32: qemu screen`
 
 For debugger exercises, use two terminals:
-
 1. Run `PRG32: qemu debug server`.
 2. Run `PRG32: qemu gdb`.
 
-Then set breakpoints in symbols such as `pong_graphics_update` or
-`asteroids_graphics_draw`.
+## Using Cartridges in QEMU
 
-## How It Works
+QEMU uses the same `.prg32` game packages as the physical board.
 
-`components/prg32/Kconfig` selects one display backend:
-
-- `CONFIG_PRG32_DISPLAY_ILI9341`: physical ILI9341 SPI TFT.
-- `CONFIG_PRG32_DISPLAY_QEMU_RGB`: Espressif QEMU virtual RGB panel.
-
-The QEMU build uses `sdkconfig.defaults.qemu`, which enables
-`CONFIG_PRG32_DISPLAY_QEMU_RGB`. The component manifest
-`components/prg32/idf_component.yml` pulls in `espressif/esp_lcd_qemu_rgb` only
-for the ESP32-C3 emulator target.
-
-The physical firmware still uses the ILI9341 backend by default.
-
-The QEMU display backend exposes the same normalized framebuffer snapshot helper
-used by the physical ILI9341 backend. The resident HTTP endpoint
-`/api/screenshot.bmp` therefore produces the same 320x240 BMP format whenever
-the firmware HTTP server is reachable in the chosen run configuration.
-
-## Cartridges in QEMU
-
-QEMU uses the same uploadable `.prg32` game package as the real board, but QEMU
-does not emulate the classroom Wi-Fi AP. 
-
-Here is the complete workflow for making a cartridge run on QEMU using the unified Python tooling:
-
-1. **Build QEMU**: Generate the QEMU emulator firmware and flash image.
+1. **Build the QEMU Emulator** (if not already built):
    ```bash
    python3 -m prg32 qemu build
    ```
-
-2. **Prepare a cartridge**: Build a `.prg32` cartridge for QEMU (or portable) from your game's source code. For detailed instructions, see [docs/cartridges.md](cartridges.md#qemu-workflow).
-
-3. **Upload**: Stage the cartridge into the emulator flash image.
+2. **Prepare a Cartridge**: Build a `.prg32` cartridge for QEMU. See [cartridges.md](cartridges.md) for details.
+3. **Upload the Cartridge**: Stage it into the emulator's flash image.
    ```bash
    python3 -m prg32 qemu upload build-qemu/asteroids.prg32
    ```
-
-4. **Run**: Start the QEMU emulator environment to play your cartridge.
+4. **Run QEMU**:
    ```bash
    python3 -m prg32 qemu run
    ```
+   *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
-*(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
+## Input and Controls
 
-## Wiring the game into QEMU
+QEMU disables physical GPIO buttons and the buzzer, enabling a small UART-console keyboard mapper for player 1 input instead. 
 
-Example games stay outside the default app. To test one in QEMU, you can wire it into
-`main/CMakeLists.txt` and `main/main.c` exactly as you would for the real board,
-then run:
+> **Note:** Because input is read from the UART console, you must ensure your **terminal window** running QEMU is the active window to use the keyboard, *not* the graphical QEMU screen itself.
 
-On Windows:
-```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
-```
-
-On Linux or MacOS:
-```bash
-cd <path_to_PRG32>
-./scripts/qemu/build_qemu.sh
-./scripts/qemu/lauch_qemu.sh
-```
-
-The same source can later be built for the physical board:
-
-```bash
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
-```
-
-## Input in QEMU
-
-QEMU screen emulation validates rendering, frame timing, and most assembly
-debugging exercises. The QEMU defaults disable physical GPIO buttons and the
-buzzer, but the QEMU RGB build enables a small UART-console keyboard mapper for
-player 1 input.
-
-When the QEMU monitor terminal has focus, use these keys:
-
-| PRG32 input | QEMU key |
+| PRG32 Input | QEMU Key(s) |
 | --- | --- |
-| Joystick 1 LEFT / RIGHT / UP / DOWN | arrow keys or `A` / `D` / `W` / `S` |
+| D-Pad (Up, Down, Left, Right) | Arrow keys or `W`, `S`, `A`, `D` |
 | SELECT | `Enter` or `Space` |
 | A button | `J` or `Z` |
 | B button | `K`, `X`, `Backspace`, or `Esc` |
 
-The PRG32 input ABI remains the same:
+**Diagnostic Input Injection**:
+Framework code can call `prg32_diag_set_input_state()` to inject player-1 inputs in QEMU-oriented tests. 
 
-```text
-bit 0 LEFT, bit 1 RIGHT, bit 2 UP, bit 3 DOWN, bit 4 A, bit 5 B, bit 6 SELECT
-```
+**Multiplayer API**:
+The multiplayer API works in QEMU without actual Wi-Fi. Calling `prg32_multiplayer_join()` succeeds locally, `prg32_multiplayer_available()` returns true, and peer snapshots default to empty.
 
-Framework code can also call `prg32_diag_set_input_state()` to inject the same
-player-1 bits in QEMU-oriented tests.
-
-The multiplayer API is available in QEMU without real Wi-Fi. A cartridge can
-call `prg32_multiplayer_join()` with the same signature it uses on hardware;
-the call succeeds locally, `prg32_multiplayer_available()` returns true, and
-peer snapshots are empty by default.
 
 ## Troubleshooting
 
-If `idf.py qemu --graphics monitor` says `qemu-system-riscv32` is missing,
-install the QEMU tool and reactivate ESP-IDF:
-
-```bash
-python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
-. $IDF_PATH/export.sh
-```
-
-If the virtual screen window does not appear, confirm that `--graphics` is in the
-command and that the host SDL2 libraries are installed.
-
-If a real board flash fails, crashes during display initialization, or shows a
-black display with no splash screen, check that you did not use the `build-qemu`
-directory. The QEMU build targets ESP32-C3 and uses a virtual panel that does
-not exist on real PRG32 hardware. For the ESP32-C6 board, rebuild with:
-
-```bash
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
-```
+Please refer to the [Troubleshooting Guide](troubleshooting.md#qemu-emulator-issues) for solutions to common QEMU issues.
 
 ## References
 

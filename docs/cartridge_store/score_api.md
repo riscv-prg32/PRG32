@@ -10,6 +10,8 @@ five best persistent local scores for each game, includes an on-screen
 player-name prompt, and provides a simple scoreboard screen that cartridges can
 call directly.
 
+Local scoreboard records persist in the dedicated `scores` NVS partition and
+  are not erased when a cartridge slot is replaced.
 ## Enable Wi-Fi
 
 Edit `main/prg32_config.h`:

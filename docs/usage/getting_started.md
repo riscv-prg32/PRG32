@@ -9,7 +9,7 @@ The resident firmware and cartridges must agree on the portable ABI major, hash,
 ## 1. Choose The Environment
 There are two environments to run PRG32: the **ESP-IDF + Tooling** environment or the **PlatformIO** environment.
 
-The ESP-IDF + Tooling environment is the recommended one. This environment uses the provided [Python Tooling](/docs/tools/tooling.md).
+The ESP-IDF + Tooling environment is the recommended one. This environment uses the provided [Python Tooling](tooling.md).
 
 You can use PlatformIO when you want a convenient VS Code workflow for the physical ESP32-C6 firmware.  The checked-in PlatformIO environment can only be used with the physical ESP32-C6 board, not for QEMU.
 
@@ -173,7 +173,7 @@ python3 -m prg32 cartridge build \
   --out ../work/hello_world/hello_world.prg32
 ```
 
-Boot up the ESP32C6 to the setup menu and make sure that your computer and the board are connected to the **same WiFi**. To do this, you can set up an Access Point on the ESP32C6, or you can connect to a local WiFi network. See the [Network](/docs/usage/network.md) documentation file for more information.
+Boot up the ESP32C6 to the setup menu and make sure that your computer and the board are connected to the **same WiFi**. To do this, you can set up an Access Point on the ESP32C6, or you can connect to a local WiFi network. See the [Network](network.md) documentation file for more information.
 
 Upload the cartridge to the board.
 ```
@@ -187,10 +187,12 @@ You can also run the cartridge through the python tooling:
 python -m prg32 esp32c6 --url <URL> --slot cart0
 ```
 
-For any errors, before opening a Github Issue, please consult [Troubleshooting](/docs/usage/troubleshooting.md).
+For any errors, before opening a Github Issue, please consult [Troubleshooting](troubleshooting.md).
 
 ## 6. What To Read Next
-For uploading your cartridge to the Cartridge Store, read the [Cartridge Store documentation file](/docs/usage/cartridge_store).
+
+- For uploading your cartridge to the Cartridge Store, read the [Cartridge Store documentation file](/docs/usage/cartridge_store).
+- For a complete setup verification, read the [Setup Verification documentation file](setup_verification.md).
 
 - `docs/cartridges.md`: deeper cartridge workflow and slot behavior.
 - `docs/qemu.md`: host-specific QEMU setup and troubleshooting.

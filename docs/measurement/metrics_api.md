@@ -245,3 +245,14 @@ plots when `matplotlib` is installed.
 - For reproducible scientific measurements, use
   `sdkconfig.defaults;sdkconfig.defaults.metrics` as described in
   `docs/scientific_measurement_tutorial.md`.
+
+## Development Guide
+
+> [!IMPORTANT]
+> This information is only intended for developers of the PRG32 framework.
+
+### Metrics Implementation Details
+
+- Keep `prg32_metrics_record()` non-blocking. Metrics collection must copy into
+  a small queue and leave HTTP upload to the background task so profiling does
+  not become the main source of frame-time jitter.

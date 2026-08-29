@@ -258,6 +258,7 @@ Success response:
 Expected behavior:
 
 - upload is accepted only when `PRG32_GAME_UPLOAD_ENABLE` is enabled;
+- validates and stores the cartridge without starting it;
 - the request body must fit in the 128 KiB cartridge package limit;
 - invalid cartridge images return `400` with the cartridge validation error;
 - disabled upload support returns `403`.
@@ -303,8 +304,9 @@ Expected behavior:
 GET /api/screenshot.bmp
 ```
 
-Returns a 320x240 BMP image of the full LCD surface, including the 320x200 game
-viewport and the physical top/bottom bands.
+Returns the current 320x240 PRG32 framebuffer as a 24-bit BMP image. This
+captures the full physical screen, including splash/setup screens, the centered
+320x200 game viewport, and the upper/lower status bands.
 
 Example:
 
@@ -320,6 +322,8 @@ Expected behavior:
 - the response includes a fixed `Content-Length`;
 - the bitmap is encoded as a conventional 24-bit BMP for broad client
   compatibility;
+- the BMP is generated from the same normalized RGB565 framebuffer path used by
+  the ILI9341 hardware backend and the QEMU RGB backend;
 - the response is marked `Cache-Control: no-store`;
 - screenshot transfer is larger than JSON endpoints, so clients should use a
   timeout of at least 30 seconds on weak Wi-Fi links.
@@ -350,126 +354,11 @@ Expected behavior:
 
 - returns the most recent in-RAM setup performance test;
 - rebooting the board or QEMU clears the stored result;
-- use `docs/metrics_api.md` for the full JSON field reference.
+- read [Metrics API](metrics_api.md) for the full JSON field reference.
 
-### Get Scores
+## Score API
 
-```http
-GET /api/scores
-```
-
-Returns the board-local persistent scoreboard. The firmware keeps the five best
-local records for each game even when no Cartridge Store URL has been
-configured.
-
-Games can also access the same local records directly through
-`prg32_score_count` and `prg32_score_get`, or show the built-in on-device
-scoreboard with `prg32_scoreboard_show`.
-
-Example:
-
-```bash
-curl http://192.168.4.1/api/scores
-```
-
-Response:
-
-```json
-[
-  {"game":"pong","player":"Ada","score":42}
-]
-```
-
-### Submit A Score
-
-```http
-POST /api/scores
-Content-Type: application/json
-
-{"game":"breakout","player":"Grace","score":1200}
-```
-
-Request fields:
-
-| Field | Type | Meaning |
-|---|---|---|
-| `game` | string | Short game identifier |
-| `player` | string | Player name or initials |
-| `score` | number | Non-negative score value |
-
-Example:
-
-```bash
-curl -X POST http://192.168.4.1/api/scores \
-  -H 'Content-Type: application/json' \
-  -d '{"game":"breakout","player":"Grace","score":1200}'
-```
-
-Success response:
-
-```json
-{"ok":true}
-```
-
-Expected behavior:
-
-- scores are stored in a dedicated local NVS partition by the board-local API;
-- only the five best local records for each game are kept;
-- each score record associates a short game identifier, player name, and
-  numeric score;
-- pending local records can be retried with `prg32_score_sync_remote` once a
-  Cartridge Store URL is configured;
-- board-local scores survive reboot and cartridge replacement;
-- use the external ScoreServer for shared classroom leaderboards.
-
-## ScoreServer API
-
-The standalone ScoreServer repository is the persistent classroom scoreboard:
-
-```text
-https://github.com/riscv-prg32/ScoreServer
-```
-
-It uses the same score endpoints as the board-local API:
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/api/scores` | List persisted scores |
-| `POST` | `/api/scores` | Add a score |
-
-Run it on a classroom machine:
-
-```bash
-git clone https://github.com/riscv-prg32/ScoreServer.git
-cd ScoreServer
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-python3 app.py
-```
-
-Submit from the host:
-
-```bash
-curl -X POST http://localhost:5000/api/scores \
-  -H 'Content-Type: application/json' \
-  -d '{"game":"pong","player":"Ada","score":42}'
-```
-
-Submit from firmware C code:
-
-```c
-prg32_score_submit_remote("http://192.168.1.20:5000",
-                          "pong",
-                          "Ada",
-                          42);
-```
-
-Main use cases:
-
-- class tournaments;
-- lab exercises about JSON and REST APIs;
-- comparing board-local RAM storage with server-side persistence.
+Please refer to the [Score API](score_api.md) for full documentation on local and ScoreServer leaderboards.
 
 ## CartridgeStore Discovery API
 
@@ -750,128 +639,7 @@ upload shape. The Cartridge Store no longer accepts the old loose multipart
 
 ## MetricsServer API
 
-MetricsServer receives streaming frame metrics from firmware and serves run
-reports for papers or lab analysis:
-
-```text
-https://github.com/riscv-prg32/MetricsServer
-```
-
-Run it:
-
-```bash
-git clone https://github.com/riscv-prg32/MetricsServer.git
-cd MetricsServer
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install -r requirements.txt
-python3 app.py --host 0.0.0.0 --port 8080
-```
-
-Endpoint summary:
-
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/api/runs` | Register or update run metadata |
-| `POST` | `/api/metrics/batch` | Store a batch of sampled frames |
-| `POST` | `/api/runs/<run_id>/finish` | Mark a run as finished |
-| `GET` | `/api/runs` | List recorded runs |
-| `GET` | `/api/runs/<run_id>` | Show one run with summary statistics |
-| `GET` | `/api/runs/<run_id>/samples.csv` | Download raw samples |
-| `GET` | `/api/runs/<run_id>/report.md` | Download a Markdown report |
-
-### Register A Run
-
-```http
-POST /api/runs
-Content-Type: application/json
-```
-
-Typical payload:
-
-```json
-{
-  "run_id": "prg32-board-20260608-101500",
-  "board_id": "prg32-board",
-  "target": "esp32c6",
-  "display_backend": "ili9341",
-  "firmware_version": "1.0.0",
-  "firmware_git_sha": "abc1234",
-  "game_name": "pong",
-  "cartridge_generation": 3,
-  "build_type": "release",
-  "sample_period_frames": 1
-}
-```
-
-Expected behavior:
-
-- firmware calls this when a metrics run starts;
-- repeated calls for the same `run_id` update metadata.
-
-### Upload Metric Samples
-
-```http
-POST /api/metrics/batch
-Content-Type: application/json
-```
-
-Typical payload:
-
-```json
-{
-  "run_id": "prg32-board-20260608-101500",
-  "dropped_samples": 0,
-  "samples": [
-    {
-      "frame": 120,
-      "timestamp_ms": 4000,
-      "update_us": 900,
-      "draw_us": 2100,
-      "present_us": 8200,
-      "frame_us": 11200,
-      "heap_free": 173000,
-      "heap_min_free": 169000,
-      "input_mask": 0,
-      "fps_x100": 8928,
-      "upload_queue_depth": 4,
-      "deadline_missed": false
-    }
-  ]
-}
-```
-
-Expected behavior:
-
-- `prg32_metrics_record()` only copies samples into a small queue;
-- network upload happens in a background task;
-- if the queue fills, firmware reports dropped samples in a later batch.
-
-### Finish A Run
-
-```http
-POST /api/runs/<run_id>/finish
-Content-Type: application/json
-```
-
-Marks the run as complete. MetricsServer can then present final summary
-statistics and reports.
-
-### Export Results
-
-Examples:
-
-```bash
-curl http://192.168.1.20:8080/api/runs
-curl http://192.168.1.20:8080/api/runs/prg32-board-20260608-101500
-curl http://192.168.1.20:8080/api/runs/prg32-board-20260608-101500/samples.csv \
-  --output samples.csv
-curl http://192.168.1.20:8080/api/runs/prg32-board-20260608-101500/report.md \
-  --output report.md
-```
-
-Use `docs/metrics_api.md` for the full setup-performance and streaming metrics
-field reference.
+Please refer to [Metrics API](metrics_api.md) for the full MetricsServer and performance API documentation.
 
 ## End-To-End Workflows
 
@@ -911,17 +679,6 @@ python3 -m prg32 upload build-esp32c6/tetris-c.prg32 \
   --slot cart0
 ```
 
-### Collect Performance Data For A Report
-
-```bash
-curl http://192.168.4.1/api/performance.json \
-  --output prg32_performance.json
-
-python3 tools/prg32_metrics_paper.py prg32_performance.json \
-  --out paper_metrics/prg32_run01 \
-  --dpi 300
-```
-
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -935,11 +692,12 @@ python3 tools/prg32_metrics_paper.py prg32_performance.json \
 | `401` on publish | Missing or invalid Bearer token | Add `--token` or `store_token` |
 | No metrics appear on server | Metrics disabled or server unreachable | Check metrics Kconfig and server URL |
 
+
 ## Related Documentation
 
 - `docs/cartridges.md`: cartridge upload workflow.
 - `docs/cartridge_store.md`: CartridgeStore user workflow.
 - `docs/setup_mode_cartridge_store.md`: firmware setup-mode integration notes.
-- `docs/score_api.md`: focused score API guide.
-- `docs/metrics_api.md`: performance and metrics field reference.
+- `/docs/cartridge_store/score_api.md`: focused score API guide.
+- `//docs/measurement/metrics_api.md`: performance and metrics field reference.
 - `docs/cartridge_metadata.md`: metadata and colophon formats.

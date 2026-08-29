@@ -1,8 +1,7 @@
 # Publishing And Flashing Legacy Firmware
 
 This workflow publishes the resident ESP32-C6 firmware as one merged binary.
-It is useful for a classroom or release archive where students should flash one
-file instead of tracking the bootloader, partition table, and app offsets.
+It is useful for a classroom or release archive where students should flash one file instead of tracking the bootloader, partition table, and app offsets.
 
 ## Prepare The Single File
 
@@ -67,9 +66,15 @@ After flashing, reset the board and hold A+B during boot to enter setup mode.
 
 ## Notes
 
-- This is a resident firmware workflow, not a cartridge workflow.
-- Portable `.prg32` cartridges remain the preferred game distribution format.
-- Legacy absolute-import cartridges must be rebuilt for the exact resident
-  firmware image. When possible, build cartridges with `--portable`.
-- If `python3 -m esptool` is missing, source ESP-IDF first or install the
-  ESP-IDF Python environment used for the build.
+This is a resident firmware workflow, not a cartridge workflow. Portable `.prg32` cartridges remain the preferred game distribution format instead of distributing flashed firmware.
+
+## Development Guide
+
+> [!IMPORTANT]
+> This information is only intended for developers of the PRG32 framework.
+
+### Setup Mode Details
+
+- Setup mode is entered by holding A+B at boot, by holding `PRG32_PIN_SETUP`
+  low when that optional pin is wired, when no cartridge is present, or when
+  multiple cartridges exist without a saved default cartridge.

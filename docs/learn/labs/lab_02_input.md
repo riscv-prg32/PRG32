@@ -32,3 +32,15 @@ when validating the GPIO wiring.
 ## Debug Question
 
 Why is `andi` enough for `PRG32_BTN_LEFT` but not enough for every possible bitmask test?
+
+## Development Guide
+
+> [!IMPORTANT]
+> This information is only intended for developers of the PRG32 framework.
+
+### Input Implementation Details
+
+- `prg32_input_read()` merges local GPIO buttons, QEMU keyboard input, and
+  diagnostic input state.
+- Joystick text input lives in `prg32_keyboard.c` and should stay usable from
+  games as well as setup screens.

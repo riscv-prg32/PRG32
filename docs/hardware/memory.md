@@ -37,7 +37,7 @@ A smaller 16 KB block of memory that remains powered on even when the main CPU g
 
 ## Memory Analysis Tooling
 
-To help you monitor and optimize PRG32 firmware and games, we've developed a unified memory analysis tool.
+To help you monitor and optimize PRG32 firmware and games, PRG32 ships a memory analysis tool.
 
 ### Running the Tool
 You can analyze both the static firmware size and the live dynamic heap usage with a single command:

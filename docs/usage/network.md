@@ -53,3 +53,15 @@ You can automatically provide your infrastructure Wi-Fi credentials at compile t
 ```
 
 This ensures your board automatically connects to the designated Wi-Fi when running in `PRG32_WIFI_MODE_STA` or `PRG32_WIFI_MODE_APSTA`, keeping your development process streamlined.
+
+## Development Guide
+
+> [!IMPORTANT]
+> This information is only intended for developers of the PRG32 framework.
+
+### Multiplayer Implementation Details
+
+- `prg32_input_read_player(2)` returns `0`; multiplayer games should use the
+  cartridge multiplayer API for remote player snapshots.
+- Cartridge multiplayer groups peers by cartridge signature and uses ESP32-C6
+  Wi-Fi station mode plus WebSocket to a Node.js `ws` server.

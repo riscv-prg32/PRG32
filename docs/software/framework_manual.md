@@ -270,7 +270,7 @@ activated, before the player starts a new play. See
 
 ## Wi-Fi Modes and Setup
 
-For a full guide on connecting the board to a network, see the [Network Setup and Wi-Fi Modes](../usage/network.md) documentation. 
+For a full guide on connecting the board to a network, see the [Network Setup and Wi-Fi Modes](network.md) documentation. 
 
 PRG32 supports three Wi-Fi runtime modes (`PRG32_WIFI_MODE_STA`, `PRG32_WIFI_MODE_AP`, `PRG32_WIFI_MODE_APSTA`).
 
@@ -519,3 +519,27 @@ The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
 boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
 to `-1` in `main/prg32_config.h`. Set it only when the LED pin is free on the
 chosen board wiring.
+
+## Development Guide
+
+> [!IMPORTANT]
+> This information is only intended for developers of the PRG32 framework.
+
+### General Framework Editing Guidelines
+
+The public ABI is `components/prg32/include/prg32.h`. Keep it small, stable, and
+friendly to RISC-V assembly callers.
+
+When editing framework code:
+
+- Keep dependencies in `components/prg32/CMakeLists.txt`.
+- Keep `REQUIRES` and `PRIV_REQUIRES` independent of `CONFIG_*` choices; ESP-IDF
+  expands component requirements before configuration-dependent source choices.
+- Keep app-specific pin and feature config in `main/prg32_config.h`.
+- Preserve `prg32_init()` as the one-call framework initializer.
+- Do not expose ESP-IDF-only types in the public ABI unless absolutely needed.
+- Return simple `int` status codes for APIs called from assembly.
+- Check pointer inputs in helpers that can be called from student code.
+- Keep comments short and educational where they clarify hardware or ABI behavior.
+
+
