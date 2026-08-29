@@ -1,7 +1,7 @@
 # PRG32 Hardware
 
-This page summarizes the classroom reference wiring. See `hardware/README.md`
-for the hardware directory map and board scaffolds.
+This page summarizes the classroom reference wiring. See
+[`docs/pcb/README.md`](pcb/README.md) for the reference PCB design.
 
 ## PCB Component Layout
 
@@ -21,7 +21,7 @@ body is mounted on the indicated side.
 ## Reference Prototype Figures
 
 The following figures are exported from the schematic and breadboard views of
-`hardware/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
+`docs/pcb/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
 the canonical GPIO assignments listed below.
 
 ![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](images/prg32-electrical-schematic.svg)
