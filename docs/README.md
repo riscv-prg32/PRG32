@@ -1,0 +1,70 @@
+# PRG32 Documentation
+
+Welcome to the documentation for PRG32! To make it easier to find what you need, the documentation is divided into the following categories:
+
+> [!IMPORTANT]
+> **New to PRG32?** 
+> Start by reading the **[Getting Started with Game Development](learn/getting_started_game_development.md)** guide! It is the fundamental introduction to building your first game.
+
+---
+
+## Repository
+*Information about the repo itself.*
+
+- [Repository Structure](repository_structure.md)
+
+## Usage (Execution & Deployment)
+*Workflows for running the emulator, uploading cartridges, and flashing firmware.*
+
+- [QEMU Virtual Screen](usage/qemu.md)
+- [Running Cartridges](usage/cartridges.md)
+- [Cartridge Store](usage/cartridge_store.md)
+- [Setup Mode Cartridge Store](usage/setup_mode_cartridge_store.md)
+- [Publishing and Flashing Firmware](usage/publishing_and_flashing_firmware.md)
+- [Deployment](usage/deployment.md)
+- [Troubleshooting](usage/troubleshooting.md)
+
+## Hardware
+*Physical components, wiring, and hardware setup.*
+
+- [Hardware Reference](hardware/hardware.md)
+- [External Controllers](hardware/external_controllers.md)
+
+## Software
+*Software architecture, APIs, ABI, and firmware internals.*
+
+- [Application Binary Interface (ABI)](software/abi.md)
+- [Web API Reference](software/api.md)
+- [C Framework Manual](software/framework_manual.md)
+- [Updating Controllers and Wi-Fi](software/framework_manual_update_controllers_wifi.md)
+- [Memory Architecture](software/memory.md)
+- [Cartridge Format](software/cartridge-format.md)
+- [Cartridge Metadata](software/cartridge_metadata.md)
+- [Colophon ABI](software/colophon_abi.md)
+- [Metrics API](software/metrics_api.md)
+- [Score API](software/score_api.md)
+
+## Learn
+*Tutorials, guides, and teaching materials.*
+
+- [Getting Started with Game Development](learn/getting_started_game_development.md)
+- [PRG32 Tutorial](learn/tutorial.md)
+- [ASCII Game Tutorial](learn/tutorial_ascii_game.md)
+- [C Game Tutorial](learn/tutorial_c_game.md)
+- [Graphic Game Tutorial](learn/tutorial_graphic_game.md)
+- [Teaching with PRG32](learn/teaching_with_prg32.md)
+- [Examples](learn/examples.md)
+
+## Tools
+*Asset creation and offline development tools.*
+
+- [Asset Guidelines](tools/assets.md)
+- [Audio Tools](tools/audio.md)
+- [Tooling Reference](tools/tooling.md)
+
+## Measurement
+*Scientific and performance measurement guides.*
+
+- [Scientific Measurement Tutorial](measurement/scientific_measurement_tutorial.md)
+
+

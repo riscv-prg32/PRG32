@@ -137,43 +137,28 @@ the firmware HTTP server is reachable in the chosen run configuration.
 ## Cartridges in QEMU
 
 QEMU uses the same uploadable `.prg32` game package as the real board, but QEMU
-does not emulate the classroom Wi-Fi AP. Stage the cartridge into the emulator
-flash image before starting QEMU:
+does not emulate the classroom Wi-Fi AP. 
 
-On Windows:
-```bash
-python3 -m prg32 cartridge build \
-  examples/games/asteroids/graphics/game.S \
-  --portable \
-  --entry-prefix asteroids_graphics \
-  --name asteroids \
-  --out build-qemu/asteroids.prg32
-```
-If `build-qemu/qemu_flash.bin` does not exist yet, start QEMU once so ESP-IDF
-generates the flash image, quit QEMU, then run:
+Here is the complete workflow for making a cartridge run on QEMU using the unified Python tooling:
 
-```bash
-python3 -m prg32 upload-qemu build-qemu/asteroids.prg32
-```
+1. **Build QEMU**: Generate the QEMU emulator firmware and flash image.
+   ```bash
+   python3 -m prg32 qemu build
+   ```
 
-Then run `PRG32: qemu screen`.
+2. **Prepare a cartridge**: Build a `.prg32` cartridge for QEMU (or portable) from your game's source code. For detailed instructions, see [docs/cartridges.md](cartridges.md#qemu-workflow.
 
-On Linux or MacOS:
+3. **Upload**: Stage the cartridge into the emulator flash image.
+   ```bash
+   python3 -m prg32 qemu upload build-qemu/asteroids.prg32
+   ```
 
-If `build-qemu/qemu_flash.bin` does not exist yet, start QEMU once so ESP-IDF
-generates the flash image:
+4. **Run**: Start the QEMU emulator environment to play your cartridge.
+   ```bash
+   python3 -m prg32 qemu run
+   ```
 
-```bash
-cd <path_to_PRG32>
-./scripts/qemu/build_qemu.sh
-```
-
-Then stage the cartridge:
-```bash
-cd <path_to_PRG32>
-./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh
-```
+*(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
 ## Wiring the game into QEMU
 

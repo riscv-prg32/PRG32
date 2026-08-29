@@ -20,7 +20,7 @@ PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hard
 
 ## Install & Setup
 
-> **Note**: For a detailed guide on setting up your environment, see [getting_started_game_development.md](docs/getting_started_game_development.md).
+> **Note**: For a detailed guide on setting up your environment, see [getting_started_game_development.md](docs/learn/getting_started_game_development.md.
 
 <details>
 <summary><strong>macOS Setup</strong></summary>
@@ -175,13 +175,13 @@ You can run `python -m prg32 --help` to learn about other commands provided.
 <details>
 <summary><strong>Running PRG32 on the ESP32C6</strong></summary>
 
-If you have the physical PRG32 hardware, after [completing the hardware setup](docs/hardware.md) you can build the project for the ESP32C6 and flash it to the SoC:
+If you have the physical PRG32 hardware, after [completing the hardware setup](docs/hardware/hardware.md you can build the project for the ESP32C6 and flash it to the SoC:
 ```bash
 python -m prg32 esp32c6 build-and-flash
 ```
 
 Now that PRG32 is running, you have multiple options to run your first cartridge:
-- Setup the [Cartridge Store](docs/cartridge_store.md) and download one of the availables cartridge
+- Setup the [Cartridge Store](docs/usage/cartridge_store.md and download one of the availables cartridge
 - Download or create your own cartridge and upload it via `python -m prg32 esp32c6 upload`.
 </details>
 
@@ -199,7 +199,7 @@ python -m prg32 qemu run
 ```
 
 You have multiple options to run your first cartridge:
-- Setup the [Cartridge Store](docs/cartridge_store.md) and download one of the availables cartridge
+- Setup the [Cartridge Store](docs/usage/cartridge_store.md and download one of the availables cartridge
 - Download or create your own cartridge; upload it via `python -m prg32 qemu upload` and run it via `python -m prg32 qemu run`. 
 
 IMPORTANT: To interact with the QEMU emulator, your active window must be the terminal that launched QEMU where you can see the logs.
@@ -227,27 +227,27 @@ You can specify an architecture with the `--architeture [esp32c6,qemu]` option.
 ## Documentation Index
 
 **Guides & Workflows:**
-- [Getting Started / Game Development](docs/getting_started_game_development.md): End-to-end setup and manual.
-- [Deployment Guide](docs/deployment.md): Build, flash, monitor, setup mode, and QEMU.
-- [QEMU Virtual Screen](docs/qemu.md): Desktop testing and troubleshooting.
-- [Cartridges](docs/cartridges.md): The `.prg32` build/upload workflow.
-- [Hardware & Pinouts](docs/hardware.md): Board, display, and input architecture.
+- [Getting Started / Game Development](docs/learn/getting_started_game_development.md: End-to-end setup and manual.
+- [Deployment Guide](docs/usage/deployment.md: Build, flash, monitor, setup mode, and QEMU.
+- [QEMU Virtual Screen](docs/usage/qemu.md: Desktop testing and troubleshooting.
+- [Cartridges](docs/usage/cartridges.md: The `.prg32` build/upload workflow.
+- [Hardware & Pinouts](docs/hardware/hardware.md: Board, display, and input architecture.
 
 **Learning Materials:**
-- [Teaching with PRG32](docs/teaching_with_prg32.md): Instructor notes and classroom setup.
-- [Assembly Tutorial](docs/tutorial.md) | [C Tutorial](docs/tutorial_c_game.md)
+- [Teaching with PRG32](docs/learn/teaching_with_prg32.md: Instructor notes and classroom setup.
+- [Assembly Tutorial](docs/learn/tutorial.md | [C Tutorial](docs/learn/tutorial_c_game.md
 - [Labs Overview](docs/labs/README.md)
-- [Example Games](docs/examples.md)
+- [Example Games](docs/learn/examples.md
 
 **APIs & Advanced Features:**
-- [Framework C/Assembly ABI](docs/framework_manual.md)
-- [HTTP APIs (Score, Metrics, Multiplayer)](docs/api.md)
-- [Audio Guide](docs/audio.md)
-- [Assets Tools](docs/assets.md)
+- [Framework C/Assembly ABI](docs/software/framework_manual.md
+- [HTTP APIs (Score, Metrics, Multiplayer)](docs/software/api.md
+- [Audio Guide](docs/tools/audio.md
+- [Assets Tools](docs/tools/assets.md
 
 **Additional References:**
-- [Repository Structure](docs/repository_structure.md)
-- [Troubleshooting](docs/troubleshooting.md)
+- [Repository Structure](docs/repository_structure.md
+- [Troubleshooting](docs/usage/troubleshooting.md
 - [Legacy Firmware Guide](docs/publishing_and_flashing_legacy_firmware.md)
 
 ## Contributors

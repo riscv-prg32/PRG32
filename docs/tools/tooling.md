@@ -28,7 +28,7 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
     - **`build-and-flash`**: combination of `build` and `flash` commands for convenience. Also supports the `--skip-target` option.
 - **`erase-flash`**: erase flash of ESP32C6. It is sometimes useful to completely erase the flash for debugging purposes.
     - **`reset`**: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
-- **`memory`**: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](memory.md))
+- **`memory`**: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](../software/memory.md
 
 ### Upload & Run Cartridges
 
@@ -58,7 +58,7 @@ QEMU commands simulate the PRG32 environment locally.
 - **`build-and-run`**: build QEMU, generate flash image, and run the emulator. Also supports the `--skip-target` option.
 - **`upload`**: upload a cartridge to QEMU
 
-For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qemu.md).
+For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](../usage/qemu.md.
 
 ---
 
@@ -67,7 +67,7 @@ For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qe
 - **`build`**: build a `.prg32` cartridge from assembly or C source code.
 - **`summary`**: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 
-For detailed instructions and examples on building cartridges, see [docs/cartridges.md](cartridges.md).
+For detailed instructions and examples on building cartridges, see [docs/cartridges.md](../usage/cartridges.md.
 
 ---
 

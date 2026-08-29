@@ -150,8 +150,20 @@ builds and runs on the desktop path.
 
 ## Portable Build Workflow
 
+The available architectures are `esp32c6` and `qemu`.
+
+To build a **portable** cartridge that can run on any PRG32 host (QEMU, physical ESP32-C6) that supports the ABI Table, use `--portable`:
+
+```bash
+python3 -m prg32 cartridge build examples/games/pacman/c/game.c \
+    --out build-portable-examples/pacman.prg32 \
+    --name pacman \
+    --entry-prefix pacman_c \
+    --portable
+```
+
 Portable cartridges use the generated ABI table contract and do not need a
-firmware ELF or runtime HTTP query at build time:
+firmware ELF or runtime HTTP query at build time. For example with an assembly game:
 
 ```bash
 python3 -m prg32 cartridge build \
@@ -281,15 +293,15 @@ python3 tools/prg32_build_portable_examples.py --clean
 The output directory defaults to `build-portable-examples`. For each example the
 script writes a `.prg32` file plus `esp32c6` and `qemu` publishing bundles.
 
-See [cartridge_metadata.md](cartridge_metadata.md) for the binary trailer and
-metadata ABI, [colophon_abi.md](colophon_abi.md) for the colophon ABI, and
-[setup_mode_cartridge_store.md](setup_mode_cartridge_store.md) for the
+See [cartridge_metadata.md](../software/cartridge_metadata.md for the binary trailer and
+metadata ABI, [colophon_abi.md](../software/colophon_abi.md for the colophon ABI, and
+[setup_mode_cartridge_store.md](setup_mode_cartridge_store.md for the
 setup-mode integration contract.
 
 ## Downloading from a CartridgeStore
 
 CartridgeStore provides a shared classroom catalog for `.prg32` artifacts. See
-[cartridge_store.md](cartridge_store.md) for setup, publishing, and
+[cartridge_store.md](cartridge_store.md for setup, publishing, and
 troubleshooting details.
 
 Two installation paths are available:

@@ -130,5 +130,5 @@ Unknown blocks are allowed and should be preserved by tools.
 `prg32-colophon-1.0` JSON. The game colophon is shown after the cartridge is
 activated, before the player starts a new play.
 
-See [cartridge_metadata.md](cartridge_metadata.md) and
-[colophon_abi.md](colophon_abi.md) for the formal ABI documentation.
+See [cartridge_metadata.md](cartridge_metadata.md and
+[colophon_abi.md](colophon_abi.md for the formal ABI documentation.

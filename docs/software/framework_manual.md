@@ -264,9 +264,9 @@ The default app automatically calls the current cartridge every frame when one
 is loaded. Store-ready cartridges may include a metadata trailer after the
 legacy executable payload. The game colophon is shown after the cartridge is
 activated, before the player starts a new play. See
-[cartridge_metadata.md](cartridge_metadata.md),
-[colophon_abi.md](colophon_abi.md), and
-[setup_mode_cartridge_store.md](setup_mode_cartridge_store.md).
+[cartridge_metadata.md](cartridge_metadata.md,
+[colophon_abi.md](colophon_abi.md, and
+[setup_mode_cartridge_store.md](../usage/setup_mode_cartridge_store.md.
 
 ## Wi-Fi Modes and Setup
 
