@@ -184,7 +184,7 @@ In the setup menu two new options appear: select `Run Cartridge`, then select `c
 
 You can also run the cartridge through the python tooling: 
 ```bash
-python -m prg32 esp32c6 --url <URL> --slot cart0
+python -m prg32 esp32c6 run --url http://192.168.4.1 --slot cart0
 ```
 
 For any errors, before opening a Github Issue, please consult [Troubleshooting](troubleshooting.md).

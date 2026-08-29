@@ -17,7 +17,6 @@ Here are common issues and solutions when working with the PRG32 framework.
 - **Serial port not detected**: If the serial port is not detected, pass it explicitly. Add `-p COMx` on Windows, `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS when using raw `idf.py` commands.
 - **Physical board flashes fail, crash, or show a black display**: You likely compiled the firmware for QEMU (`ESP32-C3`) instead of the physical board (`ESP32-C6`). Rebuild and flash the physical board using the Python tooling:
   ```bash
-  python3 -m prg32 esp32c6 set-target
   python3 -m prg32 esp32c6 build-and-flash
   ```
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*

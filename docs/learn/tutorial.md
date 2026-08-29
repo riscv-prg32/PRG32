@@ -219,7 +219,7 @@ python3 -m prg32 cartridge build \
 Connect to the `PRG32` Wi-Fi network, then upload:
 
 ```bash
-python3 -m prg32 upload build-esp32c6/pong.prg32 --url http://192.168.4.1
+python3 -m prg32 esp32c6 upload build-esp32c6/pong.prg32 --url http://192.168.4.1
 ```
 
 Use `docs/cartridges.md` for the full workflow.

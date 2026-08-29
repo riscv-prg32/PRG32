@@ -24,7 +24,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- examples/
 |   |-- features/                   Focused rendering and firmware feature demos (audio, sprites, dual playfield)
 |   `-- games/                      Full game examples in RISC-V assembly and C (asteroids, breakout, pacman, etc.)
-|-- hardware/                       Hardware reference designs (KiCad PCB projects) and enclosures (OpenSCAD)
+|   |-- pcb/                        Hardware reference designs (Fritzing PCB projects)
 |-- main/                           Minimal resident firmware app and board configuration
 |   |-- main.c                      Resident runtime application
 |   `-- prg32_config.h              Board pins, feature flags, and compile-time constants

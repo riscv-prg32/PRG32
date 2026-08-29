@@ -64,7 +64,7 @@ python3 -m prg32 cartridge build \
 Upload it to the physical board over Wi-Fi:
 
 ```bash
-python3 -m prg32 upload build-esp32c6/asteroids.prg32 --url <board_url>
+python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --url http://192.168.4.1
 ```
 
 The firmware stores the cartridge in `cart0` by default and starts running it from the main loop. You can upload to another slot with `--slot cart1`.

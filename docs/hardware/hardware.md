@@ -1,8 +1,6 @@
 # PRG32 Hardware
 
-This page summarizes the classroom reference wiring. See
-[`docs/pcb/README.md`](pcb/README.md) for the reference PCB design.
-This page summarizes the classroom reference wiring. See [`/hardware/README.md`](../../hardware/README.md) for the hardware directory map and board scaffolds.
+This page summarizes the classroom reference wiring. See [`../pcb/README.md`](../pcb/README.md) for the reference PCB design.
 
 ## PCB Component Layout
 

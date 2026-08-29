@@ -104,7 +104,7 @@ python3 -m prg32 cartridge build \
 Upload either cartridge with:
 
 ```bash
-python3 -m prg32 upload build-esp32c6/platformer-c.prg32 --url http://192.168.4.1
+python3 -m prg32 esp32c6 upload build-esp32c6/platformer-c.prg32 --url http://192.168.4.1
 ```
 
 For QEMU
