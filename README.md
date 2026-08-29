@@ -1,6 +1,6 @@
 # PRG32
 <p align="center">
-  <img src="logo.png" alt="PRG32 logo" width="220">
+  <img src="assets/prg32_logo.png" alt="PRG32 logo" width="220">
 </p>
 
 PRG32 is an open-source educational runtime for teaching RISC-V assembly and C programming in undergraduate computer architecture and systems courses. PRG32 exposes a minimal interface built around the init/update/draw game loop.

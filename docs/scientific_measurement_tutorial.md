@@ -133,11 +133,11 @@ Wait until the runtime splash and setup screen are visible. Note the IP address
 shown by setup mode. Confirm that the metrics server URL is reachable from the
 runtime network mode you selected.
 
-![PRG32 logo splash](images/measurement/prg32_logo.png)
+![PRG32 logo splash](../assets/screenshots/prg32_menu_logo.png)
 
-![PRG32 setup screen](images/measurement/prg32_setup.png)
+![PRG32 setup screen](../assets/screenshots/prg32_menu_setup.png)
 
-![PRG32 about screen](images/measurement/prg32_about.png)
+![PRG32 about screen](../assets/screenshots/prg32_menu_about.png)
 
 ## 6. Build A Cartridge
 
@@ -217,16 +217,16 @@ figures for PRG32 demos and games.
 
 | Demo | Screenshot |
 |---|---|
-| Pong | ![Pong demo](images/measurement/prg32_pong.png) |
-| Breakout | ![Breakout demo](images/measurement/prg32_breakout.png) |
-| Space Invaders | ![Space Invaders demo](images/measurement/prg32_spinvaders.png) |
-| Pacman | ![Pacman demo](images/measurement/prg32_pacman.png) |
-| Tetris | ![Tetris demo](images/measurement/prg32_ttris.png) |
-| Pole Position | ![Pole Position demo](images/measurement/prg32_polep.png) |
-| Asteroids | ![Asteroids demo](images/measurement/prg32_asters.png) |
-| Platform game | ![Platform game demo](images/measurement/prg32_smario.png) |
-| Doom-style raycaster | ![Doom-style demo](images/measurement/prg32_doom.png) |
-| Wing Commander-style dual playfield | ![Wing Commander-style demo](images/measurement/prg32_wingc.png) |
+| Pong | ![Pong demo](../assets/screenshots/prg32_game_pong.png) |
+| Breakout | ![Breakout demo](../assets/screenshots/prg32_game_breakout.png) |
+| Space Invaders | ![Space Invaders demo](../assets/screenshots/prg32_game_spinvaders.png) |
+| Pacman | ![Pacman demo](../assets/screenshots/prg32_game_pacman.png) |
+| Tetris | ![Tetris demo](../assets/screenshots/prg32_game_ttris.png) |
+| Pole Position | ![Pole Position demo](../assets/screenshots/prg32_game_polep.png) |
+| Asteroids | ![Asteroids demo](../assets/screenshots/prg32_game_asters.png) |
+| Platform game | ![Platform game demo](../assets/screenshots/prg32_game_smario.png) |
+| Doom-style raycaster | ![Doom-style demo](../assets/screenshots/prg32_game_doom.png) |
+| Wing Commander-style dual playfield | ![Wing Commander-style demo](../assets/screenshots/prg32_game_wingc.png) |
 
 ## 9. Export Metrics
 
