@@ -10,7 +10,7 @@ from prg32.utilities.runtime_handler import runtime
 
 from prg32.cartridge.build_cartridge import build_cartridge_cli
 
-from prg32.esp32c6.build_esp32c6 import set_target_esp32c6, build_esp32c6, flash_esp32c6, build_and_flash_esp32c6, reset_esp32c6, erase_flash_esp32c6
+from prg32.esp32c6.build_esp32c6 import build_esp32c6, flash_esp32c6, build_and_flash_esp32c6, reset_esp32c6, erase_flash_esp32c6
 from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6, upload_and_run_esp32c6
 from prg32.esp32c6.prepare_legacy import prepare_legacy_esp32c6
 from prg32.esp32c6.flash_legacy import flash_legacy_esp32c6
@@ -20,7 +20,7 @@ from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
-from prg32.qemu.build_qemu import build_qemu, flash_qemu, build_and_flash_qemu, build_and_launch_qemu, set_target_qemu
+from prg32.qemu.build_qemu import build_qemu, flash_qemu, build_and_flash_qemu, build_and_launch_qemu
 
 from prg32.store.metadata import attach_metadata, inspect_metadata
 from prg32.store.store_api import store_discover, store_list, store_download
@@ -40,8 +40,6 @@ def main(argv: list[str]) -> int:
     # Add a subparser tracker specifically for sub-commands of qemu
     esp32c6_sub = esp32c6_p.add_subparsers(dest="sub_cmd", required=True)
 
-    p = esp32c6_sub.add_parser("set-target", help="set the build target to ESP32C6")
-    p.set_defaults(func=set_target_esp32c6)
 
     p = esp32c6_sub.add_parser("build", help="build the ESP32C6 firmware")
     p.add_argument("--skip-target", action="store_true", 
@@ -70,27 +68,29 @@ def main(argv: list[str]) -> int:
         help="upload a cartridge to the ESP32C6 SoC over HTTP", 
         usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
-    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload into")
     p.set_defaults(func=upload_esp32c6)
 
     p = esp32c6_sub.add_parser("run", help="run a previously loaded cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s [options]")
-    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to run")
     p.set_defaults(func=run_esp32c6)
 
     p = esp32c6_sub.add_parser("upload-and-run", help="upload and run a cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
-    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload and run into")
     p.set_defaults(func=upload_and_run_esp32c6)
 
-    p = esp32c6_sub.add_parser("performance", help="Get ESP32C6 performance data over HTTP. Must be used in Performance Test", usage="%(prog)s [--url URL] [options]")
-    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p = esp32c6_sub.add_parser("performance", help="Get ESP32C6 performance data over HTTP. Must be used in Performance Test")
+    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    p.add_argument("--out", default="prg32_performance.json", help="Path to save the performance data")
     p.set_defaults(func=get_performance_esp32c6)
 
-    p = esp32c6_sub.add_parser("screenshot", help="Get screenshot of ESP32C6 over HTTP", usage="%(prog)s [--url URL] [options]")
-    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p = esp32c6_sub.add_parser("screenshot", help="Get screenshot of ESP32C6 over HTTP")
+    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    p.add_argument("--out", default="screenshot.bmp", help="Path to save the screenshot")
     p.set_defaults(func=screenshot_esp32c6)
 
     p = esp32c6_sub.add_parser("prepare-legacy", help="prepare a single-file legacy PRG32 firmware image for publishing", usage="%(prog)s [options]")
@@ -107,7 +107,7 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=flash_legacy_esp32c6)
 
     p = esp32c6_sub.add_parser("memory", help="get static and dynamic memory analysis of the ESP32C6 SoC", usage="%(prog)s [options]")
-    p.add_argument("--url", default="http://192.168.4.1", help="URL of the ESP32C6 device")
+    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
     p.add_argument("--details", help="Print per-file sizes for the given component (e.g. prg32, or 'all' for everything)")
     p.add_argument("--top-symbols", type=int, metavar="N", help="Print the top N largest variables/functions in the firmware using nm")
     p.add_argument("--symbol-filter", help="Filter top symbols by type. Options: 'ram', 'flash', 'bss', 'data', 'code', or exact nm type characters (e.g. 'BbDd')")
@@ -119,9 +119,6 @@ def main(argv: list[str]) -> int:
     qemu_p = sub.add_parser("qemu", help="QEMU emulator tasks")
     # Add a subparser tracker specifically for sub-commands of qemu
     qemu_sub = qemu_p.add_subparsers(dest="sub_cmd", required=True)
-    
-    p =  qemu_sub.add_parser("set-target", help="flash QEMU")
-    p.set_defaults(func=set_target_qemu)
     
     p =  qemu_sub.add_parser("build", help="build QEMU and generate the flash image")
     p.add_argument("--skip-target", action="store_true", 
@@ -195,10 +192,10 @@ def main(argv: list[str]) -> int:
     abi_p = sub.add_parser("abi", help="ABI tooling tasks")
     abi_sub = abi_p.add_subparsers(dest="sub_cmd", required=True)
 
-    p = abi_sub.add_parser("gen", help="generate PRG32 portable cartridge ABI files")
+    p = abi_sub.add_parser("gen", help="generate PRG32 portable cartridge ABI C headers (e.g. prg32_abi_index.h) from prg32_abi.json")
     p.set_defaults(func=abi_gen_cmd)
 
-    p = abi_sub.add_parser("check", help="check that PRG32 portable cartridge ABI files are up to date")
+    p = abi_sub.add_parser("check", help="verify that the generated PRG32 ABI C headers match the current prg32_abi.json (used in CI)")
     p.set_defaults(func=abi_check_cmd)
 
     # ==========================================
@@ -292,7 +289,7 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=doctor)
 
     p = sub.add_parser("runtime", help="print runtime linker information", usage="%(prog)s [options]")
-    p.add_argument("--url", help="URL of a device to fetch runtime metadata from")
+    p.add_argument("--url", help="URL of a device to fetch runtime metadata from (must include scheme, e.g., http://192.168.4.1)")
     p.add_argument("--firmware-elf", help="Path to the firmware ELF to analyze")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the toolchain")
     p.set_defaults(func=runtime)
