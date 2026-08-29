@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 from prg32.utilities.runtime_handler import run
 
-def flash_legacy_esp32c6(args: argparse.Namespace) -> None:
+def flash_firmware_esp32c6(args: argparse.Namespace) -> None:
     manifest_path = Path(args.manifest)
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     image = manifest_path.with_name(data["single_file"])

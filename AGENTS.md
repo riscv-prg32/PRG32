@@ -46,8 +46,8 @@ Named contributor metadata used across project docs:
 - Bulk portable example publishing helper:
   `tools/prg32_build_portable_examples.py`.
 - Legacy resident firmware publishing/flashing helpers:
-  `python3 -m prg32 esp32c6 prepare-legacy` and
-  `python3 -m prg32 esp32c6 flash-legacy`.
+  `python3 -m prg32 esp32c6 prepare-firmware` and
+  `python3 -m prg32 esp32c6 flash-firmware`.
 - Media conversion tools: `tools/prg32_image_convert.py`,
   `tools/prg32_image_prepare.py`, and `tools/prg32_audio_convert.py`.
 - Student VS Code setup: `.vscode` and `PRG32.code-workspace`.

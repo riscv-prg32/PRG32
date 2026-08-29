@@ -6,7 +6,7 @@ import sys
 from prg32.utilities.env_variables import ROOT_DIR, ESP32C6_BUILD_DIR
 from prg32.utilities.runtime_handler import run
 
-def prepare_legacy_esp32c6(args: argparse.Namespace) -> None:
+def prepare_firmware_esp32c6(args: argparse.Namespace) -> None:
     build_dir = ROOT_DIR / args.build_dir
     out_dir = ROOT_DIR / args.out_dir
     flasher_args = build_dir / "flasher_args.json"
