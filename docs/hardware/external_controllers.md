@@ -1,7 +1,8 @@
 # PRG32 Controller Support
 
-PRG32 uses one local digital joystick on the ESP32-C6 board. The input API keeps
-the small register-like button mask used by the teaching examples:
+PRG32 uses one local digital joystick on the ESP32-C6 board. 
+
+The input API uses a small register-like button mask: you can mask the input with the following constants to get the current input.
 
 | PRG32 bit | Meaning |
 |---|---|

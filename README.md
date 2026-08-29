@@ -1,8 +1,7 @@
 # PRG32
 <p align="center">
-  <img src="assets/prg32_logo.png" alt="PRG32 logo" width="220">
+  <img src="assets/prg32_logo.png" alt="PRG32 logo" width="300">
 </p>
-
 PRG32 is an open-source educational runtime for teaching RISC-V assembly and C programming in undergraduate computer architecture and systems courses. PRG32 exposes a minimal interface built around the init/update/draw game loop.
 
 PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine code on the Espressif ESP32-C6, a commercially available microcontroller. The platform includes embedded firmware, a .prg32 cartridge format and toolchain, a QEMU-based desktop emulator and can be used in combination with the Cartridge Store, a server providing app-store-style distribution, multiplayer relay, score tracking, and frame-level metrics collection.
@@ -20,39 +19,39 @@ PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hard
 
 ## Install & Setup
 
-> **Note**: For a detailed guide on setting up your environment, see [getting_started_game_development.md](docs/learn/getting_started_game_development.md.
-
 <details>
-<summary><strong>macOS Setup</strong></summary>
+<summary><strong>Windows</strong></summary>
 
-Install dependencies:
-```bash
-brew install git cmake ninja dfu-util ccache libusb python
-```
+1. Install Git for Windows and Python 3.
+2. Download and run the Espressif ESP-IDF Tools Installer for Windows.
+3. Select an ESP-IDF 5.4 or newer release.
+4. Include support for `esp32c3` and `esp32c6`.
+5. Open the "ESP-IDF PowerShell" shortcut created by the installer.
+6. Clone the project and verify your setup from that shell:
 
-Install ESP-IDF:
-```bash
-cd $HOME
-git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
-cd esp-idf
-./install.sh esp32c3,esp32c6
-. ./export.sh
-```
-
-Clone the project:
-```bash
+```powershell
+cd $HOME\Documents
 git clone https://github.com/riscv-prg32/PRG32
 cd PRG32
+python -m prg32 doctor
 ```
+
+#### Notes
+- Use the ESP-IDF PowerShell or ESP-IDF Command Prompt, not a plain terminal
+where `idf.py` has not been exported.
+- If flashing fails, check Device Manager for the ESP32-C6 serial port and pass
+  it explicitly with `-p COMx`.
+- If PlatformIO Monitor cannot open the port, close Arduino Serial Monitor,
+  ESP-IDF Monitor, and every other terminal using the same COM port.
 </details>
 
 <details>
-<summary><strong>Linux Setup</strong></summary>
+<summary><strong>Linux</strong></summary>
 
 Install dependencies (Debian/Ubuntu):
 ```bash
 sudo apt update
-sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 curl zip
 ```
 
 Install ESP-IDF:
@@ -64,10 +63,11 @@ cd esp-idf
 . ./export.sh
 ```
 
-Clone the project:
+Clone the project and verify your setup:
 ```bash
 git clone https://github.com/riscv-prg32/PRG32
 cd PRG32
+python3 -m prg32 doctor
 ```
 
 Linux serial permissions:
@@ -83,31 +83,32 @@ reconnect the USB cable after logging in again.
 </details>
 
 <details>
-<summary><strong>Windows Setup</strong></summary>
+<summary><strong>macOS</strong></summary>
 
-1. Download and run the Espressif ESP-IDF Tools Installer for Windows.
-2. Select an ESP-IDF 5.4 or newer release.
-3. Include support for `esp32c3` and `esp32c6`.
-4. Open the "ESP-IDF PowerShell" shortcut created by the installer.
-5. Clone and build PRG32 from that shell:
-
-```powershell
-cd $HOME\Documents
-git clone https://github.com/riscv-prg32/PRG32
-cd PRG32
+Install dependencies:
+```bash
+brew install git cmake ninja dfu-util ccache libusb python curl zip
 ```
 
-#### Notes
-- Use the ESP-IDF PowerShell or ESP-IDF Command Prompt, not a plain terminal
-where `idf.py` has not been exported.
-- If flashing fails, check Device Manager for the ESP32-C6 serial port and pass
-  it explicitly with `-p COMx`.
-- If PlatformIO Monitor cannot open the port, close Arduino Serial Monitor,
-  ESP-IDF Monitor, and every other terminal using the same COM port.
+Install ESP-IDF:
+```bash
+cd $HOME
+git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32c3,esp32c6
+. ./export.sh
+```
+
+Clone the project and verify your setup:
+```bash
+git clone https://github.com/riscv-prg32/PRG32
+cd PRG32
+python3 -m prg32 doctor
+```
 </details>
 
 <details>
-<summary><strong>PlatformIO Setup (Alternative)</strong></summary>
+<summary><strong>PlatformIO (Alternative)</strong></summary>
 
 While ESP-IDF standalone is the primary and recommended way to install and build PRG32, you can also use PlatformIO. Open the repository root in PlatformIO. The checked-in `platformio.ini` default environment targets the ESP32-C6.
 
@@ -147,87 +148,12 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep
 using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 </details>
 
-## Startup
-
-The first screen is the startup menu, where you can, among other things, run a cartridge, set the default boot cartridge, configure Wi-Fi, configure CartridgeStore access, browse the store and download new cartridges, open the audio setup menu, open the developer status-band menu, launch the unattended performance test, or show the about screen.
-
-**Navigation Commands:**
-- **Joystick**: Navigate menus
-- **Button A (SET)**: Confirm selection
-- **Button B (RST)**: Go back
-- **A + B + DOWN (Hold)**: Restart the PRG32 firmware
-- **A + B (Hold during boot)**: Force enter setup (also happens automatically on first boot when no cartridge is stored)
-
-Setup screens also show the active Wi-Fi mode and current IP address.
-
-## PRG32 Tooling
-You can use the python tooling `python -m prg32` inside the PRG32 directory to execute commands.
-If you are not using PlatformIO, remember to always source the file `export.sh` in the ESP-IDF directory you previously created before using PRG32 in a new shell. 
-
-It is recommended for users to create an alias for sourcing ESP-IDF and using the PRG32 tools:
-```bash
-alias get_idf=". $HOME/esp-idf/export.sh"
-alias prg="python -m prg32"
-```
-
-You can run `python -m prg32 --help` to learn about other commands provided.
-
-<details>
-<summary><strong>Running PRG32 on the ESP32C6</strong></summary>
-
-If you have the physical PRG32 hardware, after [completing the hardware setup](docs/hardware/hardware.md you can build the project for the ESP32C6 and flash it to the SoC:
-```bash
-python -m prg32 esp32c6 build-and-flash
-```
-
-Now that PRG32 is running, you have multiple options to run your first cartridge:
-- Setup the [Cartridge Store](docs/usage/cartridge_store.md and download one of the availables cartridge
-- Download or create your own cartridge and upload it via `python -m prg32 esp32c6 upload`.
-</details>
-
-<details>
-<summary><strong>Running PRG32 on QEMU</strong></summary>
-
-If you don't have the physical hardware you can still use the PRG32 framework emulated on QEMU:
-```bash
-python -m prg32 qemu build
-```
-
-You can run the QEMU emulator to make sure everything is working correctly:
-```bash
-python -m prg32 qemu run
-```
-
-You have multiple options to run your first cartridge:
-- Setup the [Cartridge Store](docs/usage/cartridge_store.md and download one of the availables cartridge
-- Download or create your own cartridge; upload it via `python -m prg32 qemu upload` and run it via `python -m prg32 qemu run`. 
-
-IMPORTANT: To interact with the QEMU emulator, your active window must be the terminal that launched QEMU where you can see the logs.
-</details>
-
-<details>
-<summary><strong>Building and inspecting cartridges</strong></summary>
-
-The PRG32 repository comes with many example cartridge source codes. Here is an example of how to build the cartridge of the game "Asteroids" via the PRG32 tooling.
-
-```bash
-python3 -m prg32 cartridge build \
-  examples/games/asteroids/graphics/game.S \
-  --portable \
-  --entry-prefix asteroids_graphics \
-  --name asteroids \
-  --out build-qemu/asteroids.prg32
-
-python3 -m prg32 upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/qemu_flash.bin
-```
-
-You can specify an architecture with the `--architeture [esp32c6,qemu]` option.
-</details>
+> After installing PRG32, read [Getting Started With PRG32](docs/usage/getting_started.md) to learn how to run your first cartridge.
 
 ## Documentation Index
 
 **Guides & Workflows:**
-- [Getting Started / Game Development](docs/learn/getting_started_game_development.md: End-to-end setup and manual.
+- [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
 - [Deployment Guide](docs/usage/deployment.md: Build, flash, monitor, setup mode, and QEMU.
 - [QEMU Virtual Screen](docs/usage/qemu.md: Desktop testing and troubleshooting.
 - [Cartridges](docs/usage/cartridges.md: The `.prg32` build/upload workflow.

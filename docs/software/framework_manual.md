@@ -270,11 +270,9 @@ activated, before the player starts a new play. See
 
 ## Wi-Fi Modes and Setup
 
-PRG32 supports three Wi-Fi runtime modes:
+For a full guide on connecting the board to a network, see the [Network Setup and Wi-Fi Modes](../usage/network.md) documentation. 
 
-- `PRG32_WIFI_MODE_STA`: connect to an existing access point.
-- `PRG32_WIFI_MODE_AP`: create the PRG32 access point.
-- `PRG32_WIFI_MODE_APSTA`: keep the upload AP while also connecting as station.
+PRG32 supports three Wi-Fi runtime modes (`PRG32_WIFI_MODE_STA`, `PRG32_WIFI_MODE_AP`, `PRG32_WIFI_MODE_APSTA`).
 
 After the startup splash, the resident ESP32-C6 firmware enters setup mode when
 A and B are held during boot, whenever no stored cartridge is available, or
@@ -295,12 +293,6 @@ exercises display, input, audio, sprites, scrolling, playfield rendering,
 status bands, and small classroom sketches through the same cartridge ABI used
 by student games.
 
-The Wi-Fi setup screen lets the user choose access-point mode or infrastructure
-mode. Infrastructure mode scans for nearby SSIDs, lists them on screen, and
-uses UP/DOWN plus SELECT or B to select. A cancels back. The setup UI also
-shows the active Wi-Fi mode and IP address; AP mode shows the AP SSID, while
-infrastructure mode shows the selected/connected SSID.
-
 `PRG32_BOOT_SETUP_MODE` in `main/prg32_config.h` can still force setup on every
 boot for custom classroom images. If `PRG32_PIN_SETUP` is wired, holding it low
 during boot also forces setup mode.
@@ -313,10 +305,6 @@ Useful calls:
 - `prg32_wifi_current_mode()`
 - `prg32_wifi_current_ip()`
 - `prg32_wifi_current_ssid()`
-
-The chosen settings are stored in NVS under the `prg32wifi` namespace. QEMU
-builds keep physical Wi-Fi disabled by default, but games can still compile
-against the same API and exercise setup screens.
 
 ## Multiplayer
 

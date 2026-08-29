@@ -14,3 +14,5 @@ Here are common issues and solutions when working with the PRG32 framework.
 - **Cartridge upload fails**: `build-qemu/qemu_flash.bin` is missing/invalid, or the cartridge is too large. Run QEMU once, then rerun `upload-qemu`.
 - **`riscv32-esp-elf-gcc` missing**: ESP-IDF toolchain not installed/sourced. Re-run `./install.sh esp32c3,esp32c6` and source the ESP-IDF export script.
 - **Partition mismatch errors**: Run `python3 -m prg32 doctor` and verify `partitions_prg32.csv` plus the selected cartridge slot.
+- If the serial port is not detected, add `-p COM5` on Windows,
+  `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS.

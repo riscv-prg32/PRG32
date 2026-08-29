@@ -4,7 +4,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 
 > [!IMPORTANT]
 > **New to PRG32?** 
-> Start by reading the **[Getting Started with Game Development](learn/getting_started_game_development.md)** guide! It is the fundamental introduction to building your first game.
+> Start by reading the [Getting Started With PRG32](docs/usage/getting_started.md) guide! It is the fundamental introduction to building your first game.
 
 ---
 
@@ -47,7 +47,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 ## Learn
 *Tutorials, guides, and teaching materials.*
 
-- [Getting Started with Game Development](learn/getting_started_game_development.md)
+- [Getting Started With PRG32](docs/usage/getting_started.md)
 - [PRG32 Tutorial](learn/tutorial.md)
 - [ASCII Game Tutorial](learn/tutorial_ascii_game.md)
 - [C Game Tutorial](learn/tutorial_c_game.md)

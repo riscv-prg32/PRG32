@@ -1,28 +1,15 @@
 # PRG32 QEMU Screen Emulator
 
 PRG32 can run on a desktop with Espressif QEMU and show the 320x240 PRG32
-screen in a virtual RGB framebuffer window. Framework screens use the full
-resolution; game code still draws into the centered 320x200 viewport. This is
-intended for students who want to compile and test graphics before flashing real
-ESP32-C6 hardware.
+screen in a virtual RGB framebuffer window. This is
+intended for students who want to compile and test graphics before flashing real ESP32-C6 hardware. 
 
-The QEMU build uses ESP32-C3 as the emulator target because Espressif documents
-the maintained RISC-V QEMU graphics path for ESP32-C3. PRG32 student games still
-use the same 32-bit RISC-V calling convention and PRG32 ABI, and the physical
-hardware build remains ESP32-C6.
+QEMU uses the Espressif ESP32-C3 RISC-V emulator target instead of ESP32-C6 and a PRG32 virtual RGB display backend. Framework screens use the full
+resolution; game code still draws into the centered 320x200 viewport. 
 
-The assembly ABI does not change. A game still calls:
+The QEMU build uses ESP32-C3 as the emulator target because Espressif documents the maintained RISC-V QEMU graphics path for ESP32-C3. 
 
-- `prg32_gfx_clear`
-- `prg32_gfx_pixel`
-- `prg32_gfx_rect`
-- `prg32_gfx_text8`
-- `prg32_gfx_present`
-- `prg32_playfield_draw_dual`
-- `prg32_sprite_draw_24x24`
-- `prg32_sprite_draw_frame`
-
-Only the display backend changes.
+PRG32  cartridges all use the same 32-bit RISC-V calling convention and PRG32 ABI, for both the physical hardware and QEMU targets. Only the display backend changes.
 
 ## Supported Hosts
 
@@ -34,7 +21,7 @@ Espressif provides QEMU RISC-V packages for:
 - Linux x86_64
 - Linux arm64
 
-Use ESP-IDF 5.3 or newer; the `esp_lcd_qemu_rgb` component declares that
+Use ESP-IDF 5.4 or newer; the `esp_lcd_qemu_rgb` component declares that
 minimum IDF version. Install ESP-IDF first, then install QEMU:
 
 ```bash
@@ -146,7 +133,7 @@ Here is the complete workflow for making a cartridge run on QEMU using the unifi
    python3 -m prg32 qemu build
    ```
 
-2. **Prepare a cartridge**: Build a `.prg32` cartridge for QEMU (or portable) from your game's source code. For detailed instructions, see [docs/cartridges.md](cartridges.md#qemu-workflow.
+2. **Prepare a cartridge**: Build a `.prg32` cartridge for QEMU (or portable) from your game's source code. For detailed instructions, see [docs/cartridges.md](cartridges.md#qemu-workflow).
 
 3. **Upload**: Stage the cartridge into the emulator flash image.
    ```bash

@@ -9,6 +9,35 @@ The same cartridge format is used on:
 - real ESP32-C6 hardware, uploaded over the PRG32 Wi-Fi HTTP API
 - QEMU, staged into the emulator flash image
 
+
+Now that PRG32 is running, you have multiple options to run your first cartridge:
+- Setup the [Cartridge Store](docs/usage/cartridge_store.md and download one of the availables cartridge
+- Download or create your own cartridge and upload it via `python -m prg32 esp32c6 upload`
+
+You have multiple options to run your first cartridge:
+- Setup the [Cartridge Store](docs/usage/cartridge_store.md and download one of the availables cartridge
+- Download or create your own cartridge; upload it via `python -m prg32 qemu upload` and run it via `python -m prg32 qemu run`. 
+
+<details>
+<summary><strong>Building and inspecting cartridges</strong></summary>
+
+The PRG32 repository comes with many example cartridge source codes. Here is an example of how to build the cartridge of the game "Asteroids" via the PRG32 tooling.
+
+```bash
+python3 -m prg32 cartridge build \
+  examples/games/asteroids/graphics/game.S \
+  --portable \
+  --entry-prefix asteroids_graphics \
+  --name asteroids \
+  --out build-qemu/asteroids.prg32
+
+python3 -m prg32 upload-qemu build-qemu/asteroids.prg32 --flash build-qemu/qemu_flash.bin
+```
+
+You can specify an architecture with the `--architeture [esp32c6,qemu]` option.
+</details>
+
+
 ## Mental Model
 
 ```text
@@ -86,7 +115,8 @@ Password: prg32game
 URL:      http://192.168.4.1
 ```
 
-Build a cartridge from an assembly or C example. This example uses the portable ABI table, so it does not need a firmware ELF:
+Build a cartridge from an assembly or C example. This example uses the portable ABI table, so it does not need a firmware ELF. The cartridge builder can also read the ELF file to find the PRG32 runtime ABI.
+
 
 ```bash
 python3 -m prg32 cartridge build \

@@ -168,3 +168,138 @@ for QEMU builds, or write the URL to NVS from firmware setup. Host-side
 | `401` from `prg32_game.py publish` | Missing or invalid API token | Add `--token` or set `store_token` in `~/.prg32/config.json` |
 | Published game is not visible | Upload is pending editor review | Ask an editor to verify the submission in Cartridge Store |
 | QEMU build shows `NOT FOUND` for mDNS | Expected: mDNS is unavailable in QEMU | Set `CONFIG_PRG32_STORE_URL` in `sdkconfig.defaults.qemu` |
+
+
+## 14. Create A Cartridge Store Publishing Package
+
+The current checked-in cartridge tool builds and uploads board/QEMU cartridges.
+For store publishing, create the metadata bundle explicitly. Cartridge Store
+accepts this zip at `POST /api/publish/bundle`; `POST /api/publish` is a
+compatibility alias for the same zip-bundle shape. Check the store
+administrator's token and editor-review policy.
+
+Create a bundle directory:
+
+```bash
+mkdir -p build/store/hello_world
+cp build-esp32c6/hello_world.prg32 \
+  build/store/hello_world/hello_world-esp32c6.prg32
+cp build-qemu/hello_world.prg32 \
+  build/store/hello_world/hello_world-qemu.prg32
+```
+
+Create `build/store/hello_world/manifest.json`:
+
+```json
+{
+  "abi": "prg32-metadata-1.0",
+  "id": "org.uniparthenope.hello-world",
+  "title": "Hello World",
+  "version": "1.0.0",
+  "summary": "Minimal PRG32 hello world cartridge.",
+  "authors": [
+    {
+      "name": "Your Name",
+      "affiliation": "Your Course Or Lab"
+    }
+  ],
+  "tags": ["example", "assembly", "hello-world"],
+  "architectures": [
+    {
+      "id": "esp32c6",
+      "file": "hello_world-esp32c6.prg32"
+    },
+    {
+      "id": "qemu",
+      "file": "hello_world-qemu.prg32"
+    }
+  ]
+}
+```
+
+Package it:
+
+```bash
+cd build/store/hello_world
+zip -r ../hello_world-1.0.0.zip manifest.json \
+  hello_world-esp32c6.prg32 \
+  hello_world-qemu.prg32
+cd ../../..
+```
+
+Checkpoint:
+
+```bash
+unzip -l build/store/hello_world-1.0.0.zip
+```
+
+## 15. Publish The Package
+
+Set the store URL and, if required, the publishing token:
+
+Linux/macOS:
+
+```bash
+export PRG32_STORE_URL=http://192.168.1.42:5080
+export PRG32_STORE_TOKEN=replace-with-classroom-token
+```
+
+Windows PowerShell:
+
+```powershell
+$env:PRG32_STORE_URL = "http://192.168.1.42:5080"
+$env:PRG32_STORE_TOKEN = "replace-with-classroom-token"
+```
+
+Publish with `curl`:
+
+```bash
+curl -X POST "$PRG32_STORE_URL/api/publish/bundle" \
+  -H "Authorization: Bearer $PRG32_STORE_TOKEN" \
+  -F "bundle=@build/store/hello_world-1.0.0.zip"
+```
+
+The compatibility alias accepts the same bundle:
+
+```bash
+curl -X POST "$PRG32_STORE_URL/api/publish" \
+  -H "Authorization: Bearer $PRG32_STORE_TOKEN" \
+  -F "bundle=@build/store/hello_world-1.0.0.zip"
+```
+
+If the store does not require authentication, omit the `Authorization` header.
+
+Verify the catalog:
+
+```bash
+curl "$PRG32_STORE_URL/api/games"
+curl "$PRG32_STORE_URL/api/games/org.uniparthenope.hello-world"
+```
+
+If the upload response says `status: pending`, an editor must verify the
+submission before these catalog requests show the new cartridge.
+
+Download the published physical artifact for a final smoke test:
+
+```bash
+curl "$PRG32_STORE_URL/api/games/org.uniparthenope.hello-world/download?architecture=esp32c6&version=1.0.0" \
+  --output build-esp32c6/hello_world_from_store.prg32
+
+python3 -m prg32 upload \
+  build-esp32c6/hello_world_from_store.prg32 \
+  --url http://192.168.4.1
+```
+
+## 16. Common Missing Tool Fixes
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `idf.py: command not found` | ESP-IDF shell not exported | Run `. $HOME/esp-idf/export.sh` or use ESP-IDF PowerShell |
+| `missing tool: riscv32-esp-elf-gcc` | ESP-IDF toolchain missing or not on `PATH` | Run `./install.sh esp32c3,esp32c6`, then export ESP-IDF |
+| `ninja: command not found` | Host build tool missing | Install Ninja with the platform package manager |
+| QEMU build cannot find virtual RGB component | Wrong target or defaults | Use `esp32c3` and `sdkconfig.defaults.qemu` |
+| Physical display is black | QEMU build flashed to board or wrong pins | Rebuild `build-esp32c6` with `sdkconfig.defaults`; check `main/prg32_config.h` |
+| Upload cannot reach board | Host is not on PRG32 Wi-Fi or wrong URL | Connect to `PRG32` AP and use `http://192.168.4.1` |
+| Store publish returns `401` | Missing or invalid token | Ask for the classroom token or omit auth only on open stores |
+| Store publish returns `400` | Bad manifest or zip layout | Check `manifest.json` and `unzip -l` output |
+

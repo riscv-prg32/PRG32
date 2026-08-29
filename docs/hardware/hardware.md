@@ -2,12 +2,12 @@
 
 This page summarizes the classroom reference wiring. See
 [`docs/pcb/README.md`](pcb/README.md) for the reference PCB design.
+This page summarizes the classroom reference wiring. See [`/hardware/README.md`](../../hardware/README.md) for the hardware directory map and board scaffolds.
 
 ## PCB Component Layout
 
 The Fritzing reference board is a 210 x 75 mm landscape PCB. Components are
-arranged to keep the game controls accessible on the front and the compute and
-audio hardware on the rear:
+arranged to keep the game controls accessible on the front and the compute and audio hardware on the rear:
 
 - Front, from left to right: digital joystick, landscape ILI9341 display, A
   button, and B button.
@@ -92,7 +92,6 @@ For a reproducible classroom build:
 ## Reference Display And Input Wiring
 
 These pins match `main/prg32_config.h` for the ESP32-C6 physical ILI9341 build.
-They are the same display wiring used by the Arduino/Adafruit validation sketch.
 
 | ESP32-C6 | ILI9341 TFT / control |
 |---|---|
@@ -110,7 +109,7 @@ They are the same display wiring used by the Arduino/Adafruit validation sketch.
 |---|---|
 | GPIO18 | P1 LEFT, switch to GND |
 | GPIO19 | P1 RIGHT, switch to GND |
-| GPIO3 | P1 UP, switch to GND |
+| GPIO3  | P1 UP, switch to GND |
 | GPIO13 | P1 DOWN, switch to GND |
 | GPIO20 | P1 START / SELECT, switch to GND |
 | GPIO21 | P1 A, switch to GND |
