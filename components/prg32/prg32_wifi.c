@@ -11,6 +11,7 @@
 #include "esp_netif.h"
 #include "esp_netif_ip_addr.h"
 #include "esp_heap_caps.h"
+#include "esp_idf_version.h"
 #include "esp_wifi.h"
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -104,19 +105,27 @@ static const char *auth_mode_name(wifi_auth_mode_t mode) {
         return "WPA2/WPA3";
     case WIFI_AUTH_WPA2_ENTERPRISE:
         return "WPA2-ENT";
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
     case WIFI_AUTH_WPA3_ENTERPRISE:
         return "WPA3-ENT";
     case WIFI_AUTH_WPA2_WPA3_ENTERPRISE:
         return "ENT";
+#endif
     default:
         return "SECURE";
     }
 }
 
 static bool auth_mode_is_enterprise(wifi_auth_mode_t mode) {
-    return mode == WIFI_AUTH_WPA2_ENTERPRISE ||
-           mode == WIFI_AUTH_WPA3_ENTERPRISE ||
+    if (mode == WIFI_AUTH_WPA2_ENTERPRISE) {
+        return true;
+    }
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+    return mode == WIFI_AUTH_WPA3_ENTERPRISE ||
            mode == WIFI_AUTH_WPA2_WPA3_ENTERPRISE;
+#else
+    return false;
+#endif
 }
 
 static const char *auth_mode_short_name(wifi_auth_mode_t mode) {
@@ -136,8 +145,10 @@ static const char *auth_mode_short_name(wifi_auth_mode_t mode) {
     case WIFI_AUTH_WPA2_WPA3_PSK:
         return "W2/W3";
     case WIFI_AUTH_WPA2_ENTERPRISE:
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
     case WIFI_AUTH_WPA3_ENTERPRISE:
     case WIFI_AUTH_WPA2_WPA3_ENTERPRISE:
+#endif
         return "ENT";
     default:
         return "SEC";

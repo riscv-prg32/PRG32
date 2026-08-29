@@ -25,7 +25,8 @@ WebSocket server; the reference hardware keeps local input to one joystick.
 
 ## Reference wiring
 
-For the definitive pin connections, including the display, joystick, and MAX98357A audio, please see [`/hardware.md`](../docs/hardware.md).
+For the definitive pin connections, including the display, joystick, and
+MAX98357A audio, see [`docs/hardware.md`](../hardware.md).
 
 Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for
@@ -48,6 +49,5 @@ Digirak joystick: <https://www.amazon.it/dp/B07HBPW3DF>.
 Wire each joystick direction as a normally-open switch to ground; PRG32 enables
 internal pull-ups.
 
-The `kicad` directory contains starter placeholders for a KiCad production
-board. The `case` directory contains a simple OpenSCAD enclosure starter. The
-`prg32_v2` directory contains the next hardware revision scaffold.
+The Fritzing reference design is available as `PRG32-PCB-0-1.fzz` in this
+directory.

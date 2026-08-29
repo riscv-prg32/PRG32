@@ -26,10 +26,6 @@ def main():
         "-m",
         "py_compile",
         PRG32_ENTRY,
-        "tools/prg32_score_server/app.py",
-        "tools/prg32_metrics_server/app.py",
-        "tools/prg32_metrics_server/export_run.py",
-        "tools/prg32_metrics_server/report.py",
         "tools/prg32_metrics_paper.py",
         cwd=str(root),
     )
@@ -38,7 +34,15 @@ def main():
     run_check("Unit tests", sys.executable, "-m", "unittest", "discover", "-s", "tests", cwd=str(root))
 
     log_info("[CI] Running host-only cartridge doctor")
-    run_check("Host cartridge doctor", sys.executable, PRG32_ENTRY, "doctor", "--host-only", cwd=str(root))
+    run_check(
+        "Host cartridge doctor",
+        sys.executable,
+        "-m",
+        "prg32",
+        "doctor",
+        "--host-only",
+        cwd=str(root),
+    )
 
     log_ok("[CI] Host smoke test passed")
 

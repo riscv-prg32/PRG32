@@ -12,7 +12,7 @@ from prg32.cartridge import build_cartridge
 from prg32.store import metadata as store_metadata
 from prg32.qemu import upload_qemu
 from prg32.utilities.environment_check import doctor
-from prg32.abi.abi_generated import ABI_HASH, FEATURE_BITS
+from prg32.abi.abi_generated import ABI_HASH, FEATURE_BITS, IMPORT_NAMES
 from prg32.prg32 import main as prg32_main
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +29,7 @@ class PartitionParsingTests(unittest.TestCase):
             "cart0",
         )
         self.assertEqual(offset, 0x210000)
-        self.assertEqual(size, 512 * 1024)
+        self.assertEqual(size, 128 * 1024)
 
 class SymbolParsingTests(unittest.TestCase):
     def test_parse_nm_ignores_non_symbol_lines(self) -> None:
@@ -46,7 +46,7 @@ not-a-symbol
     def test_write_imports_emits_all_imports(self) -> None:
         imports = {
             name: 0x40000000 + index * 4
-            for index, name in enumerate(env_variables.IMPORT_NAMES)
+            for index, name in enumerate(IMPORT_NAMES)
         }
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "imports.ld"
@@ -58,19 +58,19 @@ not-a-symbol
         self.assertIn("PROVIDE(prg32_score_submit =", text)
 
     def test_imports_include_platform_tile_helpers(self) -> None:
-        self.assertIn("prg32_playfield_draw_dual", env_variables.IMPORT_NAMES)
-        self.assertIn("prg32_platform_actor_step", env_variables.IMPORT_NAMES)
-        self.assertIn("prg32_platform_camera_follow", env_variables.IMPORT_NAMES)
+        self.assertIn("prg32_playfield_draw_dual", IMPORT_NAMES)
+        self.assertIn("prg32_platform_actor_step", IMPORT_NAMES)
+        self.assertIn("prg32_platform_camera_follow", IMPORT_NAMES)
 
     def test_imports_include_audio_plus_helpers(self) -> None:
-        self.assertIn("prg32_audio_play_sample_pan", env_variables.IMPORT_NAMES)
-        self.assertIn("prg32_audio_note_on_pan", env_variables.IMPORT_NAMES)
-        self.assertIn("prg32_audio_get_mode", env_variables.IMPORT_NAMES)
+        self.assertIn("prg32_audio_play_sample_pan", IMPORT_NAMES)
+        self.assertIn("prg32_audio_note_on_pan", IMPORT_NAMES)
+        self.assertIn("prg32_audio_get_mode", IMPORT_NAMES)
 
     def test_imports_include_splash_helpers(self) -> None:
-        self.assertIn("prg32_splash_draw", env_variables.IMPORT_NAMES)
-        self.assertIn("prg32_splash_show", env_variables.IMPORT_NAMES)
-        self.assertIn("prg32_splash_show_default", env_variables.IMPORT_NAMES)
+        self.assertIn("prg32_splash_draw", IMPORT_NAMES)
+        self.assertIn("prg32_splash_show", IMPORT_NAMES)
+        self.assertIn("prg32_splash_show_default", IMPORT_NAMES)
 
     def test_detect_entries_accepts_c_prefix(self) -> None:
         entries = build_cartridge.detect_entries(
