@@ -57,4 +57,4 @@ idf.py -B build -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
 
 If ESP-IDF is not available, use the first two checks and clearly state that the firmware or QEMU build could not be run locally.
 
-
+Remember that python tooling `python -m prg32` is always available in /prg32/ and has lots of useful commands.
