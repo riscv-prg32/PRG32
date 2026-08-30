@@ -70,7 +70,8 @@ QEMU uses the same `.prg32` game packages as the physical board.
 
 QEMU disables physical GPIO buttons and the buzzer, enabling a small UART-console keyboard mapper for player 1 input instead. 
 
-> **Note:** Because input is read from the UART console, you must ensure your **terminal window** running QEMU is the active window to use the keyboard, *not* the graphical QEMU screen itself.
+> [!IMPORTANT]
+> Because input is read from the UART console, you must ensure your **terminal window** running QEMU is the active window to use the keyboard, *not* the graphical QEMU screen itself.
 
 | PRG32 Input | QEMU Key(s) |
 | --- | --- |

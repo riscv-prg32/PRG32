@@ -145,7 +145,8 @@ Discovery order:
 
 The store advertises `_prg32store._tcp` on port `5080`.
 
-> **Note**: mDNS is not available in QEMU.
+> [!NOTE]
+> mDNS is not available in QEMU.
 
 #### Manual IP Entry
 1. Enter setup mode.
@@ -255,7 +256,8 @@ python3 -m prg32 inspect-metadata dist/asteroids-esp32c6.prg32
 
 See [cartridge_metadata.md](cartridge_store.md) for the binary trailer and metadata ABI, [colophon_abi.md](/docs/software/colophon_abi.md) for the colophon ABI, and [cartridge_store.md](cartridge_store.md) for the setup-mode integration contract.
 
-*(Note: The external [DeviceDemo repository](https://github.com/riscv-prg32/DeviceDemo) contains its own cartridge metadata, colophon, Store bundle manifest, and build/publish instructions for the `esp32c6` and `qemu` variants.)*
+> [!NOTE]
+> The external [DeviceDemo repository](https://github.com/riscv-prg32/DeviceDemo) contains its own cartridge metadata, colophon, Store bundle manifest, and build/publish instructions for the `esp32c6` and `qemu` variants.
 
 ### Building Portable Examples
 Build every checked-in game and feature example as a portable cartridge and prepare flat CartridgeStore bundles:

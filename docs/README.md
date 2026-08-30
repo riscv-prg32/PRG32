@@ -2,7 +2,7 @@
 
 Welcome to the documentation for PRG32! To make it easier to find what you need, the documentation is divided into the following categories:
 
-> [!IMPORTANT]
+> [!TIP]
 > **New to PRG32?** 
 > Start by reading the [Getting Started With PRG32](usage/getting_started.md) guide! It is the fundamental introduction to building your first game.
 

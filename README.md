@@ -163,6 +163,7 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep
 using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 </details>
 
+> [!TIP]
 > After installing PRG32, read [Getting Started With PRG32](docs/usage/getting_started.md) to learn how to run your first cartridge.
 
 ## Documentation Index

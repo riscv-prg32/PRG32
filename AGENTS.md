@@ -15,7 +15,8 @@ You should also read [README.md](/README.md) and [CONTRIBUTING.md](/CONTRIBUTING
 
 ## Detailed Guidelines
 
-> **IMPORTANT**: Agents should ALWAYS read the files relevant to the task in `/docs/agents/` before modifying code or answering questions related to these topics. Explore the folder and read all possibly relevant files.
+> [!IMPORTANT]
+> Agents should ALWAYS read the files relevant to the task in `/docs/agents/` before modifying code or answering questions related to these topics. Explore the folder and read all possibly relevant files.
 
 ## Academic Project Context
 

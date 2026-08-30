@@ -26,7 +26,8 @@ If you have not installed PRG32 yet, follow the Install & Setup guide in the [RE
 ## 3. Build
 If you are using the **ESP-IDF + Tooling** environment, the `python -m prg32` package is available to execute commands. 
 
-> **Important**: Remember to always source the file `export.sh` in the ESP-IDF directory you previously created before using PRG32 in a new shell. 
+> [!IMPORTANT]
+> Remember to always source the file `export.sh` in the ESP-IDF directory you previously created before using PRG32 in a new shell. 
  
 It is recommended for users to create an alias for sourcing ESP-IDF and using the PRG32 tools:
 ```bash
@@ -49,7 +50,8 @@ You can run the QEMU emulator to make sure everything is working correctly:
 python -m prg32 qemu run
 ```
 
-> **Important**: To interact with the QEMU emulator, your active window must be **the terminal that launched QEMU**, not the QEMU virtual screen.
+> [!IMPORTANT]
+> To interact with the QEMU emulator, your active window must be **the terminal that launched QEMU**, not the QEMU virtual screen.
 
 
 ## 4. Navigate the Startup Menu
