@@ -264,13 +264,13 @@ The default app automatically calls the current cartridge every frame when one
 is loaded. Store-ready cartridges may include a metadata trailer after the
 legacy executable payload. The game colophon is shown after the cartridge is
 activated, before the player starts a new play. See
-[cartridge_metadata.md](cartridge_metadata.md,
-[colophon_abi.md](colophon_abi.md, and
-[setup_mode_cartridge_store.md](../usage/setup_mode_cartridge_store.md.
+[cartridge_metadata.md](/docs/cartridge_store/cartridge_store.md),
+[colophon_abi.md](colophon_abi.md), and
+[setup_mode_cartridge_store.md](/docs/cartridge_store/cartridge_store.md).
 
 ## Wi-Fi Modes and Setup
 
-For a full guide on connecting the board to a network, see the [Network Setup and Wi-Fi Modes](network.md) documentation. 
+For a full guide on connecting the board to a network, see the [Network Setup and Wi-Fi Modes](/docs/usage/network.md) documentation. 
 
 PRG32 supports three Wi-Fi runtime modes (`PRG32_WIFI_MODE_STA`, `PRG32_WIFI_MODE_AP`, `PRG32_WIFI_MODE_APSTA`).
 

@@ -354,11 +354,11 @@ Expected behavior:
 
 - returns the most recent in-RAM setup performance test;
 - rebooting the board or QEMU clears the stored result;
-- read [Metrics API](metrics_api.md) for the full JSON field reference.
+- read [Metrics API](/docs/measurement/metrics_api.md) for the full JSON field reference.
 
 ## Score API
 
-Please refer to the [Score API](score_api.md) for full documentation on local and ScoreServer leaderboards.
+Please refer to the [Score API](/docs/cartridge_store/score_api.md) for full documentation on local and ScoreServer leaderboards.
 
 ## CartridgeStore Discovery API
 
@@ -639,7 +639,7 @@ upload shape. The Cartridge Store no longer accepts the old loose multipart
 
 ## MetricsServer API
 
-Please refer to [Metrics API](metrics_api.md) for the full MetricsServer and performance API documentation.
+Please refer to [Metrics API](/docs/measurement/metrics_api.md) for the full MetricsServer and performance API documentation.
 
 ## End-To-End Workflows
 
@@ -698,6 +698,6 @@ python3 -m prg32 upload build-esp32c6/tetris-c.prg32 \
 - `docs/cartridges.md`: cartridge upload workflow.
 - `docs/cartridge_store.md`: CartridgeStore user workflow.
 - `docs/setup_mode_cartridge_store.md`: firmware setup-mode integration notes.
-- `/docs/cartridge_store/score_api.md`: focused score API guide.
-- `//docs/measurement/metrics_api.md`: performance and metrics field reference.
+- `/docs/cartridge_store/../cartridge_store/score_api.md`: focused score API guide.
+- `//docs/measurement/../measurement/metrics_api.md`: performance and metrics field reference.
 - `docs/cartridge_metadata.md`: metadata and colophon formats.

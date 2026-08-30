@@ -24,7 +24,7 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
     - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports the `--skip-target` option.
 - `erase-flash`: erase flash of ESP32C6. It is sometimes useful to completely erase the flash for debugging purposes.
     - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
-- `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](../software/memory.md)
+- `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
 ### Upload & Run Cartridges
 - `upload`: upload a cartridge to the ESP32C6 SoC over HTTP,
 - `run`: instruct the ESP32C6 over HTTP to run a previously loaded cartridge on a selected slot. Does not work when a cartridge is running (?).
@@ -48,7 +48,7 @@ For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qe
 - `build`: build a `.prg32` cartridge from assembly or C source code.
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 
-For detailed instructions and examples on building cartridges, see [docs/cartridges.md](../usage/cartridges.md).
+For detailed instructions and examples on building cartridges, see [docs/cartridges.md](/docs/software/cartridges.md).
 
 ## ABI Tooling Tasks (`abi`)
 The `abi` command manages the `prg32_abi.json` definition and the generated code stubs (`prg32_abi_index.h`, `prg32_abi_hash.h`, etc.).

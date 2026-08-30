@@ -163,33 +163,33 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep
 using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 </details>
 
-> After installing PRG32, read [Getting Started With PRG32](/docs/users/usage/getting_started.md) to learn how to run your first cartridge.
+> After installing PRG32, read [Getting Started With PRG32](docs/usage/getting_started.md) to learn how to run your first cartridge.
 
 ## Documentation Index
 
 **Guides & Workflows:**
-- [Getting Started With PRG32](getting_started.md): End-to-end setup and manual.
-- [Deployment Guide](docs/usage/deployment.md: Build, flash, monitor, setup mode, and QEMU.
-- [QEMU Virtual Screen](docs/usage/qemu.md: Desktop testing and troubleshooting.
-- [Cartridges](docs/usage/cartridges.md: The `.prg32` build/upload workflow.
-- [Hardware & Pinouts](docs/hardware/hardware.md: Board, display, and input architecture.
+- [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
+- [Deployment Guide](docs/usage/publishing_and_flashing_firmware.md): Build, flash, monitor, setup mode, and QEMU.
+- [QEMU Virtual Screen](docs/usage/qemu.md): Desktop testing and troubleshooting.
+- [Cartridges](docs/software/cartridges.md): The `.prg32` build/upload workflow.
+- [Hardware & Pinouts](docs/hardware/hardware.md): Board, display, and input architecture.
 
 **Learning Materials:**
-- [Teaching with PRG32](docs/learn/teaching_with_prg32.md: Instructor notes and classroom setup.
-- [Assembly Tutorial](docs/learn/tutorial.md | [C Tutorial](docs/learn/tutorial_c_game.md
-- [Labs Overview](docs/labs/README.md)
-- [Example Games](docs/learn/examples.md
+- [Teaching with PRG32](docs/learn/teaching_with_prg32.md): Instructor notes and classroom setup.
+- [Assembly Tutorial](docs/learn/tutorial.md) | [C Tutorial](docs/learn/tutorial_c_game.md)
+- [Labs Overview](docs/learn/labs/README.md)
+- [Example Games](docs/learn/examples.md)
 
 **APIs & Advanced Features:**
-- [Framework C/Assembly ABI](docs/software/framework_manual.md
-- [HTTP APIs (Score, Metrics, Multiplayer)](docs/software/api.md
-- [Audio Guide](docs/tools/audio.md
-- [Assets Tools](docs/tools/assets.md
+- [Framework C/Assembly ABI](docs/software/framework_manual.md)
+- [HTTP APIs (Score, Metrics, Multiplayer)](docs/software/api.md)
+- [Audio Guide](docs/tools/audio.md)
+- [Assets Tools](docs/tools/assets.md)
 
 **Additional References:**
-- [Repository Structure](docs/repository_structure.md
-- [Troubleshooting](docs/usage/troubleshooting.md
-- [Legacy Firmware Guide](docs/publishing_and_flashing_legacy_firmware.md)
+- [Repository Structure](docs/repository_structure.md)
+- [Troubleshooting](docs/usage/troubleshooting.md)
+- [Legacy Firmware Guide](docs/usage/publishing_and_flashing_firmware.md)
 
 ## Contributors
 

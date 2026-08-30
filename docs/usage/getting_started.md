@@ -34,7 +34,7 @@ alias get_idf=". $HOME/esp-idf/export.sh"
 alias prg="python -m prg32"
 ```
 ### Running PRG32 on the ESP32C6
-If you have the physical PRG32 hardware, after [configuring the hardware setup](docs/hardware/hardware.md) you can build the project for the ESP32C6 and flash it to the SoC:
+If you have the physical PRG32 hardware, after [configuring the hardware setup](/docs/hardware/hardware.md) you can build the project for the ESP32C6 and flash it to the SoC:
 ```bash
 python -m prg32 esp32c6 build-and-flash
 ```
@@ -191,7 +191,7 @@ For any errors, before opening a Github Issue, please consult [Troubleshooting](
 
 ## 6. What To Read Next
 
-- For uploading your cartridge to the Cartridge Store, read the [Cartridge Store documentation file](/docs/usage/cartridge_store).
+- For uploading your cartridge to the Cartridge Store, read the [Cartridge Store documentation file](/docs/cartridge_store/cartridge_store.md).
 - For a complete setup verification, read the [Setup Verification documentation file](setup_verification.md).
 
 - `docs/cartridges.md`: deeper cartridge workflow and slot behavior.

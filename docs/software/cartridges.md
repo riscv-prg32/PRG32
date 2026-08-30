@@ -43,7 +43,7 @@ After reset, one stored cartridge starts automatically. When multiple slots cont
 ## Building and Uploading
 
 When you have a running PRG32 configuration, you have multiple options to run your first cartridge:
-- Setup the [Cartridge Store](../usage/cartridge_store.md) and download one of the available cartridges.
+- Setup the [Cartridge Store](/docs/cartridge_store/cartridge_store.md) and download one of the available cartridges.
 - Download or create your own cartridge and upload it via the host tooling.
 
 The PRG32 repository comes with many example cartridge source codes. Here is an example of how to build and upload the cartridge of the game "Asteroids".
@@ -381,7 +381,7 @@ On ESP32-C6, multiplayer uses Wi-Fi station mode and the standalone Node.js [Mul
 This is intentionally a classroom loader, not a general dynamic linker.
 
 - Cartridge package size is 128 KiB.
-- For details on executable Cartridge RAM limits and expanding the cartridge limits using profiles, see the [PRG32 Profiles](profiles.md) documentation.
+- For details on executable Cartridge RAM limits and expanding the cartridge limits using profiles, see the [PRG32 Profiles](/docs/usage/profiles.md) documentation.
 
 ## Development Guide
 

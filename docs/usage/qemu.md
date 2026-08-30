@@ -55,7 +55,7 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```bash
    python3 -m prg32 qemu build
    ```
-2. **Prepare a Cartridge**: Build a `.prg32` cartridge for QEMU. See [cartridges.md](cartridges.md) for details.
+2. **Prepare a Cartridge**: Build a `.prg32` cartridge for QEMU. See [../software/cartridges.md](/docs/software/cartridges.md) for details.
 3. **Upload the Cartridge**: Stage it into the emulator's flash image.
    ```bash
    python3 -m prg32 qemu upload build-qemu/asteroids.prg32

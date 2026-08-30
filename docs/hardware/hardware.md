@@ -1,6 +1,6 @@
 # PRG32 Hardware
 
-This page summarizes the classroom reference wiring. See [`../pcb/README.md`](../pcb/README.md) for the reference PCB design.
+This page summarizes the classroom reference wiring. See [`../pcb/README.md`](/docs/pcb/README.md) for the reference PCB design.
 
 ## PCB Component Layout
 
@@ -22,11 +22,11 @@ The following figures are exported from the schematic and breadboard views of
 `docs/pcb/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
 the canonical GPIO assignments listed below.
 
-![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](../images/prg32-electrical-schematic.svg
+![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](images/prg32-electrical-schematic.svg)
 
 *Electrical schematic for the current firmware configuration.*
 
-![PRG32 breadboard prototype with the ESP32-C6 centered across the breadboard, display above it, joystick and buttons at the front, and stereo audio components at the sides](../images/prg32-breadboard-prototype.svg
+![PRG32 breadboard prototype with the ESP32-C6 centered across the breadboard, display above it, joystick and buttons at the front, and stereo audio components at the sides](images/prg32-breadboard-prototype.svg)
 
 *Breadboard prototype using the same connections as the electrical schematic.*
 

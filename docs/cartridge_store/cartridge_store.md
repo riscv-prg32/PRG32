@@ -253,7 +253,7 @@ Inspect the trailer:
 python3 -m prg32 inspect-metadata dist/asteroids-esp32c6.prg32
 ```
 
-See [cartridge_metadata.md](../software/cartridge_metadata.md) for the binary trailer and metadata ABI, [colophon_abi.md](colophon_abi.md) for the colophon ABI, and [setup_mode_cartridge_store.md](setup_mode_cartridge_store.md) for the setup-mode integration contract.
+See [cartridge_metadata.md](cartridge_store.md) for the binary trailer and metadata ABI, [colophon_abi.md](/docs/software/colophon_abi.md) for the colophon ABI, and [cartridge_store.md](cartridge_store.md) for the setup-mode integration contract.
 
 *(Note: The external [DeviceDemo repository](https://github.com/riscv-prg32/DeviceDemo) contains its own cartridge metadata, colophon, Store bundle manifest, and build/publish instructions for the `esp32c6` and `qemu` variants.)*
 
