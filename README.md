@@ -166,11 +166,14 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 > [!TIP]
 > After installing PRG32, read [Getting Started With PRG32](docs/usage/getting_started.md) to learn how to run your first cartridge.
 
+> [!IMPORTANT]
+> For assistance with setup or execution issues, please refer to the [troubleshooting guide](docs/usage/troubleshooting.md).
+
+
 ## Documentation Index
 
 **Guides & Workflows:**
 - [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
-- [Deployment Guide](docs/usage/publishing_and_flashing_firmware.md): Build, flash, monitor, setup mode, and QEMU.
 - [QEMU Virtual Screen](docs/usage/qemu.md): Desktop testing and troubleshooting.
 - [Cartridges](docs/software/cartridges.md): The `.prg32` build/upload workflow.
 - [Hardware & Pinouts](docs/hardware/hardware.md): Board, display, and input architecture.
@@ -189,8 +192,7 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 
 **Additional References:**
 - [Repository Structure](docs/repository_structure.md)
-- [Troubleshooting](docs/usage/troubleshooting.md)
-- [Legacy Firmware Guide](docs/usage/publishing_and_flashing_firmware.md)
+- [Publishing Firmware](docs/usage/publishing_and_flashing_firmware.md)
 
 ## Contributors
 
