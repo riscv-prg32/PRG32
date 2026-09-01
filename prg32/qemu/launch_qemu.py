@@ -42,14 +42,24 @@ def launch_qemu(args: argparse.Namespace):
     audio_proc = None
     qemu_proc = None
     
+    # Put terminal in cbreak mode so QEMU receives single characters instantly
+    try:
+        import termios
+        import tty
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        tty.setcbreak(fd)
+    except Exception:
+        old_settings = None
+
     try:
         # Start the Python audio player in the background FIRST.
         # -u forces unbuffered output so the console logs appear instantly.
         audio_proc = subprocess.Popen([sys.executable, "-u", str(audio_player_path)])
-        
+
         # Start QEMU in the foreground (it inherits stdin/stdout automatically)
         qemu_proc = subprocess.Popen(cmd)
-        
+
         # Block until QEMU exits, but monitor the audio player so we don't hang 
         # forever if the player fails to start (e.g. PyAudio missing).
         import time
@@ -59,7 +69,7 @@ def launch_qemu(args: argparse.Namespace):
                 qemu_proc.terminate()
                 break
             time.sleep(0.1)
-        
+
     except KeyboardInterrupt:
         if qemu_proc:
             qemu_proc.terminate()
@@ -68,3 +78,9 @@ def launch_qemu(args: argparse.Namespace):
         if audio_proc:
             audio_proc.terminate()
             audio_proc.wait()
+
+        if old_settings is not None:
+            try:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            except Exception:
+                pass
