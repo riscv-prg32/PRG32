@@ -66,6 +66,15 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```
    *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
+## QEMU Audio (UART Redirection)
+
+Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a custom **Credit-Based Flow Control** protocol to redirect the 22050Hz PCM audio stream over the virtual UART port (`tcp::4321`) to the host machine.
+
+### Architecture Details
+
+- **Background Player**: `launch_qemu.py` automatically spawns `tools/qemu_audio_player.py` in the background to interface with PyAudio on the host. It includes a process polling loop to gracefully terminate QEMU if the audio player fails to start.
+- **Real-Time Pacing (Credit-Based Flow Control)**: QEMU instantly fast-forwards virtual time when the CPU is idle. To prevent audio from generating faster than the host can play it, the firmware's `audio_task` blocks on `uart_read_bytes` after sending each 20ms audio chunk. The Python script plays the audio natively (taking exactly 20ms) and sends a 1-byte `ACK` token back. This turns the host's physical audio hardware clock into the pacing mechanism for the entire QEMU virtual machine, guaranteeing flawless 1.0x real-time synchronization.
+- **Network Optimizations**: Sending 1-byte ACKs and 882-byte audio chunks frequently triggers Nagle's Algorithm on modern OS network stacks, causing artificial 200ms batching delays. The `nodelay` flag is applied to QEMU's `-serial` arguments and `socket.TCP_NODELAY` is used in the Python listener to ensure instant transmission and zero network-induced stutter.
 ## Input and Controls
 
 QEMU disables physical GPIO buttons and the buzzer, enabling a small UART-console keyboard mapper for player 1 input instead. 

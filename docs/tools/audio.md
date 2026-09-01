@@ -123,7 +123,8 @@ that shuts the amplifier down. Powering the board from 3.3 V is valid, though
 The firmware cannot electrically detect whether a MAX98357A is plugged in. The
 setup menu reports mono I2S when the firmware is built for physical ESP32-C6,
 audio is enabled, and the I2S driver starts on the configured pins. QEMU display
-builds intentionally disable I2S output.
+builds disable physical I2S output, but seamlessly redirect the audio PCM stream
+over the UART port to the host machine for playback.
 
 Stereo wiring shares the same I2S signals across two boards (Left and Right). See [`hardware.md`](/docs/hardware/hardware.md) for the full diagram.
 

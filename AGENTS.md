@@ -1,61 +1,48 @@
-# AGENTS.md
+Markdown
 
-Guidance for coding agents working in this repository.
+# PRG32 Agent Instructions
 
-PRG32 is an educational ESP32-C6 / RISC-V assembly gaming platform. The project is deliberately simple, readable, and classroom-oriented. Preserve that spirit: prefer explicit code, clear names, and teachable examples over clever compact abstractions.
+**CONTEXT:** PRG32 is an educational ESP32-C6 / RISC-V assembly gaming platform. The project is deliberately simple, readable, and classroom-oriented. 
+**PRIME DIRECTIVE:** Prioritize reproducibility, explicit code, clear names, and teachable examples over clever, compact abstractions. Treat this as an academic-style software artifact. 
+**HOW YOU OPERATE**: Before doing any task, you must gain a complete understanding of the architecture of the project and how what you are going to modify is implemented. This is because working in embedded is a thorough task and must be done perfectly. 
 
-AGENT.md applies to the whole repository. Everytime you need information, look in the docs. Grab more specific information from the README.md files that exist deeper in the tree. When you encounter a redirect relevant to your task, you should always follow it and read further.
+**MISSION CRITICAL: YOU MUST RUN THESE PHASES COMPLETELY, OTHERWISE THE OUTPUT WILL BE REJECTED**
 
-Everytime you modify code, you should also update the relevant documentation files, or you should create new documentation files for new features.
-When you update or write documentation files, you should always avoid creating duplicate information. You should instead redirect to the more relevant file.
+## [PHASE 1: MANDATORY RESEARCH]
+Before writing or modifying any code, you MUST complete these steps:
 
-Documentation: `/docs`. **Always explore the complete hierarchy in the folder, read the files relevant to your task, and UPDATE THEM AFTER EDITS!**
+1. **Read the Structure:** Read `docs/repository_structure.md` to understand where files belong.
+2. **Read Agent Docs:** You MUST search `/docs/agents/` for files related to your current task and read them. Read all files with `cat docs/agents/*.md`
+3. **Map the Docs:** Run `ls -R docs/` to view the available documentation hierarchy.
+4. **Read the Docs**: Based on your prompt, read AT LEAST 5 OTHER files with `cat` from `docs`.
+5. **Follow Redirects:** If a file tells you to look elsewhere, you MUST follow the redirect and read the target file.
+*Do not guess architectural patterns. Read the docs first.*
 
-You should also read [README.md](/README.md) and [CONTRIBUTING.md](/CONTRIBUTING.md).
+## [PHASE 2: EXECUTION & DOCUMENTATION]
+When modifying code, you are bound by these rules:
 
-## Detailed Guidelines
+- **No Ghost Edits:** Do not revert or modify files unrelated to the user's explicit prompt. Treat untracked files as user-owned.
+- **Documentation Parity:** Every code change MUST be accompanied by an update to the relevant `/docs` file or a new markdown file. 
+- **DRY Docs:** Do not duplicate information. If a concept exists, link to the existing file rather than rewriting it.
+- **Contributors:** Read `CONTRIBUTORS.md` for metadata formatting when updating docs.
 
-> [!IMPORTANT]
-> Agents should ALWAYS read the files relevant to the task in `/docs/agents/` before modifying code or answering questions related to these topics. Explore the folder and read all possibly relevant files.
+## [PHASE 3: VALIDATION]
+Before reporting task completion, you MUST run the following checks. 
 
-## Academic Project Context
+**Pre-requisite:** Source the ESP-IDF environment. Run `source $HOME/esp-idf/export.sh`. If it is not found, STOP and ask the user for the ESP-IDF path.
 
-Treat this repository as an academic-style software artifact:
-
-- prioritize reproducibility over convenience
-- keep implementation choices explainable in lab/classroom settings
-- keep documentation aligned with coursework and assessment usage
-- prefer transparent behavior over hidden automation
-
-## Contributors
-
-Please refer to [`CONTRIBUTORS.md`](CONTRIBUTORS.md) for the contributor metadata used across project docs.
-
-## Repository Layout
-
-Please refer to [`docs/repository_structure.md`](docs/repository_structure.md) for the complete repository layout.
-
-## Git and Workspace Rules
-
-- The user may have local changes. Do not revert files you did not change unless explicitly asked.
-- Treat untracked files as user-owned unless you created them during the current task.
-- Do not commit or push unless the user asks.
-- When committing, use a short, specific message.
-- Before committing or finalizing, run at least `git diff --check`.
-- If a push is rejected because remote moved, pull/rebase and resolve conflicts without force-pushing unless the user explicitly requests a force push.
-
-## Validation Checklist
-
-Before reporting completion, try the relevant subset. YOU SHOULD ALWAYS SOURCE esp-idf/export.sh before doing this; usually it is found in $HOME/esp-idf/export.sh if you do not find it there, ask the user for the location.
-
+Run these exact commands to validate your work:
 ```bash
+# 1. Check for syntax/whitespace errors
 git diff --check
+
+# 2. Run Python linting/tooling
 python3 -m prg32 doctor
 python3 -m py_compile python3 -m prg32
-python3 -m py_compile 
-idf.py -B build -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
+
+# 3. If you are working on ESP32c6, Build the physical firmware:
+python3 -m prg32 esp32c6 build
+
+# 3. Otherwise if you are working on QEMU, Build the QEMU firmware:
+python3 -m prg32 qemu build
 ```
-
-If ESP-IDF is not available, use the first two checks and clearly state that the firmware or QEMU build could not be run locally.
-
-Remember that python tooling `python -m prg32` is always available in /prg32/ and has lots of useful commands.

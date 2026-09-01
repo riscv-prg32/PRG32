@@ -180,6 +180,7 @@ void app_main(void) {
 #endif
 
   prg32_init();
+
   if (!prg32_cart_is_loaded()) {
     prg32_console_clear();
     prg32_console_write("PRG32 READY: use setup to upload a cartridge\n");
