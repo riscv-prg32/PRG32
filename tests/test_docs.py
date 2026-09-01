@@ -18,8 +18,8 @@ class DocumentationHygieneTests(unittest.TestCase):
     def test_no_legacy_urg32_names_in_main_docs(self) -> None:
         checked = [
             ROOT / "README.md",
-            ROOT / "docs" / "tutorial.md",
-            ROOT / "docs" / "framework_manual.md",
+            ROOT / "docs" / "learn" / "tutorial.md",
+            ROOT / "docs" / "software" / "framework_manual.md",
         ]
         for path in checked:
             with self.subTest(path=path):
