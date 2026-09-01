@@ -12,8 +12,8 @@ from prg32.cartridge.build_cartridge import build_cartridge_cli
 
 from prg32.esp32c6.build_esp32c6 import build_esp32c6, flash_esp32c6, build_and_flash_esp32c6, reset_esp32c6, erase_flash_esp32c6
 from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6, upload_and_run_esp32c6
-from prg32.esp32c6.prepare_legacy import prepare_legacy_esp32c6
-from prg32.esp32c6.flash_legacy import flash_legacy_esp32c6
+from prg32.esp32c6.prepare_firmware import prepare_firmware_esp32c6
+from prg32.esp32c6.flash_firmware import flash_firmware_esp32c6
 from prg32.esp32c6.memory_esp32c6 import memory_esp32c6
 from prg32.esp32c6.screenshot_esp32c6 import screenshot_esp32c6
 from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
@@ -93,18 +93,18 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out", default="screenshot.bmp", help="Path to save the screenshot")
     p.set_defaults(func=screenshot_esp32c6)
 
-    p = esp32c6_sub.add_parser("prepare-legacy", help="prepare a single-file legacy PRG32 firmware image for publishing", usage="%(prog)s [options]")
+    p = esp32c6_sub.add_parser("prepare-firmware", help="prepare a single-file legacy PRG32 firmware image for publishing", usage="%(prog)s [options]")
     p.add_argument("--build-dir", default="build-esp32c6", help="Path to the build directory")
     p.add_argument("--out-dir", default="publish/legacy-firmware", help="Path to the output directory")
     p.add_argument("--name", default="PRG32-legacy-esp32c6", help="Name of the output binary")
     p.add_argument("--skip-build", action="store_true", help="Skip the ESP-IDF build step")
-    p.set_defaults(func=prepare_legacy_esp32c6)
+    p.set_defaults(func=prepare_firmware_esp32c6)
 
-    p = esp32c6_sub.add_parser("flash-legacy", help="flash a published single-file legacy PRG32 firmware image", usage="%(prog)s MANIFEST --port PORT [options]")
-    p.add_argument("manifest", help="JSON produced by prepare-legacy")
+    p = esp32c6_sub.add_parser("flash-firmware", help="flash a published single-file legacy PRG32 firmware image", usage="%(prog)s MANIFEST --port PORT [options]")
+    p.add_argument("manifest", help="JSON produced by prepare-firmware")
     p.add_argument("--port", required=True, help="Serial port to flash to")
     p.add_argument("--baud", default="460800", help="Baud rate for flashing")
-    p.set_defaults(func=flash_legacy_esp32c6)
+    p.set_defaults(func=flash_firmware_esp32c6)
 
     p = esp32c6_sub.add_parser("memory", help="get static and dynamic memory analysis of the ESP32C6 SoC", usage="%(prog)s [options]")
     p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")

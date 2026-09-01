@@ -1,0 +1,80 @@
+# Publishing And Flashing Legacy Firmware
+
+This workflow publishes the resident ESP32-C6 firmware as one merged binary.
+It is useful for a classroom or release archive where students should flash one file instead of tracking the bootloader, partition table, and app offsets.
+
+## Prepare The Single File
+
+Build and merge the physical firmware:
+
+```bash
+python3 -m prg32 esp32c6 prepare-firmware
+```
+
+The script runs the ESP-IDF build for `build-esp32c6`, reads
+`build-esp32c6/flasher_args.json`, and writes:
+
+```text
+publish/legacy-firmware/
+|-- PRG32-legacy-esp32c6.bin
+|-- PRG32-legacy-esp32c6.json
+`-- flasher_args.json
+```
+
+Use `--skip-build` only when `build-esp32c6/flasher_args.json` already belongs
+to the exact firmware you want to publish:
+
+```bash
+python3 -m prg32 esp32c6 prepare-firmware --skip-build
+```
+
+Checkpoint: keep the `.bin` and `.json` together. The JSON records the target,
+flash settings, source files, and the `0x0` write offset used by the flasher.
+
+## Flash The Published File
+
+Connect the ESP32-C6 board and flash the published image:
+
+```bash
+python3 -m prg32 esp32c6 flash-firmware \
+  publish/legacy-firmware/PRG32-legacy-esp32c6.json \
+  --port /dev/cu.usbmodem5ABA0099241
+```
+
+If you are unsure which port your ESP32-C6 is connected to, you can list the available serial ports depending on your operating system:
+
+**macOS:**
+```bash
+ls -1 /dev/cu.*
+```
+Look for a device starting with `/dev/cu.usbmodem` or `/dev/cu.usbserial`.
+
+**Linux:**
+```bash
+ls -1 /dev/ttyACM* /dev/ttyUSB*
+```
+Look for a device like `/dev/ttyACM0` or `/dev/ttyUSB0`.
+
+**Windows:**
+Open PowerShell and run:
+```powershell
+[System.IO.Ports.SerialPort]::GetPortNames()
+```
+Or use the Device Manager to find the `COM` port assigned to your USB device.
+
+After flashing, reset the board and hold A+B during boot to enter setup mode.
+
+## Notes
+
+This is a resident firmware workflow, not a cartridge workflow. Portable `.prg32` cartridges remain the preferred game distribution format instead of distributing flashed firmware.
+
+## Development Guide
+
+> [!IMPORTANT]
+> This information is only intended for developers of the PRG32 framework.
+
+### Setup Mode Details
+
+- Setup mode is entered by holding A+B at boot, by holding `PRG32_PIN_SETUP`
+  low when that optional pin is wired, when no cartridge is present, or when
+  multiple cartridges exist without a saved default cartridge.

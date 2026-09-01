@@ -1,6 +1,30 @@
 # PRG32 Reference Hardware
 
-## Prototype breadboard parts
+## PCB Component Layout
+
+The Fritzing reference board is a 210 x 75 mm landscape PCB. Components are
+arranged to keep the game controls accessible on the front and the compute and audio hardware on the rear:
+
+- Front, from left to right: digital joystick, landscape ILI9341 display, A
+  button, and B button.
+- Rear, from left to right when viewed from the rear: left speaker, left
+  MAX98357A, ESP32-C6 development board, right MAX98357A, and right speaker.
+
+The right-channel mode resistor is placed beside the right MAX98357A on the
+rear. Through-hole pads remain visible from both PCB sides even when the module
+body is mounted on the indicated side.
+
+## Reference Prototype Figures
+
+The following figures are exported from the schematic and breadboard views of
+`docs/pcb/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
+the canonical GPIO assignments.
+
+![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](/docs/hardware/images/prg32-electrical-schematic.svg)
+
+*Electrical schematic for the current firmware configuration.*
+
+## Prototype parts
 
 - ESP32-C6 development board
 - ILI9341 2.8 inch SPI TFT, 320x240
@@ -26,7 +50,7 @@ WebSocket server; the reference hardware keeps local input to one joystick.
 ## Reference wiring
 
 For the definitive pin connections, including the display, joystick, and
-MAX98357A audio, see [`docs/hardware.md`](../hardware.md).
+MAX98357A audio, please see the [Pinouts and Wiring guide in `hardware.md`](/docs/hardware/hardware.md#pinouts-and-wiring).
 
 Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for
