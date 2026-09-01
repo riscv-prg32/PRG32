@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
+import sys
+import subprocess
 import argparse
 from pathlib import Path
-from prg32.utilities.env_variables import QEMU_IMAGE, QEMU_EFUSE
+from prg32.utilities.env_variables import QEMU_IMAGE, QEMU_EFUSE, ROOT_DIR
 from prg32.utilities.logging import *
 
 def launch_qemu(args: argparse.Namespace):
@@ -32,5 +34,37 @@ def launch_qemu(args: argparse.Namespace):
         "sdl",
         "-serial",
         "mon:stdio",
+        "-serial",
+        "tcp::4321,server,wait,nodelay",
     ]
-    os.execvp(cmd[0], cmd)
+    
+    audio_player_path = ROOT_DIR / "tools" / "qemu_audio_player.py"
+    audio_proc = None
+    qemu_proc = None
+    
+    try:
+        # Start the Python audio player in the background FIRST.
+        # -u forces unbuffered output so the console logs appear instantly.
+        audio_proc = subprocess.Popen([sys.executable, "-u", str(audio_player_path)])
+        
+        # Start QEMU in the foreground (it inherits stdin/stdout automatically)
+        qemu_proc = subprocess.Popen(cmd)
+        
+        # Block until QEMU exits, but monitor the audio player so we don't hang 
+        # forever if the player fails to start (e.g. PyAudio missing).
+        import time
+        while qemu_proc.poll() is None:
+            if audio_proc.poll() is not None:
+                log_error("Audio player exited unexpectedly. Terminating QEMU.")
+                qemu_proc.terminate()
+                break
+            time.sleep(0.1)
+        
+    except KeyboardInterrupt:
+        if qemu_proc:
+            qemu_proc.terminate()
+    finally:
+        # Guarantee the audio player is killed when QEMU dies abruptly or exits normally
+        if audio_proc:
+            audio_proc.terminate()
+            audio_proc.wait()

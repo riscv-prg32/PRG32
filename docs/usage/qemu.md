@@ -66,6 +66,14 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```
    *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
+## QEMU Audio (UART Redirection)
+
+Because QEMU lacks native I2S emulation, PRG32 uses a custom **Credit-Based Flow Control** protocol to redirect the 22050Hz PCM audio stream over the virtual UART port (`tcp::4321`) to the host machine.
+
+- **Background Player**: `launch_qemu.py` automatically spawns `tools/qemu_audio_player.py` in the background to interface with PyAudio/CoreAudio.
+- **Boot Synchronization**: QEMU is launched with a `wait` flag on the TCP serial port, freezing the virtual ESP32 boot sequence until the Python script initializes and connects, ensuring early boot sounds (like the splash screen) are not missed.
+- **Real-Time Pacing**: As the Python script plays 20ms chunks of audio, it sends 1-byte `ACK` tokens back to QEMU. The firmware's `audio_task` blocks on these ACKs, mathematically locking the emulator to 1.0x real-time speed and preventing QEMU's idle fast-forwarding from breaking game timing.
+
 ## Input and Controls
 
 QEMU disables physical GPIO buttons and the buzzer, enabling a small UART-console keyboard mapper for player 1 input instead. 

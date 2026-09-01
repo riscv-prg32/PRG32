@@ -143,6 +143,10 @@
 #define PRG32_AUDIO_SAMPLE_RATE CONFIG_PRG32_AUDIO_SAMPLE_RATE
 #define PRG32_AUDIO_MAX_VOICES CONFIG_PRG32_AUDIO_MAX_VOICES
 
+/* QEMU uses UART 1 to direct audio to python listener */
+#define PRG32_QEMU_UART_1_TX 4
+#define PRG32_QEMU_UART_1_RX 5
+
 /* Wifi Configuration */
 /* Optional Wi-Fi score REST API. Fill credentials before flashing. */
 #define PRG32_WIFI_SCORES_ENABLE 0
