@@ -134,31 +134,8 @@ right channel. Breakout labels vary: common names include `L/R`, `GAIN`,
 
 ## Bill Of Materials
 
-Base PRG32:
-
-| Quantity | Item | Purpose |
-|---:|---|---|
-| 1 | ESP32-C6 development board | PRG32 host |
-| 1 | PRG32-supported display | video output |
-| 1 | digital joystick module | player 1 input |
-
-Mono audio:
-
-| Quantity | Item | Purpose |
-|---:|---|---|
-| 1 | MAX98357A I2S DAC/amplifier breakout | mono output |
-| 1 | 4-8 ohm speaker, 1-3 W | mono speaker |
-| 5-6 | jumper wires | I2S and power |
-| 1 | optional JST speaker connector | detachable speaker |
-
-Stereo audio:
-
-| Quantity | Item | Purpose |
-|---:|---|---|
-| 2 | MAX98357A breakouts | left and right output |
-| 2 | 4-8 ohm speakers, 1-3 W | stereo speakers |
-| 8-10 | jumper wires | shared I2S and power |
-| 2 | optional JST speaker connectors | detachable speakers |
+See the [central bill of materials and purchasing guide](../hardware/where_to_buy.md)
+for mono and stereo quantities, optional connectors and country-specific suppliers.
 
 ## Assembly Instructions
 

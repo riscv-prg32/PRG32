@@ -26,13 +26,9 @@ the canonical GPIO assignments.
 
 ## Prototype parts
 
-- ESP32-C6 development board
-- ILI9341 2.8 inch SPI TFT, 320x240
-- one 5-way digital joystick module for player 1
-- one MAX98357A I2S DAC/amplifier breakout and one 4-8 ohm speaker for mono
-  PRG32 audio
-- optional second MAX98357A and speaker for stereo PRG32 Audio Plus
-- Jumper wires and breadboard
+See the [bill of materials and purchasing guide](../hardware/where_to_buy.md)
+for parts, quantities and supplier links. Check each selected module against
+the Fritzing footprints before ordering PCB components.
 
 Desktop QEMU can emulate the PRG32 graphics viewport for early software tests,
 but it does not replace this hardware validation. Use the physical board for
@@ -69,7 +65,8 @@ single board can average both slots or select either one.
 Do not connect MAX98357A speaker outputs directly to headphones or line-level
 inputs. Use 4-8 ohm speakers.
 
-Digirak joystick: <https://www.amazon.it/dp/B07HBPW3DF>.
+Joystick purchasing options are maintained in the
+[central buying guide](../hardware/where_to_buy.md).
 Wire each joystick direction as a normally-open switch to ground; PRG32 enables
 internal pull-ups.
 

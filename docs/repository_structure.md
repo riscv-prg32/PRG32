@@ -16,6 +16,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
+|   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
+|   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material
 |   |-- measurement/                Scientific measurement and metrics API documentation
 |   |-- software/                   Firmware manuals, C framework details, and ABI definitions

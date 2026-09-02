@@ -28,6 +28,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 *Physical components, wiring, and hardware setup.*
 
 - [Hardware Reference](hardware/hardware.md)
+- [Bill of Materials and Where to Buy](hardware/where_to_buy.md)
 - [External Controllers](hardware/external_controllers.md)
 
 ## Software

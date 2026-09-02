@@ -35,11 +35,8 @@ connector labels and the tables below define the electrical connections.
 
 ### Base Hardware
 
-| Quantity | Item | Purpose |
-|---:|---|---|
-| 1 | ESP32-C6 development board | PRG32 RISC-V host |
-| 1 | ILI9341 SPI TFT or supported display | video output |
-| 1 | digital joystick module | local input |
+See the [bill of materials and country-specific purchasing links](where_to_buy.md)
+for the complete mono build, optional stereo parts and assembly supplies.
 
 ### Configuration Pinouts
 
