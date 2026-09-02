@@ -12,6 +12,10 @@ static const char *TAG = "prg32_qemu_audio";
 void prg32_qemu_audio_init(void) {
   const uart_port_t uart_num = UART_NUM_1;
 
+  if (uart_is_driver_installed(uart_num)) {
+      return;
+  }
+
   // 1. Configure the UART parameters
   const uart_config_t uart_config = {
       .baud_rate = 4000000,
