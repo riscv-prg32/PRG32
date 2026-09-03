@@ -342,6 +342,15 @@ void prg32_gfx_pixel(int x, int y, uint16_t color) {
     prg32_gfx_unlock();
 }
 
+void prg32_gfx_pixel_unlocked(int x, int y, uint16_t color) {
+    int raw_y = logical_y_to_raw(y);
+    g_fb[raw_y * PRG32_LCD_W + x] = color;
+}
+
+void prg32_gfx_dirty_unlocked(int x, int y, int w, int h) {
+    dirty_add(x, y, w, h);
+}
+
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color) {
     prg32_gfx_lock();
     if (w <= 0 || h <= 0) {

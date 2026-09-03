@@ -55,7 +55,7 @@ python -m prg32 qemu run
 
 
 ## 4. Navigate the Startup Menu
-The first screen is the startup menu, where you can, among other things, run a cartridge, set the default boot cartridge, configure Wi-Fi, configure CartridgeStore access, browse the store and download new cartridges, open the audio setup menu, open the developer status-band menu, launch the unattended performance test, or show the about screen.
+The first screen is the startup menu, where you can, among other things, run a cartridge, set the default boot cartridge, configure Wi-Fi, configure CartridgeStore access, browse the store and download new cartridges, open the audio setup menu, open the developer status-band menu, launch the unattended performance test, or show the about screen. The performance test runs matched RGB565 and indexed-color passes and finishes with one comparison table; detailed JSON remains available at `/api/performance.json` until reboot or the next run.
 
 **Navigation Commands:**
 - **Joystick**: Navigate menus (QEMU: keyboard arrows)
@@ -204,5 +204,4 @@ For any errors, before opening a Github Issue, please consult [Troubleshooting](
 - `docs/api.md`: board HTTP API and Cartridge Store API reference.
 - `docs/framework_manual.md`: PRG32 runtime API and ABI details.
 - `docs/assets.md`: image, sprite, tile, GIF, and audio asset conversion.
-
 

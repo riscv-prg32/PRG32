@@ -22,12 +22,22 @@ on the physical ILI9341 display and on the QEMU virtual RGB screen.
 - `prg32_sprite_draw_24x24(x, y, rgb565)`
 - `prg32_sprite_anim_frame(now_ms, frame_count, frame_ms)`
 - `prg32_sprite_draw_frame(x, y, w, h, frames, frame, transparent)`
+- `prg32_sprite_draw_indexed(x, y, descriptor, frame)`
+- `prg32_sprite_draw_bitplanes(x, y, descriptor, frame)`
 - `prg32_playfield_scroll(layer, x, y)`
 - `prg32_playfield_parallax(layer, x_q8, y_q8)`
 - `prg32_playfield_draw_dual()`
 
 The framework internally tracks dirty rectangles, so students can draw only
 changed objects when they are ready for optimization exercises.
+
+RGB565 remains the native framebuffer and the simplest asset format. When an
+animation repeats a small set of colors, the converter can instead generate a
+`prg32_indexed_sprite_t`. Packed indexed data uses 1, 2, 4, or 8 bits per pixel;
+bitplanes store the same indices one value bit at a time. Both are expanded
+directly while drawing and require no temporary full-color frame.
+The generated `*_SPRITE` alias can be passed to the existing fixed-size or
+animation calls from C or assembly, so frame timing code does not change.
 
 ## 1. Start With a Blank Frame
 
@@ -212,6 +222,11 @@ After the focused demos, try the fuller game examples:
   sprite helper.
 - `examples/games/frogger/c/game.c` for the same 24x24 sprite pattern with
   hitboxes and restart state.
+
+For a memory experiment, convert the same image once with the default RGB565
+mode and once with `--mode indexed --colors 16`, compare the generated pixel
+data sizes, and draw both versions. The setup-mode Performance Test automates a
+paired timing comparison and publishes it through `/api/performance.json`.
 
 ## Break and Fix Exercise
 

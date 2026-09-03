@@ -11,6 +11,7 @@ visual feedback without starting from hardware driver code.
 - Read the PRG32 input bitmask.
 - Draw graphics with the same API used by assembly examples.
 - Package a C source file as a `.prg32` cartridge.
+- Choose RGB565 or compact indexed sprite storage for an animation.
 
 ## 1. Start From an Existing C Example
 
@@ -189,6 +190,14 @@ assets. It draws a 24x24 RGB565 player sprite and uses simple rectangle
 hitboxes for traffic collision. The matching
 `examples/games/frogger/graphics/game.S` file shows the same
 `prg32_sprite_draw_24x24` call from RISC-V assembly.
+
+For longer animations, use `tools/prg32_image_convert.py --mode indexed` to
+generate one shared palette and `prg32_indexed_sprite_t`. Draw it directly with
+`prg32_sprite_draw_indexed`, or pass the generated tagged `*_SPRITE` alias to
+the existing `prg32_sprite_anim_init` workflow. Use RGB565 when unrestricted
+per-pixel color is more important than asset size. The framebuffer and display
+output remain RGB565 in both cases, and conversion fails rather than silently
+reducing an over-limit palette.
 
 ## Break and Fix Exercise
 

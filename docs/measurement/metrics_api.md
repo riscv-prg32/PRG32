@@ -18,7 +18,11 @@ Open setup mode and choose `PERFORMANCE TEST`. The firmware starts the Wi-Fi
 HTTP API if possible, then runs every measurement screen without further user
 interaction. At the end it shows a summary on the 320x240 setup screen.
 
-The unattended sequence currently measures five distinct screens:
+The unattended sequence measures five distinct screens in both `rgb565` and
+`indexed` color modes. Each frame includes the same 24-sprite color probe; the
+RGB565 pass reads 16-bit pixels, while the indexed pass reads packed 2-bpp
+indices and a shared RGB565 palette. Scene state is reset between passes so the
+two measurements are directly comparable.
 
 | Screen | What It Measures |
 |---|---|
@@ -62,6 +66,8 @@ and a summary object. The run metadata includes:
 | `wifi_mode` | `off`, `access_point`, `infrastructure`, or `ap_infrastructure` |
 | `sample_period_frames` | frame sampling period |
 | `screen_count` | number of measurement screens in the unattended run |
+| `result_count` | screen/mode results; currently 10 (5 screens × 2 modes) |
+| `color_modes` | ordered list containing `rgb565` and `indexed` |
 | `started_at_device_us` | ESP timer timestamp when the run began |
 | `started_at_server_ts` | `null` for onboard-only runs |
 
@@ -72,6 +78,7 @@ Each raw sample records:
 | `frame_index` | benchmark frame number |
 | `screen_index` | zero-based measurement screen index |
 | `screen_name` | measurement screen name |
+| `color_mode` | asset rendering path: `rgb565` or `indexed` |
 | `t_update_us` | update stage time |
 | `t_draw_us` | draw stage time |
 | `t_present_us` | display present time |
@@ -85,9 +92,62 @@ Each raw sample records:
 Each aggregate window includes `frames`, `fps_mean`, frame-time min/mean/p50/p95/p99/max,
 missed deadlines, update/draw/present means, and minimum heap.
 
-The `screen_summaries` array repeats the same aggregate metrics per measurement
-screen. This makes it easier to compare rendering workloads directly in a
-paper without manually filtering raw frame samples.
+The `screen_summaries` array contains one aggregate per screen and color mode.
+The `comparisons` array groups the RGB565 and indexed aggregates for each
+screen under one object. The on-device summary likewise displays a single table
+with `RGB FPS` and `IDX FPS` columns.
+
+### QEMU reference result
+
+The following matrix was captured from an actual ESP32-C3 QEMU run of firmware
+revision `58dde55-dirty` on 2026-09-04. It is a functional reference showing
+that both paths execute in one paired run; QEMU timings must not be presented as
+ESP32-C6 hardware measurements.
+
+![QEMU RGB565 and indexed-color performance matrix](images/performance_rgb565_vs_indexed.png)
+
+| Workload | RGB565 FPS | Indexed FPS | Indexed difference |
+|---|---:|---:|---:|
+| clear-fill | 33.29 | 33.46 | +0.17 |
+| text-overlay | 33.08 | 33.28 | +0.20 |
+| sprite-storm | 33.48 | 33.14 | -0.34 |
+| scrolling | 33.55 | 33.42 | -0.13 |
+| mixed-gameplay | 33.43 | 33.07 | -0.36 |
+
+The run reported 33.32 overall FPS, 30,008 us mean frame work, 31,372 us p95,
+zero missed deadlines across 600 frames, and 34,920 bytes minimum free heap.
+Because both modes share the same RGB565 framebuffer and present stage, small
+differences primarily reflect compact-pixel decoding plus normal QEMU timing
+variation. Repeat paired runs and use the JSON samples for statistical claims.
+
+Compact example:
+
+```json
+{
+  "screen_count": 5,
+  "result_count": 10,
+  "color_modes": ["rgb565", "indexed"],
+  "samples": [
+    {"screen_index": 0, "screen_name": "clear-fill", "color_mode": "rgb565"}
+  ],
+  "screen_summaries": [
+    {"screen_index": 0, "screen_name": "clear-fill", "color_mode": "rgb565", "fps_mean": 30.1},
+    {"screen_index": 0, "screen_name": "clear-fill", "color_mode": "indexed", "fps_mean": 29.8}
+  ],
+  "comparisons": [
+    {
+      "screen_index": 0,
+      "screen_name": "clear-fill",
+      "rgb565": {"fps_mean": 30.1, "frame_us_mean": 33220, "frame_us_p95": 33410},
+      "indexed": {"fps_mean": 29.8, "frame_us_mean": 33540, "frame_us_p95": 33800}
+    }
+  ]
+}
+```
+
+`screen_count` remains the number of distinct workloads. `result_count` is the
+number of workload/mode combinations. This lets older consumers keep treating
+the benchmark as five screens while mode-aware consumers process ten results.
 
 ## Firmware Configuration
 
@@ -218,6 +278,10 @@ The output directory contains:
 - `figure_stage_timing.png`
 - `figure_heap_stability.png`
 - `figure_screen_comparison.png`
+
+`samples.csv` includes a `color_mode` column, and `table_screens.tex` includes
+a Mode column. Older JSON without `color_mode` is interpreted as RGB565 by the
+report generator.
 
 For server-side streaming metrics, export a run from SQLite inside the
 MetricsServer checkout:

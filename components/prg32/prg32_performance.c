@@ -29,8 +29,11 @@
 
 #define PRG32_PERF_SCREEN_FRAMES 60u
 #define PRG32_PERF_SCREEN_COUNT 5u
+#define PRG32_PERF_COLOR_MODE_COUNT 2u
+#define PRG32_PERF_RESULT_COUNT                                             \
+  (PRG32_PERF_SCREEN_COUNT * PRG32_PERF_COLOR_MODE_COUNT)
 #define PRG32_PERF_TEST_FRAMES                                                 \
-  (PRG32_PERF_SCREEN_FRAMES * PRG32_PERF_SCREEN_COUNT)
+  (PRG32_PERF_SCREEN_FRAMES * PRG32_PERF_RESULT_COUNT)
 #define PRG32_PERF_SAMPLE_PERIOD_FRAMES 1u
 #define PRG32_PERF_MAX_SAMPLES (PRG32_PERF_TEST_FRAMES + 16u)
 #define PRG32_PERF_MAX_WINDOWS 80u
@@ -65,6 +68,7 @@ typedef struct {
   uint32_t input_mask;
   uint16_t upload_queue_depth;
   uint8_t screen_index;
+  uint8_t color_mode;
   uint8_t deadline_missed;
 } prg32_perf_sample_t;
 
@@ -89,6 +93,7 @@ typedef struct {
 
 typedef struct {
   uint8_t screen_index;
+  uint8_t color_mode;
   char screen_name[PRG32_PERF_SCREEN_NAME_LEN];
   char metric_goal[PRG32_PERF_SCREEN_GOAL_LEN];
   uint32_t first_frame;
@@ -114,7 +119,7 @@ typedef struct {
 
 static prg32_perf_sample_t *g_samples;
 static prg32_perf_window_t *g_windows;
-static prg32_perf_screen_result_t g_screen_results[PRG32_PERF_SCREEN_COUNT];
+static prg32_perf_screen_result_t g_screen_results[PRG32_PERF_RESULT_COUNT];
 static prg32_performance_summary_t g_summary;
 static uint32_t g_sample_count;
 static uint32_t g_window_count;
@@ -149,6 +154,35 @@ static const prg32_perf_screen_def_t g_perf_screens[PRG32_PERF_SCREEN_COUNT] = {
         "combined text, sprites, scrolling road, and playfield objects",
         0x0008,
     },
+};
+
+enum {
+  PRG32_PERF_COLOR_RGB565 = 0,
+  PRG32_PERF_COLOR_INDEXED = 1,
+};
+
+static const uint16_t g_probe_rgb565[16] = {
+    PRG32_COLOR_RED, PRG32_COLOR_GREEN, PRG32_COLOR_BLUE, PRG32_COLOR_YELLOW,
+    PRG32_COLOR_GREEN, PRG32_COLOR_BLUE, PRG32_COLOR_YELLOW, PRG32_COLOR_RED,
+    PRG32_COLOR_BLUE, PRG32_COLOR_YELLOW, PRG32_COLOR_RED, PRG32_COLOR_GREEN,
+    PRG32_COLOR_YELLOW, PRG32_COLOR_RED, PRG32_COLOR_GREEN, PRG32_COLOR_BLUE,
+};
+static const uint8_t g_probe_indices[4] = {0x1b, 0x6c, 0xb1, 0xc6};
+static const uint16_t g_probe_palette[4] = {
+    PRG32_COLOR_RED,
+    PRG32_COLOR_GREEN,
+    PRG32_COLOR_BLUE,
+    PRG32_COLOR_YELLOW,
+};
+static const prg32_indexed_sprite_t g_probe_indexed = {
+    .pixels = g_probe_indices,
+    .palette = g_probe_palette,
+    .width = 4,
+    .height = 4,
+    .frame_count = 1,
+    .palette_count = 4,
+    .bits_per_pixel = PRG32_SPRITE_BPP_2,
+    .transparent_index = -1,
 };
 
 static int perf_buffers_alloc(void) {
@@ -270,7 +304,12 @@ static const char *screen_goal(uint8_t screen_index) {
   return g_perf_screens[screen_index].metric_goal;
 }
 
-static void draw_progress(uint32_t frame, uint8_t screen_index) {
+static const char *color_mode_name(uint8_t color_mode) {
+  return color_mode == PRG32_PERF_COLOR_INDEXED ? "indexed" : "rgb565";
+}
+
+static void draw_progress(uint32_t frame, uint8_t screen_index,
+                          uint8_t color_mode) {
   char line[48];
   uint32_t width = (frame * 240u) / PRG32_PERF_TEST_FRAMES;
   prg32_gfx_set_fullscreen(1);
@@ -279,7 +318,7 @@ static void draw_progress(uint32_t frame, uint8_t screen_index) {
   draw_centered_line(64, "AUTOMATIC MULTI-SCREEN BENCHMARK", PRG32_COLOR_CYAN);
   prg32_gfx_rect(40, 112, 240, 14, PRG32_COLOR_BLUE);
   prg32_gfx_rect(42, 114, (int)width, 10, PRG32_COLOR_GREEN);
-  snprintf(line, sizeof(line), "SCREEN %u/%u: %.20s",
+  snprintf(line, sizeof(line), "%s %u/%u: %.16s", color_mode_name(color_mode),
            (unsigned)screen_index + 1u, (unsigned)PRG32_PERF_SCREEN_COUNT,
            screen_name(screen_index));
   draw_centered_line(88, line, PRG32_COLOR_YELLOW);
@@ -315,10 +354,11 @@ static void scene_update(prg32_perf_scene_t *scene, uint32_t frame) {
   scene->stars = scene->stars * 1664525u + 1013904223u;
 }
 
-static void draw_screen_header(uint8_t screen_index, uint32_t global_frame,
-                               uint32_t local_frame) {
+static void draw_screen_header(uint8_t screen_index, uint8_t color_mode,
+                               uint32_t global_frame, uint32_t local_frame) {
   char line[40];
   prg32_gfx_text8(8, 8, screen_name(screen_index), PRG32_COLOR_WHITE, 0);
+  prg32_gfx_text8(8, 20, color_mode_name(color_mode), PRG32_COLOR_GREEN, 0);
   snprintf(line, sizeof(line), "%03lu/%03lu", (unsigned long)local_frame,
            (unsigned long)PRG32_PERF_SCREEN_FRAMES);
   prg32_gfx_text8(240, 8, line, PRG32_COLOR_CYAN, 0);
@@ -326,13 +366,26 @@ static void draw_screen_header(uint8_t screen_index, uint32_t global_frame,
   prg32_gfx_text8(240, 20, line, PRG32_COLOR_YELLOW, 0);
 }
 
-static void scene_draw_clear_fill(uint8_t screen_index,
+static void draw_color_mode_probe(uint8_t color_mode, uint32_t local_frame) {
+  for (int i = 0; i < 24; ++i) {
+    int x = (i * 13 + (int)local_frame) % (PRG32_GAME_W - 4);
+    int y = 28 + (i * 29) % 116;
+    if (color_mode == PRG32_PERF_COLOR_INDEXED) {
+      prg32_sprite_draw_indexed(x, y, &g_probe_indexed, 0);
+    } else {
+      prg32_sprite_draw_frame(x, y, 4, 4, g_probe_rgb565, 0,
+                              PRG32_COLOR_WHITE);
+    }
+  }
+}
+
+static void scene_draw_clear_fill(uint8_t screen_index, uint8_t color_mode,
                                   const prg32_perf_scene_t *scene,
                                   uint32_t global_frame, uint32_t local_frame) {
   (void)scene;
   uint16_t bg = (local_frame & 1u) ? 0x0008 : 0x0100;
   prg32_gfx_clear(bg);
-  draw_screen_header(screen_index, global_frame, local_frame);
+  draw_screen_header(screen_index, color_mode, global_frame, local_frame);
   for (int i = 0; i < 8; ++i) {
     int y = 38 + i * 18;
     int w = 300 - i * 22;
@@ -342,7 +395,7 @@ static void scene_draw_clear_fill(uint8_t screen_index,
   }
 }
 
-static void scene_draw_text_overlay(uint8_t screen_index,
+static void scene_draw_text_overlay(uint8_t screen_index, uint8_t color_mode,
                                     const prg32_perf_scene_t *scene,
                                     uint32_t global_frame,
                                     uint32_t local_frame) {
@@ -353,7 +406,7 @@ static void scene_draw_text_overlay(uint8_t screen_index,
       "AUDIO           MIXER CHECK",     "INPUT           LOCAL MASK",
   };
   prg32_gfx_clear(PRG32_COLOR_BLACK);
-  draw_screen_header(screen_index, global_frame, local_frame);
+  draw_screen_header(screen_index, color_mode, global_frame, local_frame);
   for (int y = 32; y < PRG32_GAME_H; y += 8) {
     int row = (y / 8 + (int)local_frame) & 7;
     uint16_t color = (row & 1) ? PRG32_COLOR_GREEN : PRG32_COLOR_CYAN;
@@ -368,7 +421,7 @@ static void scene_draw_text_overlay(uint8_t screen_index,
   }
 }
 
-static void scene_draw_sprite_storm(uint8_t screen_index,
+static void scene_draw_sprite_storm(uint8_t screen_index, uint8_t color_mode,
                                     const prg32_perf_scene_t *scene,
                                     uint32_t global_frame,
                                     uint32_t local_frame) {
@@ -377,7 +430,7 @@ static void scene_draw_sprite_storm(uint8_t screen_index,
       PRG32_COLOR_YELLOW, PRG32_COLOR_CYAN,  PRG32_COLOR_MAGENTA,
   };
   prg32_gfx_clear(g_perf_screens[screen_index].background);
-  draw_screen_header(screen_index, global_frame, local_frame);
+  draw_screen_header(screen_index, color_mode, global_frame, local_frame);
   for (int i = 0; i < 36; ++i) {
     int x = (int)((i * 23 + local_frame * (2 + (i & 3))) % (PRG32_GAME_W - 14));
     int y = 30 + (int)((i * 19 + (scene->stars >> (i & 7))) % 150u);
@@ -390,7 +443,7 @@ static void scene_draw_sprite_storm(uint8_t screen_index,
   prg32_gfx_rect(scene->x + 4, scene->y + 4, 10, 10, PRG32_COLOR_RED);
 }
 
-static void scene_draw_scrolling(uint8_t screen_index,
+static void scene_draw_scrolling(uint8_t screen_index, uint8_t color_mode,
                                  const prg32_perf_scene_t *scene,
                                  uint32_t global_frame, uint32_t local_frame) {
   static const uint16_t star_colors[] = {
@@ -400,7 +453,7 @@ static void scene_draw_scrolling(uint8_t screen_index,
       PRG32_COLOR_MAGENTA,
   };
   prg32_gfx_clear(g_perf_screens[screen_index].background);
-  draw_screen_header(screen_index, global_frame, local_frame);
+  draw_screen_header(screen_index, color_mode, global_frame, local_frame);
 
   for (int i = 0; i < 72; ++i) {
     int speed = 1 + (i & 3);
@@ -421,7 +474,7 @@ static void scene_draw_scrolling(uint8_t screen_index,
   }
 }
 
-static void scene_draw_mixed_gameplay(uint8_t screen_index,
+static void scene_draw_mixed_gameplay(uint8_t screen_index, uint8_t color_mode,
                                       const prg32_perf_scene_t *scene,
                                       uint32_t global_frame,
                                       uint32_t local_frame) {
@@ -432,7 +485,7 @@ static void scene_draw_mixed_gameplay(uint8_t screen_index,
       PRG32_COLOR_MAGENTA,
   };
   prg32_gfx_clear(g_perf_screens[screen_index].background);
-  draw_screen_header(screen_index, global_frame, local_frame);
+  draw_screen_header(screen_index, color_mode, global_frame, local_frame);
 
   for (int i = 0; i < 42; ++i) {
     int x = (int)((i * 37 + scene->scroll * (1 + (i & 3))) % PRG32_GAME_W);
@@ -461,26 +514,27 @@ static void scene_draw_mixed_gameplay(uint8_t screen_index,
   prg32_gfx_rect(scene->x + 3, scene->y + 3, 6, 6, PRG32_COLOR_WHITE);
 }
 
-static void scene_draw_screen(uint8_t screen_index,
+static void scene_draw_screen(uint8_t screen_index, uint8_t color_mode,
                               const prg32_perf_scene_t *scene,
                               uint32_t global_frame, uint32_t local_frame) {
   switch (screen_index) {
   case 0:
-    scene_draw_clear_fill(screen_index, scene, global_frame, local_frame);
+    scene_draw_clear_fill(screen_index, color_mode, scene, global_frame, local_frame);
     break;
   case 1:
-    scene_draw_text_overlay(screen_index, scene, global_frame, local_frame);
+    scene_draw_text_overlay(screen_index, color_mode, scene, global_frame, local_frame);
     break;
   case 2:
-    scene_draw_sprite_storm(screen_index, scene, global_frame, local_frame);
+    scene_draw_sprite_storm(screen_index, color_mode, scene, global_frame, local_frame);
     break;
   case 3:
-    scene_draw_scrolling(screen_index, scene, global_frame, local_frame);
+    scene_draw_scrolling(screen_index, color_mode, scene, global_frame, local_frame);
     break;
   default:
-    scene_draw_mixed_gameplay(screen_index, scene, global_frame, local_frame);
+    scene_draw_mixed_gameplay(screen_index, color_mode, scene, global_frame, local_frame);
     break;
   }
+  draw_color_mode_probe(color_mode, local_frame);
 }
 
 static void store_sample(const prg32_perf_sample_t *sample) {
@@ -558,12 +612,15 @@ static void compute_screen_results(void) {
   if (!g_samples) {
     return;
   }
-  for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT;
-       ++screen_index) {
+  for (uint8_t color_mode = 0; color_mode < PRG32_PERF_COLOR_MODE_COUNT;
+       ++color_mode) {
+    for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT;
+         ++screen_index) {
     uint32_t first = UINT32_MAX;
     uint32_t last = 0;
     for (uint32_t i = 0; i < g_sample_count; ++i) {
-      if (g_samples[i].screen_index != screen_index) {
+      if (g_samples[i].screen_index != screen_index ||
+          g_samples[i].color_mode != color_mode) {
         continue;
       }
       if (first == UINT32_MAX) {
@@ -572,13 +629,14 @@ static void compute_screen_results(void) {
       last = i + 1u;
     }
     if (first == UINT32_MAX || last <= first ||
-        g_screen_result_count >= PRG32_PERF_SCREEN_COUNT) {
+        g_screen_result_count >= PRG32_PERF_RESULT_COUNT) {
       continue;
     }
     prg32_perf_screen_result_t *result =
         &g_screen_results[g_screen_result_count++];
     memset(result, 0, sizeof(*result));
     result->screen_index = screen_index;
+    result->color_mode = color_mode;
     copy_text(result->screen_name, sizeof(result->screen_name),
               screen_name(screen_index));
     copy_text(result->metric_goal, sizeof(result->metric_goal),
@@ -586,6 +644,7 @@ static void compute_screen_results(void) {
     result->first_frame = g_samples[first].frame_index;
     result->last_frame = g_samples[last - 1u].frame_index;
     compute_range_stats(&result->metrics, screen_index, first, last);
+    }
   }
 }
 
@@ -641,7 +700,7 @@ static void compute_results(uint64_t started_us, uint64_t finished_us) {
   g_summary.frames = g_sample_count;
   g_summary.sample_count = g_sample_count;
   g_summary.window_count = g_window_count;
-  g_summary.screen_count = g_screen_result_count;
+  g_summary.screen_count = PRG32_PERF_SCREEN_COUNT;
   g_summary.fps_mean_x100 = summary_window.fps_mean_x100;
   g_summary.frame_us_min = summary_window.frame_us_min;
   g_summary.frame_us_mean = summary_window.frame_us_mean;
@@ -654,6 +713,17 @@ static void compute_results(uint64_t started_us, uint64_t finished_us) {
   g_summary.draw_us_mean = summary_window.draw_us_mean;
   g_summary.present_us_mean = summary_window.present_us_mean;
   g_summary.heap_min = summary_window.heap_min;
+}
+
+static const prg32_perf_screen_result_t *find_screen_result(
+    uint8_t screen_index, uint8_t color_mode) {
+  for (uint32_t i = 0; i < g_screen_result_count; ++i) {
+    if (g_screen_results[i].screen_index == screen_index &&
+        g_screen_results[i].color_mode == color_mode) {
+      return &g_screen_results[i];
+    }
+  }
+  return NULL;
 }
 
 static void draw_summary(void) {
@@ -682,16 +752,22 @@ static void draw_summary(void) {
            (unsigned long)g_summary.missed_deadlines,
            (unsigned long)g_summary.frames, (unsigned long)g_summary.heap_min);
   prg32_gfx_text8(8, 96, line, PRG32_COLOR_MAGENTA, 0);
-  prg32_gfx_text8(8, 120, "SCREEN              FPS   P95US  MISS",
+  prg32_gfx_text8(8, 120, "SCREEN           RGB FPS  IDX FPS",
                   PRG32_COLOR_CYAN, 0);
-  for (uint32_t i = 0; i < g_screen_result_count && i < 5u; ++i) {
-    const prg32_perf_screen_result_t *screen = &g_screen_results[i];
-    snprintf(line, sizeof(line), "%-18.18s %2lu.%02lu %5lu %4lu",
-             screen->screen_name,
-             (unsigned long)(screen->metrics.fps_mean_x100 / 100u),
-             (unsigned long)(screen->metrics.fps_mean_x100 % 100u),
-             (unsigned long)screen->metrics.frame_us_p95,
-             (unsigned long)screen->metrics.missed_deadlines);
+  for (uint8_t i = 0; i < PRG32_PERF_SCREEN_COUNT; ++i) {
+    const prg32_perf_screen_result_t *rgb =
+        find_screen_result(i, PRG32_PERF_COLOR_RGB565);
+    const prg32_perf_screen_result_t *indexed =
+        find_screen_result(i, PRG32_PERF_COLOR_INDEXED);
+    if (!rgb || !indexed) {
+      continue;
+    }
+    snprintf(line, sizeof(line), "%-15.15s %2lu.%02lu   %2lu.%02lu",
+             screen_name(i),
+             (unsigned long)(rgb->metrics.fps_mean_x100 / 100u),
+             (unsigned long)(rgb->metrics.fps_mean_x100 % 100u),
+             (unsigned long)(indexed->metrics.fps_mean_x100 / 100u),
+             (unsigned long)(indexed->metrics.fps_mean_x100 % 100u));
     prg32_gfx_text8(8, 136 + (int)i * 14, line, PRG32_COLOR_WHITE, 0);
   }
   prg32_gfx_text8(8, 212, "DOWNLOAD: /api/performance.json", PRG32_COLOR_GREEN,
@@ -739,7 +815,7 @@ int prg32_performance_test_run(void) {
   memset(g_screen_results, 0, sizeof(g_screen_results));
   memset(&g_summary, 0, sizeof(g_summary));
 
-  draw_progress(0, 0);
+  draw_progress(0, 0, PRG32_PERF_COLOR_RGB565);
   vTaskDelay(pdMS_TO_TICKS(300));
 
   prg32_gfx_set_fullscreen(0);
@@ -747,9 +823,12 @@ int prg32_performance_test_run(void) {
   uint64_t started_us = (uint64_t)esp_timer_get_time();
   uint64_t lost_time_us = 0;
   uint32_t frame = 0;
-  for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT;
-       ++screen_index) {
-    draw_progress(frame, screen_index);
+  for (uint8_t color_mode = 0; color_mode < PRG32_PERF_COLOR_MODE_COUNT;
+       ++color_mode) {
+    scene_init(&scene);
+    for (uint8_t screen_index = 0; screen_index < PRG32_PERF_SCREEN_COUNT;
+         ++screen_index) {
+    draw_progress(frame, screen_index, color_mode);
     int64_t screen_delay_start = esp_timer_get_time();
     vTaskDelay(pdMS_TO_TICKS(120));
     lost_time_us += (uint64_t)(esp_timer_get_time() - screen_delay_start);
@@ -758,14 +837,17 @@ int prg32_performance_test_run(void) {
 
     for (uint32_t local_frame = 0; local_frame < PRG32_PERF_SCREEN_FRAMES;
          ++local_frame, ++frame) {
+      uint32_t mode_frame =
+          (uint32_t)screen_index * PRG32_PERF_SCREEN_FRAMES + local_frame;
       uint32_t input_mask = prg32_input_read_menu();
       int64_t frame_start = esp_timer_get_time();
       prg32_gfx_lock();
       int64_t update_start = esp_timer_get_time();
-      scene_update(&scene, frame);
+      scene_update(&scene, mode_frame);
       int64_t update_end = esp_timer_get_time();
       int64_t draw_start = update_end;
-      scene_draw_screen(screen_index, &scene, frame, local_frame);
+      scene_draw_screen(screen_index, color_mode, &scene, mode_frame,
+                        local_frame);
       int64_t draw_end = esp_timer_get_time();
       int64_t present_start = draw_end;
       prg32_gfx_present();
@@ -784,6 +866,7 @@ int prg32_performance_test_run(void) {
           .input_mask = input_mask,
           .upload_queue_depth = 0,
           .screen_index = screen_index,
+          .color_mode = color_mode,
           .deadline_missed = elapsed_u32(present_end, frame_start) >
                              PRG32_PERF_FRAME_BUDGET_US,
       };
@@ -794,6 +877,7 @@ int prg32_performance_test_run(void) {
         vTaskDelay(1);
         lost_time_us += (uint64_t)(esp_timer_get_time() - frame_delay_start);
       }
+    }
     }
   }
 
@@ -968,12 +1052,15 @@ int prg32_performance_json_write(prg32_performance_json_writer_t writer,
       stream_writef(writer, ctx,
                     ",\"sample_period_frames\":%lu,"
                     "\"screen_count\":%lu,"
+                    "\"result_count\":%lu,"
+                    "\"color_modes\":[\"rgb565\",\"indexed\"],"
                     "\"started_at_device_us\":%llu,"
                     "\"started_at_server_ts\":null,"
                     "\"duration_us\":%lu,"
                     "\"samples\":[",
                     (unsigned long)g_summary.sample_period_frames,
                     (unsigned long)g_summary.screen_count,
+                    (unsigned long)g_screen_result_count,
                     (unsigned long long)g_summary.started_at_device_us,
                     (unsigned long)g_summary.duration_us) != 0) {
     return -1;
@@ -987,6 +1074,7 @@ int prg32_performance_json_write(prg32_performance_json_writer_t writer,
             "\"frame_index\":%lu,"
             "\"screen_index\":%lu,"
             "\"screen_name\":\"%s\","
+            "\"color_mode\":\"%s\","
             "\"sampled_at_device_us\":%llu,"
             "\"t_update_us\":%lu,"
             "\"t_draw_us\":%lu,"
@@ -1000,6 +1088,7 @@ int prg32_performance_json_write(prg32_performance_json_writer_t writer,
             "}",
             i ? "," : "", (unsigned long)s->frame_index,
             (unsigned long)s->screen_index, screen_name(s->screen_index),
+            color_mode_name(s->color_mode),
             (unsigned long long)s->sampled_at_device_us,
             (unsigned long)s->t_update_us, (unsigned long)s->t_draw_us,
             (unsigned long)s->t_present_us, (unsigned long)s->t_frame_total_us,
@@ -1063,6 +1152,7 @@ int prg32_performance_json_write(prg32_performance_json_writer_t writer,
             "%s{"
             "\"screen_index\":%lu,"
             "\"screen_name\":\"%s\","
+            "\"color_mode\":\"%s\","
             "\"metric_goal\":\"%s\","
             "\"first_frame\":%lu,"
             "\"last_frame\":%lu,"
@@ -1081,7 +1171,8 @@ int prg32_performance_json_write(prg32_performance_json_writer_t writer,
             "\"heap_min\":%lu"
             "}",
             i ? "," : "", (unsigned long)screen->screen_index,
-            screen->screen_name, screen->metric_goal,
+            screen->screen_name, color_mode_name(screen->color_mode),
+            screen->metric_goal,
             (unsigned long)screen->first_frame,
             (unsigned long)screen->last_frame, (unsigned long)w->frames,
             (unsigned long)(w->fps_mean_x100 / 100u),
@@ -1093,6 +1184,34 @@ int prg32_performance_json_write(prg32_performance_json_writer_t writer,
             (unsigned long)w->update_us_mean, (unsigned long)w->draw_us_mean,
             (unsigned long)w->present_us_mean,
             (unsigned long)w->heap_min) != 0) {
+      return -1;
+    }
+  }
+
+  if (stream_write(writer, ctx, "],\"comparisons\":[") != 0) {
+    return -1;
+  }
+  for (uint8_t i = 0; i < PRG32_PERF_SCREEN_COUNT; ++i) {
+    const prg32_perf_screen_result_t *rgb =
+        find_screen_result(i, PRG32_PERF_COLOR_RGB565);
+    const prg32_perf_screen_result_t *indexed =
+        find_screen_result(i, PRG32_PERF_COLOR_INDEXED);
+    if (!rgb || !indexed ||
+        stream_writef(writer, ctx,
+                      "%s{\"screen_index\":%u,\"screen_name\":\"%s\","
+                      "\"rgb565\":{\"fps_mean\":%lu.%02lu,"
+                      "\"frame_us_mean\":%lu,\"frame_us_p95\":%lu},"
+                      "\"indexed\":{\"fps_mean\":%lu.%02lu,"
+                      "\"frame_us_mean\":%lu,\"frame_us_p95\":%lu}}",
+                      i ? "," : "", (unsigned)i, screen_name(i),
+                      (unsigned long)(rgb->metrics.fps_mean_x100 / 100u),
+                      (unsigned long)(rgb->metrics.fps_mean_x100 % 100u),
+                      (unsigned long)rgb->metrics.frame_us_mean,
+                      (unsigned long)rgb->metrics.frame_us_p95,
+                      (unsigned long)(indexed->metrics.fps_mean_x100 / 100u),
+                      (unsigned long)(indexed->metrics.fps_mean_x100 % 100u),
+                      (unsigned long)indexed->metrics.frame_us_mean,
+                      (unsigned long)indexed->metrics.frame_us_p95) != 0) {
       return -1;
     }
   }
@@ -1187,6 +1306,12 @@ char *prg32_performance_json_alloc(void) {
   cJSON_AddStringToObject(root, "wifi_mode", g_summary.wifi_mode);
   json_u32(root, "sample_period_frames", g_summary.sample_period_frames);
   json_u32(root, "screen_count", g_summary.screen_count);
+  json_u32(root, "result_count", g_screen_result_count);
+  cJSON *color_modes = cJSON_AddArrayToObject(root, "color_modes");
+  if (color_modes) {
+    cJSON_AddItemToArray(color_modes, cJSON_CreateString("rgb565"));
+    cJSON_AddItemToArray(color_modes, cJSON_CreateString("indexed"));
+  }
   json_u64(root, "started_at_device_us", g_summary.started_at_device_us);
   cJSON_AddNullToObject(root, "started_at_server_ts");
   json_u32(root, "duration_us", g_summary.duration_us);
@@ -1201,6 +1326,8 @@ char *prg32_performance_json_alloc(void) {
     json_u32(item, "frame_index", s->frame_index);
     json_u32(item, "screen_index", s->screen_index);
     cJSON_AddStringToObject(item, "screen_name", screen_name(s->screen_index));
+    cJSON_AddStringToObject(item, "color_mode",
+                            color_mode_name(s->color_mode));
     json_u64(item, "sampled_at_device_us", s->sampled_at_device_us);
     json_u32(item, "t_update_us", s->t_update_us);
     json_u32(item, "t_draw_us", s->t_draw_us);
@@ -1237,11 +1364,39 @@ char *prg32_performance_json_alloc(void) {
     }
     json_u32(item, "screen_index", screen->screen_index);
     cJSON_AddStringToObject(item, "screen_name", screen->screen_name);
+    cJSON_AddStringToObject(item, "color_mode",
+                            color_mode_name(screen->color_mode));
     cJSON_AddStringToObject(item, "metric_goal", screen->metric_goal);
     json_u32(item, "first_frame", screen->first_frame);
     json_u32(item, "last_frame", screen->last_frame);
     add_window_metrics_json(item, &screen->metrics);
     cJSON_AddItemToArray(screens, item);
+  }
+
+  cJSON *comparisons = cJSON_AddArrayToObject(root, "comparisons");
+  for (uint8_t i = 0; comparisons && i < PRG32_PERF_SCREEN_COUNT; ++i) {
+    const prg32_perf_screen_result_t *rgb =
+        find_screen_result(i, PRG32_PERF_COLOR_RGB565);
+    const prg32_perf_screen_result_t *indexed =
+        find_screen_result(i, PRG32_PERF_COLOR_INDEXED);
+    if (!rgb || !indexed) {
+      continue;
+    }
+    cJSON *item = cJSON_CreateObject();
+    if (!item) {
+      continue;
+    }
+    json_u32(item, "screen_index", i);
+    cJSON_AddStringToObject(item, "screen_name", screen_name(i));
+    cJSON *rgb_json = cJSON_AddObjectToObject(item, "rgb565");
+    cJSON *indexed_json = cJSON_AddObjectToObject(item, "indexed");
+    if (rgb_json) {
+      add_window_metrics_json(rgb_json, &rgb->metrics);
+    }
+    if (indexed_json) {
+      add_window_metrics_json(indexed_json, &indexed->metrics);
+    }
+    cJSON_AddItemToArray(comparisons, item);
   }
 
   cJSON *summary = cJSON_AddObjectToObject(root, "summary");

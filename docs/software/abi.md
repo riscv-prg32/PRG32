@@ -36,7 +36,7 @@ header.
 
 Compatibility rules:
 
-- same ABI major and matching hash: accepted
+- same ABI major and current or explicitly compatible append-only hash: accepted
 - missing required feature bits: rejected
 - newer incompatible major: rejected
 - legacy absolute imports: supported only for firmware-specific workflows
@@ -53,6 +53,53 @@ extends the original header via `header_size` with `abi_hash`,
 `import_model=legacy-absolute` marks the older firmware-specific path.
 
 ABI minor `1` adds `prg32_sprite_draw_24x24` as an append-only sprite helper.
+ABI minor `3` appends `prg32_sprite_draw_indexed` and
+`prg32_sprite_draw_bitplanes`. The runtime accepts the prior ABI 1.2 hash so
+already-built portable cartridges continue to load; existing function indices
+and all RGB565 prototypes remain unchanged.
+
+## Compact Sprite ABI Calls
+
+| Symbol | Asset layout |
+|---|---|
+| `prg32_sprite_draw_indexed` | packed palette indices, most-significant pixel first in each byte |
+| `prg32_sprite_draw_bitplanes` | plane-major bitmaps, least-significant value plane first |
+
+Both calls receive `x`, `y`, a pointer to `prg32_indexed_sprite_t`, and a frame
+index. The descriptor points to pixel bytes and an RGB565 palette and records
+width, height, frame count, palette count, bits per pixel, and a signed
+transparent index.
+Supported depths are 1, 2, 4, and 8 bits per pixel. `-1` makes every palette
+entry opaque; 8-bit assets may select any transparent index through 255. Each
+frame starts on its own byte boundary.
+
+Four-bit packed assets contain two pixels per byte, high nibble first, and at most 16 shared palette
+entries. Eight-bit assets contain one pixel per byte and at most 256 shared
+entries. One descriptor palette is shared across every animation frame.
+
+Packed frames are frame-major and each frame begins on a byte boundary.
+Bitplanes are also frame-major; within a frame the least-significant index
+plane comes first. Each plane contains rows in top-to-bottom order. Every row is
+independently byte-aligned, pixel 0 occupies bit 7, and unused low bits in the
+last byte are zero. This permits the renderer to load one byte from each plane
+and reconstruct up to eight adjacent pixels without arbitrary bit addressing.
+
+Generated assets expose a pointer with bit zero tagged as compact (bit one
+selects planar layout). Because RGB565 arrays are naturally aligned, the tag is
+unambiguous and the signatures and layouts of `prg32_anim_sprite_t` and all
+existing sprite functions remain unchanged. Passing the generated tagged alias
+through `prg32_sprite_draw_16x16`, `prg32_sprite_draw_24x24`,
+`prg32_sprite_draw_frame`, or `prg32_sprite_anim_init` makes the existing draw
+and animation paths dispatch indexed data automatically. Untagged pointers use
+the original RGB565 path and its unchanged transparent-color comparison.
+For tagged calls through an existing RGB565 function, the reconstructed RGB565
+palette value is compared with that function's transparent-color argument;
+the descriptor's transparent index is also honored. The additive direct compact
+calls use the descriptor index because their prototypes contain no color key.
+
+These calls add asset encodings, not a new physical display ABI. Drawing still
+targets the existing RGB565 framebuffer, so legacy RGB565 sprite calls,
+screenshots, and display backends behave exactly as before.
 
 Store-ready cartridges append a backward-compatible `PRG32META` trailer after
 the payload. The trailer gives host tools and setup-mode clients standard

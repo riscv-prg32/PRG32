@@ -35,7 +35,10 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing
 - `flash-firmware`: flash a published single-file legacy PRG32 firmware image
 ### Utilities
-- `performance`: Get ESP32C6 performance data over HTTP. Must be used in Performance Test.
+- `performance`: download the latest in-RAM Performance Test JSON over HTTP.
+  Results contain paired RGB565/indexed measurements; preserve `color_mode`
+  when filtering or exporting samples. See
+  [Performance Metrics](/docs/measurement/metrics_api.md).
 - `screenshot`: Get screenshot of ESP32C6 over HTTP.
 ## QEMU Emulator Tasks (`qemu`)
 - `build`: build QEMU and generate the flash image. Use the `--skip-target` option to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).

@@ -31,6 +31,11 @@ extern "C" {
 #define PRG32_PLAYFIELD_ROWS 32
 #define PRG32_PARALLAX_1X 256
 
+#define PRG32_SPRITE_BPP_1 1
+#define PRG32_SPRITE_BPP_2 2
+#define PRG32_SPRITE_BPP_4 4
+#define PRG32_SPRITE_BPP_8 8
+
 #define PRG32_TILE_FLAG_SOLID (1u << 0)
 #define PRG32_TILE_FLAG_PLATFORM (1u << 1)
 #define PRG32_TILE_FLAG_HAZARD (1u << 2)
@@ -182,6 +187,27 @@ typedef struct {
   uint32_t last_ms;
   uint16_t transparent;
 } prg32_anim_sprite_t;
+
+/* Compact sprite assets keep palette indices in cartridge memory and are
+ * expanded directly into the native RGB565 framebuffer while drawing. */
+typedef struct {
+  const uint8_t *pixels;
+  const uint16_t *palette;
+  uint16_t width;
+  uint16_t height;
+  uint16_t frame_count;
+  uint16_t palette_count;
+  uint8_t bits_per_pixel;
+  int16_t transparent_index;
+} prg32_indexed_sprite_t;
+
+/* Compact descriptors can also travel through the existing RGB565 sprite ABI.
+ * uint16_t assets are naturally aligned, so bit zero remains available as a
+ * format tag without changing any function prototype or animation structure. */
+#define PRG32_SPRITE_INDEXED(asset)                                           \
+  ((const uint16_t *)((uintptr_t)(asset) | (uintptr_t)1u))
+#define PRG32_SPRITE_BITPLANES(asset)                                         \
+  ((const uint16_t *)((uintptr_t)(asset) | (uintptr_t)3u))
 
 typedef struct {
   int x;
@@ -425,6 +451,12 @@ void prg32_sprite_anim_init(prg32_anim_sprite_t *sprite, const uint16_t *frames,
                             uint16_t transparent);
 void prg32_sprite_anim_update(prg32_anim_sprite_t *sprite, uint32_t now_ms);
 void prg32_sprite_anim_draw(const prg32_anim_sprite_t *sprite, int x, int y);
+void prg32_sprite_draw_indexed(int x, int y,
+                               const prg32_indexed_sprite_t *sprite,
+                               uint32_t frame);
+void prg32_sprite_draw_bitplanes(int x, int y,
+                                 const prg32_indexed_sprite_t *sprite,
+                                 uint32_t frame);
 
 /* Assembly demos export per-game init/update/draw symbols selected by main. */
 

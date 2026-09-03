@@ -276,7 +276,7 @@ static int validate_header(const prg32_cart_header_t *h,
     if (h->header_size >= sizeof(prg32_cart_header_v2_t)) {
         const prg32_cart_header_v2_t *v2 = (const prg32_cart_header_v2_t *)h;
         import_model = v2->import_model;
-        if (v2->abi_hash != PRG32_ABI_HASH) {
+        if (!PRG32_ABI_HASH_IS_COMPATIBLE(v2->abi_hash)) {
             set_errorf("cartridge ABI hash mismatch expected=0x%08lx got=0x%08lx",
                        (unsigned long)PRG32_ABI_HASH,
                        (unsigned long)v2->abi_hash);

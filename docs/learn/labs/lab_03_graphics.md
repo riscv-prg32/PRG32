@@ -48,6 +48,13 @@ it without reflashing the resident firmware. Use `docs/cartridges.md`.
 Feature extension: run one demo under `examples/features` and identify which
 helper implements scrolling, animation, or dual playfields.
 
+Memory extension: convert one sprite in RGB565 and 4-bpp indexed modes, record
+the generated pixel-data sizes, and draw both. Then run `PERFORMANCE TEST` from
+setup mode and explain the paired `RGB FPS` and `IDX FPS` columns. Download
+`/api/performance.json` and locate the matching entries in `comparisons`.
+
 ## Reflection
 
-Explain why clearing every frame is simple but not always efficient.
+Explain why clearing every frame is simple but not always efficient. Why does
+indexed asset storage save cartridge memory without reducing the RGB565 display
+transfer size?

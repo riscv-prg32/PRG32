@@ -213,11 +213,19 @@ exercise.
 
 Setup mode also includes `PERFORMANCE TEST`, an unattended multi-screen
 benchmark that stores raw frame samples, one-second aggregate windows, and
-per-screen summaries in RAM without streaming every frame. The latest run is
+per-screen/per-color-mode summaries in RAM without streaming every frame. The latest run is
 available as `/api/performance.json` until the next benchmark or reboot. The
 built-in screens isolate clear/fill, text overlay, sprite storm, scrolling, and
-mixed-gameplay workloads. Use `tools/prg32_metrics_paper.py` to turn that JSON
+mixed-gameplay workloads. Every workload runs through matched RGB565 and
+indexed-color sprite probes; the final screen presents both FPS results in one
+comparison table. The JSON API preserves the mode on every sample and groups
+paired results per workload. Use `tools/prg32_metrics_paper.py` to turn that JSON
 into LaTeX tables, captions, and high-resolution figures for a paper.
+
+`screen_count` remains five because it counts distinct workloads;
+`result_count` is ten because every workload produces an RGB565 result and an
+indexed result. Both modes ultimately present RGB565 pixels, so the comparison
+isolates compact-asset decoding rather than LCD wire-format bandwidth.
 
 ## Cartridge runtime
 
@@ -447,12 +455,33 @@ Useful calls:
 - `prg32_sprite_hitbox(...)`: test two axis-aligned rectangles.
 - `prg32_sprite_anim_frame(now_ms, frame_count, frame_ms)`: compute a frame.
 - `prg32_sprite_draw_frame(...)`: draw one frame from a sprite sheet.
+- `prg32_sprite_draw_indexed(...)`: draw a packed 1/2/4/8-bpp palette frame.
+- `prg32_sprite_draw_bitplanes(...)`: draw a planar 1/2/4/8-bpp palette frame.
 
 The 16x16 and 24x24 helpers treat `PRG32_COLOR_WHITE` as transparent. For other
 sizes or another transparency key, `prg32_sprite_draw_frame` accepts width,
 height, a pointer to contiguous RGB565 frames, the frame index, and a
 transparent color. This keeps animated sprites usable from assembly without
 requiring a C object.
+
+Compact sprites use `prg32_indexed_sprite_t`, which contains pointers to packed
+pixel data and an RGB565 palette plus width, height, frame count, bit depth, and
+an optional transparent palette index. They save cartridge RAM and flash for
+graphics and animations while decoding directly into the native RGB565 display
+path. Existing RGB565 functions and their transparency behavior are unchanged.
+
+The asset converter emits a tagged alias for each descriptor. That alias works
+through the existing 16x16, 24x24, arbitrary-frame, and animation entry points;
+the animation initializer takes dimensions and frame count from the descriptor,
+and the existing animation draw call expands the selected frame. No additional
+framebuffer or runtime decompression buffer is allocated.
+
+The compact renderer clips once before decoding, holds the graphics mutex once,
+writes pixels through an internal already-locked framebuffer path, and records
+one dirty bounding rectangle. Packed source bytes are reused for adjacent
+pixels, while bitplane source bytes are loaded once per eight-pixel group. This
+removes per-pixel mutex and dirty-region bookkeeping without altering public
+graphics calls or the framebuffer representation.
 
 See `examples/games/frogger/graphics/game.S` for the assembly call sequence and
 `examples/games/frogger/c/game.c` for a fuller game that pairs the 24x24 sprite
@@ -541,5 +570,3 @@ When editing framework code:
 - Return simple `int` status codes for APIs called from assembly.
 - Check pointer inputs in helpers that can be called from student code.
 - Keep comments short and educational where they clarify hardware or ABI behavior.
-
-

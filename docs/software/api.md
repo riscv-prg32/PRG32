@@ -353,6 +353,11 @@ curl http://192.168.4.1/api/performance.json \
 Expected behavior:
 
 - returns the most recent in-RAM setup performance test;
+- includes `color_modes`, mode-tagged raw samples and screen summaries, plus a
+  `comparisons` array pairing RGB565 and indexed results for each workload;
+- reports `screen_count: 5` for workloads and `result_count: 10` for
+  workload/mode combinations;
+- retains the pre-existing timing, heap, aggregate-window, and summary fields;
 - rebooting the board or QEMU clears the stored result;
 - read [Metrics API](/docs/measurement/metrics_api.md) for the full JSON field reference.
 

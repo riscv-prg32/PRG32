@@ -1,7 +1,8 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 2,
+  "minor": 3,
+  "compatible_hashes": ["0xec21efe2"],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -856,6 +857,20 @@
       "args": [],
       "feature": "core",
       "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_sprite_draw_indexed",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "Draw a packed indexed-color frame without expanding it in cartridge memory."
+    },
+    {
+      "name": "prg32_sprite_draw_bitplanes",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "Draw a planar indexed-color frame without expanding it in cartridge memory."
     }
   ]
 }

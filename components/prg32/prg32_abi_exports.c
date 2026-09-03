@@ -157,6 +157,8 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_score_count,
     (prg32_any_fn_t)prg32_score_get,
     (prg32_any_fn_t)prg32_scoreboard_show,
+    (prg32_any_fn_t)prg32_sprite_draw_indexed,
+    (prg32_any_fn_t)prg32_sprite_draw_bitplanes,
 };
 
 void prg32_abi_exports_keep(void) {

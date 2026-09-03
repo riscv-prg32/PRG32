@@ -77,6 +77,7 @@ def normalize_samples(data: dict[str, Any]) -> list[dict[str, Any]]:
                 "frame_index": _sample_field(raw, "frame_index", "frame"),
                 "screen_index": _int(raw.get("screen_index")),
                 "screen_name": str(raw.get("screen_name", "unknown")),
+                "color_mode": str(raw.get("color_mode", "rgb565")),
                 "t_update_us": _sample_field(raw, "t_update_us", "update_us"),
                 "t_draw_us": _sample_field(raw, "t_draw_us", "draw_us"),
                 "t_present_us": _sample_field(raw, "t_present_us", "present_us"),
@@ -146,6 +147,7 @@ def write_samples_csv(path: Path, samples: list[dict[str, Any]]) -> None:
         "frame_index",
         "screen_index",
         "screen_name",
+        "color_mode",
         "t_update_us",
         "t_draw_us",
         "t_present_us",
@@ -241,14 +243,15 @@ def write_screen_table(path: Path, data: dict[str, Any]) -> None:
         r"graphics workload, enabling separate analysis of clear/fill, text, "
         r"sprite, scrolling, and mixed-game rendering costs.}",
         r"\label{tab:prg32-performance-screens}",
-        r"\begin{tabular}{lrrrrr}",
+        r"\begin{tabular}{llrrrrr}",
         r"\hline",
-        r"Screen & FPS & Mean us & p95 us & p99 us & Missed \\",
+        r"Screen & Mode & FPS & Mean us & p95 us & p99 us & Missed \\",
         r"\hline",
     ]
     for screen in screens:
         lines.append(
             f"{_latex_escape(screen.get('screen_name', 'unknown'))} & "
+            f"{_latex_escape(screen.get('color_mode', 'rgb565'))} & "
             f"{_number(screen.get('fps_mean')):.2f} & "
             f"{_number(screen.get('frame_us_mean')):.1f} & "
             f"{_number(screen.get('frame_us_p95')):.1f} & "

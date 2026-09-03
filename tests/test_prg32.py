@@ -12,7 +12,12 @@ from prg32.cartridge import build_cartridge
 from prg32.store import metadata as store_metadata
 from prg32.qemu import upload_qemu
 from prg32.utilities.environment_check import doctor
-from prg32.abi.abi_generated import ABI_HASH, FEATURE_BITS, IMPORT_NAMES
+from prg32.abi.abi_generated import (
+    ABI_HASH,
+    COMPATIBLE_ABI_HASHES,
+    FEATURE_BITS,
+    IMPORT_NAMES,
+)
 from prg32.prg32 import main as prg32_main
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +92,24 @@ not-a-symbol
         )
 
 class PortableHeaderTests(unittest.TestCase):
+    def test_current_runtime_accepts_previous_append_only_abi_hash(self) -> None:
+        self.assertIn(0xEC21EFE2, COMPATIBLE_ABI_HASHES)
+        payload = b"\0\0\0\0"
+        header = env_variables.CART_HEADER_V2.pack(
+            env_variables.CART_MAGIC,
+            env_variables.CART_ABI_MAJOR,
+            1,
+            env_variables.CART_HEADER_V2.size,
+            env_variables.PRG32_CART_FLAG_ABI_TABLE,
+            env_variables.FALLBACK_CART_LOAD_ADDR,
+            len(payload), len(payload), 0, 0, 0, 0,
+            b"old" + b"\0" * 29,
+            0xEC21EFE2,
+            0, 0, 0, 0, 0,
+            env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
+        )
+        runtime_handler.validate_cartridge_contract(header + payload)
+
     def test_portable_build_uses_position_tolerant_riscv_flags(self) -> None:
         # We look in build_cartridge.py now
         TOOL_PATH = ROOT / "prg32" / "cartridge" / "build_cartridge.py"
