@@ -4,4 +4,4 @@
 
 #define PRG32_ABI_MAJOR 1u
 #define PRG32_ABI_MINOR 2u
-#define PRG32_ABI_HASH 0xec21efe2u
+#define PRG32_ABI_HASH 0x80124629u
