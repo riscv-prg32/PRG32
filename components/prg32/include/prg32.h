@@ -452,6 +452,12 @@ typedef struct {
 void prg32_memory_get_stats(prg32_memory_stats_t *stats);
 void prg32_memory_log_stats(void);
 
+/**
+ * @brief Generate a random number between min and max inclusive.
+ * 
+ */
+uint32_t prg32_random_number(uint32_t min, uint32_t max);
+
 #ifdef __cplusplus
 }
 #endif

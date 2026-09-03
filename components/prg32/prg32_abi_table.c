@@ -138,5 +138,6 @@ const prg32_abi_table_t prg32_abi_table = {
         [PRG32_ABI_FN_PRG32_SCORE_COUNT] = (const void *)prg32_score_count,
         [PRG32_ABI_FN_PRG32_SCORE_GET] = (const void *)prg32_score_get,
         [PRG32_ABI_FN_PRG32_SCOREBOARD_SHOW] = (const void *)prg32_scoreboard_show,
+        [PRG32_ABI_FN_PRG32_RANDOM_NUMBER] = (const void *)prg32_random_number,
     },
 };

@@ -856,6 +856,13 @@
       "args": [],
       "feature": "core",
       "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_random_number",
+      "return": "void",
+      "args": [],
+      "feature": "core",
+      "notes": "PRG32 cartridge ABI entry point."
     }
   ]
 }

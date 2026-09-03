@@ -49,6 +49,7 @@ idf_component_register(
         "prg32_platform.c"
         "prg32_multiplayer.c"
         "prg32_qemu_input.c"
+        "prg32_random.c"
         "prg32_sprite.c"
         "prg32_setup_store.c"
         "prg32_splash.c"
