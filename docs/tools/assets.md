@@ -167,7 +167,8 @@ when choosing an index manually. The embedded Performance Test uses a matched
 
 ## Cartridge AUDIO Blocks
 
-For PRG32 I2S audio, prefer raw unsigned 8-bit sample data plus an AUDIO block:
+For recorded PRG32 I2S audio, use raw unsigned 8-bit sample data plus an AUDIO
+block:
 
 ```bash
 python3 tools/wav2prg32sample.py kick.wav \
@@ -199,3 +200,9 @@ Pack it:
 ```bash
 python3 tools/prg32audio_pack.py audio.json --out build/audio.block
 ```
+
+Music and tonal effects can instead use descriptor-only SID-like instruments,
+which require no waveform bytes. The same AUDIO block, instrument descriptor,
+and tracker formats are used. See the
+[audio guide](audio.md#sid-like-procedural-instruments) and the
+[`audio_synth` example](../../examples/features/audio_synth/README.md).

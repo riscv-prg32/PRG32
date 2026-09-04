@@ -1,6 +1,12 @@
 #include "audio_internal.h"
 #include <string.h>
 
+_Static_assert(sizeof(prg32_sample_desc_t) == 20, "sample ABI changed");
+_Static_assert(sizeof(prg32_instrument_desc_t) == 8, "instrument ABI changed");
+_Static_assert(sizeof(prg32_audio_event_t) == 4, "event ABI changed");
+_Static_assert(sizeof(prg32_audio_track_desc_t) == 8, "track ABI changed");
+_Static_assert(sizeof(prg32_audio_block_header_t) == 40, "audio block ABI changed");
+
 static int range_ok(size_t size, uint32_t offset, size_t bytes) {
     return offset <= size && bytes <= size - offset;
 }
@@ -38,7 +44,8 @@ int prg32_audio_register_sample(uint16_t sample_id,
 int prg32_audio_register_instrument(uint16_t instrument_id,
                                     const prg32_instrument_desc_t *instrument) {
     if (instrument_id >= PRG32_AUDIO_MAX_INSTRUMENTS || !instrument ||
-        instrument->sample_id >= PRG32_AUDIO_MAX_SAMPLES) {
+        (!PRG32_AUDIO_IS_SYNTH_ID(instrument->sample_id) &&
+         instrument->sample_id >= PRG32_AUDIO_MAX_SAMPLES)) {
         return -1;
     }
     prg32_audio_lock();

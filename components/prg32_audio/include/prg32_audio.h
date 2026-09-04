@@ -18,6 +18,30 @@ extern "C" {
 
 #define PRG32_AUDIO_SAMPLE_LOOP (1u << 0)
 
+/* Values 0..63 remain ordinary PCM sample slots.  Bit 15 selects a
+ * procedural instrument without changing prg32_instrument_desc_t. */
+#define PRG32_AUDIO_SYNTH_MARKER 0x8000u
+#define PRG32_AUDIO_SYNTH_WAVE_TRIANGLE 0u
+#define PRG32_AUDIO_SYNTH_WAVE_SAW      1u
+#define PRG32_AUDIO_SYNTH_WAVE_PULSE    2u
+#define PRG32_AUDIO_SYNTH_WAVE_NOISE    3u
+#define PRG32_AUDIO_SYNTH_ID(waveform, pulse_width, cutoff, resonance) \
+    ((uint16_t)(PRG32_AUDIO_SYNTH_MARKER | \
+                (((uint16_t)(resonance) & 0x03u) << 10) | \
+                (((uint16_t)(cutoff) & 0x0fu) << 6) | \
+                (((uint16_t)(pulse_width) & 0x0fu) << 2) | \
+                ((uint16_t)(waveform) & 0x03u)))
+#define PRG32_AUDIO_SYNTH_TRI(cutoff, resonance) \
+    PRG32_AUDIO_SYNTH_ID(PRG32_AUDIO_SYNTH_WAVE_TRIANGLE, 8, cutoff, resonance)
+#define PRG32_AUDIO_SYNTH_SAW(cutoff, resonance) \
+    PRG32_AUDIO_SYNTH_ID(PRG32_AUDIO_SYNTH_WAVE_SAW, 8, cutoff, resonance)
+#define PRG32_AUDIO_SYNTH_PULSE(pulse_width, cutoff, resonance) \
+    PRG32_AUDIO_SYNTH_ID(PRG32_AUDIO_SYNTH_WAVE_PULSE, pulse_width, cutoff, resonance)
+#define PRG32_AUDIO_SYNTH_NOISE(cutoff, resonance) \
+    PRG32_AUDIO_SYNTH_ID(PRG32_AUDIO_SYNTH_WAVE_NOISE, 8, cutoff, resonance)
+#define PRG32_AUDIO_IS_SYNTH_ID(sample_id) \
+    ((((uint16_t)(sample_id)) & PRG32_AUDIO_SYNTH_MARKER) != 0u)
+
 typedef enum {
     PRG32_AUDIO_MODE_MONO = 1,
     PRG32_AUDIO_MODE_STEREO = 2

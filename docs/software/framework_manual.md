@@ -506,6 +506,8 @@ MAX98357A DAC/amplifier boards:
 
 - mono mode: one MAX98357A, default, 22050 Hz, 6 voices
 - stereo mode: two MAX98357A boards, optional PRG32 Audio Plus, panned voices
+- PCM and SID-like triangle, saw, pulse, and deterministic noise voices
+- per-synth-voice ADSR and resonant low-pass filtering
 
 Useful calls:
 
@@ -514,13 +516,17 @@ Useful calls:
 - `prg32_audio_register_sample(...)`: register unsigned 8-bit PCM.
 - `prg32_audio_play_sample(sample_id, volume, pitch)`: trigger a sample.
 - `prg32_audio_play_sample_pan(sample_id, volume, pitch, pan)`: trigger with pan.
-- `prg32_audio_note_on(channel, instrument, note, volume)`: start a pitched note.
+- `prg32_audio_note_on(channel, instrument, note, volume)`: start a PCM or
+  procedural instrument note.
+- `prg32_audio_note_on_pan(...)`: start a note with a stereo pan override.
+- `prg32_audio_note_off(channel)`: stop PCM immediately or release a synth note.
 - `prg32_audio_play_track(track_id)`: start tracker event playback.
 
 Pitch `1024` means natural sample speed. Volumes use `0..255`. Pan uses
 `-64..+63`; mono mode accepts pan calls but outputs mono.
 
-See `docs/audio.md` for wiring, examples, and the cartridge AUDIO block format.
+See [`docs/tools/audio.md`](../tools/audio.md) for wiring, synth-ID encoding,
+ADSR/filter behavior, examples, and the cartridge AUDIO block format.
 
 The setup audio menu auto-detects the active output path:
 

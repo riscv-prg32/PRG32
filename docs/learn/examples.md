@@ -11,6 +11,7 @@ PRG32 examples are split into game examples and focused feature examples.
 | `examples/features/audio_mono_tracker` | tracker event sequence | one MAX98357A |
 | `examples/features/audio_stereo_pan_test` | verify left/right channel selection | two MAX98357A boards |
 | `examples/features/audio_stereo_music` | centered music plus panned effects | two MAX98357A boards |
+| `examples/features/audio_synth` | SID-like oscillator, ADSR, filter, and stereo demo | one or two MAX98357A boards |
 
 Run audio examples as temporary firmware apps while validating hardware. For
 uploadable cartridges, pack assets with `tools/prg32audio_pack.py` and pass

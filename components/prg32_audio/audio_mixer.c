@@ -54,9 +54,13 @@ static int alloc_voice(void) {
 }
 
 static int start_voice(int channel, uint16_t sample_id, uint8_t volume,
-                       uint16_t pitch, int8_t pan) {
-  if (!g_prg32_audio.initialized || sample_id >= PRG32_AUDIO_MAX_SAMPLES ||
-      !g_prg32_audio.samples[sample_id].present) {
+                       uint16_t pitch, int8_t pan,
+                       const prg32_instrument_desc_t *instrument,
+                       uint8_t note) {
+  bool synth = instrument && PRG32_AUDIO_IS_SYNTH_ID(sample_id);
+  if (!g_prg32_audio.initialized ||
+      (!synth && (sample_id >= PRG32_AUDIO_MAX_SAMPLES ||
+                  !g_prg32_audio.samples[sample_id].present))) {
     return -1;
   }
   if (pan < PRG32_AUDIO_PAN_LEFT) {
@@ -71,17 +75,23 @@ static int start_voice(int channel, uint16_t sample_id, uint8_t volume,
     return -1;
   }
 
-  prg32_audio_sample_slot_t *sample = &g_prg32_audio.samples[sample_id];
   prg32_audio_voice_t *voice = &g_prg32_audio.voices[chosen];
   memset(voice, 0, sizeof(*voice));
   voice->active = true;
   voice->sample_id = sample_id;
-  voice->step_fp = pitch_to_step(pitch);
   voice->volume = volume;
   voice->pan = pan;
-  voice->loop = (sample->desc.flags & PRG32_AUDIO_SAMPLE_LOOP) != 0u;
-  voice->loop_start = sample->desc.loop_start;
-  voice->loop_end = sample->desc.loop_end;
+  voice->synth = synth;
+  if (synth) {
+    prg32_audio_synth_start(voice, instrument, note,
+                            g_prg32_audio.config.sample_rate);
+  } else {
+    prg32_audio_sample_slot_t *sample = &g_prg32_audio.samples[sample_id];
+    voice->step_fp = pitch_to_step(pitch);
+    voice->loop = (sample->desc.flags & PRG32_AUDIO_SAMPLE_LOOP) != 0u;
+    voice->loop_start = sample->desc.loop_start;
+    voice->loop_end = sample->desc.loop_end;
+  }
   g_prg32_audio.channel_volume[chosen] = volume;
   g_prg32_audio.channel_pan[chosen] = pan;
   return chosen;
@@ -122,7 +132,7 @@ int prg32_audio_play_sample(uint16_t sample_id, uint8_t volume,
 int prg32_audio_play_sample_pan(uint16_t sample_id, uint8_t volume,
                                 uint16_t pitch, int8_t pan) {
   prg32_audio_lock();
-  int channel = start_voice(-1, sample_id, volume, pitch, pan);
+  int channel = start_voice(-1, sample_id, volume, pitch, pan, NULL, 60);
   prg32_audio_unlock();
   return channel;
 }
@@ -170,15 +180,30 @@ void prg32_audio_note_on_pan(uint8_t channel, uint8_t instrument, uint8_t note,
   }
   prg32_audio_lock();
   start_voice(channel, sample_id, final_volume, note_pitch(note, base_note),
-              final_pan);
+              final_pan, &inst->desc, note);
   prg32_audio_unlock();
 }
 
 void prg32_audio_note_off(uint8_t channel) {
-  prg32_audio_stop_channel(channel);
+  if (channel >= CONFIG_PRG32_AUDIO_MAX_VOICES) return;
+  prg32_audio_lock();
+  prg32_audio_voice_t *voice = &g_prg32_audio.voices[channel];
+  if (voice->synth) {
+    prg32_audio_synth_release(voice, g_prg32_audio.config.sample_rate);
+  } else {
+    voice->active = false;
+  }
+  prg32_audio_unlock();
 }
 
 static int32_t mix_voice_sample(prg32_audio_voice_t *voice, uint8_t channel) {
+  if (voice->synth) {
+    int32_t pcm = prg32_audio_synth_next(
+        voice, g_prg32_audio.config.sample_rate);
+    pcm = (pcm * voice->volume) >> 8;
+    pcm = (pcm * g_prg32_audio.channel_volume[channel]) >> 8;
+    return (pcm * g_prg32_audio.master_volume) >> 9;
+  }
   prg32_audio_sample_slot_t *sample = &g_prg32_audio.samples[voice->sample_id];
   uint32_t index = voice->position_fp >> PRG32_AUDIO_FP_SHIFT;
   if (index >= sample->desc.length) {

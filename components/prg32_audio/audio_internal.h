@@ -25,7 +25,28 @@ typedef struct {
 } prg32_audio_track_slot_t;
 
 typedef struct {
+    uint32_t phase;
+    uint32_t phase_increment;
+    uint32_t pulse_threshold;
+    uint32_t lfsr;
+    int32_t filter_low;
+    int32_t filter_band;
+    uint32_t envelope_level;
+    uint32_t envelope_step;
+    uint32_t sustain_level;
+    uint8_t waveform;
+    uint8_t cutoff;
+    uint8_t resonance;
+    uint8_t envelope_state;
+    uint8_t attack;
+    uint8_t decay;
+    uint8_t sustain;
+    uint8_t release;
+} prg32_audio_synth_voice_t;
+
+typedef struct {
     bool active;
+    bool synth;
     uint16_t sample_id;
     uint32_t position_fp;
     uint32_t step_fp;
@@ -34,6 +55,7 @@ typedef struct {
     bool loop;
     uint32_t loop_start;
     uint32_t loop_end;
+    prg32_audio_synth_voice_t synth_state;
 } prg32_audio_voice_t;
 
 typedef struct {
@@ -68,6 +90,13 @@ extern prg32_audio_state_t g_prg32_audio;
 void prg32_audio_lock(void);
 void prg32_audio_unlock(void);
 void prg32_audio_tracker_step(uint32_t elapsed_ms);
+void prg32_audio_synth_start(prg32_audio_voice_t *voice,
+                             const prg32_instrument_desc_t *instrument,
+                             uint8_t note, uint32_t sample_rate);
+void prg32_audio_synth_release(prg32_audio_voice_t *voice,
+                               uint32_t sample_rate);
+int32_t prg32_audio_synth_next(prg32_audio_voice_t *voice,
+                               uint32_t sample_rate);
 
 int prg32_audio_i2s_start(const prg32_audio_config_t *config);
 void prg32_audio_i2s_stop(void);

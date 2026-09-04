@@ -178,7 +178,11 @@ typedef struct {
 } prg32_instrument_desc_t;
 ```
 
-The ADSR fields are reserved for future envelope lessons.
+For ordinary sample IDs, instruments retain the original PCM behavior. Sample
+IDs with bit 15 set select ABI-neutral SID-like procedural instruments; their
+ADSR bytes control the generated voice envelope. See
+[`docs/tools/audio.md`](../tools/audio.md#sid-like-procedural-instruments) for
+the encoding and synthesis behavior. The descriptor remains eight bytes.
 
 #### Track Events
 

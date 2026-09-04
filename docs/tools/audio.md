@@ -2,7 +2,8 @@
 
 PRG32 audio is a small retro-style digital audio runtime for classroom games.
 It keeps the first steps as simple as a buzzer command, while giving students a
-path toward PCM samples, tracker-like music, and stereo panning.
+path toward PCM samples, SID-like procedural synthesis, tracker music, and
+stereo panning.
 
 The setup menu includes an audio page that auto-detects the currently usable
 output path: none, PWM buzzer, mono I2S, or stereo I2S. Trainers can adjust the
@@ -16,14 +17,14 @@ The audio stack has four pieces:
 ```text
 PRG32 program
 |-- sample, note, and track API calls
-|-- AUDIO cartridge block assets
+|-- AUDIO cartridge block descriptors and optional PCM assets
 |-- signed 16-bit mono/stereo mixer
 `-- ESP-IDF I2S output to MAX98357A amplifier boards
 ```
 
-The runtime uses unsigned 8-bit mono samples as source assets and mixes them as
-signed 16-bit PCM internally. Integer and fixed-point arithmetic keep the real
-time path teachable and avoid floating point inside the mixer.
+The runtime mixes unsigned 8-bit mono samples and procedural synth voices as
+signed 16-bit PCM. Integer and fixed-point arithmetic keep the real-time path
+teachable and avoid floating point inside the mixer.
 
 ## Audio Modes
 
@@ -226,11 +227,69 @@ Convert WAV files:
 python3 tools/wav2prg32sample.py jump.wav --rate 22050 --normalize --out build/jump.raw
 ```
 
-## Instruments
+## SID-Like Procedural Instruments
 
-Instruments map tracker notes to samples. The first implementation stores ADSR
-fields for future lessons, but playback currently uses sample id, default
-volume, and default pan.
+Instruments map tracker notes either to PCM sample slots `0..63` or to a
+procedural oscillator. A synth ID uses bit 15 as its marker, which cannot
+collide with the 64 PCM slots:
+
+```text
+bit 15       synth marker (1)
+bits 14:12   reserved (currently ignored)
+bits 11:10   resonance, 0..3
+bits 9:6     low-pass cutoff, 0..15
+bits 5:2     pulse width, 0..15
+bits 1:0     triangle=0, saw=1, pulse=2, noise=3
+```
+
+Use `PRG32_AUDIO_SYNTH_TRI`, `PRG32_AUDIO_SYNTH_SAW`,
+`PRG32_AUDIO_SYNTH_PULSE`, or `PRG32_AUDIO_SYNTH_NOISE` rather than assembling
+the bits by hand. Pulse-width positions map to duty cycles 1/17 through 16/17,
+so neither endpoint can become permanently silent or permanently high.
+
+```c
+static const prg32_instrument_desc_t bass = {
+    .sample_id = PRG32_AUDIO_SYNTH_PULSE(6, 8, 2),
+    .default_volume = 220,
+    .default_pan = PRG32_AUDIO_PAN_CENTER,
+    .attack = 2,
+    .decay = 28,
+    .sustain = 180,
+    .release = 36,
+};
+```
+
+The oscillators use a 32-bit phase accumulator. MIDI note 69 is 440 Hz, and
+the phase increment is calculated once when a note starts. Noise uses a
+deterministic 23-bit LFSR seeded with `0x7ffff8`, taps 22 and 17, zero-state
+protection, and one update per oscillator phase wrap. The synth is inspired by
+the SID signal path; it is not a cycle-accurate 6581 or 8580 emulator.
+
+Every synth voice applies the existing instrument ADSR bytes. A zero attack or
+decay is immediate. Other timing values follow a quadratic mapping from about
+1 ms to about 2 seconds. Sustain maps directly from `0..255` to the envelope
+level. `prg32_audio_note_off()` begins release for synth voices and retains the
+legacy immediate-stop behavior for PCM voices.
+
+The output passes through a bounded fixed-point state-variable low-pass filter.
+The 16 cutoff and four resonance settings are musical control positions rather
+than calibrated SID frequencies. Extreme state is clamped to keep malformed or
+high-resonance combinations stable.
+
+Synth and PCM voices share the same allocator, master/channel volume, pan law,
+mono collapse, stereo output, and tracker event format. A tracker `NOTE_ON`
+therefore starts a synth whenever its instrument descriptor contains a synth
+ID; `NOTE_OFF` releases it. No public function, descriptor, event, or AUDIO
+block layout changed.
+
+Procedural oscillators require no waveform bytes in the cartridge. A sustained
+one-second PCM tone at 22050 Hz needs 22050 asset bytes, while its synth
+instrument needs only the existing eight-byte descriptor. Runtime voice state
+and the normal audio buffers still consume RAM, so this is an asset-storage
+saving rather than zero-cost audio.
+
+Pulse width, cutoff, and pan are fixed for the life of a note. Automatic LFOs,
+ring modulation, and oscillator sync are not currently implemented.
 
 ## Tracker Events
 

@@ -34,7 +34,7 @@ board.
 
 ## Extension: I2S Audio
 
-1. Wire one MAX98357A as shown in `docs/audio.md`.
+1. Wire one MAX98357A as shown in `docs/tools/audio.md`.
 2. Run `examples/features/audio_mono_beep`.
 3. Replace the generated square sample with a short WAV converted through
    `tools/wav2prg32sample.py`.
@@ -43,6 +43,17 @@ board.
 
 Checkpoint: the cartridge can call `prg32_audio_play_sample(0, 255, 1024)` and
 hear sample `0` without reflashing the resident firmware.
+
+## Extension: Procedural Synthesis
+
+1. Pack and build `examples/features/audio_synth` using its README.
+2. Compare its descriptor-only AUDIO block with a one-second 22050 Hz PCM asset.
+3. Listen to triangle bass, pulse lead, saw harmony, and deterministic noise.
+4. Release the chord and identify its attack, decay, sustain, and release stages.
+5. In stereo, compare the centered bass with the left and right voices.
+
+Checkpoint: the synth cartridge plays through the same note and tracker calls as
+PCM cartridges, while an older PCM cartridge still plays unchanged.
 
 ## Reflection
 

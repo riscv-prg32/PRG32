@@ -127,9 +127,9 @@ The audio ABI is the C API exposed to cartridges:
 | `prg32_audio_play_sample_pan` | play sample with pan | channel or negative |
 | `prg32_audio_stop_channel` | stop one voice | none |
 | `prg32_audio_stop_all` | stop all voices | none |
-| `prg32_audio_note_on` | start instrument note | none |
-| `prg32_audio_note_on_pan` | start instrument note with pan | none |
-| `prg32_audio_note_off` | stop note channel | none |
+| `prg32_audio_note_on` | start PCM or synth instrument note | none |
+| `prg32_audio_note_on_pan` | start PCM or synth note with pan | none |
+| `prg32_audio_note_off` | stop PCM or begin synth release | none |
 | `prg32_audio_play_track` | start tracker stream | none |
 | `prg32_audio_stop_track` | stop tracker stream | none |
 | `prg32_audio_set_tempo` | set tracker BPM | none |
@@ -148,6 +148,13 @@ Pan uses signed values:
 
 Mono builds accept pan calls but mix to one output. Stereo-only programs should
 check `prg32_audio_get_mode()` before making a wiring assumption.
+
+SID-like synthesis is ABI-neutral: bit 15 of the existing instrument
+`sample_id` selects a procedural instrument. No function index, prototype,
+descriptor layout, tracker event, or AUDIO block version changed. Portable
+cartridges built before synthesis therefore remain compatible, and ordinary
+sample IDs retain PCM semantics. The encoding is defined in the
+[audio guide](../tools/audio.md#sid-like-procedural-instruments).
 
 ## RGB LED ABI Calls
 
@@ -168,7 +175,7 @@ Audio calls that return `int` use a non-negative channel number for success and
 a negative value for failure. Common failure causes:
 
 - audio runtime was not initialized
-- sample id is missing
+- ordinary PCM sample id is missing
 - channel id is outside the configured voice table
 - AUDIO block is invalid
 

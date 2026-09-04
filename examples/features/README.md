@@ -17,7 +17,7 @@ sketches through the same cartridge workflow students use for games.
 | Splash screen | `splash_screen/demo.S` | `splash_screen/c/demo.c` | `splash_screen` / `_c` | 320x200 game title splash |
 | Joystick keyboard | - | `keyboard_input/c/demo.c` | `keyboard_input_c` | alphanumeric text input |
 | Wi-Fi setup | - | `wifi_setup/c/demo.c` | `wifi_setup_c` | setup mode and AP/STA choice |
-| Audio synth | - | `audio_synth/c/demo.c` | `audio_synth_c` | notes and samples |
+| Audio synth | - | `audio_synth/c/demo.c` | `audio_synth_c` | SID-like oscillators, ADSR, filtering, tracker playback, and stereo pan |
 
 Each demo exports:
 
@@ -127,6 +127,9 @@ python3 -m prg32 cartridge build \
   --name animated-sprites-c \
   --out build-esp32c6/animated-sprites-c.prg32
 ```
+
+The audio synth demo also needs its descriptor-only AUDIO block. Follow
+[`audio_synth/README.md`](audio_synth/README.md) to pack and attach it.
 
 Upload to hardware:
 
