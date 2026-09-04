@@ -199,6 +199,12 @@ per-pixel color is more important than asset size. The framebuffer and display
 output remain RGB565 in both cases, and conversion fails rather than silently
 reducing an over-limit palette.
 
+Four-bit indexed output is the recommended starting point for ordinary game
+sprites because its 16-color palette is shared across animation frames and its
+renderer decodes two pixels per packed byte. This is a storage recommendation,
+not an API requirement: existing RGB565 cartridge source and portable binaries
+continue to use the unchanged calls and transparent-color behavior.
+
 ## Break and Fix Exercise
 
 Break it:

@@ -925,6 +925,11 @@ void prg32_gfx_pixel_unlocked(int x, int y, uint16_t color) {
     g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x] = fb_color(color);
 }
 
+uint16_t *prg32_gfx_row_unlocked(int y) {
+    int raw_y = logical_y_to_raw(y);
+    return &g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W];
+}
+
 void prg32_gfx_dirty_unlocked(int x, int y, int w, int h) {
     dirty_add(x, y, w, h);
 }

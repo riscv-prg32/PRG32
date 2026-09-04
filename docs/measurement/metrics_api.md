@@ -104,6 +104,11 @@ revision `58dde55-dirty` on 2026-09-04. It is a functional reference showing
 that both paths execute in one paired run; QEMU timings must not be presented as
 ESP32-C6 hardware measurements.
 
+This capture predates the direct-row sprite optimization and remains only a
+workflow/baseline artifact. Do not use its values to characterize the current
+renderer. Publish updated numbers only after repeating the paired run on the
+target revision; ESP32-C6 claims require measurements on real ESP32-C6 hardware.
+
 ![QEMU RGB565 and indexed-color performance matrix](images/performance_rgb565_vs_indexed.png)
 
 | Workload | RGB565 FPS | Indexed FPS | Indexed difference |

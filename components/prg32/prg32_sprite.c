@@ -24,6 +24,79 @@ static const prg32_indexed_sprite_t *compact_pointer_asset(
         ((uintptr_t)frames & ~(uintptr_t)3u);
 }
 
+typedef struct {
+    int src_x;
+    int src_y;
+    int dst_x;
+    int dst_y;
+    int width;
+    int height;
+} prg32_sprite_clip_t;
+
+static int clip_sprite(int x, int y, int width, int height,
+                       prg32_sprite_clip_t *clip) {
+    if (!clip || width <= 0 || height <= 0) return 0;
+    int64_t x1 = (int64_t)x + width;
+    int64_t y1 = (int64_t)y + height;
+    if (x >= PRG32_GAME_W || y >= PRG32_GAME_H || x1 <= 0 || y1 <= 0) return 0;
+    clip->src_x = x < 0 ? -x : 0;
+    clip->src_y = y < 0 ? -y : 0;
+    clip->dst_x = x < 0 ? 0 : x;
+    clip->dst_y = y < 0 ? 0 : y;
+    clip->width = (int)((x1 > PRG32_GAME_W ? PRG32_GAME_W : x1) - clip->dst_x);
+    clip->height = (int)((y1 > PRG32_GAME_H ? PRG32_GAME_H : y1) - clip->dst_y);
+    return clip->width > 0 && clip->height > 0;
+}
+
+static int blit_index8_row(uint16_t *dst, const uint8_t *src, int count,
+                           const prg32_indexed_sprite_t *sprite,
+                           int compare_color, uint16_t transparent_color) {
+    int wrote = 0;
+    for (int i = 0; i < count; ++i) {
+        uint8_t index = src[i];
+        if (index >= sprite->palette_count ||
+            (sprite->transparent_index >= 0 && index == sprite->transparent_index)) continue;
+        uint16_t color = sprite->palette[index];
+        if (compare_color && color == transparent_color) continue;
+        dst[i] = prg32_gfx_native_color(color);
+        wrote = 1;
+    }
+    return wrote;
+}
+
+static int blit_index4_row(uint16_t *dst, const uint8_t *data,
+                           size_t first_pixel, int count,
+                           const prg32_indexed_sprite_t *sprite,
+                           int compare_color, uint16_t transparent_color) {
+    int wrote = 0;
+    int out = 0;
+#define STORE_INDEX4(value) do {                                             \
+        uint8_t index_ = (value);                                            \
+        if (index_ < sprite->palette_count &&                                \
+            (sprite->transparent_index < 0 || index_ != sprite->transparent_index)) { \
+            uint16_t color_ = sprite->palette[index_];                       \
+            if (!compare_color || color_ != transparent_color) {             \
+                dst[out] = prg32_gfx_native_color(color_);                   \
+                wrote = 1;                                                   \
+            }                                                                \
+        }                                                                    \
+        ++out;                                                               \
+    } while (0)
+    if ((first_pixel & 1u) && out < count) {
+        STORE_INDEX4(data[first_pixel >> 1] & 0x0fu);
+        ++first_pixel;
+    }
+    const uint8_t *src = data + (first_pixel >> 1);
+    while (out + 1 < count) {
+        uint8_t packed = *src++;
+        STORE_INDEX4(packed >> 4);
+        STORE_INDEX4(packed & 0x0fu);
+    }
+    if (out < count) STORE_INDEX4(*src >> 4);
+#undef STORE_INDEX4
+    return wrote;
+}
+
 int prg32_sprite_hitbox(int ax,
                         int ay,
                         int aw,
@@ -58,12 +131,21 @@ void prg32_sprite_draw_8x8(int x,
     if (!bits) {
         return;
     }
-    for (int row = 0; row < 8; ++row) {
-        for (int col = 0; col < 8; ++col) {
-            uint16_t color = (bits[row] & (1u << (7 - col))) ? fg : bg;
-            prg32_gfx_pixel(x + col, y + row, color);
+    prg32_sprite_clip_t clip;
+    if (!clip_sprite(x, y, 8, 8, &clip)) return;
+    uint16_t native_fg = prg32_gfx_native_color(fg);
+    uint16_t native_bg = prg32_gfx_native_color(bg);
+    prg32_gfx_lock();
+    for (int row = 0; row < clip.height; ++row) {
+        uint8_t source = bits[clip.src_y + row];
+        uint16_t *dst = prg32_gfx_row_unlocked(clip.dst_y + row) + clip.dst_x;
+        for (int col = 0; col < clip.width; ++col) {
+            int source_col = clip.src_x + col;
+            dst[col] = (source & (1u << (7 - source_col))) ? native_fg : native_bg;
         }
     }
+    prg32_gfx_dirty_unlocked(clip.dst_x, clip.dst_y, clip.width, clip.height);
+    prg32_gfx_unlock();
 }
 
 void prg32_sprite_draw_16x16(int x, int y, const uint16_t *rgb565) {
@@ -105,23 +187,27 @@ void prg32_sprite_draw_frame(int x,
         return;
     }
 
+    prg32_sprite_clip_t clip;
+    if (!clip_sprite(x, y, w, h, &clip)) return;
     const uint16_t *pixels = frames + (size_t)frame * (size_t)w * (size_t)h;
-    for (int row = 0; row < h; ++row) {
-        int py = y + row;
-        if ((unsigned)py >= PRG32_GAME_H) {
-            continue;
-        }
-        for (int col = 0; col < w; ++col) {
-            int px = x + col;
-            if ((unsigned)px >= PRG32_GAME_W) {
-                continue;
-            }
-            uint16_t color = pixels[row * w + col];
+    int wrote = 0;
+    prg32_gfx_lock();
+    for (int row = 0; row < clip.height; ++row) {
+        const uint16_t *src = pixels +
+            (size_t)(clip.src_y + row) * (size_t)w + (size_t)clip.src_x;
+        uint16_t *dst = prg32_gfx_row_unlocked(clip.dst_y + row) + clip.dst_x;
+        for (int col = 0; col < clip.width; ++col) {
+            uint16_t color = src[col];
             if (color != transparent) {
-                prg32_gfx_pixel(px, py, color);
+                dst[col] = prg32_gfx_native_color(color);
+                wrote = 1;
             }
         }
     }
+    if (wrote) {
+        prg32_gfx_dirty_unlocked(clip.dst_x, clip.dst_y, clip.width, clip.height);
+    }
+    prg32_gfx_unlock();
 }
 
 void prg32_sprite_anim_init(prg32_anim_sprite_t *sprite,
@@ -242,32 +328,34 @@ static void draw_compact_sprite(int x,
     }
     const uint8_t *data = sprite->pixels + (size_t)frame * frame_bytes;
 
-    int64_t first_col_64 = x < 0 ? -(int64_t)x : 0;
-    int64_t first_row_64 = y < 0 ? -(int64_t)y : 0;
-    if (first_col_64 >= sprite->width || first_row_64 >= sprite->height) {
-        return;
-    }
-    int first_col = (int)first_col_64;
-    int first_row = (int)first_row_64;
-    int last_col = sprite->width;
-    int last_row = sprite->height;
-    if ((int64_t)x + last_col > PRG32_GAME_W) last_col = PRG32_GAME_W - x;
-    if ((int64_t)y + last_row > PRG32_GAME_H) last_row = PRG32_GAME_H - y;
-    if (first_col >= last_col || first_row >= last_row) {
-        return;
-    }
+    prg32_sprite_clip_t clip;
+    if (!clip_sprite(x, y, sprite->width, sprite->height, &clip)) return;
 
-    int dirty_x0 = PRG32_GAME_W;
-    int dirty_y0 = PRG32_GAME_H;
-    int dirty_x1 = -1;
-    int dirty_y1 = -1;
+    int wrote = 0;
     prg32_gfx_lock();
-    for (int row = first_row; row < last_row; ++row) {
+    for (int visible_row = 0; visible_row < clip.height; ++visible_row) {
+        int row = clip.src_y + visible_row;
         size_t row_position = (size_t)row * sprite->width;
+        size_t first_position = row_position + (size_t)clip.src_x;
+        uint16_t *dst = prg32_gfx_row_unlocked(clip.dst_y + visible_row) +
+            clip.dst_x;
+        if (!planar && sprite->bits_per_pixel == PRG32_SPRITE_BPP_8) {
+            wrote |= blit_index8_row(dst, data + first_position, clip.width,
+                                     sprite, compare_transparent_color,
+                                     transparent_color);
+            continue;
+        }
+        if (!planar && sprite->bits_per_pixel == PRG32_SPRITE_BPP_4) {
+            wrote |= blit_index4_row(dst, data, first_position, clip.width,
+                                     sprite, compare_transparent_color,
+                                     transparent_color);
+            continue;
+        }
         size_t cached_byte_index = SIZE_MAX;
         uint8_t cached_packed_byte = 0;
         uint8_t cached_plane_bytes[8] = {0};
-        for (int col = first_col; col < last_col; ++col) {
+        for (int visible_col = 0; visible_col < clip.width; ++visible_col) {
+            int col = clip.src_x + visible_col;
             size_t position = row_position + (size_t)col;
             uint8_t index = 0;
             if (planar) {
@@ -310,19 +398,13 @@ static void draw_compact_sprite(int x,
             if (compare_transparent_color && color == transparent_color) {
                 continue;
             }
-            int px = x + col;
-            int py = y + row;
-            prg32_gfx_pixel_unlocked(px, py, color);
-            if (px < dirty_x0) dirty_x0 = px;
-            if (py < dirty_y0) dirty_y0 = py;
-            if (px > dirty_x1) dirty_x1 = px;
-            if (py > dirty_y1) dirty_y1 = py;
+            dst[visible_col] = prg32_gfx_native_color(color);
+            wrote = 1;
         }
     }
-    if (dirty_x1 >= dirty_x0) {
-        prg32_gfx_dirty_unlocked(dirty_x0, dirty_y0,
-                                 dirty_x1 - dirty_x0 + 1,
-                                 dirty_y1 - dirty_y0 + 1);
+    if (wrote) {
+        prg32_gfx_dirty_unlocked(clip.dst_x, clip.dst_y,
+                                 clip.width, clip.height);
     }
     prg32_gfx_unlock();
 }

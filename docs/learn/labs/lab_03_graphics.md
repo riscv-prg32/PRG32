@@ -53,6 +53,11 @@ the generated pixel-data sizes, and draw both. Then run `PERFORMANCE TEST` from
 setup mode and explain the paired `RGB FPS` and `IDX FPS` columns. Download
 `/api/performance.json` and locate the matching entries in `comparisons`.
 
+Performance extension: repeat the paired benchmark with one fixed firmware
+revision and optimization profile. Treat draw time as CPU composition work and
+present time as RGB565 display-transfer work. The current RGB565 and indexed
+renderers use equivalent one-lock, clipped-row, one-dirty-update policies.
+
 ## Reflection
 
 Explain why clearing every frame is simple but not always efficient. Why does

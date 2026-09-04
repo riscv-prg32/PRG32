@@ -272,6 +272,10 @@ on-device presentation. It demonstrates the capture workflow and paired table
 format; use repeated ESP32-C6 runs rather than this QEMU screenshot when making
 physical-hardware performance claims.
 
+The checked-in image was produced before the direct-row blitter optimization.
+Keep it labeled as a baseline example and capture a new matrix after changing
+renderer synchronization, clipping, packed decoding, or framebuffer access.
+
 ![Completed QEMU RGB565 versus indexed benchmark](images/performance_rgb565_vs_indexed.png)
 
 For streaming cartridge metrics, use the metrics server workflow.

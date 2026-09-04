@@ -101,6 +101,18 @@ one pixel per byte. A 16-color asset uses 4 bits per pixel instead of RGB565's
 16, so its pixel data is one quarter of the size; its RGB565 palette is stored
 once.
 
+Use 4-bpp indexed data as the normal default for retro-style game sprites. It
+balances a small 16-color palette, two pixels per source byte, and a specialized
+two-pixel renderer. Choose the other formats deliberately:
+
+| Format | Recommended use |
+|---|---|
+| 1-bpp indexed | Fonts, masks, and monochrome graphics |
+| 2-bpp indexed | Four-color artwork |
+| **4-bpp indexed** | **General-purpose PRG32 game sprites** |
+| 8-bpp indexed | Detailed sprites requiring up to 256 colors |
+| RGB565 | Unrestricted color or minimum raw decoding work |
+
 The palette is built deterministically in first-seen RGB565 color order across
 all frames and is shared by the whole animation. Conversion is exact at the
 native RGB565 level: if the image contains more colors than `--colors` allows,
@@ -141,6 +153,11 @@ bytes. Indexed4 and four bitplanes each use 512 encoded bytes plus a 32-byte
 palette: 544 bytes before the descriptor, a 73.4% reduction. Indexed4 has the
 simpler random lookup. Bitplanes are most useful when plane-oriented masking or
 selective effects justify their row padding and extra plane reads.
+
+For one 32x32 frame, pixel data alone costs 2048 bytes in RGB565, 1024 bytes at
+8 bpp, 512 bytes at 4 bpp, 256 bytes at 2 bpp, or 128 bytes at 1 bpp. A maximum
+palette adds 512, 32, 8, or 4 bytes respectively to the indexed formats. A
+shared animation palette amortizes that fixed cost across every frame.
 
 `--transparent-index -1` keeps every palette entry opaque. Any other value
 skips that generated palette index while drawing. Inspect the emitted palette

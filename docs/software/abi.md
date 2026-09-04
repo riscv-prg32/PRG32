@@ -101,6 +101,13 @@ These calls add asset encodings, not a new physical display ABI. Drawing still
 targets the existing RGB565 framebuffer, so legacy RGB565 sprite calls,
 screenshots, and display backends behave exactly as before.
 
+The row-blitter optimization is entirely internal: it does not change the
+public header, structure layouts, function indices, feature bits, or ABI hash.
+Already-built portable ABI-table cartridges therefore continue to load and use
+the same RGB565 and indexed entry points. Firmware-specific legacy-absolute
+cartridges retain their existing limitation: they are compatible only with the
+firmware image whose exported addresses were used when they were linked.
+
 Store-ready cartridges append a backward-compatible `PRG32META` trailer after
 the payload. The trailer gives host tools and setup-mode clients standard
 blocks for `META`, `ICON`, `SCRN`, `SIGN`, and `COLO`.

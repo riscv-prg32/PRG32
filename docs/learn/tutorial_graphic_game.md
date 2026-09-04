@@ -39,6 +39,12 @@ directly while drawing and require no temporary full-color frame.
 The generated `*_SPRITE` alias can be passed to the existing fixed-size or
 animation calls from C or assembly, so frame timing code does not change.
 
+For typical retro artwork, start with 4-bpp indexed data: it stores two pixels
+per byte, supports 16 exact RGB565 colors, and uses the paired-pixel fast path.
+Use 8-bpp for artwork that genuinely needs more colors, 1/2-bpp for constrained
+graphics, and RGB565 when unrestricted color matters more than cartridge size.
+All formats share the same clipped-row, one-lock drawing infrastructure.
+
 ## 1. Start With a Blank Frame
 
 Create `examples/games/my_graphics_game/graphics/game.S`:

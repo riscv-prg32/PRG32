@@ -476,12 +476,13 @@ the animation initializer takes dimensions and frame count from the descriptor,
 and the existing animation draw call expands the selected frame. No additional
 framebuffer or runtime decompression buffer is allocated.
 
-The compact renderer clips once before decoding, holds the graphics mutex once,
-writes pixels through an internal already-locked framebuffer path, and records
-one dirty bounding rectangle. Packed source bytes are reused for adjacent
-pixels, while bitplane source bytes are loaded once per eight-pixel group. This
-removes per-pixel mutex and dirty-region bookkeeping without altering public
-graphics calls or the framebuffer representation.
+Every sprite renderer clips once, holds the graphics mutex once, advances
+directly across framebuffer rows, and records at most one dirty rectangle.
+RGB565 uses a tight transparent-color loop; indexed8 directly loads one index
+per pixel; and indexed4 handles an odd leading nibble before translating two
+pixels per source-byte load. The 1/2-bpp and bitplane paths retain their compact
+generic decoders. Backend helpers preserve the ILI9341 framebuffer's wire byte
+order without changing public palette or RGB565 semantics.
 
 See `examples/games/frogger/graphics/game.S` for the assembly call sequence and
 `examples/games/frogger/c/game.c` for a fuller game that pairs the 24x24 sprite
