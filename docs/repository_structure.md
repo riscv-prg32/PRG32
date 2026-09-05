@@ -9,6 +9,7 @@ This document outlines the high-level layout of the PRG32 repository.
 
 ```text
 .
+|-- .github/workflows/ci.yml        Firmware, host, and store-ready cartridge CI/CD artifacts
 |-- cartridges/                     In-tree, store-ready portable cartridges
 |   |-- blackjack/                  Casino blackjack game, tests, metadata, and screenshot
 |   `-- devicedemo/                 Hardware/runtime feature showcase and screenshot

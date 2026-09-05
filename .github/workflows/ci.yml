@@ -1,9 +1,10 @@
-name: CI
+name: CI and cartridge packages
 
 on:
   push:
     branches:
       - main
+      - development-c6
   pull_request:
   workflow_dispatch:
 
@@ -30,7 +31,7 @@ jobs:
   esp-idf-build:
     name: ESP-IDF firmware build
     runs-on: ubuntu-latest
-    container: espressif/idf:v5.3
+    container: espressif/idf:v5.4.1
 
     steps:
       - name: Check out repository
@@ -45,3 +46,82 @@ jobs:
           . "$IDF_PATH/export.sh"
           idf.py set-target esp32c6
           idf.py build
+
+  cartridge-build:
+    name: Cartridge checks and packages
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4.1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Check Blackjack rules
+        shell: bash
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror \
+            cartridges/blackjack/tests/test_rules.c \
+            cartridges/blackjack/blackjack_rules.c \
+            -o /tmp/prg32-blackjack-rules
+          /tmp/prg32-blackjack-rules
+          sha256sum --check cartridges/blackjack/SHA256SUMS
+
+      - name: Check DeviceDemo sources and metadata
+        run: cartridges/devicedemo/tests/check_source.sh
+
+      - name: Build Blackjack store bundle
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          cartridges/blackjack/build.sh
+
+      - name: Build DeviceDemo store bundle
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          PRG32_REPO="$GITHUB_WORKSPACE" PRG32_ARCHITECTURE=esp32c6 \
+            cartridges/devicedemo/scripts/build.sh
+          PRG32_REPO="$GITHUB_WORKSPACE" PRG32_ARCHITECTURE=qemu \
+            cartridges/devicedemo/scripts/build.sh
+          PRG32_REPO="$GITHUB_WORKSPACE" \
+            cartridges/devicedemo/scripts/pack-store-bundle.sh
+
+      - name: Validate cartridge packages
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          python3 -m prg32 cartridge summary \
+            cartridges/blackjack/dist/store/blackjack-esp32c6.prg32
+          python3 -m prg32 store inspect-metadata \
+            cartridges/blackjack/dist/store/blackjack-esp32c6.prg32
+          python3 -m prg32 cartridge summary \
+            cartridges/devicedemo/dist/devicedemo-esp32c6.prg32
+          python3 -m prg32 store inspect-metadata \
+            cartridges/devicedemo/dist/devicedemo-esp32c6.prg32
+          python3 -m zipfile -t cartridges/blackjack/dist/blackjack-1.0.0-store.zip
+          python3 -m zipfile -t cartridges/devicedemo/dist/devicedemo-store-bundle.zip
+
+      - name: Upload Blackjack package
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackjack-cartridge-package
+          path: |
+            cartridges/blackjack/dist/blackjack-1.0.0-store.zip
+            cartridges/blackjack/dist/store/blackjack-esp32c6.prg32
+            cartridges/blackjack/dist/store/blackjack-qemu.prg32
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload DeviceDemo package
+        uses: actions/upload-artifact@v4
+        with:
+          name: devicedemo-cartridge-package
+          path: |
+            cartridges/devicedemo/dist/devicedemo-store-bundle.zip
+            cartridges/devicedemo/dist/devicedemo-esp32c6.prg32
+            cartridges/devicedemo/dist/devicedemo-qemu.prg32
+          if-no-files-found: error
+          retention-days: 14

@@ -42,3 +42,10 @@ block, so the cartridge uses only portable ABI calls at runtime.
 Button-triggered audio actions are edge-based: one physical press produces one
 action. On the synth page, B stops the tracker without navigating away. The
 resident runtime presents the framebuffer after `devicedemo_draw()` returns.
+
+## CI/CD
+
+The root GitHub Actions workflow runs the source/metadata checks, builds both
+portable architecture variants, verifies their metadata and bundle ZIP, and
+uploads `devicedemo-cartridge-package` for 14 days. Store publication is kept
+separate because it requires credentials and is a release decision.

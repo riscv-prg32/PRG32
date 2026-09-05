@@ -56,3 +56,11 @@ clang -std=c11 -Wall -Wextra -Werror tests/test_rules.c blackjack_rules.c -o bui
 ```
 
 `tests/stub/prg32.h` exists only for host syntax checking and is never packed into the cartridge.
+
+## CI/CD
+
+`.github/workflows/ci.yml` runs the rules test, verifies `SHA256SUMS`, builds
+both architecture variants, inspects the packaged metadata, tests the store
+ZIP, and uploads `blackjack-cartridge-package` for 14 days. The artifact is a
+build product; publishing to a Cartridge Store still requires explicit
+credentials and a separate release decision.

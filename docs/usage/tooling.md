@@ -73,4 +73,13 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 - `doctor`: check local toolchain prerequisites
 - `runtime`: print runtime linker information
 
+## GitHub Actions artifacts
+
+The repository workflow builds Blackjack and DeviceDemo with the same unified
+CLI used locally. Every successful pull request or push to `main` or
+`development-c6` exposes separate downloadable cartridge artifacts containing
+the ESP32-C6 variant, QEMU variant, and store bundle. See the
+[cartridge CI/CD documentation](../software/cartridges.md#continuous-integration-and-delivery-artifacts)
+for validation and retention details.
+
 *(More details will be provided with `--help` on a need basis, e.g., `python3 -m prg32 cartridge build --help`)*

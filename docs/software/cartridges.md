@@ -328,7 +328,7 @@ A `.prg32` file contains one linked executable image. ESP32-C6 hardware and the 
 Build each variant as a portable cartridge, then attach metadata with the matching `--architecture`.
 
 ```bash
-python3 -m prg32 attach-metadata \
+python3 -m prg32 store attach-metadata \
   build-esp32c6/game.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -337,7 +337,7 @@ python3 -m prg32 attach-metadata \
   --architecture esp32c6 \
   --out dist/game-esp32c6.prg32
 
-python3 -m prg32 attach-metadata \
+python3 -m prg32 store attach-metadata \
   build-qemu/game.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -376,6 +376,23 @@ metadata, screenshots, tests, and reproducible package scripts:
 Both scripts use `python3 -m prg32 cartridge build` followed by the `store`
 subcommands for metadata attachment and bundle packaging. Their 320x200 PNG
 screenshots are included in the metadata trailer and the store bundle.
+
+### Continuous integration and delivery artifacts
+
+GitHub Actions runs the same scripts for pull requests and for pushes to
+`main` and `development-c6`. The cartridge job performs the Blackjack host
+rules test, DeviceDemo source/metadata checks, portable builds for `esp32c6`
+and `qemu`, metadata inspection, checksum validation, and ZIP integrity checks.
+
+Successful runs retain two downloadable workflow artifacts for 14 days:
+
+- `blackjack-cartridge-package`, containing both `.prg32` variants and the
+  versioned Cartridge Store bundle.
+- `devicedemo-cartridge-package`, containing both `.prg32` variants and the
+  Cartridge Store bundle.
+
+These are unsigned build artifacts. Publishing them to a Cartridge Store
+remains an explicit authenticated release action.
 
 ## Multiplayer Cartridges
 
