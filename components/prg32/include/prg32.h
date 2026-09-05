@@ -276,7 +276,24 @@ void prg32_diag_increment_frame(void);
 uint32_t prg32_diag_input_state(void);
 uint32_t prg32_diag_frame_count(void);
 void prg32_audio_beep(uint32_t hz, uint32_t ms);
+/*
+ * Low-level PWM tone generation.
+ * - 'hz': frequency in Hertz.
+ * - 'ms': duration in milliseconds.
+ * - 'duty': duty cycle (PWM ON/OFF percentage), used to control the volume
+ *           of the buzzer by limiting electrical power.
+ */
 void prg32_audio_tone(uint32_t hz, uint32_t ms, uint16_t duty);
+/*
+ * Cartridge Audio Usage:
+ * Cartridges should play simple notes using this ABI function.
+ * It is completely agnostic to whether audio is globally disabled or enabled.
+ * If audio is disabled in `menuconfig`, this function acts as a harmless stub.
+ * It also automatically scales to the user's NVS master volume limit.
+ *
+ * Be sure to call `prg32_audio_init(NULL)` in your cartridge `_init()`
+ * to ensure the audio engine is running if enabled!
+ */
 void prg32_audio_note(uint8_t midi_note, uint32_t ms);
 void prg32_audio_play_notes(const prg32_note_t *notes, size_t count);
 void prg32_audio_sample_u8(const uint8_t *samples, size_t count,

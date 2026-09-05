@@ -138,7 +138,7 @@ static int prg32_splash_prepare_sound(void) {
 
   prg32_instrument_desc_t instrument = {
       .sample_id = PRG32_SPLASH_WELCOME_SAMPLE_ID,
-      .default_volume = 120,
+      .default_volume = 150,
       .default_pan = PRG32_AUDIO_PAN_CENTER,
       .sustain = 255,
   };
@@ -179,11 +179,11 @@ static void prg32_splash_play_i2s_welcome(uint32_t duration_ms) {
   const uint32_t step_ms = duration_ms >= 360 ? 120 : duration_ms / 3;
   const uint32_t tail_ms =
       duration_ms > step_ms * 2 ? duration_ms - step_ms * 2 : step_ms;
-  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 72, 120);
+  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 72, 150);
   vTaskDelay(pdMS_TO_TICKS(step_ms));
-  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 76, 120);
+  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 76, 150);
   vTaskDelay(pdMS_TO_TICKS(step_ms));
-  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 79, 120);
+  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 79, 150);
   vTaskDelay(pdMS_TO_TICKS(tail_ms));
   prg32_audio_note_off(0);
 }

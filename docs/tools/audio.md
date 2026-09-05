@@ -178,13 +178,36 @@ Core calls:
 - `prg32_audio_led_vu_enable(enabled)`: let audio tests and PWM helpers drive
   the RGB LED VU meter.
 
-RGB LED helpers:
-
-- `prg32_rgb_led_init(gpio)`: initialize the board LED on a free GPIO.
-- `prg32_rgb_led_set(red, green, blue)`: set the LED color.
-- `prg32_rgb_led_vu(level)`: map a 0-255 level to blue/green/yellow/red.
-
 Pitch uses `1024` as the natural sample speed. Volumes use `0..255`.
+
+**I2S vs PWM Audio API Differences:**
+- **I2S Engine (`prg32_audio_note`)**: Uses standard MIDI **notes** (e.g. 60 for Middle C) and true audio synthesis. It automatically reads your configured wave samples and pitches them perfectly to the musical note.
+- **PWM Buzzer (`prg32_audio_tone`)**: Buzzers cannot play complex samples, they only pulse a pin ON/OFF. Thus, they require raw **frequencies** (e.g. 262 Hz for Middle C) and a **duty cycle** parameter. The duty cycle acts as the buzzer's volume control by reducing the ON/OFF percentage, thereby limiting electrical power.
+
+## Volume Scaling
+
+The internal audio engine uses a 0-255 scale for sample volumes, master volumes, and I2S amplitude. However, human hearing perceives sound intensity logarithmically, and cheap hardware amplifier breakouts often brown out or heavily clip signals near their absolute mathematical maximum limits.
+
+To present a safe, human-friendly 0-100% volume slider to the user, PRG32 maps the 0-100% UI value to a custom, capped absolute scale using a **mixed linear/quadratic curve**:
+
+- **Linear Component (30%)**: Ensures that low percentages (like 5%) are immediately audible and mathematically round up to non-zero values.
+- **Quadratic Component (70%)**: Smoothly ramps up the volume to match the logarithmic sensitivity of the human ear, keeping the standard "sweet spot" comfortable around 50%.
+- **Clipping (Max 70)**: Caps the absolute maximum internal output volume at 70/255 to prevent severe electrical clipping and power supply strain on basic 3-watt speakers.
+
+## Global Master Volume (NVS)
+
+PRG32 automatically handles global volume state for all cartridges. The system loads the user's volume preference from the `volume_pct` key in the `prg32` NVS namespace on boot (defaulting to the config parameter PRG32_AUDIO_DEFAULT_VOLUME_PCT which is set to 70%.).
+Cartridges do **not** need to manually manage master volume or read from NVS.
+
+## Cartridge Audio Usage
+
+Cartridges should be completely agnostic to the system's global volume or whether audio is disabled entirely. If the user disabled audio in `menuconfig`, the API functions simply act as harmless stubs.
+
+To play a simple tone or note from a cartridge you can use the ABI macro:
+```c
+// Play Middle C (MIDI 60) for 135ms
+prg32_audio_note(60, 135);
+```
 
 ## Cartridge AUDIO Block
 

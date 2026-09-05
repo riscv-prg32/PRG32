@@ -162,6 +162,7 @@ void prg32_audio_play_track(uint16_t track_id);
 void prg32_audio_stop_track(void);
 void prg32_audio_set_tempo(uint16_t bpm);
 
+void prg32_audio_set_default_master_volume(uint8_t volume);
 void prg32_audio_set_master_volume(uint8_t volume);
 void prg32_audio_set_channel_volume(uint8_t channel, uint8_t volume);
 void prg32_audio_set_channel_pan(uint8_t channel, int8_t pan);
