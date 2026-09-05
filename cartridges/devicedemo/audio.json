@@ -1,0 +1,24 @@
+{
+  "instruments": [
+    {"sample_id": 34208, "default_volume": 220, "default_pan": -32, "attack": 4, "decay": 20, "sustain": 180, "release": 30},
+    {"sample_id": 34658, "default_volume": 190, "default_pan": 0, "attack": 3, "decay": 18, "sustain": 150, "release": 40},
+    {"sample_id": 35585, "default_volume": 210, "default_pan": 32, "attack": 2, "decay": 12, "sustain": 170, "release": 28},
+    {"sample_id": 36099, "default_volume": 150, "default_pan": 0, "attack": 1, "decay": 8, "sustain": 100, "release": 20}
+  ],
+  "tracks": [
+    {"events": [
+      {"delta": 0, "command": "SET_TEMPO", "arg0": 126},
+      {"delta": 0, "command": "NOTE_ON", "arg0": 0, "arg1": 48},
+      {"delta": 4, "command": "NOTE_ON", "arg0": 1, "arg1": 60},
+      {"delta": 4, "command": "NOTE_ON", "arg0": 2, "arg1": 67},
+      {"delta": 4, "command": "NOTE_OFF", "arg0": 1},
+      {"delta": 0, "command": "NOTE_ON", "arg0": 3, "arg1": 36},
+      {"delta": 4, "command": "NOTE_ON", "arg0": 1, "arg1": 64},
+      {"delta": 4, "command": "NOTE_OFF", "arg0": 0},
+      {"delta": 0, "command": "NOTE_OFF", "arg0": 1},
+      {"delta": 0, "command": "NOTE_OFF", "arg0": 2},
+      {"delta": 0, "command": "NOTE_OFF", "arg0": 3},
+      {"delta": 8, "command": "JUMP", "arg0": 0, "arg1": 0}
+    ]}
+  ]
+}

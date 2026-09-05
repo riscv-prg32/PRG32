@@ -1,0 +1,22 @@
+{
+  "abi": "prg32-colophon-1.0",
+  "title": "Blackjack",
+  "subtitle": "Casino Edition",
+  "version": "1.0.0",
+  "release_date": "2026-09-04",
+  "developer": {"name": "PRG32 Blackjack Contributors"},
+  "authors": [],
+  "license": "MIT",
+  "acknowledgements": ["Built for the PRG32 development-c6 firmware features"],
+  "content_notice": "Simulated casino gambling with virtual credits only.",
+  "controls": [
+    {"input": "A", "action": "Hit / confirm / next round"},
+    {"input": "B", "action": "Stand / back"},
+    {"input": "UP", "action": "Double down / menu up / increase bet"},
+    {"input": "DOWN", "action": "Split / menu down / decrease bet"},
+    {"input": "LEFT", "action": "Surrender / decrease bet"},
+    {"input": "RIGHT", "action": "Increase bet"},
+    {"input": "SELECT", "action": "High scores / return from betting"}
+  ],
+  "start_prompt": "Press A to play"
+}

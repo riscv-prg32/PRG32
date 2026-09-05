@@ -1,0 +1,15 @@
+{
+  "abi": "prg32-metadata-1.0",
+  "id": "org.riscv-prg32.blackjack",
+  "title": "Blackjack",
+  "version": "1.0.0",
+  "summary": "Full-featured casino blackjack for PRG32.",
+  "description": "A polished blackjack cartridge with configurable casino rules, solo high-score play, 2-4 player hot-seat blackjack, network table presence, indexed-color card graphics, procedural sound effects, and a looping SID-like soundtrack.",
+  "developer": {"name": "PRG32 Blackjack Contributors"},
+  "license": "MIT",
+  "tags": ["game", "cards", "blackjack", "casino", "multiplayer", "indexed-graphics", "synth-audio"],
+  "created_at": "2026-09-04T21:40:00Z",
+  "updated_at": "2026-09-04T21:40:00Z",
+  "runtime": {"platform": "PRG32", "isa": "RV32IMAC", "architectures": ["esp32c6", "qemu"]},
+  "multiplayer": true
+}

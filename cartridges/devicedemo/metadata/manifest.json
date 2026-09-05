@@ -1,0 +1,7 @@
+{
+  "abi":"prg32-metadata-1.0","id":"org.uniparthenope.prg32.device-demo","title":"PRG32 Device Demo+","version":"2.0.0-devc6",
+  "summary":"development-c6 showcase for graphics, audio and runtime services.",
+  "tags":["demo","diagnostics","education","prg32","indexed-graphics","synth"],
+  "assets":{"icon":"icon.png","splash":"screenshot.png"},
+  "architectures":[{"id":"esp32c6","file":"devicedemo-esp32c6.prg32"},{"id":"qemu","file":"devicedemo-qemu.prg32"}]
+}

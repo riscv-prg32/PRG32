@@ -362,6 +362,21 @@ To verify a monolithic cartridge (including metadata):
 python3 -m prg32 store inspect-metadata dist/game-esp32c6.prg32
 ```
 
+## In-tree Store-ready Cartridges
+
+The `cartridges/` directory contains complete portable examples with source,
+metadata, screenshots, tests, and reproducible package scripts:
+
+- [`blackjack`](../../cartridges/blackjack/README.md) demonstrates a complete
+  game, host-tested rules, multiplayer presence, indexed graphics, and an AUD0
+  soundtrack.
+- [`devicedemo`](../../cartridges/devicedemo/README.md) is a safe smoke test for
+  cartridge-visible graphics, input, audio, diagnostics, WiFi, and score APIs.
+
+Both scripts use `python3 -m prg32 cartridge build` followed by the `store`
+subcommands for metadata attachment and bundle packaging. Their 320x200 PNG
+screenshots are included in the metadata trailer and the store bundle.
+
 ## Multiplayer Cartridges
 
 A cartridge opts in to multiplayer by calling `prg32_multiplayer_join(signature, flags)` from its game code. The build tool can also mark the package header with `PRG32_CART_FLAG_MULTIPLAYER`:

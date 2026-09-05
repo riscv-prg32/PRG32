@@ -9,6 +9,9 @@ This document outlines the high-level layout of the PRG32 repository.
 
 ```text
 .
+|-- cartridges/                     In-tree, store-ready portable cartridges
+|   |-- blackjack/                  Casino blackjack game, tests, metadata, and screenshot
+|   `-- devicedemo/                 Hardware/runtime feature showcase and screenshot
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (graphics, input, network, cartridge loader)
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core

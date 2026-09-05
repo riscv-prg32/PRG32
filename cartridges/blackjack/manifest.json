@@ -1,0 +1,12 @@
+{
+  "abi": "prg32-bundle-1.0",
+  "id": "org.riscv-prg32.blackjack",
+  "title": "Blackjack",
+  "version": "1.0.0",
+  "summary": "Full-featured casino blackjack with multiplayer and synth soundtrack.",
+  "architectures": [
+    {"id": "esp32c6", "file": "blackjack-esp32c6.prg32"},
+    {"id": "qemu", "file": "blackjack-qemu.prg32"}
+  ],
+  "assets": {"icon": "icon.png", "screenshot": "screenshot.png", "colophon": "colophon.json"}
+}
