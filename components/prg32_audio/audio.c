@@ -11,6 +11,12 @@ extern void prg32_qemu_audio_init(void);
 
 prg32_audio_state_t g_prg32_audio;
 
+static uint8_t g_default_master_volume = 96;
+
+void prg32_audio_set_default_master_volume(uint8_t volume) {
+  g_default_master_volume = volume;
+}
+
 static void audio_task(void *arg) {
   (void)arg;
   int16_t buffer[PRG32_AUDIO_MIX_FRAMES * 2];
@@ -106,7 +112,7 @@ bool prg32_audio_init(const prg32_audio_config_t *config) {
   memset(&g_prg32_audio, 0, sizeof(g_prg32_audio));
   g_prg32_audio.lock = xSemaphoreCreateMutex();
   g_prg32_audio.config = chosen;
-  g_prg32_audio.master_volume = 255;
+  g_prg32_audio.master_volume = g_default_master_volume;
   g_prg32_audio.max_voices = chosen.max_voices;
   g_prg32_audio.tracker.tempo_bpm = 120;
   for (uint8_t i = 0; i < CONFIG_PRG32_AUDIO_MAX_VOICES; ++i) {
