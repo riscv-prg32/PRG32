@@ -294,16 +294,18 @@ Wi-Fi setup, Cartridge Store configuration and browsing, audio setup, the
 developer band menu, the performance test, the about screen, and exit. The Cartridge Store integration
 contract adds manual/discovered store URL entry, browsing, colophon preview, and
 download-to-slot behavior for future firmware work. Use UP/DOWN to choose,
-SELECT or B to confirm, and A to cancel/back. The
+SELECT or A to confirm, and B to cancel/back. The
 device smoke test is now the external
 [DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo), which
 exercises display, input, audio, sprites, scrolling, playfield rendering,
 status bands, and small classroom sketches through the same cartridge ABI used
 by student games.
 
-`PRG32_BOOT_SETUP_MODE` in `main/prg32_config.h` can still force setup on every
-boot for custom classroom images. If `PRG32_PIN_SETUP` is wired, holding it low
-during boot also forces setup mode.
+Normal images autoload their only stored cartridge, or the saved default when
+multiple cartridges are present. `PRG32_BOOT_SETUP_MODE` in
+`main/prg32_config.h` can force setup on every boot for custom classroom
+images. If `PRG32_PIN_SETUP` is wired, holding it low during boot also forces
+setup mode.
 
 Useful calls:
 

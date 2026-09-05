@@ -121,30 +121,33 @@ static void draw_shadow(int cx, int y, int radius) {
 
 static void draw_ball(int cx, int cy, int radius, int rotation) {
     int r2 = radius * radius;
-    for (int py = -radius; py <= radius; ++py) {
+    /* Two-line bands and quantized lighting preserve the effect while keeping
+       public-ABI draw-call pressure practical under instruction emulation. */
+    for (int py = -radius; py <= radius; py += 2) {
         int xr = (int)isqrt32((uint32_t)(r2 - py * py));
         int run_x = cx - xr;
         uint16_t run_color = 0;
         int have_run = 0;
-        for (int px = -xr; px <= xr; ++px) {
+        for (int px = -xr; px <= xr; px += 2) {
             int z = (int)isqrt32((uint32_t)(r2 - py * py - px * px));
             int u = rotation + ((px * 96) / (z + radius + 1));
             int v = py + ((s.elevation * z) >> 7) + 24;
             int checker = (((u >> 4) ^ (v >> 4)) & 1);
             int family = logo_bit(u + 38, v) ? 2 : checker;
             int light = clampi(120 + ((-px - py + (z << 1)) * 90) / (radius * 4), 58, 255);
+            light &= ~31;
             uint16_t color = shade(family, light);
             if (!have_run) {
                 run_x = cx + px;
                 run_color = color;
                 have_run = 1;
             } else if (color != run_color) {
-                prg32_gfx_rect(run_x, cy + py, cx + px - run_x, 1, run_color);
+                prg32_gfx_rect(run_x, cy + py, cx + px - run_x, 2, run_color);
                 run_x = cx + px;
                 run_color = color;
             }
         }
-        if (have_run) prg32_gfx_rect(run_x, cy + py, cx + xr - run_x + 1, 1, run_color);
+        if (have_run) prg32_gfx_rect(run_x, cy + py, cx + xr - run_x + 1, 2, run_color);
     }
     prg32_gfx_rect(cx - radius / 3, cy - radius + 4, radius / 3, 2, rgb565(215, 255, 255));
 }
@@ -158,6 +161,7 @@ void poing_init(void) {
     s.show_hud = 1;
     s.last_input = 0;
     s.frame = 0;
+    prg32_audio_note(48, 90);
 }
 
 void poing_update(void) {
@@ -170,7 +174,12 @@ void poing_update(void) {
     if (pressed & PRG32_BTN_A) s.zoom = (s.zoom + 1) % 3;
     if (pressed & PRG32_BTN_B) s.paused = !s.paused;
     if (pressed & PRG32_BTN_SELECT) s.show_hud = !s.show_hud;
-    if (!s.paused) { s.spin += 3; ++s.frame; }
+    if (!s.paused) {
+        uint8_t phase = (uint8_t)(s.frame * 3u);
+        s.spin += 3;
+        ++s.frame;
+        if ((uint8_t)(s.frame * 3u) < phase) prg32_audio_note(48, 90);
+    }
     s.last_input = input;
 }
 

@@ -26,6 +26,9 @@ void prg32_gfx_rect(int x, int y, int w, int h, uint16_t c) {
 void prg32_gfx_text8(int x, int y, const char *t, uint16_t fg, uint16_t bg) {
     assert(x >= 0 && y >= 0 && t != 0); hash ^= fg ^ bg; ++calls;
 }
+void prg32_audio_note(uint8_t midi_note, uint16_t duration_ms) {
+    assert(midi_note == 48 && duration_ms == 90);
+}
 
 static uint32_t render(uint32_t input, int frames) {
     calls = area = hash = 0;

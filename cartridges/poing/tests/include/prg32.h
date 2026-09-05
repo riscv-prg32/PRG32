@@ -13,4 +13,5 @@ void prg32_gfx_clear(uint16_t color);
 void prg32_gfx_pixel(int x, int y, uint16_t color);
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color);
 void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg);
+void prg32_audio_note(uint8_t midi_note, uint16_t duration_ms);
 #endif

@@ -6,7 +6,7 @@ It is a normal portable `.prg32` cartridge and Cartridge Store package, not setu
 
 ![DeviceDemo overview screenshot](assets/screenshot.png)
 
-[Download the 30-second MP4 feature preview with audio](assets/preview.mp4).
+[Download the 30-second MP4 captured from the actual QEMU playfield and UART audio](assets/preview.mp4).
 
 ## Demonstration pages
 

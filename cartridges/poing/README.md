@@ -4,7 +4,7 @@ Poing is an original, high-load graphics cartridge inspired by the technical spi
 
 ![Poing screenshot](assets/screenshot.png)
 
-[Download the 30-second MP4 preview with original stereo audio](assets/preview.mp4).
+[Download the 30-second MP4 captured from the actual QEMU playfield and procedural impact audio](assets/preview.mp4).
 
 ## Controls
 
@@ -23,6 +23,7 @@ Poing is an original, high-load graphics cartridge inspired by the technical spi
 - Quantized RGB565 directional lighting
 - Run-length coalescing into many one-pixel-high `prg32_gfx_rect` spans
 - Perspective floor, moving depth grid, shadow, stars, and HUD in the same frame
+- A short procedural impact note synchronized to each bounce
 - Recursive graphics locking around the full composite
 
 The implementation deliberately avoids pre-rendered animation frames, floating point, heap allocation, and platform-private framebuffer access. See `docs/architecture.md` for the rendering pipeline and performance tradeoffs.

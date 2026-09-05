@@ -379,8 +379,8 @@ metadata, screenshots, tests, and reproducible package scripts:
 
 The build scripts use `python3 -m prg32 cartridge build` followed by the
 `store` subcommands for metadata attachment. Every cartridge has a PNG
-screenshot and a downloadable 30-second MP4 preview with an original
-synthesized stereo soundtrack:
+screenshot and a downloadable 30-second MP4 captured from the cartridge's
+actual QEMU playfield and UART PCM audio:
 
 | Cartridge | Screenshot | MP4 preview |
 | --- | --- | --- |
@@ -389,9 +389,21 @@ synthesized stereo soundtrack:
 | DeviceDemo+ | [PNG](../../cartridges/devicedemo/assets/screenshot.png) | [Download MP4](../../cartridges/devicedemo/assets/preview.mp4) |
 | Poing | [PNG](../../cartridges/poing/assets/screenshot.png) | [Download MP4](../../cartridges/poing/assets/preview.mp4) |
 
-Regenerate the previews with `python3 tools/render_cartridge_previews.py` after
-installing Pillow and `imageio-ffmpeg`. The deterministic validator used by CI
-has no third-party dependencies:
+On macOS, regenerate the previews after sourcing ESP-IDF, building the QEMU
+firmware and all QEMU cartridge packages, and installing `imageio-ffmpeg`:
+
+```bash
+source "$HOME/esp-idf/export.sh"
+python3 tools/capture_cartridge_previews.py
+```
+
+The recorder stages each cartridge into an isolated flash copy, runs it in
+Espressif QEMU, captures 30 seconds from the 320×200 SDL playfield, records the
+firmware's 22050 Hz UART PCM stream, and sends scripted controls for visible
+gameplay. Poing uses its compact QEMU core image during capture because its
+catalog artwork and metadata are irrelevant to execution and can exhaust the
+emulator firmware's transient loading heap. The deterministic validator used
+by CI has no third-party dependencies:
 
 ```bash
 python3 tools/validate_cartridge_media.py SCREENSHOT.png PREVIEW.mp4

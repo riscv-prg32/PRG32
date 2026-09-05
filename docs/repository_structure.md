@@ -48,7 +48,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- scripts/                        Shell/PowerShell scripts for common CI and local workflows (QEMU, flashing)
 |-- sdkconfig*                      Default configuration files for ESP32-C6 hardware and QEMU emulator builds
 |-- tests/                          Host-side unit tests for Python tooling and documentation validation
-|-- tools/                          Developer scripts, including cartridge media rendering and validation
+|-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents
 |-- CMakeLists.txt                  Top-level CMake project definition

@@ -4,7 +4,7 @@ A complete Blackjack cartridge targeting the PRG32 `development-c6` firmware lin
 
 ![Blackjack gameplay screenshot](screenshot.png)
 
-[Download the 30-second MP4 gameplay preview with audio](preview.mp4).
+[Download the 30-second MP4 captured from actual QEMU gameplay and UART audio](preview.mp4).
 
 ## Game modes
 

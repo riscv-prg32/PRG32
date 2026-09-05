@@ -46,6 +46,11 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports the `--skip-target` option.
 - `upload`: upload a cartridge to QEMU
 
+Checked-in cartridge preview videos are recorded from real QEMU execution with
+`python3 tools/capture_cartridge_previews.py`. See
+[QEMU Screen Emulator](qemu.md#recording-cartridge-previews) for prerequisites,
+playfield cropping, UART audio capture, and regeneration details.
+
 For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qemu.md).
 ## Cartridge Tasks (`cartridge`)
 - `build`: build a `.prg32` cartridge from assembly or C source code.

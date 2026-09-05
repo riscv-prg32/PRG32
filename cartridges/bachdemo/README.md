@@ -17,7 +17,7 @@ The cartridge demonstrates:
 
 ![Bach Stereo Showcase screenshot](assets/screenshot.png)
 
-[Download the 30-second MP4 preview with stereo audio](assets/preview.mp4).
+[Download the 30-second MP4 captured from the actual QEMU playfield and UART audio](assets/preview.mp4).
 
 ## Controls
 
