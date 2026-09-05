@@ -6,6 +6,8 @@ It is a normal portable `.prg32` cartridge and Cartridge Store package, not setu
 
 ![DeviceDemo overview screenshot](assets/screenshot.png)
 
+[Download the 30-second MP4 feature preview with audio](assets/preview.mp4).
+
 ## Demonstration pages
 
 1. Runtime overview and diagnostic overlay
@@ -46,6 +48,7 @@ resident runtime presents the framebuffer after `devicedemo_draw()` returns.
 ## CI/CD
 
 The root GitHub Actions workflow runs the source/metadata checks, builds both
-portable architecture variants, verifies their metadata and bundle ZIP, and
+portable architecture variants, validates the screenshot and audiovisual
+preview, verifies their metadata and bundle ZIP, and
 uploads `devicedemo-cartridge-package` for 14 days. Store publication is kept
 separate because it requires credentials and is a release decision.

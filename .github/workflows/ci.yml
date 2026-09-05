@@ -72,6 +72,19 @@ jobs:
       - name: Check DeviceDemo sources and metadata
         run: cartridges/devicedemo/tests/check_source.sh
 
+      - name: Check Bach Stereo Showcase
+        run: cartridges/bachdemo/scripts/test.sh
+
+      - name: Check Poing renderer
+        run: cartridges/poing/tests/run.sh
+
+      - name: Validate cartridge screenshots and audiovisual previews
+        run: |
+          python3 tools/validate_cartridge_media.py cartridges/bachdemo/assets/screenshot.png cartridges/bachdemo/assets/preview.mp4
+          python3 tools/validate_cartridge_media.py cartridges/blackjack/screenshot.png cartridges/blackjack/preview.mp4
+          python3 tools/validate_cartridge_media.py cartridges/devicedemo/assets/screenshot.png cartridges/devicedemo/assets/preview.mp4
+          python3 tools/validate_cartridge_media.py cartridges/poing/assets/screenshot.png cartridges/poing/assets/preview.mp4
+
       - name: Build Blackjack store bundle
         shell: bash
         run: |
@@ -89,6 +102,20 @@ jobs:
           PRG32_REPO="$GITHUB_WORKSPACE" \
             cartridges/devicedemo/scripts/pack-store-bundle.sh
 
+      - name: Build Bach Stereo Showcase packages
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          PRG32_REPO="$GITHUB_WORKSPACE" cartridges/bachdemo/scripts/build.sh esp32c6
+          PRG32_REPO="$GITHUB_WORKSPACE" cartridges/bachdemo/scripts/build.sh qemu
+
+      - name: Build Poing packages
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poing/build.sh "$GITHUB_WORKSPACE" esp32c6
+          PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poing/build.sh "$GITHUB_WORKSPACE" qemu
+
       - name: Validate cartridge packages
         shell: bash
         run: |
@@ -103,6 +130,14 @@ jobs:
             cartridges/devicedemo/dist/devicedemo-esp32c6.prg32
           python3 -m zipfile -t cartridges/blackjack/dist/blackjack-1.0.0-store.zip
           python3 -m zipfile -t cartridges/devicedemo/dist/devicedemo-store-bundle.zip
+          python3 -m prg32 cartridge summary \
+            cartridges/bachdemo/dist/bach-stereo-showcase-esp32c6.prg32
+          python3 -m prg32 store inspect-metadata \
+            cartridges/bachdemo/dist/bach-stereo-showcase-esp32c6.prg32
+          python3 -m prg32 cartridge summary \
+            cartridges/poing/dist/poing-esp32c6.prg32
+          python3 -m prg32 store inspect-metadata \
+            cartridges/poing/dist/poing-esp32c6.prg32
 
       - name: Upload Blackjack package
         uses: actions/upload-artifact@v4
@@ -112,6 +147,8 @@ jobs:
             cartridges/blackjack/dist/blackjack-1.0.0-store.zip
             cartridges/blackjack/dist/store/blackjack-esp32c6.prg32
             cartridges/blackjack/dist/store/blackjack-qemu.prg32
+            cartridges/blackjack/screenshot.png
+            cartridges/blackjack/preview.mp4
           if-no-files-found: error
           retention-days: 14
 
@@ -123,5 +160,31 @@ jobs:
             cartridges/devicedemo/dist/devicedemo-store-bundle.zip
             cartridges/devicedemo/dist/devicedemo-esp32c6.prg32
             cartridges/devicedemo/dist/devicedemo-qemu.prg32
+            cartridges/devicedemo/assets/screenshot.png
+            cartridges/devicedemo/assets/preview.mp4
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Bach Stereo Showcase package
+        uses: actions/upload-artifact@v4
+        with:
+          name: bachdemo-cartridge-package
+          path: |
+            cartridges/bachdemo/dist/bach-stereo-showcase-esp32c6.prg32
+            cartridges/bachdemo/dist/bach-stereo-showcase-qemu.prg32
+            cartridges/bachdemo/assets/screenshot.png
+            cartridges/bachdemo/assets/preview.mp4
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Poing package
+        uses: actions/upload-artifact@v4
+        with:
+          name: poing-cartridge-package
+          path: |
+            cartridges/poing/dist/poing-esp32c6.prg32
+            cartridges/poing/dist/poing-qemu.prg32
+            cartridges/poing/assets/screenshot.png
+            cartridges/poing/assets/preview.mp4
           if-no-files-found: error
           retention-days: 14

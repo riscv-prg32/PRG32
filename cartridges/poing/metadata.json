@@ -1,0 +1,28 @@
+{
+  "abi": "prg32-metadata-1.0",
+  "id": "org.uniparthenope.prg32.poing",
+  "title": "Poing",
+  "version": "1.0.0",
+  "summary": "A real-time procedural PRG32 logo sphere and perspective-grid showcase.",
+  "authors": [{"name": "PRG32 contributors"}],
+  "tags": ["graphics", "demo", "procedural", "risc-v"],
+  "description": "A real-time procedural PRG32 logo sphere, perspective grid, lighting and interactive viewpoint showcase.",
+  "category": "graphics-demo",
+  "entry_prefix": "poing",
+  "viewport": "320x200",
+  "controls": "Joystick: viewpoint; A: zoom; B: freeze; SELECT: HUD",
+  "license": "MIT",
+  "runtime": {
+    "platform": "PRG32",
+    "isa": "RV32IMAC",
+    "architecture": "esp32c6",
+    "architectures": [
+      {"id": "esp32c6", "label": "ESP32-C6 hardware", "target": "esp32c6", "display": "ili9341", "isa": "RV32IMAC"},
+      {"id": "qemu", "label": "QEMU virtual screen", "target": "esp32c3", "display": "qemu-rgb", "isa": "RV32IMAC"}
+    ]
+  },
+  "assets": {
+    "icon": {"block": "ICON", "mime": "image/png"},
+    "screenshot": {"block": "SCRN", "mime": "image/png", "optional": true}
+  }
+}

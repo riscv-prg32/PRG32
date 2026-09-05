@@ -176,7 +176,7 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 - [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
 - [QEMU Virtual Screen](docs/usage/qemu.md): Desktop testing and troubleshooting.
 - [Cartridges](docs/software/cartridges.md): The `.prg32` build/upload workflow.
-- [Cartridge CI/CD](docs/software/cartridges.md#continuous-integration-and-delivery-artifacts): Automated Blackjack and DeviceDemo packages.
+- [Cartridge CI/CD](docs/software/cartridges.md#continuous-integration-and-delivery-artifacts): Automated Bach, Blackjack, DeviceDemo, and Poing packages with downloadable previews.
 - [Hardware & Pinouts](docs/hardware/hardware.md): Board, display, and input architecture.
 
 **Learning Materials:**

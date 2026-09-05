@@ -15,6 +15,10 @@ scripts/pack-store-bundle.sh
 
 The final store bundle is `dist/devicedemo-store-bundle.zip`. Publish it with the PRG32 tooling and your configured Cartridge Store token.
 
+The checked-in catalog media are `assets/screenshot.png` and the directly
+downloadable, 30-second audiovisual `assets/preview.mp4`. The root media
+validator checks their dimensions, duration, and audio/video tracks in CI.
+
 The build scripts use the current unified `python3 -m prg32` command groups:
 `cartridge build`, `store attach-metadata`, and `store pack-bundle`.
 

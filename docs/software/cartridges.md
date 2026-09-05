@@ -372,24 +372,49 @@ metadata, screenshots, tests, and reproducible package scripts:
   soundtrack.
 - [`devicedemo`](../../cartridges/devicedemo/README.md) is a safe smoke test for
   cartridge-visible graphics, input, audio, diagnostics, WiFi, and score APIs.
+- [`bachdemo`](../../cartridges/bachdemo/README.md) exercises all eight audio
+  voices, procedural waveforms, filtering, envelopes, and stereo panning.
+- [`poing`](../../cartridges/poing/README.md) stress-tests public drawing calls
+  with a real-time procedural sphere and perspective grid.
 
-Both scripts use `python3 -m prg32 cartridge build` followed by the `store`
-subcommands for metadata attachment and bundle packaging. Their 320x200 PNG
-screenshots are included in the metadata trailer and the store bundle.
+The build scripts use `python3 -m prg32 cartridge build` followed by the
+`store` subcommands for metadata attachment. Every cartridge has a PNG
+screenshot and a downloadable 30-second MP4 preview with an original
+synthesized stereo soundtrack:
+
+| Cartridge | Screenshot | MP4 preview |
+| --- | --- | --- |
+| Bach Stereo Showcase | [PNG](../../cartridges/bachdemo/assets/screenshot.png) | [Download MP4](../../cartridges/bachdemo/assets/preview.mp4) |
+| Blackjack | [PNG](../../cartridges/blackjack/screenshot.png) | [Download MP4](../../cartridges/blackjack/preview.mp4) |
+| DeviceDemo+ | [PNG](../../cartridges/devicedemo/assets/screenshot.png) | [Download MP4](../../cartridges/devicedemo/assets/preview.mp4) |
+| Poing | [PNG](../../cartridges/poing/assets/screenshot.png) | [Download MP4](../../cartridges/poing/assets/preview.mp4) |
+
+Regenerate the previews with `python3 tools/render_cartridge_previews.py` after
+installing Pillow and `imageio-ffmpeg`. The deterministic validator used by CI
+has no third-party dependencies:
+
+```bash
+python3 tools/validate_cartridge_media.py SCREENSHOT.png PREVIEW.mp4
+```
 
 ### Continuous integration and delivery artifacts
 
 GitHub Actions runs the same scripts for pull requests and for pushes to
-`main` and `development-c6`. The cartridge job performs the Blackjack host
-rules test, DeviceDemo source/metadata checks, portable builds for `esp32c6`
-and `qemu`, metadata inspection, checksum validation, and ZIP integrity checks.
+`main` and `development-c6`. The cartridge job performs all four cartridges'
+host/source checks, validates their screenshots and audiovisual previews,
+builds portable packages for `esp32c6` and `qemu`, inspects metadata, and
+checks the available bundle ZIPs and checksum manifests.
 
-Successful runs retain two downloadable workflow artifacts for 14 days:
+Successful runs retain four downloadable workflow artifacts for 14 days:
 
 - `blackjack-cartridge-package`, containing both `.prg32` variants and the
   versioned Cartridge Store bundle.
 - `devicedemo-cartridge-package`, containing both `.prg32` variants and the
   Cartridge Store bundle.
+- `bachdemo-cartridge-package`, containing both `.prg32` variants plus its
+  screenshot and audiovisual preview.
+- `poing-cartridge-package`, containing both `.prg32` variants plus its
+  screenshot and audiovisual preview.
 
 These are unsigned build artifacts. Publishing them to a Cartridge Store
 remains an explicit authenticated release action.

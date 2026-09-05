@@ -1,0 +1,26 @@
+{
+  "abi": "prg32-metadata-1.0",
+  "id": "org.uniparthenope.prg32.bach-stereo-showcase",
+  "title": "Bach Stereo Showcase",
+  "version": "1.0.0",
+  "summary": "Eight-voice SID-like stereo performance of Bach's public-domain Prelude in C major.",
+  "description": "An advanced PRG32 Audio Plus demonstration using eight tracker channels, all four procedural waveforms, ADSR envelopes, pulse width, filtering, resonance, dynamic volume and stereo panning. The same portable cartridge collapses safely to mono.",
+  "authors": [{"name": "Raffaele Montella", "affiliation": "UniParthenope"}],
+  "license": "MIT",
+  "tags": ["audio", "stereo", "synthesis", "tracker", "classical", "bach", "demo", "prg32"],
+  "created_at": "2026-09-05T00:00:00Z",
+  "updated_at": "2026-09-05T00:00:00Z",
+  "runtime": {
+    "platform": "PRG32",
+    "isa": "RV32IMAC",
+    "architecture": "esp32c6",
+    "architectures": [
+      {"id": "esp32c6", "label": "ESP32-C6 hardware", "target": "esp32c6", "display": "ili9341", "isa": "RV32IMAC"},
+      {"id": "qemu", "label": "QEMU virtual screen", "target": "esp32c3", "display": "qemu-rgb", "isa": "RV32IMAC"}
+    ]
+  },
+  "assets": {
+    "icon": {"block": "ICON", "mime": "image/png"},
+    "screenshot": {"block": "SCRN", "mime": "image/png", "optional": true}
+  }
+}

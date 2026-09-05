@@ -1,0 +1,20 @@
+{
+  "abi": "prg32-colophon-1.0",
+  "title": "Poing",
+  "version": "1.0.0",
+  "developer": {"name": "PRG32 contributors"},
+  "authors": [],
+  "controls": [
+    {"input": "Joystick", "action": "Move viewpoint"},
+    {"input": "A", "action": "Cycle zoom"},
+    {"input": "B", "action": "Freeze or resume"},
+    {"input": "SELECT", "action": "Toggle HUD"}
+  ],
+  "credits": [
+    "Original procedural renderer and PRG32 wordmark texture",
+    "Inspired by the real-time graphics-demo tradition of the Amiga era"
+  ],
+  "copyright": "Copyright 2026 OpenAI",
+  "license": "MIT",
+  "third_party_assets": []
+}

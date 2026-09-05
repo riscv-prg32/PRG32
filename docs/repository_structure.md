@@ -11,8 +11,11 @@ This document outlines the high-level layout of the PRG32 repository.
 .
 |-- .github/workflows/ci.yml        Firmware, host, and store-ready cartridge CI/CD artifacts
 |-- cartridges/                     In-tree, store-ready portable cartridges
-|   |-- blackjack/                  Casino blackjack game, tests, metadata, and screenshot
-|   `-- devicedemo/                 Hardware/runtime feature showcase and screenshot
+|   |-- bachdemo/                   Eight-voice procedural Bach audio showcase
+|   |-- blackjack/                  Casino blackjack game and rules tests
+|   |-- devicedemo/                 Hardware/runtime feature showcase
+|   `-- poing/                      Procedural real-time graphics showcase
+|       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (graphics, input, network, cartridge loader)
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core
@@ -45,7 +48,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- scripts/                        Shell/PowerShell scripts for common CI and local workflows (QEMU, flashing)
 |-- sdkconfig*                      Default configuration files for ESP32-C6 hardware and QEMU emulator builds
 |-- tests/                          Host-side unit tests for Python tooling and documentation validation
-|-- tools/                          Standalone developer Python scripts (image conversion, audio packing, metrics, etc.)
+|-- tools/                          Developer scripts, including cartridge media rendering and validation
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents
 |-- CMakeLists.txt                  Top-level CMake project definition

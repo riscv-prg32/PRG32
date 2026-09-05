@@ -4,6 +4,8 @@ A complete Blackjack cartridge targeting the PRG32 `development-c6` firmware lin
 
 ![Blackjack gameplay screenshot](screenshot.png)
 
+[Download the 30-second MP4 gameplay preview with audio](preview.mp4).
+
 ## Game modes
 
 - **Solo:** casino blackjack with persistent PRG32 high-score submission based on bankroll.
@@ -61,6 +63,7 @@ clang -std=c11 -Wall -Wextra -Werror tests/test_rules.c blackjack_rules.c -o bui
 
 `.github/workflows/ci.yml` runs the rules test, verifies `SHA256SUMS`, builds
 both architecture variants, inspects the packaged metadata, tests the store
-ZIP, and uploads `blackjack-cartridge-package` for 14 days. The artifact is a
+ZIP, validates the screenshot and audiovisual preview, and uploads
+`blackjack-cartridge-package` for 14 days. The artifact is a
 build product; publishing to a Cartridge Store still requires explicit
 credentials and a separate release decision.
