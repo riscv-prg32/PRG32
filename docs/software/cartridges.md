@@ -404,6 +404,8 @@ GitHub Actions runs the same scripts for pull requests and for pushes to
 host/source checks, validates their screenshots and audiovisual previews,
 builds portable packages for `esp32c6` and `qemu`, inspects metadata, and
 checks the available bundle ZIPs and checksum manifests.
+The separate host job installs its explicit `pytest` dependency before running
+the repository smoke suite and generated-ABI check.
 
 Successful runs retain four downloadable workflow artifacts for 14 days:
 
