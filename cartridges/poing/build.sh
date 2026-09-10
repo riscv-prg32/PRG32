@@ -8,6 +8,7 @@ mkdir -p "$HERE/dist"
 cd "$ROOT"
 python3 -m prg32 cartridge build "$HERE/poing.c" \
   --portable --entry-prefix poing --name "Poing" \
+  --architecture "$ARCH" --required-feature metrics \
   --out "$HERE/dist/poing-$ARCH-core.prg32"
 python3 -m prg32 store attach-metadata "$HERE/dist/poing-$ARCH-core.prg32" \
   --metadata "$HERE/metadata.json" --icon "$HERE/assets/icon.png" \

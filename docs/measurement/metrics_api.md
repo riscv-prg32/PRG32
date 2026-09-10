@@ -26,10 +26,16 @@ every measurement screen without further interaction and then shows a summary.
 The workload is not linked into resident firmware.
 
 The unattended sequence measures five distinct screens in both `rgb565` and
-`indexed` color modes. Each frame includes the same 24-sprite color probe; the
-RGB565 pass reads 16-bit pixels, while the indexed pass reads packed 2-bpp
-indices and a shared RGB565 palette. Scene state is reset between passes so the
-two measurements are directly comparable.
+`indexed` color modes. Each frame includes the same 24-sprite color probe. The
+RGB565 pass uses RGB565 clear/pixel/rectangle calls and 16-bit sprite pixels;
+the full-indexed pass uses indexed-native primitives plus packed 2-bpp sprites.
+Text is shared and uses exact fixed palette colors. Scene state is reset between
+passes so the two measurements are directly comparable.
+
+Poing also publishes a single-case `poing-indexed-renderer` result when SELECT
+starts its 300-frame gameplay measurement. Treat it as a separate application
+benchmark, identified by suite and case name, rather than as part of the paired
+reference matrix.
 
 | Screen | What It Measures |
 |---|---|

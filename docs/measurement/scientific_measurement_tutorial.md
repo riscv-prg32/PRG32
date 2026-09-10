@@ -250,10 +250,11 @@ If the board is connected in infrastructure mode, replace `192.168.4.1` with
 the IP address shown at the top of setup mode. The JSON is cleared by reboot and
 is replaced when a new performance test is run, so archive it immediately after
 each run. The benchmark executes the clear/fill, text overlay, sprite storm,
-scrolling, and mixed-gameplay workloads twice: first with native RGB565 sprite
-data and then with packed 2-bpp indexed data. Both passes draw the same 24
-four-color probe sprites per frame. Scene state is reset before the indexed
-pass so each pair receives identical positions and animation inputs.
+scrolling, and mixed-gameplay workloads twice: first with RGB565-compatible
+primitives and 16-bit sprite data, then with indexed-native primitives and
+packed 2-bpp sprite data. Both passes draw the same 24 four-color probe sprites
+per frame. Scene state is reset before the indexed pass so each pair receives
+identical positions and animation inputs.
 
 Compact schema version 2 includes ten `screen_summaries` (five workloads times
 two color modes) and leaves `samples`, `aggregate_windows`, and `comparisons`

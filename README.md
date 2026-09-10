@@ -21,6 +21,11 @@ quantization; indexed-native primitives and palette cycling are available for
 cartridges that need exact palette control. See [ILI9341 Hardware and Driver
 Notes](docs/hardware/ili9341.md) and the [Framework Manual](docs/software/framework_manual.md).
 
+The reference Performance Test compares matched RGB565-compatible and full
+indexed-native workloads. Poing is an application example that renders its
+procedural scene with 8-bit indices and can publish a 300-frame gameplay result
+through the same public performance API by pressing SELECT.
+
 ## Academic Profile
 
 - Project domain: Embedded Systems and Computer Architecture Education

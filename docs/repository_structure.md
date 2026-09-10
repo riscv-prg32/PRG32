@@ -14,8 +14,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- bachdemo/                   Eight-voice procedural Bach audio showcase
 |   |-- blackjack/                  Casino blackjack game and rules tests
 |   |-- devicedemo/                 Hardware/runtime feature showcase
-|   |-- performancetest/             Pluggable public-ABI measurement reference
-|   `-- poing/                      Procedural real-time graphics showcase
+|   |-- performancetest/            RGB565/full-indexed public-ABI measurement reference
+|   `-- poing/                      Indexed procedural graphics and application benchmark
 |       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, cartridge loader)

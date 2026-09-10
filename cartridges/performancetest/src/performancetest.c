@@ -110,6 +110,28 @@ static const uint16_t probe_palette[4]={
 };
 static prg32_indexed_sprite_t probe_indexed;
 
+enum {
+  IDX_BLACK=0,IDX_WHITE=1,IDX_RED=2,IDX_GREEN=3,IDX_BLUE=4,
+  IDX_YELLOW=5,IDX_CYAN=6,IDX_MAGENTA=7,IDX_DARK_BLUE=32
+};
+
+static uint8_t color_index(uint16_t color){
+  switch(color){case PRG32_COLOR_BLACK:return IDX_BLACK;
+  case PRG32_COLOR_WHITE:return IDX_WHITE;case PRG32_COLOR_RED:return IDX_RED;
+  case PRG32_COLOR_GREEN:return IDX_GREEN;case PRG32_COLOR_BLUE:return IDX_BLUE;
+  case PRG32_COLOR_YELLOW:return IDX_YELLOW;case PRG32_COLOR_CYAN:return IDX_CYAN;
+  case PRG32_COLOR_MAGENTA:return IDX_MAGENTA;default:return IDX_DARK_BLUE;}
+}
+static void bench_clear(uint16_t color){
+  if(g_mode)prg32_gfx_clear_indexed(color_index(color));else prg32_gfx_clear(color);
+}
+static void bench_pixel(int x,int y,uint16_t color){
+  if(g_mode)prg32_gfx_pixel_indexed(x,y,color_index(color));else prg32_gfx_pixel(x,y,color);
+}
+static void bench_rect(int x,int y,int w,int h,uint16_t color){
+  if(g_mode)prg32_gfx_rect_indexed(x,y,w,h,color_index(color));else prg32_gfx_rect(x,y,w,h,color);
+}
+
 static const char *case_name(uint32_t n) {
   switch(n){case 0:return "clear-fill";case 1:return "text-overlay";
   case 2:return "sprite-storm";case 3:return "scrolling";
@@ -169,21 +191,22 @@ static void draw_probe(void){
 static void header(void){
   prg32_gfx_text8(8,8,case_name(g_case),PRG32_COLOR_WHITE,0);
   prg32_gfx_text8(8,20,g_mode?"indexed":"rgb565",PRG32_COLOR_GREEN,0);
-  prg32_gfx_rect(248,8,(int)((g_frame+1u)*60u/FRAMES),5,PRG32_COLOR_CYAN);
+  bench_rect(248,8,(int)((g_frame+1u)*60u/FRAMES),5,PRG32_COLOR_CYAN);
 }
 static void workload(void){
   g_seed=g_seed*1664525u+1013904223u;g_scroll=(g_scroll+3)%PRG32_GAME_W;
   g_x+=g_vx;g_y+=g_vy;if(g_x<=0||g_x>=308)g_vx=-g_vx;
   if(g_y<=24||g_y>=188)g_vy=-g_vy;
-  prg32_gfx_clear((g_case==1)?PRG32_COLOR_BLACK:0x0008);header();
-  if(g_case==0){for(int i=0;i<8;i++)prg32_gfx_rect(10+i*7,38+i*18,300-i*22,10,(i&1)?PRG32_COLOR_BLUE:PRG32_COLOR_MAGENTA);}
+  bench_clear((g_case==1)?PRG32_COLOR_BLACK:0x0008);header();
+  if(g_case==0){for(int i=0;i<8;i++)bench_rect(10+i*7,38+i*18,300-i*22,10,(i&1)?PRG32_COLOR_BLUE:PRG32_COLOR_MAGENTA);}
   else if(g_case==1){for(int y=32;y<190;y+=8)prg32_gfx_text8(8,y,"REGISTER TRACE  FRAME BUDGET  ABI PRG2",y&8?PRG32_COLOR_GREEN:PRG32_COLOR_CYAN,0);}
-  else if(g_case==2){for(int i=0;i<36;i++){int x=(i*23+g_frame*(2+(i&3)))%306;int y=30+(i*19+(g_seed>>(i&7)))%150;prg32_gfx_rect(x,y,12,12,(i&1)?PRG32_COLOR_RED:PRG32_COLOR_BLUE);}}
-  else {int count=g_case==3?72:42;for(int i=0;i<count;i++){int x=(i*37+g_scroll*(1+(i&3)))%320;int y=28+(i*17+g_frame*(i&1))%125;prg32_gfx_pixel(x,y,(i&1)?PRG32_COLOR_WHITE:PRG32_COLOR_CYAN);}for(int y=152;y<200;y+=9)for(int x=-(g_scroll%44);x<320;x+=44)prg32_gfx_rect(x,y,20,2,PRG32_COLOR_YELLOW);}
-  if(g_case==4){prg32_gfx_rect(g_x,g_y,12,12,PRG32_COLOR_RED);prg32_gfx_text8(8,136,"MIXED GAMEPLAY",PRG32_COLOR_WHITE,0);}
+  else if(g_case==2){for(int i=0;i<36;i++){int x=(i*23+g_frame*(2+(i&3)))%306;int y=30+(i*19+(g_seed>>(i&7)))%150;bench_rect(x,y,12,12,(i&1)?PRG32_COLOR_RED:PRG32_COLOR_BLUE);}}
+  else {int count=g_case==3?72:42;for(int i=0;i<count;i++){int x=(i*37+g_scroll*(1+(i&3)))%320;int y=28+(i*17+g_frame*(i&1))%125;bench_pixel(x,y,(i&1)?PRG32_COLOR_WHITE:PRG32_COLOR_CYAN);}for(int y=152;y<200;y+=9)for(int x=-(g_scroll%44);x<320;x+=44)bench_rect(x,y,20,2,PRG32_COLOR_YELLOW);}
+  if(g_case==4){bench_rect(g_x,g_y,12,12,PRG32_COLOR_RED);prg32_gfx_text8(8,136,"MIXED GAMEPLAY",PRG32_COLOR_WHITE,0);}
   draw_probe();
 }
 void performancetest_init(void){
+  prg32_palette_set(IDX_DARK_BLUE,0x0008);
   probe_indexed.pixels=probe_pixels;probe_indexed.palette=probe_palette;
   probe_indexed.width=4;probe_indexed.height=4;probe_indexed.frame_count=1;
   probe_indexed.palette_count=4;probe_indexed.bits_per_pixel=PRG32_SPRITE_BPP_2;

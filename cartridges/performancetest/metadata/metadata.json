@@ -2,12 +2,12 @@
   "abi":"prg32-metadata-1.0",
   "id":"org.uniparthenope.prg32.performance-test",
   "title":"PRG32 Performance Test",
-  "version":"1.0.0",
-  "summary":"Portable RGB565 and indexed rendering benchmark.",
-  "description":"Canonical public-ABI example for pluggable PRG32 measurement suites.",
+  "version":"1.1.0",
+  "summary":"Portable RGB565 versus full 8-bit indexed rendering benchmark.",
+  "description":"Canonical public-ABI comparison of matched RGB565 and full indexed framebuffer workloads.",
   "authors":[{"name":"Raffaele Montella","affiliation":"UniParthenope"}],
   "license":"MIT",
-  "repository":"https://github.com/riscv-prg32/PRG32/tree/development-c6/cartridges/performancetest",
+  "repository":"https://github.com/riscv-prg32/PRG32/tree/development-c6-128KiB/cartridges/performancetest",
   "tags":["benchmark","measurement","education","riscv","prg32"],
   "runtime":{"platform":"PRG32","isa":"RV32IMAC","architecture":"esp32c6","architectures":[{"id":"esp32c6","target":"esp32c6","isa":"RV32IMAC"},{"id":"qemu","target":"qemu","isa":"RV32IMAC"}]}
 }

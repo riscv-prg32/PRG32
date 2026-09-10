@@ -6,8 +6,11 @@ practice, the broker ABI, and custom performance-cartridge development. This
 README records only details specific to the reference cartridge package.
 
 This normal portable cartridge is the canonical example for the public
-performance broker ABI. It reproduces the former resident firmware workloads
-in paired RGB565 and indexed passes. Build hardware and QEMU packages with:
+performance broker ABI. It runs matched workloads in paired modes: the RGB565
+pass uses legacy RGB565 primitives and sprites, while the full-indexed pass
+uses the 8-bit clear, pixel, rectangle, and indexed-sprite APIs throughout.
+Text uses the shared text API with exact fixed system-palette colors. Build
+hardware and QEMU packages with:
 
 ```bash
 PRG32_ARCHITECTURE=esp32c6 cartridges/performancetest/scripts/build.sh

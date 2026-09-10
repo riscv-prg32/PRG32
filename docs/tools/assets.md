@@ -161,8 +161,8 @@ shared animation palette amortizes that fixed cost across every frame.
 
 `--transparent-index -1` keeps every palette entry opaque. Any other value
 skips that generated palette index while drawing. Inspect the emitted palette
-when choosing an index manually. The embedded Performance Test uses a matched
-2-bpp RGB565/indexed probe to measure the decoding tradeoff; see
+when choosing an index manually. The Performance Test uses matched 2-bpp probe
+assets inside complete RGB565-compatible and indexed-native primitive passes; see
 [Performance Metrics](/docs/measurement/metrics_api.md).
 
 ## Cartridge AUDIO Blocks

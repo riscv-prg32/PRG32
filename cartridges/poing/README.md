@@ -14,19 +14,20 @@ Poing is an original, high-load graphics cartridge inspired by the technical spi
 | Joystick up/down | Raise/lower the viewpoint |
 | A | Cycle three camera distances / ball sizes |
 | B | Freeze/resume time while retaining camera control |
-| SELECT | Toggle the HUD |
+| SELECT | Start or abort a 300-frame public-API performance run |
 
 ## What it stresses
 
 - Per-scanline sphere intersection with integer square roots
 - Perspective texture coordinates and rotating logo/checker texture
-- Quantized RGB565 directional lighting
-- Run-length coalescing into many one-pixel-high `prg32_gfx_rect` spans
+- Quantized 8-bit system-palette directional lighting
+- Run-length coalescing into indexed `prg32_gfx_rect_indexed` spans
 - Perspective floor, moving depth grid, shadow, stars, and HUD in the same frame
 - A short procedural impact note synchronized to each bounce
 - Recursive graphics locking around the full composite
+- Optional 300-frame performance-broker run using the normal Poing workload
 
-The implementation deliberately avoids pre-rendered animation frames, floating point, heap allocation, and platform-private framebuffer access. See `docs/architecture.md` for the rendering pipeline and performance tradeoffs.
+The implementation deliberately avoids pre-rendered animation frames, floating point, heap allocation, and platform-private framebuffer access. It writes stable 8-bit indices through the public graphics ABI and configures the corresponding RGB565 palette once during initialization. Press SELECT to publish a normal Poing run through `/api/performance.json` as an alternative to the synthetic Performance Test cartridge. See `docs/architecture.md` for the rendering pipeline and performance tradeoffs.
 
 ## Build
 
@@ -55,7 +56,7 @@ architecture variants, and retains the packages and downloadable media in the
 
 ## Compatibility
 
-Targeted at PRG32 `development-c6`, cartridge ABI 1.1, 320×200 centered game viewport. Entry prefix: `poing`.
+Targeted at PRG32 `development-c6-128KiB`, portable ABI 1.5, 320×200 centered game viewport. Entry prefix: `poing`.
 
 ## Originality
 

@@ -218,7 +218,7 @@ the end of each case. The latest run is
 available as `/api/performance.json` until the next benchmark or reboot. The
 cartridge cases isolate clear/fill, text overlay, sprite storm, scrolling, and
 mixed-gameplay workloads. Every workload runs through matched RGB565 and
-indexed-color sprite probes; the final screen reports an aggregate summary and
+full indexed-native primitives and indexed-color sprite probes; the final screen reports an aggregate summary and
 the complete result endpoint. The JSON API preserves the mode on every case
 summary. See the [Performance Test Guide](/docs/performance_test.md) for the
 execution workflow, interpretation rules, and custom ABI tutorial.

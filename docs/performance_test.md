@@ -38,7 +38,7 @@ contract, see [Application Binary Interface](software/abi.md).
 ### 2.1 Reference workload
 
 The reference cartridge executes five workloads. Each workload runs for 60
-frames in RGB565 mode and 60 frames in indexed-color mode, producing 10 compact
+frames in RGB565 mode and 60 frames in full indexed mode, producing 10 compact
 case summaries and 600 measured frames in total.
 
 | Workload | Experimental purpose |
@@ -49,10 +49,13 @@ case summaries and 600 measured frames in total.
 | `scrolling` | Exercises scrolling geometry and parallax-like point fields. |
 | `mixed-gameplay` | Combines text, sprites, scrolling, and playfield objects. |
 
-Every case includes the same 24 four-color probe sprites. RGB565 cases read
-16-bit source pixels; indexed cases read packed 2-bit indices and a shared
-RGB565 palette. Scene state is reset before every case. This pairing controls
-the visible workload while changing the source representation.
+Every case includes the same 24 four-color probe sprites. RGB565 cases use the
+legacy RGB565 clear, pixel, rectangle, and sprite APIs. Indexed cases use
+`prg32_gfx_clear_indexed`, `prg32_gfx_pixel_indexed`,
+`prg32_gfx_rect_indexed`, and packed 2-bit sprites mapped into the system
+palette. Text uses the shared text API and exact fixed palette colors. Scene
+state is reset before every case, keeping geometry and visible colors matched
+while changing the complete primitive-storage path.
 
 ### 2.2 Timing boundary
 
@@ -329,10 +332,20 @@ a clearly defined delta, for example:
 \Delta t = t_{indexed} - t_{rgb565}
 \]
 
-A positive time delta means indexed decoding was slower for that measurement.
+A positive time delta means the full indexed path was slower for that measurement.
 Both source paths ultimately reach the same indexed ESP32-C6 framebuffer and
-RGB565 LCD transfer, so the comparison primarily concerns source representation
-and decoding, not a change in LCD wire format.
+RGB565 LCD transfer, so the comparison concerns RGB565 compatibility mapping
+versus direct index writes plus compact sprite decoding, not a change in LCD
+wire format.
+
+### 7.7 Poing application-level alternative
+
+The Poing cartridge provides a complementary 300-frame suite named
+`poing-indexed-renderer`. Press SELECT during normal Poing gameplay to measure
+its procedural sphere, grid, shadow, stars, HUD, update logic, and explicit
+present stage as one `PRG32_PERF_COLOR_INDEXED` case. It is an application-level
+workload, not another condition in the five-screen reference experiment; do not
+pool its results with the paired reference summaries.
 
 Never combine QEMU and ESP32-C6 values into one performance population. QEMU
 is a different target with host-dependent scheduling and display behavior.
