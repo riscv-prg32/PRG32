@@ -2,6 +2,14 @@
 
 The ESP32-C6 is a highly capable SoC, but memory management is critical for performance and stability, especially in gaming environments like PRG32. This document explains the hardware memory layout and the tools available to analyze it.
 
+The ILI9341 backend reserves 64,000 bytes for the 320x200 indexed game
+framebuffer, 512 bytes for its 256-entry RGB565 palette, and 5,120 bytes for the
+retained 8-row RGB565 SPI strip. This is 63,488 bytes less than the former
+128,000-byte RGB565 game framebuffer plus the same strip buffer. Boot logs
+record free heap, largest free block, and minimum-ever free heap after display
+initialization, before cartridge loading, and immediately before cartridge
+initialization.
+
 ## ESP32-C6 Memory Layout
 
 The memory of the ESP32-C6 can be broadly divided into three main components: **Flash**, **ROM**, and **RAM**.

@@ -60,8 +60,9 @@ workflow and interpretation rules.
 
 Performance extension: repeat the paired benchmark with one fixed firmware
 revision and optimization profile. Treat draw time as CPU composition work and
-present time as RGB565 display-transfer work. The current RGB565 and indexed
-renderers use equivalent one-lock, clipped-row, one-dirty-update policies.
+present time as indexed-strip expansion plus RGB565 display-transfer work on
+ESP32-C6. The source renderers use equivalent one-lock, clipped-row,
+one-dirty-update policies.
 
 ## Reflection
 

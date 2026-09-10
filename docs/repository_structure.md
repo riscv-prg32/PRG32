@@ -18,7 +18,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   `-- poing/                      Procedural real-time graphics showcase
 |       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
-|   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (graphics, input, network, cartridge loader)
+|   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, cartridge loader)
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents

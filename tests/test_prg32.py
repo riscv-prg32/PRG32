@@ -115,13 +115,21 @@ class PortableHeaderTests(unittest.TestCase):
         self.assertEqual(IMPORT_NAMES[122], "prg32_sprite_draw_indexed")
         self.assertEqual(IMPORT_NAMES[123], "prg32_sprite_draw_bitplanes")
         self.assertEqual(
-            IMPORT_NAMES[124:],
+            IMPORT_NAMES[124:133],
             [
                 "prg32_perf_now_us", "prg32_perf_begin",
                 "prg32_perf_case_begin", "prg32_perf_record",
                 "prg32_perf_case_end", "prg32_perf_end",
                 "prg32_perf_abort", "prg32_perf_get_state",
                 "prg32_perf_get_summary",
+            ],
+        )
+        self.assertEqual(
+            IMPORT_NAMES[133:],
+            [
+                "prg32_palette_set", "prg32_palette_get",
+                "prg32_gfx_pixel_indexed", "prg32_gfx_rect_indexed",
+                "prg32_gfx_clear_indexed",
             ],
         )
 

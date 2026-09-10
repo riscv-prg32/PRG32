@@ -478,6 +478,7 @@ void prg32_console_hex32(uint32_t value);
  * firmware services and should be used cautiously by cartridges.
  * @{ */
 void prg32_gfx_clear(uint16_t color);
+void prg32_gfx_clear_indexed(uint8_t index);
 void prg32_gfx_present(void);
 void prg32_gfx_lock(void);
 int prg32_gfx_try_lock(uint32_t timeout_ms);
@@ -498,6 +499,10 @@ void prg32_band_load_config(void);
 void prg32_band_save_config(void);
 void prg32_gfx_pixel(int x, int y, uint16_t color);
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color);
+void prg32_gfx_pixel_indexed(int x, int y, uint8_t index);
+void prg32_gfx_rect_indexed(int x, int y, int w, int h, uint8_t index);
+void prg32_palette_set(uint8_t index, uint16_t rgb565);
+uint16_t prg32_palette_get(uint8_t index);
 void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg);
 int prg32_gfx_snapshot_row_rgb565(int y, uint16_t *out, size_t pixels);
 void prg32_splash_draw(const char *title, const char *subtitle, uint16_t bg,

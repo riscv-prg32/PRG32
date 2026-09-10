@@ -2,6 +2,11 @@
 
 PRG32 examples are split into game examples and focused feature examples.
 
+All graphics examples still accept RGB565 colors. The ESP32-C6 backend stores
+them as deterministic system-palette indices in its 320x200 framebuffer. Use
+`prg32_gfx_*_indexed` for lessons that require exact indices, and
+`prg32_palette_set` to demonstrate palette cycling without rewriting pixels.
+
 ## Audio Examples
 
 | Example | Purpose | Hardware |

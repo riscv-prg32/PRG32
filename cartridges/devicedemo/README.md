@@ -12,8 +12,8 @@ It is a normal portable `.prg32` cartridge and Cartridge Store package, not setu
 
 1. Runtime overview and diagnostic overlay
 2. Player 1 / player 2 / external-controller input
-3. RGB565 framebuffer primitives and clipping
-4. **New:** compact 4-bpp indexed sprites
+3. RGB565-compatible primitives and clipping on the indexed framebuffer
+4. Compact 4-bpp sprites, indexed primitives, and palette cycling
 5. **New:** bitplane sprite drawing
 6. Tiles, dual playfields, camera and parallax
 7. Platform/collision helper API

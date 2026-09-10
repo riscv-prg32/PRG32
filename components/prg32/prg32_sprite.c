@@ -1,6 +1,7 @@
 #include "prg32.h"
 #include "prg32_gfx_internal.h"
 #include <limits.h>
+#include <string.h>
 
 static void draw_compact_sprite(int x,
                                 int y,
@@ -138,10 +139,16 @@ void prg32_sprite_draw_8x8(int x,
     prg32_gfx_lock();
     for (int row = 0; row < clip.height; ++row) {
         uint8_t source = bits[clip.src_y + row];
-        uint16_t *dst = prg32_gfx_row_unlocked(clip.dst_y + row) + clip.dst_x;
+        uint16_t *dst_row = prg32_gfx_row_unlocked(clip.dst_y + row);
+        uint16_t *dst = dst_row ? dst_row + clip.dst_x : NULL;
         for (int col = 0; col < clip.width; ++col) {
             int source_col = clip.src_x + col;
-            dst[col] = (source & (1u << (7 - source_col))) ? native_fg : native_bg;
+            if (dst) {
+                dst[col] = (source & (1u << (7 - source_col))) ? native_fg : native_bg;
+            } else {
+                prg32_gfx_pixel_unlocked(clip.dst_x + col, clip.dst_y + row,
+                    (source & (1u << (7 - source_col))) ? fg : bg);
+            }
         }
     }
     prg32_gfx_dirty_unlocked(clip.dst_x, clip.dst_y, clip.width, clip.height);
@@ -195,11 +202,14 @@ void prg32_sprite_draw_frame(int x,
     for (int row = 0; row < clip.height; ++row) {
         const uint16_t *src = pixels +
             (size_t)(clip.src_y + row) * (size_t)w + (size_t)clip.src_x;
-        uint16_t *dst = prg32_gfx_row_unlocked(clip.dst_y + row) + clip.dst_x;
+        uint16_t *dst_row = prg32_gfx_row_unlocked(clip.dst_y + row);
+        uint16_t *dst = dst_row ? dst_row + clip.dst_x : NULL;
         for (int col = 0; col < clip.width; ++col) {
             uint16_t color = src[col];
             if (color != transparent) {
-                dst[col] = prg32_gfx_native_color(color);
+                if (dst) dst[col] = prg32_gfx_native_color(color);
+                else prg32_gfx_pixel_unlocked(clip.dst_x + col,
+                                               clip.dst_y + row, color);
                 wrote = 1;
             }
         }
@@ -333,23 +343,41 @@ static void draw_compact_sprite(int x,
 
     int wrote = 0;
     prg32_gfx_lock();
+    uint8_t mapped_palette[256];
+    int identity_palette = 1;
+    for (uint16_t i = 0; i < sprite->palette_count; ++i) {
+        mapped_palette[i] = prg32_gfx_index_for_rgb565_unlocked(sprite->palette[i]);
+        if (mapped_palette[i] != i ||
+            !prg32_gfx_palette_matches_unlocked((uint8_t)i, sprite->palette[i]))
+            identity_palette = 0;
+    }
     for (int visible_row = 0; visible_row < clip.height; ++visible_row) {
         int row = clip.src_y + visible_row;
         size_t row_position = (size_t)row * sprite->width;
         size_t first_position = row_position + (size_t)clip.src_x;
-        uint16_t *dst = prg32_gfx_row_unlocked(clip.dst_y + visible_row) +
-            clip.dst_x;
-        if (!planar && sprite->bits_per_pixel == PRG32_SPRITE_BPP_8) {
-            wrote |= blit_index8_row(dst, data + first_position, clip.width,
-                                     sprite, compare_transparent_color,
-                                     transparent_color);
+        uint8_t *indexed_dst = prg32_gfx_indexed_row_unlocked(
+            clip.dst_y + visible_row);
+        if (indexed_dst && !planar &&
+            sprite->bits_per_pixel == PRG32_SPRITE_BPP_8 && identity_palette &&
+            sprite->transparent_index < 0 && !compare_transparent_color) {
+            memcpy(indexed_dst + clip.dst_x, data + first_position,
+                   (size_t)clip.width);
+            wrote = 1;
             continue;
         }
-        if (!planar && sprite->bits_per_pixel == PRG32_SPRITE_BPP_4) {
-            wrote |= blit_index4_row(dst, data, first_position, clip.width,
+        uint16_t *dst_row = prg32_gfx_row_unlocked(clip.dst_y + visible_row);
+        uint16_t *dst = dst_row ? dst_row + clip.dst_x : NULL;
+        if (!planar && sprite->bits_per_pixel == PRG32_SPRITE_BPP_8) {
+            if (!indexed_dst) wrote |= blit_index8_row(dst, data + first_position, clip.width,
                                      sprite, compare_transparent_color,
                                      transparent_color);
-            continue;
+            if (!indexed_dst) continue;
+        }
+        if (!planar && sprite->bits_per_pixel == PRG32_SPRITE_BPP_4) {
+            if (!indexed_dst) wrote |= blit_index4_row(dst, data, first_position, clip.width,
+                                     sprite, compare_transparent_color,
+                                     transparent_color);
+            if (!indexed_dst) continue;
         }
         size_t cached_byte_index = SIZE_MAX;
         uint8_t cached_packed_byte = 0;
@@ -398,7 +426,8 @@ static void draw_compact_sprite(int x,
             if (compare_transparent_color && color == transparent_color) {
                 continue;
             }
-            dst[visible_col] = prg32_gfx_native_color(color);
+            if (indexed_dst) indexed_dst[clip.dst_x + visible_col] = mapped_palette[index];
+            else dst[visible_col] = prg32_gfx_native_color(color);
             wrote = 1;
         }
     }

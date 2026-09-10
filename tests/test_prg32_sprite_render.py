@@ -32,6 +32,11 @@ void prg32_gfx_dirty_unlocked(int x, int y, int w, int h) {
     ++dirties;
 }
 uint16_t *prg32_gfx_row_unlocked(int y) { return &fb[y * PRG32_GAME_W]; }
+uint8_t *prg32_gfx_indexed_row_unlocked(int y) { (void)y; return 0; }
+uint8_t prg32_gfx_index_for_rgb565_unlocked(uint16_t color) { return (uint8_t)color; }
+int prg32_gfx_palette_matches_unlocked(uint8_t index, uint16_t color) {
+    return index == (uint8_t)color;
+}
 
 static void reset(uint16_t color) {
     for (unsigned i = 0; i < sizeof(fb) / sizeof(fb[0]); ++i) fb[i] = color;

@@ -80,6 +80,13 @@ broker: `prg32_perf_now_us`, `prg32_perf_begin`,
 `0x5626cb8a` and the earlier supported hash `0xec21efe2` remain accepted.
 The exact new 1.4 hash is generated from `prg32_abi.json`.
 
+ABI minor `5` appends indices 133 through 137 for the indexed framebuffer:
+`prg32_palette_set`, `prg32_palette_get`, `prg32_gfx_pixel_indexed`,
+`prg32_gfx_rect_indexed`, and `prg32_gfx_clear_indexed`. The additions preserve
+all earlier indices and RGB565 signatures. Palette changes affect existing
+indexed pixels at the next presentation; the ILI9341 wire format remains
+RGB565. The exact 1.5 hash is generated from `prg32_abi.json`.
+
 The performance broker lifecycle, descriptor layouts, failure semantics, and
 custom-cartridge tutorial are documented in the
 [Performance Test Guide](/docs/performance_test.md). The concise contract is
@@ -125,13 +132,14 @@ palette value is compared with that function's transparent-color argument;
 the descriptor's transparent index is also honored. The additive direct compact
 calls use the descriptor index because their prototypes contain no color key.
 
-These calls add asset encodings, not a new physical display ABI. Drawing still
-targets the existing RGB565 framebuffer, so legacy RGB565 sprite calls,
-screenshots, and display backends behave exactly as before.
+These calls add asset encodings, not a new physical display ABI. On ESP32-C6
+drawing targets the indexed game framebuffer and presentation expands it to
+RGB565; legacy RGB565 sprite signatures, screenshots, and the LCD protocol
+remain compatible.
 
-The row-blitter optimization is entirely internal: it does not change the
-public header, structure layouts, function indices, feature bits, or ABI hash.
-Already-built portable ABI-table cartridges therefore continue to load and use
+The destination-row optimization is internal. ABI 1.5 appends palette APIs but
+does not change existing structure layouts or function indices. Already-built
+portable ABI-table cartridges therefore continue to load and use
 the same RGB565 and indexed entry points. Firmware-specific legacy-absolute
 cartridges retain their existing limitation: they are compatible only with the
 firmware image whose exported addresses were used when they were linked.

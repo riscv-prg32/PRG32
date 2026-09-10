@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 void prg32_display_init(void);
+void prg32_display_log_memory(const char *checkpoint);
 void prg32_input_init(void);
 void prg32_audio_pwm_init(void);
 void prg32_abi_exports_keep(void);
@@ -1092,6 +1093,7 @@ void prg32_init(void) {
       ((boot_input & PRG32_BTN_A) && (boot_input & PRG32_BTN_B)) ||
       stored_count == 0 || (stored_count > 1 && prg32_cart_default_slot() < 0);
   printf("prg32_init => autoload_cartridge()\n");
+  prg32_display_log_memory("before cartridge load");
   if (!setup_requested && autoload_cartridge() != 0) {
     setup_requested = true;
   }

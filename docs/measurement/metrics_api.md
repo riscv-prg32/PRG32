@@ -134,9 +134,10 @@ target revision; ESP32-C6 claims require measurements on real ESP32-C6 hardware.
 
 The run reported 33.32 overall FPS, 30,008 us mean frame work, 31,372 us p95,
 zero missed deadlines across 600 frames, and 34,920 bytes minimum free heap.
-Because both modes share the same RGB565 framebuffer and present stage, small
+Because both modes share the same destination and present stage, small
 differences primarily reflect compact-pixel decoding plus normal QEMU timing
-variation. Repeat paired runs and use the JSON samples for statistical claims.
+variation. QEMU retains an RGB565 host surface; ESP32-C6 uses an indexed game
+surface and expands dirty strips for the RGB565 LCD transfer.
 
 Compact example:
 

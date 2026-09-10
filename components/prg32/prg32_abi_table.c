@@ -149,5 +149,10 @@ const prg32_abi_table_t prg32_abi_table = {
         [PRG32_ABI_FN_PRG32_PERF_ABORT] = (const void *)prg32_perf_abort,
         [PRG32_ABI_FN_PRG32_PERF_GET_STATE] = (const void *)prg32_perf_get_state,
         [PRG32_ABI_FN_PRG32_PERF_GET_SUMMARY] = (const void *)prg32_perf_get_summary,
+        [PRG32_ABI_FN_PRG32_PALETTE_SET] = (const void *)prg32_palette_set,
+        [PRG32_ABI_FN_PRG32_PALETTE_GET] = (const void *)prg32_palette_get,
+        [PRG32_ABI_FN_PRG32_GFX_PIXEL_INDEXED] = (const void *)prg32_gfx_pixel_indexed,
+        [PRG32_ABI_FN_PRG32_GFX_RECT_INDEXED] = (const void *)prg32_gfx_rect_indexed,
+        [PRG32_ABI_FN_PRG32_GFX_CLEAR_INDEXED] = (const void *)prg32_gfx_clear_indexed,
     },
 };

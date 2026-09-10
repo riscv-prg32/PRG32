@@ -108,6 +108,8 @@ static void prg32_start_metrics_for_loaded_cart(void) {
   g_metrics_run_active = 1;
 }
 
+void prg32_display_log_memory(const char *checkpoint);
+
 static void prg32_stop_metrics_run(void) {
   if (g_metrics_run_active) {
     prg32_metrics_stop_run();
@@ -202,6 +204,7 @@ void app_main(void) {
         cart_generation = current_generation;
         prg32_console_clear();
         prg32_stop_metrics_run();
+        prg32_display_log_memory("immediately before cartridge init");
         prg32_cart_call_init();
         prg32_start_metrics_for_loaded_cart();
       }

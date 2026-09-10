@@ -12,6 +12,8 @@
 #include "esp_log.h"
 #include "esp_rom_sys.h"
 #include "esp_timer.h"
+#include "esp_heap_caps.h"
+#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <stdio.h>
@@ -52,7 +54,10 @@ static uint16_t g_band_color;
 static uint16_t g_last_band_color;
 /* Keep only the 320x200 game viewport in RAM. The physical status bands are
  * rendered into g_flush_buf while presenting, saving 25,600 bytes. */
-static uint16_t g_game_fb[PRG32_GAME_W * PRG32_GAME_H];
+static uint8_t g_game_fb[PRG32_GAME_W * PRG32_GAME_H];
+/* Wire-order RGB565: palette expansion during strip preparation needs no
+ * per-pixel byte swap. */
+static uint16_t g_palette[256];
 #if PRG32_LCD_BOOT_TEST_MS > 0
 static uint16_t g_line_buf[PRG32_LCD_W];
 #endif
@@ -255,6 +260,43 @@ static uint16_t fb_color(uint16_t color) {
     return rgb565_wire(color);
 }
 
+static uint16_t palette_default_color(uint8_t index) {
+    static const uint16_t system[16] = {
+        0x0000, 0xffff, 0xf800, 0x07e0, 0x001f, 0xffe0, 0x07ff, 0xf81f,
+        0x8410, 0xc618, 0x8000, 0x0400, 0x0010, 0x8400, 0x0410, 0x8010,
+    };
+    if (index < 16) return system[index];
+    if (index < 232) {
+        unsigned value = index - 16u;
+        unsigned r = value / 36u;
+        unsigned g = (value / 6u) % 6u;
+        unsigned b = value % 6u;
+        return (uint16_t)(((r * 31u / 5u) << 11) |
+                          ((g * 63u / 5u) << 5) | (b * 31u / 5u));
+    }
+    unsigned gray = (unsigned)(index - 232u) * 255u / 23u;
+    return (uint16_t)(((gray * 31u / 255u) << 11) |
+                      ((gray * 63u / 255u) << 5) |
+                      (gray * 31u / 255u));
+}
+
+static void palette_init(void) {
+    for (unsigned i = 0; i < 256; ++i) g_palette[i] = fb_color(palette_default_color(i));
+}
+
+uint8_t prg32_gfx_index_for_rgb565_unlocked(uint16_t color) {
+    static const uint16_t named[8] = {0x0000,0xffff,0xf800,0x07e0,0x001f,0xffe0,0x07ff,0xf81f};
+    for (uint8_t i = 0; i < 8; ++i) if (color == named[i]) return i;
+    unsigned r = ((color >> 11) & 31u) * 5u / 31u;
+    unsigned g = ((color >> 5) & 63u) * 5u / 63u;
+    unsigned b = (color & 31u) * 5u / 31u;
+    return (uint8_t)(16u + r * 36u + g * 6u + b);
+}
+
+int prg32_gfx_palette_matches_unlocked(uint8_t index, uint16_t color) {
+    return g_palette[index] == fb_color(color);
+}
+
 static const uint8_t *font_glyph(unsigned ch) {
     if (ch < 32 || ch > 126) {
         ch = '?';
@@ -287,7 +329,7 @@ static void fill_raw_rect(int x, int y, int w, int h, uint16_t color) {
         }
         for (int px = x; px < x + w; ++px) {
             g_game_fb[(py - PRG32_VIEWPORT_Y) * PRG32_GAME_W + px] =
-                fb_color(color);
+                prg32_gfx_index_for_rgb565_unlocked(color);
         }
     }
     dirty_add_raw(x, y, w, h);
@@ -325,14 +367,14 @@ static void draw_band_overlays(void) {
     }
 }
 
-/* g_game_fb stores ILI9341 wire-order pixels. Band pixels only exist during
- * a transfer, so this helper synthesizes one raw LCD row in the same order. */
+/* Game pixels are expanded from indices only while a dirty transfer strip is
+ * prepared. Band pixels remain synthesized directly in RGB565 wire order. */
 static void render_raw_row(int raw_y, int x0, int width, uint16_t *out) {
     if (raw_y >= PRG32_VIEWPORT_Y &&
         raw_y < PRG32_VIEWPORT_Y + PRG32_GAME_H) {
-        const uint16_t *src = &g_game_fb[
+        const uint8_t *src = &g_game_fb[
             (raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x0];
-        memcpy(out, src, (size_t)width * sizeof(*out));
+        for (int x = 0; x < width; ++x) out[x] = g_palette[src[x]];
         return;
     }
 
@@ -749,6 +791,10 @@ static void lcd_boot_test_pattern(void) {
 
 void prg32_display_init(void) {
     prg32_gfx_lock_init();
+    palette_init();
+    ESP_LOGI(TAG, "indexed framebuffer=%u palette=%u flush=%u bytes",
+             (unsigned)sizeof(g_game_fb), (unsigned)sizeof(g_palette),
+             (unsigned)sizeof(g_flush_buf));
 #if !PRG32_LCD_SOFT_SPI
     spi_bus_config_t bus = {
         .mosi_io_num = PRG32_PIN_LCD_MOSI,
@@ -843,8 +889,20 @@ void prg32_display_init(void) {
     lcd_backlight(1);
     g_lcd_ready = 1;
     ESP_LOGI(TAG, "ILI9341 initialization complete");
+    ESP_LOGI(TAG, "heap after display init: free=%u largest=%u minimum=%u",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT),
+             (unsigned)esp_get_minimum_free_heap_size());
     lcd_boot_test_pattern();
     dirty_reset();
+}
+
+void prg32_display_log_memory(const char *checkpoint) {
+    ESP_LOGI(TAG, "heap %s: free=%u largest=%u minimum=%u",
+             checkpoint ? checkpoint : "checkpoint",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT),
+             (unsigned)esp_get_minimum_free_heap_size());
 }
 
 uint32_t prg32_ticks_ms(void) {
@@ -915,19 +973,25 @@ void prg32_gfx_pixel(int x, int y, uint16_t color) {
         return;
     }
     int raw_y = logical_y_to_raw(y);
-    g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x] = fb_color(color);
+    g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x] =
+        prg32_gfx_index_for_rgb565_unlocked(color);
     dirty_add(x, y, 1, 1);
     prg32_gfx_unlock();
 }
 
 void prg32_gfx_pixel_unlocked(int x, int y, uint16_t color) {
     int raw_y = logical_y_to_raw(y);
-    g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x] = fb_color(color);
+    g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + x] =
+        prg32_gfx_index_for_rgb565_unlocked(color);
 }
 
 uint16_t *prg32_gfx_row_unlocked(int y) {
-    int raw_y = logical_y_to_raw(y);
-    return &g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W];
+    (void)y;
+    return NULL;
+}
+
+uint8_t *prg32_gfx_indexed_row_unlocked(int y) {
+    return &g_game_fb[(size_t)y * PRG32_GAME_W];
 }
 
 void prg32_gfx_dirty_unlocked(int x, int y, int w, int h) {
@@ -956,7 +1020,7 @@ void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color) {
         int raw_y = logical_y_to_raw(py);
         for (int px = x0; px < x1; ++px) {
             g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + px] =
-                fb_color(color);
+                prg32_gfx_index_for_rgb565_unlocked(color);
         }
     }
     dirty_add(x0, y0, x1 - x0, y1 - y0);
@@ -984,12 +1048,56 @@ void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg) {
                     continue;
                 }
                 g_game_fb[(raw_y - PRG32_VIEWPORT_Y) * PRG32_GAME_W + px] =
-                    fb_color((bits & (1u << (7 - col))) ? fg : bg);
+                    prg32_gfx_index_for_rgb565_unlocked(
+                        (bits & (1u << (7 - col))) ? fg : bg);
             }
         }
         dirty_add(x, y, 8, 8);
         x += 8;
     }
+    prg32_gfx_unlock();
+}
+
+void prg32_palette_set(uint8_t index, uint16_t rgb565) {
+    prg32_gfx_lock();
+    g_palette[index] = fb_color(rgb565);
+    dirty_add(0, 0, PRG32_GAME_W, PRG32_GAME_H);
+    prg32_gfx_unlock();
+}
+
+uint16_t prg32_palette_get(uint8_t index) {
+    prg32_gfx_lock();
+    uint16_t color = rgb565_wire(g_palette[index]);
+    prg32_gfx_unlock();
+    return color;
+}
+
+void prg32_gfx_pixel_indexed(int x, int y, uint8_t index) {
+    prg32_gfx_lock();
+    if ((unsigned)x < PRG32_GAME_W && (unsigned)y < PRG32_GAME_H) {
+        g_game_fb[(size_t)y * PRG32_GAME_W + x] = index;
+        dirty_add(x, y, 1, 1);
+    }
+    prg32_gfx_unlock();
+}
+
+void prg32_gfx_rect_indexed(int x, int y, int w, int h, uint8_t index) {
+    if (w <= 0 || h <= 0) return;
+    int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y;
+    int x1 = x + w > PRG32_GAME_W ? PRG32_GAME_W : x + w;
+    int y1 = y + h > PRG32_GAME_H ? PRG32_GAME_H : y + h;
+    if (x0 >= x1 || y0 >= y1) return;
+    prg32_gfx_lock();
+    for (int py = y0; py < y1; ++py)
+        memset(&g_game_fb[(size_t)py * PRG32_GAME_W + x0], index, (size_t)(x1 - x0));
+    dirty_add(x0, y0, x1 - x0, y1 - y0);
+    prg32_gfx_unlock();
+}
+
+void prg32_gfx_clear_indexed(uint8_t index) {
+    prg32_gfx_lock();
+    memset(g_game_fb, index, sizeof(g_game_fb));
+    dirty_add(0, 0, PRG32_GAME_W, PRG32_GAME_H);
     prg32_gfx_unlock();
 }
 

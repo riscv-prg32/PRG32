@@ -1,7 +1,7 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 4,
+  "minor": 5,
   "compatible_hashes": ["0xec21efe2", "0x5626cb8a"],
   "functions": [
     {
@@ -934,6 +934,41 @@
       "args": ["prg32_performance_summary_t *"],
       "feature": "metrics",
       "notes": "Copy the compact completed-run summary."
+    },
+    {
+      "name": "prg32_palette_set",
+      "return": "void",
+      "args": ["uint8_t", "uint16_t"],
+      "feature": "graphics",
+      "notes": "Set one system-palette entry from a native RGB565 value."
+    },
+    {
+      "name": "prg32_palette_get",
+      "return": "uint16_t",
+      "args": ["uint8_t"],
+      "feature": "graphics",
+      "notes": "Read one system-palette entry as native RGB565."
+    },
+    {
+      "name": "prg32_gfx_pixel_indexed",
+      "return": "void",
+      "args": ["int", "int", "uint8_t"],
+      "feature": "graphics",
+      "notes": "Draw one system-palette index."
+    },
+    {
+      "name": "prg32_gfx_rect_indexed",
+      "return": "void",
+      "args": ["int", "int", "int", "int", "uint8_t"],
+      "feature": "graphics",
+      "notes": "Fill a clipped rectangle with one system-palette index."
+    },
+    {
+      "name": "prg32_gfx_clear_indexed",
+      "return": "void",
+      "args": ["uint8_t"],
+      "feature": "graphics",
+      "notes": "Clear the game viewport to one system-palette index."
     }
   ]
 }

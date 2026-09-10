@@ -2,6 +2,13 @@
 
 ## 1. Purpose and scope
 
+ESP32-C6 presentation now expands the 8-bit indexed game framebuffer into an
+RGB565 transfer strip. Therefore `present_us` includes palette lookup and strip
+preparation as well as SPI transfer. The static framebuffer saving is exactly
+63,488 bytes relative to the former RGB565 viewport; real-device timing and
+heap values must be collected with the procedure below and must not be inferred
+from QEMU results.
+
 The PRG32 Performance Test is a reproducible, cartridge-based instrument for
 characterizing frame execution and memory behavior. It is designed for
 teaching, regression analysis, and controlled platform comparisons. The test
@@ -323,9 +330,9 @@ a clearly defined delta, for example:
 \]
 
 A positive time delta means indexed decoding was slower for that measurement.
-Both paths ultimately present the same RGB565 framebuffer, so the comparison
-primarily concerns source representation and decoding, not a change in LCD
-wire format.
+Both source paths ultimately reach the same indexed ESP32-C6 framebuffer and
+RGB565 LCD transfer, so the comparison primarily concerns source representation
+and decoding, not a change in LCD wire format.
 
 Never combine QEMU and ESP32-C6 values into one performance population. QEMU
 is a different target with host-dependent scheduling and display behavior.

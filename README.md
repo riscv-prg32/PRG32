@@ -8,6 +8,19 @@ PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine
 
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
+## Indexed Framebuffer
+
+On ESP32-C6 hardware, the 320x200 game surface is a 64,000-byte, 8-bit indexed
+framebuffer backed by a deterministic 256-entry RGB565 palette. The ILI9341
+remains in native 16-bit RGB565 mode: dirty indexed rows are expanded into the
+existing small RGB565 SPI strip only during presentation. Compared with the
+previous 128,000-byte framebuffer, this reclaims 63,488 bytes (about 62 KiB)
+without allocating a second full-size RGB565 surface. Existing RGB565 drawing
+calls remain source- and ABI-compatible through deterministic system-palette
+quantization; indexed-native primitives and palette cycling are available for
+cartridges that need exact palette control. See [ILI9341 Hardware and Driver
+Notes](docs/hardware/ili9341.md) and the [Framework Manual](docs/software/framework_manual.md).
+
 ## Academic Profile
 
 - Project domain: Embedded Systems and Computer Architecture Education

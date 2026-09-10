@@ -460,6 +460,10 @@ Useful calls:
 - `prg32_sprite_draw_frame(...)`: draw one frame from a sprite sheet.
 - `prg32_sprite_draw_indexed(...)`: draw a packed 1/2/4/8-bpp palette frame.
 - `prg32_sprite_draw_bitplanes(...)`: draw a planar 1/2/4/8-bpp palette frame.
+- `prg32_gfx_pixel_indexed(...)`, `prg32_gfx_rect_indexed(...)`, and
+  `prg32_gfx_clear_indexed(...)`: write system-palette indices directly.
+- `prg32_palette_set(...)` / `prg32_palette_get(...)`: change or inspect a
+  system-palette entry; changing it recolors existing indexed pixels.
 
 The 16x16 and 24x24 helpers treat `PRG32_COLOR_WHITE` as transparent. For other
 sizes or another transparency key, `prg32_sprite_draw_frame` accepts width,
@@ -470,8 +474,11 @@ requiring a C object.
 Compact sprites use `prg32_indexed_sprite_t`, which contains pointers to packed
 pixel data and an RGB565 palette plus width, height, frame count, bit depth, and
 an optional transparent palette index. They save cartridge RAM and flash for
-graphics and animations while decoding directly into the native RGB565 display
-path. Existing RGB565 functions and their transparency behavior are unchanged.
+graphics and animations. On ILI9341 builds their local RGB565 palettes are
+mapped once per draw to the native 8-bit framebuffer; RGB565 expansion happens
+later in the dirty SPI strip. Existing RGB565 signatures and transparency
+behavior are unchanged, although non-system colors are deterministically
+quantized to the 6x6x6 system cube.
 
 The asset converter emits a tagged alias for each descriptor. That alias works
 through the existing 16x16, 24x24, arbitrary-frame, and animation entry points;
@@ -479,13 +486,10 @@ the animation initializer takes dimensions and frame count from the descriptor,
 and the existing animation draw call expands the selected frame. No additional
 framebuffer or runtime decompression buffer is allocated.
 
-Every sprite renderer clips once, holds the graphics mutex once, advances
-directly across framebuffer rows, and records at most one dirty rectangle.
-RGB565 uses a tight transparent-color loop; indexed8 directly loads one index
-per pixel; and indexed4 handles an odd leading nibble before translating two
-pixels per source-byte load. The 1/2-bpp and bitplane paths retain their compact
-generic decoders. Backend helpers preserve the ILI9341 framebuffer's wire byte
-order without changing public palette or RGB565 semantics.
+Every sprite renderer clips once, holds the graphics mutex once, and records at
+most one dirty rectangle. Indexed 1/2/4/8-bpp and bitplane sources decode to
+8-bit destination indices on ILI9341 builds. QEMU retains its RGB565 host
+surface while exposing the same public palette API.
 
 See `examples/games/frogger/graphics/game.S` for the assembly call sequence and
 `examples/games/frogger/c/game.c` for a fuller game that pairs the 24x24 sprite

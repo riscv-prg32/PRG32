@@ -62,7 +62,7 @@ static void value_bar(int x,int y,int w,int v,int max,uint16_t color){
 static void page_overview(uint32_t now,uint32_t input){
   (void)now;(void)input; header("PRG32 DEVICE DEMO +","development-c6 feature tour");
   text(8,50,"Native RV32IMAC cartridge on ESP32-C6",PRG32_COLOR_WHITE);
-  text(8,64,"320x200 game viewport / RGB565 framebuffer",PRG32_COLOR_WHITE);
+  text(8,64,"320x200 indexed framebuffer / RGB565 LCD",PRG32_COLOR_WHITE);
   text(8,78,"Indexed + bitplane sprites / tiles / playfields",C_LIME);
   text(8,92,"SID-like procedural synth + tracker events",C_LIME);
   text(8,106,"2-player input / WiFi / Store / scores / metrics",C_LIME);
@@ -92,10 +92,12 @@ static void page_primitives(uint32_t now,uint32_t input){
 static void page_indexed(uint32_t now,uint32_t input){
   (void)input; header("INDEXED SPRITES","new 1/2/4/8-bpp palette graphics");
   text(8,48,"4 bpp is the compact default for colorful retro art.",PRG32_COLOR_WHITE);
+  prg32_palette_set(42,(uint16_t)((((now/8)&31)<<11) | 0x03e0));
+  prg32_gfx_rect_indexed(8,68,296,8,42);
   for(int i=0;i<8;i++) prg32_sprite_draw_indexed(16+i*36,80+((i&1)?18:0),&indexed_sprite,0);
   int bounce=(int)((now/12)%220); if(bounce>110) bounce=220-bounce;
   prg32_sprite_draw_indexed(100+bounce,132,&indexed_sprite,0);
-  text(8,162,"Palette assets expand directly into RGB565 at draw time.",C_LIME);
+  text(8,162,"Palette cycling changes stored pixels without redrawing.",C_LIME);
 }
 static void page_bitplanes(uint32_t now,uint32_t input){
   (void)now;(void)input; header("BITPLANE SPRITES","compact planar art through the same palette descriptor");
