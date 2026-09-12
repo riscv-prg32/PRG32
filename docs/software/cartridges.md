@@ -467,6 +467,9 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Uploadable cartridges run from `prg32_cart_exec` and are linked for that
   runtime address. Rebuild cartridges whenever the resident firmware changes.
+  This execution buffer is explicitly placed in the `.iram1.data` section with
+  16-byte alignment (`__attribute__((aligned(16)))`) so the RISC-V CPU can fetch
+  cartridge instructions from high-speed internal RAM (IRAM).
 - Keep `PRG32_CART_RAM_SIZE` small enough for classroom examples unless the
   partition/RAM plan is intentionally revised.
 - Keep `partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`

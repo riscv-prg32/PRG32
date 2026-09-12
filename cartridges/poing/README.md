@@ -23,7 +23,7 @@ Poing is an original, high-load graphics cartridge inspired by the technical spi
 - Quantized 8-bit system-palette directional lighting
 - Run-length coalescing into indexed `prg32_gfx_rect_indexed` spans
 - Perspective floor, moving depth grid, shadow, stars, and HUD in the same frame
-- A short procedural impact note synchronized to each bounce
+- A short I2S instrument note synchronized to each bounce
 - Recursive graphics locking around the full composite
 - Optional 300-frame performance-broker run using the normal Poing workload
 
@@ -31,7 +31,7 @@ The implementation deliberately avoids pre-rendered animation frames, floating p
 
 ## Build
 
-From a checkout of PRG32's `development-c6` branch, with its Python tooling and RISC-V toolchain available:
+From a checkout of PRG32's `development-c6-128KiB` branch, with its Python tooling and RISC-V toolchain available:
 
 ```sh
 ./build.sh /path/to/PRG32 esp32c6

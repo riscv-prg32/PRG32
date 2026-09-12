@@ -37,10 +37,10 @@ endchoice
 config PRG32_AUDIO_MAX_VOICES
     int "Maximum mixer voices"
     depends on PRG32_AUDIO_ENABLED
-    default 6
+    default 8
     range 1 8
     help
-        Number of simultaneous sample/synth voices. Mono defaults to 6.
+        Number of simultaneous sample/synth voices. Mono defaults to 8.
 
 config PRG32_AUDIO_I2S_BCLK_GPIO
     int "I2S BCLK GPIO"

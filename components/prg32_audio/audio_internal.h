@@ -55,6 +55,7 @@ typedef struct {
     bool loop;
     uint32_t loop_start;
     uint32_t loop_end;
+    int32_t duration_left_ms;
     prg32_audio_synth_voice_t synth_state;
 } prg32_audio_voice_t;
 
@@ -87,9 +88,11 @@ typedef struct {
 
 extern prg32_audio_state_t g_prg32_audio;
 
+void prg32_audio_restore_defaults(void);
 void prg32_audio_lock(void);
 void prg32_audio_unlock(void);
 void prg32_audio_tracker_step(uint32_t elapsed_ms);
+void prg32_audio_voices_step(uint32_t elapsed_ms);
 void prg32_audio_synth_start(prg32_audio_voice_t *voice,
                              const prg32_instrument_desc_t *instrument,
                              uint8_t note, uint32_t sample_rate);

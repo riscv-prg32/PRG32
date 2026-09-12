@@ -50,7 +50,7 @@ header.
 
 Compatibility rules:
 
-- same ABI major and current or explicitly compatible append-only hash: accepted
+- same ABI major and exact generated hash: accepted
 - missing required feature bits: rejected
 - newer incompatible major: rejected
 - legacy absolute imports: supported only for firmware-specific workflows
@@ -68,24 +68,27 @@ extends the original header via `header_size` with `abi_hash`,
 
 ABI minor `1` adds `prg32_sprite_draw_24x24` as an append-only sprite helper.
 ABI minor `3` appends `prg32_sprite_draw_indexed` and
-`prg32_sprite_draw_bitplanes`. The runtime accepts the prior ABI 1.2 hash so
-already-built portable cartridges continue to load; existing function indices
-and all RGB565 prototypes remain unchanged.
+`prg32_sprite_draw_bitplanes`. The indexed sprite entries remain available,
+but cartridges built with older hashes must be rebuilt for this combined table.
 
 ABI minor `4` appends indices 124 through 132 for the pluggable performance
 broker: `prg32_perf_now_us`, `prg32_perf_begin`,
 `prg32_perf_case_begin`, `prg32_perf_record`,
 `prg32_perf_case_end`, `prg32_perf_end`, `prg32_perf_abort`,
-`prg32_perf_get_state`, and `prg32_perf_get_summary`. ABI 1.3 hash
-`0x5626cb8a` and the earlier supported hash `0xec21efe2` remain accepted.
-The exact new 1.4 hash is generated from `prg32_abi.json`.
+`prg32_perf_get_state`, and `prg32_perf_get_summary`. The exact 1.4 hash is
+generated from `prg32_abi.json`.
 
 ABI minor `5` appends indices 133 through 137 for the indexed framebuffer:
 `prg32_palette_set`, `prg32_palette_get`, `prg32_gfx_pixel_indexed`,
-`prg32_gfx_rect_indexed`, and `prg32_gfx_clear_indexed`. The additions preserve
-all earlier indices and RGB565 signatures. Palette changes affect existing
+`prg32_gfx_rect_indexed`, and `prg32_gfx_clear_indexed`. The five additions
+follow the existing graphics and metrics entries and retain RGB565 signatures.
+Palette changes affect existing
 indexed pixels at the next presentation; the ILI9341 wire format remains
-RGB565. The exact 1.5 hash is generated from `prg32_abi.json`.
+RGB565. The exact 1.5 hash is generated from `prg32_abi.json`. The merged ABI
+1.5 table retains these five indexed entries after the PR #36 audio changes.
+The generated hash identifies that combined table; rebuild portable cartridges
+against this branch before loading them. Earlier 1.3 and 1.4 hashes are rejected
+because the PR #36 audio changes reused early slots and are not append-only.
 
 The performance broker lifecycle, descriptor layouts, failure semantics, and
 custom-cartridge tutorial are documented in the
@@ -138,10 +141,11 @@ RGB565; legacy RGB565 sprite signatures, screenshots, and the LCD protocol
 remain compatible.
 
 The destination-row optimization is internal. ABI 1.5 appends palette APIs but
-does not change existing structure layouts or function indices. Already-built
-portable ABI-table cartridges therefore continue to load and use
-the same RGB565 and indexed entry points. Firmware-specific legacy-absolute
-cartridges retain their existing limitation: they are compatible only with the
+does not change graphics structure layouts or indices. Cartridges built against
+the earlier indexed-only ABI 1.5 hash must be rebuilt for the combined table;
+RGB565 and indexed function signatures remain available. Firmware-specific
+legacy-absolute cartridges retain their existing limitation: they are
+compatible only with the
 firmware image whose exported addresses were used when they were linked.
 
 Store-ready cartridges append a backward-compatible `PRG32META` trailer after
@@ -163,9 +167,11 @@ The audio ABI is the C API exposed to cartridges:
 | `prg32_audio_play_sample_pan` | play sample with pan | channel or negative |
 | `prg32_audio_stop_channel` | stop one voice | none |
 | `prg32_audio_stop_all` | stop all voices | none |
+| `prg32_audio_note` | play a note asynchronously on a channel | none |
 | `prg32_audio_note_on` | start PCM or synth instrument note | none |
 | `prg32_audio_note_on_pan` | start PCM or synth note with pan | none |
 | `prg32_audio_note_off` | stop PCM or begin synth release | none |
+| `prg32_audio_notes` | play a blocking sequence of notes on the I2S synth. If you need asynchronous audio, consider using tracks. | none |
 | `prg32_audio_play_track` | start tracker stream | none |
 | `prg32_audio_stop_track` | stop tracker stream | none |
 | `prg32_audio_set_tempo` | set tracker BPM | none |

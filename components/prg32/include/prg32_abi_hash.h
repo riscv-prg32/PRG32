@@ -4,7 +4,5 @@
 
 #define PRG32_ABI_MAJOR 1u
 #define PRG32_ABI_MINOR 5u
-#define PRG32_ABI_HASH 0x7a3337bfu
-#define PRG32_ABI_COMPAT_HASH_0 0xec21efe2u
-#define PRG32_ABI_COMPAT_HASH_1 0x5626cb8au
-#define PRG32_ABI_HASH_IS_COMPATIBLE(value) (((value) == PRG32_ABI_HASH) || ((value) == PRG32_ABI_COMPAT_HASH_0) || ((value) == PRG32_ABI_COMPAT_HASH_1))
+#define PRG32_ABI_HASH 0x6be6e8d0u
+#define PRG32_ABI_HASH_IS_COMPATIBLE(value) (((value) == PRG32_ABI_HASH))

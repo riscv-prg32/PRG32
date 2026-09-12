@@ -2,7 +2,7 @@
   "name": "prg32-cart-abi",
   "major": 1,
   "minor": 5,
-  "compatible_hashes": ["0xec21efe2", "0x5626cb8a"],
+  "compatible_hashes": [],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -40,14 +40,7 @@
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_audio_beep",
-      "return": "void",
-      "args": [],
-      "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
-    },
-    {
-      "name": "prg32_audio_tone",
+      "name": "prg32_buzzer_tone",
       "return": "void",
       "args": [],
       "feature": "audio",
@@ -61,14 +54,14 @@
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_audio_play_notes",
+      "name": "prg32_buzzer_play_notes",
       "return": "void",
       "args": [],
       "feature": "audio",
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_audio_sample_u8",
+      "name": "prg32_buzzer_sample_u8",
       "return": "void",
       "args": [],
       "feature": "audio",
@@ -139,6 +132,13 @@
     },
     {
       "name": "prg32_audio_note_off",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_notes",
       "return": "void",
       "args": [],
       "feature": "audio",

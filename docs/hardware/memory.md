@@ -10,6 +10,14 @@ record free heap, largest free block, and minimum-ever free heap after display
 initialization, before cartridge loading, and immediately before cartridge
 initialization.
 
+The Store browser uses an 8,192-byte sliding JSON input window instead of
+retaining a complete catalog body. Its result entries and HTTP client still
+consume heap; use the boot and runtime checkpoints below to measure their
+actual impact on a board. The default audio configuration has eight voices at
+22,050 Hz. These settings coexist with the optional 128 KiB executable
+cartridge profile described in [profiles](../usage/profiles.md); the profile
+reserves cartridge execution RAM, not a 128 KiB total-system RAM cap.
+
 ## ESP32-C6 Memory Layout
 
 The memory of the ESP32-C6 can be broadly divided into three main components: **Flash**, **ROM**, and **RAM**.
@@ -33,7 +41,7 @@ The main internal RAM consists of 512 KB of High-Performance SRAM.
 
 **IRAM vs. DRAM:**
 The HP SRAM is a unified block of memory, but it is accessed via different hardware buses depending on what the CPU is doing:
-- **IRAM (Instruction RAM):** When the CPU fetches executable code from SRAM, it uses the instruction bus. Code placed here (using the `IRAM_ATTR` macro) executes significantly faster than code in Flash and is essential for interrupt handlers (ISRs).
+- **IRAM (Instruction RAM):** When the CPU fetches executable code from SRAM, it uses the instruction bus. Code placed here (using the `IRAM_ATTR` macro) executes significantly faster than code in Flash and is essential for interrupt handlers (ISRs). The executable cartridge buffer `prg32_cart_exec` is explicitly placed in the `.iram1.data` section with 16-byte alignment (`__attribute__((aligned(16)))`) so uploaded games run from this high-speed memory.
 - **DRAM (Data RAM):** When the CPU reads or writes variables, it uses the data bus. The exact same physical SRAM is treated as DRAM when accessed this way. 
 
 #### LP SRAM (Low-Power SRAM)

@@ -62,7 +62,8 @@ extern "C" {
 #define PRG32_SPRITE_BPP_8 8
 
 /* Per-tile collision properties used by the platform helpers. Applications
- * may combine flags; unknown bits must remain clear for forward compatibility. */
+ * may combine flags; unknown bits must remain clear for forward compatibility.
+ */
 #define PRG32_TILE_FLAG_SOLID (1u << 0)
 #define PRG32_TILE_FLAG_PLATFORM (1u << 1)
 #define PRG32_TILE_FLAG_HAZARD (1u << 2)
@@ -250,9 +251,9 @@ typedef struct {
 /* Compact descriptors can also travel through the existing RGB565 sprite ABI.
  * uint16_t assets are naturally aligned, so bit zero remains available as a
  * format tag without changing any function prototype or animation structure. */
-#define PRG32_SPRITE_INDEXED(asset)                                           \
+#define PRG32_SPRITE_INDEXED(asset)                                            \
   ((const uint16_t *)((uintptr_t)(asset) | (uintptr_t)1u))
-#define PRG32_SPRITE_BITPLANES(asset)                                         \
+#define PRG32_SPRITE_BITPLANES(asset)                                          \
   ((const uint16_t *)((uintptr_t)(asset) | (uintptr_t)3u))
 
 typedef struct {
@@ -342,22 +343,22 @@ uint32_t prg32_diag_frame_count(void);
  * the call. The resident runtime owns audio initialization and master volume;
  * portable cartridges do not initialize hardware directly.
  * @{ */
-void prg32_audio_beep(uint32_t hz, uint32_t ms);
 /*
- * Low-level PWM tone generation.
+ * Low-level PWM tone generation for the physical buzzer.
  * - 'hz': frequency in Hertz.
  * - 'ms': duration in milliseconds.
  * - 'duty': duty cycle (PWM ON/OFF percentage), used to control the volume
  *           of the buzzer by limiting electrical power.
  */
-void prg32_audio_tone(uint32_t hz, uint32_t ms, uint16_t duty);
-/* Play a MIDI-pitched note through the compatibility voice. The call observes
- * the user's persisted master-volume limit and does not require cartridge-side
- * audio initialization. */
-void prg32_audio_note(uint8_t midi_note, uint32_t ms);
-void prg32_audio_play_notes(const prg32_note_t *notes, size_t count);
-void prg32_audio_sample_u8(const uint8_t *samples, size_t count,
-                           uint32_t sample_rate);
+void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty);
+void prg32_buzzer_play_notes(const prg32_note_t *notes, size_t count);
+void prg32_buzzer_sample_u8(const uint8_t *samples, size_t count,
+                            uint32_t sample_rate);
+void prg32_audio_note_off(uint8_t channel);
+void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t note,
+                      uint8_t volume, uint32_t duration_ms);
+void prg32_audio_notes(uint8_t channel, uint8_t instrument, uint8_t volume,
+                       const prg32_midi_note_t *notes, size_t count);
 int prg32_rgb_led_init(int gpio);
 int prg32_rgb_led_available(void);
 void prg32_rgb_led_set(uint8_t red, uint8_t green, uint8_t blue);
@@ -623,10 +624,10 @@ void prg32_sprite_draw_bitplanes(int x, int y,
  * @brief Memory statistics for the PRG32 runtime.
  *
  * NOTE: The ESP-IDF API /api/memory also supports retrieving per-task dynamic
- * heap allocations and boot memory checkpoints if you build with tracking enabled:
- * `python3 -m prg32 esp32c6 build --enable-heap-tracking`.
- * That configuration alters the heap allocator struct size and therefore cannot
- * be enabled solely from prg32 code. If enabled, the Python CLI tool will
+ * heap allocations and boot memory checkpoints if you build with tracking
+ * enabled: `python3 -m prg32 esp32c6 build --enable-heap-tracking`. That
+ * configuration alters the heap allocator struct size and therefore cannot be
+ * enabled solely from prg32 code. If enabled, the Python CLI tool will
  * automatically present a detailed dynamic memory breakdown.
  * However this option introduces overhead and should only be enabled during the
  * information collection.

@@ -47,8 +47,6 @@
 
 #define PRG32_SPLASH_LOGO_W 320
 #define PRG32_SPLASH_LOGO_H 200
-#define PRG32_SPLASH_WELCOME_SAMPLE_ID 63
-#define PRG32_SPLASH_WELCOME_INSTRUMENT_ID 31
 #ifdef __ELF__
 #define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
 #else
@@ -56,11 +54,6 @@
 #endif
 
 extern const uint16_t prg32_splash_logo[];
-
-static const uint8_t welcome_wave[] PRG32_FLASH_RODATA = {
-    128, 166, 202, 231, 250, 255, 246, 224, 192, 154, 114, 76,  44,  20,  6,
-    0,   6,   20,  44,  76,  114, 154, 192, 224, 246, 255, 250, 231, 202, 166,
-};
 
 static int text_center_x(const char *text) {
   size_t len = 0;
@@ -129,21 +122,7 @@ static int prg32_splash_prepare_sound(void) {
       (!splash_i2s_pins_safe() || !prg32_audio_init(NULL))) {
     return 0;
   }
-
-  if (prg32_audio_register_sample(
-          PRG32_SPLASH_WELCOME_SAMPLE_ID, welcome_wave, sizeof(welcome_wave),
-          60, PRG32_AUDIO_SAMPLE_LOOP, 0, sizeof(welcome_wave)) != 0) {
-    return 0;
-  }
-
-  prg32_instrument_desc_t instrument = {
-      .sample_id = PRG32_SPLASH_WELCOME_SAMPLE_ID,
-      .default_volume = 150,
-      .default_pan = PRG32_AUDIO_PAN_CENTER,
-      .sustain = 255,
-  };
-  return prg32_audio_register_instrument(PRG32_SPLASH_WELCOME_INSTRUMENT_ID,
-                                         &instrument) == 0;
+  return 1;
 #else
   return 0;
 #endif
@@ -162,9 +141,9 @@ static void prg32_splash_play_pwm_welcome(uint32_t duration_ms) {
   const uint32_t step_ms = duration_ms >= 360 ? 120 : duration_ms / 3;
   const uint32_t tail_ms =
       duration_ms > step_ms * 2 ? duration_ms - step_ms * 2 : step_ms;
-  prg32_audio_note(72, step_ms);
-  prg32_audio_note(76, step_ms);
-  prg32_audio_note(79, tail_ms);
+  prg32_buzzer_tone(523, step_ms, 512);
+  prg32_buzzer_tone(659, step_ms, 512);
+  prg32_buzzer_tone(784, tail_ms, 512);
 #else
   prg32_splash_play_wait(duration_ms);
 #endif
@@ -179,11 +158,11 @@ static void prg32_splash_play_i2s_welcome(uint32_t duration_ms) {
   const uint32_t step_ms = duration_ms >= 360 ? 120 : duration_ms / 3;
   const uint32_t tail_ms =
       duration_ms > step_ms * 2 ? duration_ms - step_ms * 2 : step_ms;
-  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 72, 150);
+  prg32_audio_note_on(0, PRG32_DEFAULT_INSTRUMENT_ID, 72, 150);
   vTaskDelay(pdMS_TO_TICKS(step_ms));
-  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 76, 150);
+  prg32_audio_note_on(0, PRG32_DEFAULT_INSTRUMENT_ID, 76, 150);
   vTaskDelay(pdMS_TO_TICKS(step_ms));
-  prg32_audio_note_on(0, PRG32_SPLASH_WELCOME_INSTRUMENT_ID, 79, 150);
+  prg32_audio_note_on(0, PRG32_DEFAULT_INSTRUMENT_ID, 79, 150);
   vTaskDelay(pdMS_TO_TICKS(tail_ms));
   prg32_audio_note_off(0);
 }

@@ -1,5 +1,8 @@
 # PRG32 Framework Manual
 
+> [!NOTE]
+> This manual is intended for **users and students** writing cartridges using the provided API. It is **not** intended for developers modifying the underlying ESP-IDF C framework.
+
 PRG32 lets students write game logic in RISC-V assembly or C while a small
 framework provides hardware access.
 
@@ -499,19 +502,23 @@ with `prg32_sprite_hitbox`.
 
 PRG32 has two audio layers.
 
+> [!WARNING]
+> **Cartridge Audio Best Practices:** Please don't use the legacy buzzer functions since the physical buzzer is no longer used by default. Just use the new `prg32_audio_note` whenever necessary, the `prg32_audio_note_on` and `_off` if you need to leave something on, the sample functions if you actually need to play a sample, and the track functions if there is a tracker sequence.
+
 The legacy teaching helpers still use PWM to drive a passive buzzer:
 
-- `prg32_audio_beep(hz, ms)`
-- `prg32_audio_tone(hz, ms, duty)`: PWM tone with explicit duty cycle.
-- `prg32_audio_note(midi_note, ms)`: MIDI-like note number to tone.
-- `prg32_audio_play_notes(notes, count)`: blocking sequence of notes/rests.
-- `prg32_audio_sample_u8(samples, count, rate)`: play unsigned 8-bit samples
+- `prg32_buzzer_tone(hz, ms, duty)`: PWM tone with explicit duty cycle (512 is 50%).
+- `prg32_audio_note(channel, instrument, note, volume, duration_ms)`: play an asynchronous audio note playing via I2S on a speaker.
+- `prg32_audio_notes(channel, instrument, volume, notes, count)`: play a blocking sequence of notes where `notes` is an array of `prg32_midi_note_t`.
+- `prg32_buzzer_play_notes(notes, count)`: blocking sequence of notes/rests.
+- `prg32_audio_note_on(channel, instrument, note, volume)`: start a PCM or procedural instrument note.
+- `prg32_buzzer_sample_u8(samples, count, rate)`: play unsigned 8-bit samples via buzzer
   through PWM.
 
 The I2S audio runtime lives in the `prg32_audio` component and targets
 MAX98357A DAC/amplifier boards:
 
-- mono mode: one MAX98357A, default, 22050 Hz, 6 voices
+- mono mode: one MAX98357A, default, 22050 Hz, 8 voices
 - stereo mode: two MAX98357A boards, optional PRG32 Audio Plus, panned voices
 - PCM and SID-like triangle, saw, pulse, and deterministic noise voices
 - per-synth-voice ADSR and resonant low-pass filtering

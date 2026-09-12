@@ -76,6 +76,7 @@ void prg32_audio_clear_assets(void) {
     memset(g_prg32_audio.tracks, 0, sizeof(g_prg32_audio.tracks));
     g_prg32_audio.tracker.active = false;
     prg32_audio_unlock();
+    prg32_audio_restore_defaults();
 }
 
 int prg32_audio_load_block(const void *block, size_t block_size) {
@@ -125,6 +126,9 @@ int prg32_audio_load_block(const void *block, size_t block_size) {
     memset(g_prg32_audio.samples, 0, sizeof(g_prg32_audio.samples));
     memset(g_prg32_audio.instruments, 0, sizeof(g_prg32_audio.instruments));
     memset(g_prg32_audio.tracks, 0, sizeof(g_prg32_audio.tracks));
+    prg32_audio_unlock();
+    prg32_audio_restore_defaults();
+    prg32_audio_lock();
 
     for (uint16_t i = 0; i < header->sample_count; ++i) {
         const prg32_sample_desc_t *desc = &samples[i];

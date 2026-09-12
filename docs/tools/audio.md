@@ -163,6 +163,9 @@ Stereo:
 
 ## Audio API
 
+> [!WARNING]
+> **Cartridge Best Practices:** Please don't use the legacy PWM buzzer functions since the buzzer is not used. Just use `prg32_audio_note` whenever necessary, the `_on` and `_off` functions if you need to leave a note sustaining, the sample functions if you actually need to play a PCM sample, and the track functions if there is a tracker sequence.
+
 Core calls:
 
 - `prg32_audio_init(config)`: initialize the I2S mixer runtime.
@@ -182,7 +185,7 @@ Pitch uses `1024` as the natural sample speed. Volumes use `0..255`.
 
 **I2S vs PWM Audio API Differences:**
 - **I2S Engine (`prg32_audio_note`)**: Uses standard MIDI **notes** (e.g. 60 for Middle C) and true audio synthesis. It automatically reads your configured wave samples and pitches them perfectly to the musical note.
-- **PWM Buzzer (`prg32_audio_tone`)**: Buzzers cannot play complex samples, they only pulse a pin ON/OFF. Thus, they require raw **frequencies** (e.g. 262 Hz for Middle C) and a **duty cycle** parameter. The duty cycle acts as the buzzer's volume control by reducing the ON/OFF percentage, thereby limiting electrical power.
+- **PWM Buzzer (`prg32_buzzer_tone`)**: Buzzers cannot play complex samples, they only pulse a pin ON/OFF. Thus, they require raw **frequencies** (e.g. 262 Hz for Middle C) and a **duty cycle** parameter. The duty cycle acts as the buzzer's volume control by reducing the ON/OFF percentage, thereby limiting electrical power.
 
 ## Volume Scaling
 
@@ -194,10 +197,15 @@ To present a safe, human-friendly 0-100% volume slider to the user, PRG32 maps t
 - **Quadratic Component (70%)**: Smoothly ramps up the volume to match the logarithmic sensitivity of the human ear, keeping the standard "sweet spot" comfortable around 50%.
 - **Clipping (Max 70)**: Caps the absolute maximum internal output volume at 70/255 to prevent severe electrical clipping and power supply strain on basic 3-watt speakers.
 
-## Global Master Volume (NVS)
+## Global Audio Settings (NVS)
 
-PRG32 automatically handles global volume state for all cartridges. The system loads the user's volume preference from the `volume_pct` key in the `prg32` NVS namespace on boot (defaulting to the config parameter PRG32_AUDIO_DEFAULT_VOLUME_PCT which is set to 70%.).
-Cartridges do **not** need to manually manage master volume or read from NVS.
+PRG32 automatically handles global audio state for all cartridges via the on-device Audio Menu.
+
+The system loads the user's preferences from the `prg32` NVS namespace on boot:
+- **Master Volume** (`volume_pct`): Defaults to the internal C macro `PRG32_AUDIO_DEFAULT_VOLUME_PCT` (70%).
+- **Audio Output Mode** (`audio_mode`): Determines whether the audio engine mixes in Mono or true Stereo. Defaults to your compile-time `menuconfig` setting.
+
+Because these settings are managed by the firmware setup menu and persisted to NVS, they take precedence over the compile-time defaults defined in `menuconfig`. Cartridges do **not** need to manually manage master volume, read from NVS, or configure the mode.
 
 ## Cartridge Audio Usage
 
@@ -206,8 +214,15 @@ Cartridges should be completely agnostic to the system's global volume or whethe
 To play a simple tone or note from a cartridge you can use the ABI macro:
 ```c
 // Play Middle C (MIDI 60) for 135ms
-prg32_audio_note(60, 135);
+prg32_audio_note(0, PRG32_DEFAULT_INSTRUMENT_ID, 60, 255, 135);
 ```
+
+## Advanced Audio Concepts
+
+For a deeper understanding of the async audio APIs, polyphony, and how the internal mixer engine works, see the following dedicated guides:
+- [Audio API Reference & Polyphony Guide](../software/audio_polyphony.md)
+- [How `prg32_audio_note_on` and Instruments Work](../software/audio_note_internals.md)
+- [How `prg32_audio_play_track` Works Under the Hood](../software/audio_track_internals.md)
 
 ## Cartridge AUDIO Block
 

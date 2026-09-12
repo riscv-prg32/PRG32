@@ -322,8 +322,9 @@ Expected behavior:
 - the response includes a fixed `Content-Length`;
 - the bitmap is encoded as a conventional 24-bit BMP for broad client
   compatibility;
-- the BMP is generated from the same normalized RGB565 framebuffer path used by
-  the ILI9341 hardware backend and the QEMU RGB backend;
+- the BMP is generated from the same normalized RGB565 snapshot path used by
+  the ILI9341 hardware backend and the QEMU RGB backend; hardware game pixels
+  are expanded from the indexed framebuffer when the row is captured;
 - the response is marked `Cache-Control: no-store`;
 - screenshot transfer is larger than JSON endpoints, so clients should use a
   timeout of at least 30 seconds on weak Wi-Fi links.

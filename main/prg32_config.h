@@ -182,8 +182,10 @@
 #define PRG32_WIFI_AP_ENABLE PRG32_GAME_UPLOAD_ENABLE
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
 /* Normal images autoload their sole/default cartridge; setup remains available
- * through the setup input and whenever no unambiguous cartridge can boot. */
-#define PRG32_BOOT_SETUP_MODE 0
+ * through the setup input and whenever no unambiguous cartridge can boot.
+Set to 0 for QEMU CI/CD.
+ */
+#define PRG32_BOOT_SETUP_MODE 1
 #define PRG32_WIFI_AP_SSID "PRG32"
 #define PRG32_WIFI_AP_PASSWORD "prg32game"
 #define PRG32_WIFI_AP_CHANNEL 6
@@ -198,7 +200,6 @@
 #define PRG32_STORE_MDNS_PROTO "_tcp"
 #define PRG32_STORE_MDNS_TIMEOUT_MS 3000
 #define PRG32_STORE_DEFAULT_PORT 5080
-#define PRG32_STORE_CATALOG_MAX_BYTES 65536
 #define PRG32_STORE_CHUNK_BYTES 4096
 #define PRG32_STORE_DOWNLOAD_STACK 8192
 #define PRG32_STORE_HTTP_TIMEOUT_MS 5000

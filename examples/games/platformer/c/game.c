@@ -122,7 +122,7 @@ static void collect_tiles(void) {
             if (prg32_playfield_get(1, (uint8_t)x, (uint8_t)y) == 5) {
                 prg32_playfield_put(1, (uint8_t)x, (uint8_t)y, 0);
                 coins++;
-                prg32_audio_beep(880, 35);
+                prg32_buzzer_tone(880, 35, 512);
             }
         }
     }
@@ -186,7 +186,7 @@ void platformer_c_update(void) {
     }
     if (player.x > 472) {
         win_timer = 90;
-        prg32_audio_beep(988, 80);
+        prg32_buzzer_tone(988, 80, 512);
     }
 }
 

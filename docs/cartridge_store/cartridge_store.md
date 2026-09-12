@@ -7,7 +7,13 @@ The PRG32 environment provides an open source server called the **Cartridge Stor
 
 Its standalone repository is [riscv-prg32/CartridgeStore](https://github.com/riscv-prg32/CartridgeStore).
 
-This document records the firmware-side integration contract. The current PRG32 repository includes the cartridge metadata format, host tooling, and setup-mode pseudocode. A full embedded browser/downloader can be added once the classroom network policy and memory budget are fixed for the target boards.
+The on-device browser reads catalog JSON through a bounded 8,192-byte sliding
+window. It retains parsed result entries rather than allocating a full catalog
+body; entries larger than the window are rejected, as are truncated catalogs. See
+[Memory Architecture](../hardware/memory.md) for RAM measurement guidance.
+
+This document records the firmware-side integration contract, including the
+setup-mode catalog browser and downloader, cartridge metadata, and host tooling.
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="100%" height="100%" style="background-color: #f8f9fa;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <defs>

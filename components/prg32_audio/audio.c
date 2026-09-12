@@ -28,9 +28,11 @@ static void audio_task(void *arg) {
     if (elapsed_ms > 0) {
       last_us = now_us;
       prg32_audio_tracker_step(elapsed_ms);
+
+      prg32_audio_voices_step(elapsed_ms);
     }
 
-    if (g_prg32_audio.config.mode == PRG32_AUDIO_MODE_STEREO) {
+    if (prg32_audio_get_mode() == PRG32_AUDIO_MODE_STEREO) {
       prg32_audio_mix_stereo(buffer, PRG32_AUDIO_MIX_FRAMES);
     } else {
       prg32_audio_mix_mono(buffer, PRG32_AUDIO_MIX_FRAMES);
@@ -39,7 +41,7 @@ static void audio_task(void *arg) {
     if (g_prg32_audio.i2s_ready) {
 #if PRG32_QEMU_AUDIO_REDIRECT
       prg32_qemu_audio_write_pcm(buffer, PRG32_AUDIO_MIX_FRAMES,
-                                 g_prg32_audio.config.mode);
+                                 prg32_audio_get_mode());
       // Block the audio task until Python sends a 1-byte ACK!
       // We use a ACK system due to QEMU fast-forwarding when idle and
       // generating audio faster than real time speed.
@@ -87,6 +89,27 @@ void prg32_audio_unlock(void) {
   }
 }
 
+// TODO: This could be turned into a dynamically generated
+// PRG32_AUDIO_SYNTH_PULSE instead of being hard-saved.
+void prg32_audio_restore_defaults(void) {
+  static const uint8_t default_wave[] = {
+      128, 166, 202, 231, 250, 255, 246, 224, 192, 154, 114, 76,  44,  20,  6,
+      0,   6,   20,  44,  76,  114, 154, 192, 224, 246, 255, 250, 231, 202, 166,
+  };
+
+  prg32_audio_register_sample(62, default_wave, sizeof(default_wave), 60,
+                              PRG32_AUDIO_SAMPLE_LOOP, 0, sizeof(default_wave));
+
+  prg32_instrument_desc_t default_inst = {
+      .sample_id = 62,
+      .default_volume = 150,
+      .default_pan = PRG32_AUDIO_PAN_CENTER,
+      .sustain = 255,
+  };
+  prg32_audio_register_instrument(PRG32_DEFAULT_INSTRUMENT_ID, &default_inst);
+  prg32_audio_register_instrument(31, &default_inst);
+}
+
 bool prg32_audio_init(const prg32_audio_config_t *config) {
 #if !CONFIG_PRG32_AUDIO_ENABLED
   (void)config;
@@ -127,6 +150,9 @@ bool prg32_audio_init(const prg32_audio_config_t *config) {
   g_prg32_audio.i2s_ready = prg32_audio_i2s_start(&chosen) == 0;
 #endif
   g_prg32_audio.initialized = true;
+
+  prg32_audio_restore_defaults();
+
   int priority = tskIDLE_PRIORITY + 2;
   xTaskCreate(audio_task, "prg32_audio", 4096, NULL, priority,
               &g_prg32_audio.task);
@@ -153,6 +179,15 @@ prg32_audio_mode_t prg32_audio_get_mode(void) {
     return PRG32_AUDIO_DEFAULT_MODE;
   }
   return g_prg32_audio.config.mode;
+}
+
+void prg32_audio_set_mode(prg32_audio_mode_t mode) {
+  if (mode != PRG32_AUDIO_MODE_MONO && mode != PRG32_AUDIO_MODE_STEREO) {
+    return;
+  }
+  prg32_audio_lock();
+  g_prg32_audio.config.mode = mode;
+  prg32_audio_unlock();
 }
 
 int prg32_audio_is_ready(void) { return g_prg32_audio.initialized ? 1 : 0; }

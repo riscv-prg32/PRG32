@@ -32,5 +32,5 @@ int prg32_perf_case_end(void);
 int prg32_perf_end(void);
 int prg32_perf_abort(void);
 void prg32_gfx_present(void);
-void prg32_audio_note(uint8_t midi_note, uint16_t duration_ms);
+void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t midi_note, uint8_t volume, uint32_t duration_ms);
 #endif

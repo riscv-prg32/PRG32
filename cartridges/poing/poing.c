@@ -227,7 +227,7 @@ void poing_init(void) {
     s.perf_active = 0;
     s.perf_done = 0;
     init_palette();
-    prg32_audio_note(48, 90);
+    prg32_audio_note(0, 0, 48, 255, 90);
 }
 
 void poing_update(void) {
@@ -248,7 +248,7 @@ void poing_update(void) {
         uint8_t phase = (uint8_t)(s.frame * 3u);
         s.spin += 3;
         ++s.frame;
-        if ((uint8_t)(s.frame * 3u) < phase) prg32_audio_note(48, 90);
+        if ((uint8_t)(s.frame * 3u) < phase) prg32_audio_note(0, 0, 48, 255, 90);
     }
     s.last_input = input;
     s.update_end = prg32_perf_now_us();

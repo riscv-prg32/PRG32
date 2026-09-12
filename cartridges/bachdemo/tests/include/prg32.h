@@ -3,7 +3,6 @@
 #include <stdint.h>
 #define PRG32_AUDIO_PAN_LEFT (-64)
 #define PRG32_AUDIO_PAN_RIGHT 63
-#define PRG32_AUDIO_MODE_STEREO 1
 #define PRG32_BTN_UP (1u << 0)
 #define PRG32_BTN_DOWN (1u << 1)
 #define PRG32_BTN_LEFT (1u << 2)
@@ -27,6 +26,7 @@ void prg32_audio_note_off(uint8_t channel);
 void prg32_audio_play_track(uint8_t track);
 void prg32_audio_stop_track(void);
 void prg32_gfx_clear(uint16_t color);
-void prg32_gfx_text8(int x, int y, const char *text, uint16_t foreground, uint16_t background);
+void prg32_gfx_text8(int x, int y, const char *text, uint16_t foreground,
+                     uint16_t background);
 void prg32_gfx_rect(int x, int y, int width, int height, uint16_t color);
 #endif

@@ -69,9 +69,9 @@ void prg32_audio_synth_start(prg32_audio_voice_t *voice,
     prg32_audio_synth_voice_t *synth = &voice->synth_state;
     uint16_t id = instrument->sample_id;
     synth->waveform = id & 0x03u;
-    synth->cutoff = (id >> 6) & 0x0fu;
-    synth->resonance = (id >> 10) & 0x03u;
-    uint32_t pulse_position = ((id >> 2) & 0x0fu) + 1u;
+    synth->resonance = (id >> 4) & 0x07u;
+    synth->cutoff = (id >> 7) & 0x07u;
+    uint32_t pulse_position = ((id >> 10) & 0x0fu) + 1u;
     synth->pulse_threshold = (uint32_t)(((uint64_t)pulse_position << 32) / 17u);
     synth->phase_increment = note_phase_increment(note, sample_rate);
     synth->lfsr = SYNTH_LFSR_SEED;

@@ -13,6 +13,8 @@ extern "C" {
 #define PRG32_AUDIO_PAN_CENTER 0
 #define PRG32_AUDIO_PAN_RIGHT  63
 
+#define PRG32_DEFAULT_INSTRUMENT_ID 0
+
 #define PRG32_AUDIO_BLOCK_MAGIC "AUD0"
 #define PRG32_AUDIO_BLOCK_VERSION 1
 
@@ -121,6 +123,7 @@ void prg32_audio_shutdown(void);
 const char *prg32_audio_last_error(void);
 
 prg32_audio_mode_t prg32_audio_get_mode(void);
+void prg32_audio_set_mode(prg32_audio_mode_t mode);
 int prg32_audio_is_ready(void);
 
 int prg32_audio_register_sample(uint16_t sample_id,
@@ -144,6 +147,11 @@ int prg32_audio_play_sample_pan(uint16_t sample_id,
                                 uint16_t pitch,
                                 int8_t pan);
 
+typedef struct {
+    uint8_t note;
+    uint16_t duration_ms;
+} prg32_midi_note_t;
+
 void prg32_audio_stop_channel(int channel);
 void prg32_audio_stop_all(void);
 
@@ -157,6 +165,11 @@ void prg32_audio_note_on_pan(uint8_t channel,
                              uint8_t volume,
                              int8_t pan);
 void prg32_audio_note_off(uint8_t channel);
+
+void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t note,
+                      uint8_t volume, uint32_t duration_ms);
+void prg32_audio_notes(uint8_t channel, uint8_t instrument, uint8_t volume,
+                       const prg32_midi_note_t *notes, size_t count);
 
 void prg32_audio_play_track(uint16_t track_id);
 void prg32_audio_stop_track(void);

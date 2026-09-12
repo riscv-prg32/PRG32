@@ -32,8 +32,8 @@ void prg32_gfx_rect_indexed(int x,int y,int w,int h,uint8_t c){prg32_gfx_rect(x,
 void prg32_gfx_text8(int x, int y, const char *t, uint16_t fg, uint16_t bg) {
     assert(x >= 0 && y >= 0 && t != 0); hash ^= fg ^ bg; ++calls;
 }
-void prg32_audio_note(uint8_t midi_note, uint16_t duration_ms) {
-    assert(midi_note == 48 && duration_ms == 90);
+void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t note, uint8_t volume, uint32_t duration_ms) {
+    assert(channel == 0 && instrument == 0 && note == 48 && volume == 255 && duration_ms == 90);
 }
 void prg32_palette_set(uint8_t index,uint16_t color){palette[index]=color;}
 uint16_t prg32_palette_get(uint8_t index){return palette[index];}

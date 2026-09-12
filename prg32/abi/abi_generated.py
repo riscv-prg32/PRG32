@@ -2,19 +2,18 @@
 
 ABI_MAJOR = 1
 ABI_MINOR = 5
-ABI_HASH = 0x7a3337bf
-COMPATIBLE_ABI_HASHES = [3961647074, 1445383050]
+ABI_HASH = 0x6be6e8d0
+COMPATIBLE_ABI_HASHES = []
 IMPORT_NAMES = [
     'prg32_ticks_ms',
     'prg32_input_read',
     'prg32_input_read_player',
     'prg32_input_read_menu',
     'prg32_controller_read',
-    'prg32_audio_beep',
-    'prg32_audio_tone',
+    'prg32_buzzer_tone',
     'prg32_audio_note',
-    'prg32_audio_play_notes',
-    'prg32_audio_sample_u8',
+    'prg32_buzzer_play_notes',
+    'prg32_buzzer_sample_u8',
     'prg32_audio_init',
     'prg32_audio_shutdown',
     'prg32_audio_get_mode',
@@ -25,6 +24,7 @@ IMPORT_NAMES = [
     'prg32_audio_note_on',
     'prg32_audio_note_on_pan',
     'prg32_audio_note_off',
+    'prg32_audio_notes',
     'prg32_audio_play_track',
     'prg32_audio_stop_track',
     'prg32_audio_set_tempo',

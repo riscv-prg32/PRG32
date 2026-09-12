@@ -82,6 +82,7 @@ static int start_voice(int channel, uint16_t sample_id, uint8_t volume,
   voice->volume = volume;
   voice->pan = pan;
   voice->synth = synth;
+  voice->duration_left_ms = -1;
   if (synth) {
     prg32_audio_synth_start(voice, instrument, note,
                             g_prg32_audio.config.sample_rate);
@@ -156,8 +157,11 @@ void prg32_audio_stop_all(void) {
 
 void prg32_audio_note_on(uint8_t channel, uint8_t instrument, uint8_t note,
                          uint8_t volume) {
-  prg32_audio_note_on_pan(channel, instrument, note, volume,
-                          PRG32_AUDIO_PAN_CENTER);
+  int8_t pan = PRG32_AUDIO_PAN_CENTER;
+  if (channel < CONFIG_PRG32_AUDIO_MAX_VOICES) {
+    pan = g_prg32_audio.channel_pan[channel];
+  }
+  prg32_audio_note_on_pan(channel, instrument, note, volume, pan);
 }
 
 void prg32_audio_note_on_pan(uint8_t channel, uint8_t instrument, uint8_t note,
@@ -192,6 +196,48 @@ void prg32_audio_note_off(uint8_t channel) {
     prg32_audio_synth_release(voice, g_prg32_audio.config.sample_rate);
   } else {
     voice->active = false;
+  }
+  prg32_audio_unlock();
+}
+
+void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t note,
+                      uint8_t volume, uint32_t duration_ms) {
+  prg32_audio_note_on(channel, instrument, note, volume);
+  prg32_audio_lock();
+  if (channel < g_prg32_audio.max_voices) {
+    g_prg32_audio.voices[channel].duration_left_ms = (int32_t)duration_ms;
+  }
+  prg32_audio_unlock();
+}
+
+void prg32_audio_notes(uint8_t channel, uint8_t instrument, uint8_t volume,
+                       const prg32_midi_note_t *notes, size_t count) {
+  for (size_t i = 0; i < count; ++i) {
+    if (notes[i].note > 0) {
+      prg32_audio_note(channel, instrument, notes[i].note, volume,
+                       notes[i].duration_ms);
+    } else {
+      prg32_audio_note_off(channel);
+    }
+    vTaskDelay(pdMS_TO_TICKS(notes[i].duration_ms));
+  }
+}
+
+void prg32_audio_voices_step(uint32_t elapsed_ms) {
+  prg32_audio_lock();
+  for (uint8_t ch = 0; ch < g_prg32_audio.max_voices; ++ch) {
+    prg32_audio_voice_t *voice = &g_prg32_audio.voices[ch];
+    if (voice->active && voice->duration_left_ms > 0) {
+      voice->duration_left_ms -= (int32_t)elapsed_ms;
+      if (voice->duration_left_ms <= 0) {
+        voice->duration_left_ms = -1;
+        if (voice->synth) {
+          prg32_audio_synth_release(voice, g_prg32_audio.config.sample_rate);
+        } else {
+          voice->active = false;
+        }
+      }
+    }
   }
   prg32_audio_unlock();
 }

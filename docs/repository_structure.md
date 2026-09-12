@@ -29,7 +29,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material
 |   |-- performance_test.md         Canonical performance-test execution, interpretation, and extension guide
 |   |-- measurement/                Scientific methodology, metrics schema, ABI, and validation records
-|   |-- software/                   Firmware manuals, C framework details, and ABI definitions
+|   |-- software/                   Firmware manuals, C framework details, and ABI definitions (Note: the framework manual is for cartridge users, not framework developers)
 |   |-- tools/                      Guides for Python tooling and conversion utilities
 |   `-- usage/                      Getting started, tooling, QEMU, and troubleshooting guides
 |-- examples/

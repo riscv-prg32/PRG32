@@ -92,24 +92,25 @@ not-a-symbol
         )
 
 class PortableHeaderTests(unittest.TestCase):
-    def test_current_runtime_accepts_previous_append_only_abi_hash(self) -> None:
-        self.assertIn(0xEC21EFE2, COMPATIBLE_ABI_HASHES)
-        self.assertIn(0x5626CB8A, COMPATIBLE_ABI_HASHES)
+    def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [])
         payload = b"\0\0\0\0"
-        header = env_variables.CART_HEADER_V2.pack(
-            env_variables.CART_MAGIC,
-            env_variables.CART_ABI_MAJOR,
-            1,
-            env_variables.CART_HEADER_V2.size,
-            env_variables.PRG32_CART_FLAG_ABI_TABLE,
-            env_variables.FALLBACK_CART_LOAD_ADDR,
-            len(payload), len(payload), 0, 0, 0, 0,
-            b"old" + b"\0" * 29,
-            0xEC21EFE2,
-            0, 0, 0, 0, 0,
-            env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
-        )
-        runtime_handler.validate_cartridge_contract(header + payload)
+        for old_hash in (0xEC21EFE2, 0x5626CB8A):
+            header = env_variables.CART_HEADER_V2.pack(
+                env_variables.CART_MAGIC,
+                env_variables.CART_ABI_MAJOR,
+                1,
+                env_variables.CART_HEADER_V2.size,
+                env_variables.PRG32_CART_FLAG_ABI_TABLE,
+                env_variables.FALLBACK_CART_LOAD_ADDR,
+                len(payload), len(payload), 0, 0, 0, 0,
+                b"old" + b"\0" * 29,
+                old_hash,
+                0, 0, 0, 0, 0,
+                env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
+            )
+            with self.assertRaisesRegex(SystemExit, "portable ABI hash"):
+                runtime_handler.validate_cartridge_contract(header + payload)
 
     def test_performance_abi_is_appended_after_indexed_graphics(self) -> None:
         self.assertEqual(IMPORT_NAMES[122], "prg32_sprite_draw_indexed")

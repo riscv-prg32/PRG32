@@ -10,7 +10,7 @@
 void prg32_display_init(void);
 void prg32_display_log_memory(const char *checkpoint);
 void prg32_input_init(void);
-void prg32_audio_pwm_init(void);
+void prg32_buzzer_init(void);
 void prg32_abi_exports_keep(void);
 
 #ifdef CONFIG_HEAP_TASK_TRACKING
@@ -437,14 +437,18 @@ typedef enum {
   SETUP_AUDIO_I2S_STEREO,
 } setup_audio_output_t;
 
+#if CONFIG_PRG32_AUDIO_MODE_STEREO
+#define PRG32_SYS_AUDIO_DEFAULT_MODE PRG32_AUDIO_MODE_STEREO
+#else
+#define PRG32_SYS_AUDIO_DEFAULT_MODE PRG32_AUDIO_MODE_MONO
+#endif
+
 static uint8_t g_setup_audio_volume = PRG32_AUDIO_DEFAULT_VOLUME_PCT;
+static prg32_audio_mode_t g_setup_audio_mode = PRG32_SYS_AUDIO_DEFAULT_MODE;
 static setup_audio_output_t g_setup_audio_output = SETUP_AUDIO_NONE;
 static int g_setup_audio_detected;
 
-static const uint8_t setup_audio_wave[] = {
-    128, 176, 218, 245, 255, 245, 218, 176, 128, 80, 38, 11, 1, 11, 38, 80,
-    128, 176, 218, 245, 255, 245, 218, 176, 128, 80, 38, 11, 1, 11, 38, 80,
-};
+
 
 static const char *audio_output_name(setup_audio_output_t output) {
   if (output == SETUP_AUDIO_I2S_STEREO) {
@@ -537,6 +541,7 @@ static setup_audio_output_t detect_audio_output(void) {
 #if CONFIG_PRG32_AUDIO_ENABLED
   if (setup_i2s_pins_safe() && prg32_audio_init(NULL)) {
     prg32_audio_set_master_volume(pct_to_audio_vol(g_setup_audio_volume));
+    prg32_audio_set_mode(g_setup_audio_mode);
     g_setup_audio_output = prg32_audio_get_mode() == PRG32_AUDIO_MODE_STEREO
                                ? SETUP_AUDIO_I2S_STEREO
                                : SETUP_AUDIO_I2S_MONO;
@@ -551,62 +556,63 @@ static setup_audio_output_t detect_audio_output(void) {
   return g_setup_audio_output;
 }
 
-static void setup_audio_prepare_i2s_test(void) {
-  prg32_instrument_desc_t inst = {
-      .sample_id = 63,
-      .default_volume = 255,
-      .default_pan = PRG32_AUDIO_PAN_CENTER,
-      .attack = 0,
-      .decay = 0,
-      .sustain = 255,
-      .release = 0,
-  };
-  prg32_audio_register_sample(63, setup_audio_wave, sizeof(setup_audio_wave),
-                              60, PRG32_AUDIO_SAMPLE_LOOP, 0,
-                              sizeof(setup_audio_wave));
-  prg32_audio_register_instrument(31, &inst);
+
+static void draw_test_tune_status(const char *text) {
+  prg32_gfx_rect(24, 148, 240, 16, PRG32_COLOR_BLACK);
+  prg32_gfx_text8(24, 148, text, PRG32_COLOR_WHITE, 0);
+  prg32_gfx_present();
 }
+
 static void play_audio_test_tune(setup_audio_output_t output) {
-  /*
-   * 'freq': Raw frequencies in Hz (C4, E4, G4, C5) used exclusively by the PWM
-   * buzzer, which cannot play audio samples and only understands simple ON/OFF
-   * pulses. 'notes': Standard MIDI notes (Middle C, E, G, High C) used by the
-   * I2S audio engine, which synthesizes a true sine wave and pitches it to
-   * these notes.
-   */
   static const uint16_t freq[] = {262, 330, 392, 523};
   static const uint8_t notes[] = {60, 64, 67, 72};
   uint32_t master_vol = pct_to_audio_vol(g_setup_audio_volume);
-  /*
-   * 'duty': The PWM duty cycle used by the buzzer.
-   *         By changing the ON/OFF percentage, we lower the electrical power
-   *         reaching the buzzer, which effectively controls its volume.
-   */
   uint16_t duty = (uint16_t)((512u * master_vol) / 255u);
   if (duty == 0) {
     duty = 1;
   }
 
   if (output == SETUP_AUDIO_I2S_MONO || output == SETUP_AUDIO_I2S_STEREO) {
-    setup_audio_prepare_i2s_test();
-    for (size_t i = 0; i < sizeof(notes); ++i) {
-      prg32_audio_led_vu_level((uint8_t)(72 + i * 48));
-      prg32_audio_note_on(0, 31, notes[i], 255);
-      vTaskDelay(pdMS_TO_TICKS(130));
-      prg32_audio_note_off(0);
-      vTaskDelay(pdMS_TO_TICKS(35));
+    int phases = (output == SETUP_AUDIO_I2S_STEREO) ? 3 : 1;
+    for (int phase = 0; phase < phases; ++phase) {
+      if (output == SETUP_AUDIO_I2S_STEREO) {
+        if (phase == 0) {
+          draw_test_tune_status("PLAYING... (BOTH SPEAKERS)");
+          prg32_audio_set_channel_pan(0, PRG32_AUDIO_PAN_CENTER);
+        } else if (phase == 1) {
+          draw_test_tune_status("PLAYING... (LEFT SPEAKER)");
+          prg32_audio_set_channel_pan(0, PRG32_AUDIO_PAN_LEFT);
+        } else if (phase == 2) {
+          draw_test_tune_status("PLAYING... (RIGHT SPEAKER)");
+          prg32_audio_set_channel_pan(0, PRG32_AUDIO_PAN_RIGHT);
+        }
+      } else {
+        draw_test_tune_status("PLAYING...");
+      }
+
+      for (size_t i = 0; i < sizeof(notes); ++i) {
+        prg32_audio_led_vu_level((uint8_t)(72 + i * 48));
+        prg32_audio_note_on(0, PRG32_DEFAULT_INSTRUMENT_ID, notes[i], 255);
+        vTaskDelay(pdMS_TO_TICKS(130));
+        prg32_audio_note_off(0);
+        vTaskDelay(pdMS_TO_TICKS(35));
+      }
     }
     prg32_audio_led_vu_level(0);
+    prg32_audio_set_channel_pan(0, PRG32_AUDIO_PAN_CENTER);
+    draw_test_tune_status("PLAY TEST TUNE");
     return;
   }
 
   if (output == SETUP_AUDIO_PWM) {
+    draw_test_tune_status("PLAYING...");
     for (size_t i = 0; i < sizeof(freq) / sizeof(freq[0]); ++i) {
       prg32_audio_led_vu_level((uint8_t)(72 + i * 48));
-      prg32_audio_tone(freq[i], 110, duty);
-      vTaskDelay(pdMS_TO_TICKS(35));
+      prg32_buzzer_tone(freq[i], 110, duty);
+      vTaskDelay(pdMS_TO_TICKS(130));
     }
     prg32_audio_led_vu_level(0);
+    draw_test_tune_status("PLAY TEST TUNE");
   }
 }
 
@@ -617,37 +623,38 @@ static void draw_volume_bar(int x, int y, uint8_t volume) {
 }
 
 /*
- * Loads the user's preferred volume percentage from NVS.
+ * Loads the user's preferred settings from NVS.
  * If NVS is empty (e.g. first boot), it defaults to
- * PRG32_AUDIO_DEFAULT_VOLUME_PCT. This global percentage is immediately scaled
- * to a safe maximum of 70/255 max internal volume limit to protect the
- * hardware, and pushed into the audio engine as the default volume for all
- * cartridges.
+ * PRG32_AUDIO_DEFAULT_VOLUME_PCT and PRG32_AUDIO_DEFAULT_MODE.
  */
-static void prg32_audio_load_global_volume(void) {
+static void prg32_audio_load_global_settings(void) {
   nvs_handle_t nvs;
   uint8_t vol_pct = PRG32_AUDIO_DEFAULT_VOLUME_PCT;
+  uint8_t audio_mode = PRG32_SYS_AUDIO_DEFAULT_MODE;
   if (nvs_open("prg32", NVS_READONLY, &nvs) == ESP_OK) {
     nvs_get_u8(nvs, "volume_pct", &vol_pct);
+    nvs_get_u8(nvs, "audio_mode", &audio_mode);
     nvs_close(nvs);
   }
   if (vol_pct > 100)
     vol_pct = 100;
+  if (audio_mode != PRG32_AUDIO_MODE_MONO && audio_mode != PRG32_AUDIO_MODE_STEREO)
+    audio_mode = PRG32_SYS_AUDIO_DEFAULT_MODE;
   g_setup_audio_volume = vol_pct;
+  g_setup_audio_mode = audio_mode;
   uint8_t vol_255 = pct_to_audio_vol(vol_pct);
   prg32_audio_set_default_master_volume(vol_255);
   prg32_audio_set_master_volume(vol_255);
 }
 
 /*
- * Saves the UI volume percentage back to the "prg32" NVS namespace.
- * This is called immediately by the audio menu whenever the user
- * adjusts the slider, ensuring their preference persists across reboots.
+ * Saves the UI volume and mode back to the "prg32" NVS namespace.
  */
-static void prg32_audio_save_global_volume(uint8_t vol_pct) {
+static void prg32_audio_save_global_settings(void) {
   nvs_handle_t nvs;
   if (nvs_open("prg32", NVS_READWRITE, &nvs) == ESP_OK) {
-    nvs_set_u8(nvs, "volume_pct", vol_pct);
+    nvs_set_u8(nvs, "volume_pct", g_setup_audio_volume);
+    nvs_set_u8(nvs, "audio_mode", g_setup_audio_mode);
     nvs_commit(nvs);
     nvs_close(nvs);
   }
@@ -655,7 +662,7 @@ static void prg32_audio_save_global_volume(uint8_t vol_pct) {
 
 static void audio_menu(void) {
   int choice = 0;
-  const int rows = 4;
+  const int rows = 5;
   setup_audio_output_t output = detect_audio_output();
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
@@ -669,7 +676,7 @@ static void audio_menu(void) {
       choice++;
     }
     if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
-      prg32_audio_save_global_volume(g_setup_audio_volume);
+      prg32_audio_save_global_settings();
       uint8_t vol_255 = pct_to_audio_vol(g_setup_audio_volume);
       prg32_audio_set_default_master_volume(vol_255);
       prg32_input_wait_released(MENU_CANCEL);
@@ -681,7 +688,7 @@ static void audio_menu(void) {
       uint8_t vol_64 = pct_to_audio_vol(g_setup_audio_volume);
       prg32_audio_set_master_volume(vol_64);
       prg32_audio_set_default_master_volume(vol_64);
-      prg32_audio_save_global_volume(g_setup_audio_volume);
+      prg32_audio_save_global_settings();
     }
     if ((input & PRG32_BTN_RIGHT) && !(last & PRG32_BTN_RIGHT) && choice == 0 &&
         g_setup_audio_volume <= 95) {
@@ -689,15 +696,22 @@ static void audio_menu(void) {
       uint8_t vol_64 = pct_to_audio_vol(g_setup_audio_volume);
       prg32_audio_set_master_volume(vol_64);
       prg32_audio_set_default_master_volume(vol_64);
-      prg32_audio_save_global_volume(g_setup_audio_volume);
+      prg32_audio_save_global_settings();
     }
     if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
-      if (choice == 1 && prg32_rgb_led_available()) {
+      if (choice == 1 && (output == SETUP_AUDIO_I2S_MONO || output == SETUP_AUDIO_I2S_STEREO)) {
+        g_setup_audio_mode = (g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO)
+                                 ? PRG32_AUDIO_MODE_MONO
+                                 : PRG32_AUDIO_MODE_STEREO;
+        prg32_audio_set_mode(g_setup_audio_mode);
+        prg32_audio_save_global_settings();
+        output = g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO ? SETUP_AUDIO_I2S_STEREO : SETUP_AUDIO_I2S_MONO;
+      } else if (choice == 2 && prg32_rgb_led_available()) {
         prg32_audio_led_vu_enable(!prg32_audio_led_vu_enabled());
-      } else if (choice == 2) {
-        play_audio_test_tune(output);
       } else if (choice == 3) {
-        prg32_audio_save_global_volume(g_setup_audio_volume);
+        play_audio_test_tune(output);
+      } else if (choice == 4) {
+        prg32_audio_save_global_settings();
         uint8_t vol_255 = pct_to_audio_vol(g_setup_audio_volume);
         prg32_audio_set_default_master_volume(vol_255);
         prg32_input_wait_released(MENU_ACCEPT);
@@ -729,16 +743,20 @@ static void audio_menu(void) {
     prg32_gfx_text8(24, 82, line, PRG32_COLOR_WHITE, 0);
     draw_volume_bar(168, 82, g_setup_audio_volume);
 
+    snprintf(line, sizeof(line), "I2S MODE: %s", g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO ? "STEREO" : "MONO");
+    prg32_gfx_text8(8, 104, choice == 1 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(24, 104, line, PRG32_COLOR_WHITE, 0);
+
     snprintf(line, sizeof(line), "RGB V-METER: %s%s",
              prg32_audio_led_vu_enabled() ? "ON" : "OFF",
              prg32_rgb_led_available() ? "" : " (NO LED)");
-    prg32_gfx_text8(8, 110, choice == 1 ? ">" : " ", PRG32_COLOR_GREEN, 0);
-    prg32_gfx_text8(24, 110, line, PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 126, choice == 2 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(24, 126, line, PRG32_COLOR_WHITE, 0);
 
-    prg32_gfx_text8(8, 138, choice == 2 ? ">" : " ", PRG32_COLOR_GREEN, 0);
-    prg32_gfx_text8(24, 138, "PLAY TEST TUNE", PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 166, choice == 3 ? ">" : " ", PRG32_COLOR_GREEN, 0);
-    prg32_gfx_text8(24, 166, "BACK", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 148, choice == 3 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(24, 148, "PLAY TEST TUNE", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 170, choice == 4 ? ">" : " ", PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(24, 170, "BACK", PRG32_COLOR_WHITE, 0);
     prg32_gfx_text8(8, 216, "LEFT/RIGHT VOLUME  SELECT/A OK  B BACK",
                     PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
@@ -1045,8 +1063,8 @@ void prg32_init(void) {
   printf("prg32_init => prg32_rgb_led_init()\n");
   prg32_rgb_led_init(PRG32_PIN_RGB_LED);
   PRG32_MEM_CHECKPOINT("prg32_rgb_led_init");
-  printf("prg32_init => prg32_audio_pwm_init()\n");
-  prg32_audio_pwm_init();
+  printf("prg32_init => prg32_buzzer_init()\n");
+  prg32_buzzer_init();
   PRG32_MEM_CHECKPOINT("prg32_audio_pwm");
 
   esp_err_t nvs_err = nvs_flash_init();
@@ -1055,10 +1073,11 @@ void prg32_init(void) {
     nvs_flash_erase();
     nvs_flash_init();
   }
-  PRG32_MEM_CHECKPOINT("nvs_flash");
+  PRG32_MEM_CHECKPOINT("nvs");
+  prg32_memory_log_stats();
 
-  printf("prg32_init => prg32_audio_load_global_volume()\n");
-  prg32_audio_load_global_volume();
+  printf("prg32_init => prg32_audio_load_global_settings()\n");
+  prg32_audio_load_global_settings();
 
   printf("prg32_init => detect_audio_output()\n");
   detect_audio_output();
