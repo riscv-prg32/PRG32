@@ -28,7 +28,7 @@ local cart_path="$1"
 
     # Perform the injection
     log_info "Injecting cartridge '$file_name' into QEMU flash..."
-    python3 "$GAME_TOOL" upload-qemu "$cart_path" --flash "$QEMU_IMAGE"
+    python3 -m prg32 qemu upload "$cart_path" --flash "$QEMU_IMAGE"
     
     log_ok "Cartridge '$file_name' successfully staged in QEMU flash"
 }

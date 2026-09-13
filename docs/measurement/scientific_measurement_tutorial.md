@@ -162,7 +162,7 @@ For QEMU:
 
 On Windows:
 ```bash
-python3 -m prg32 upload-qemu \
+python3 -m prg32 qemu upload \
   build-qemu/pong.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```

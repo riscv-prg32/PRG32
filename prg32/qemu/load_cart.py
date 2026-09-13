@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
+import subprocess
 from pathlib import Path
 from prg32.utilities.logging import *
 from prg32.utilities.environment_check import check_python, load_idf_env, validate_project_layout, ensure_qemu_flash, ensure_qemu_efuse, ensure_qemu_firmware
-from prg32.cartridge.build_cartridge import build_cartridge
 from prg32.qemu.upload_qemu import inject_cartridge
 from prg32.utilities.env_variables import GAMES_DIR, BUILD_DIR
 
@@ -41,7 +41,12 @@ def main(argv=None):
 
     source_file = Path(GAMES_DIR) / arg / "graphics" / "game.S"
     cart_file = Path(BUILD_DIR) / f"{arg}.prg32"
-    build_cartridge(str(source_file), str(cart_file), f"{arg}_graphics")
+    subprocess.check_call([
+        sys.executable, "-m", "prg32", "cartridge", "build",
+        str(source_file), "--portable", "--entry-prefix",
+        f"{arg}_graphics", "--name", arg,
+        "--out", str(cart_file),
+    ])
     inject_cartridge(str(cart_file))
 
 

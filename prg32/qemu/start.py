@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import sys
+import subprocess
 from pathlib import Path
 from prg32.utilities.logging import *
 from prg32.utilities.environment_check import check_python, load_idf_env, validate_project_layout, ensure_qemu_flash, ensure_qemu_efuse, ensure_qemu_firmware
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import inject_cartridge
-from prg32.cartridge.build_cartridge import build_cartridge
 from prg32.utilities.env_variables import GAMES_DIR, BUILD_DIR
 
 
@@ -34,7 +34,12 @@ def run_game_flow(game_name: str):
     source_file = Path(GAMES_DIR) / game_name / "graphics" / "game.S"
     cart_file = Path(BUILD_DIR) / f"{game_name}.prg32"
     ensure_qemu_efuse()
-    build_cartridge(str(source_file), str(cart_file), f"{game_name}_graphics")
+    subprocess.check_call([
+        sys.executable, "-m", "prg32", "cartridge", "build",
+        str(source_file), "--portable", "--entry-prefix",
+        f"{game_name}_graphics", "--name", game_name,
+        "--out", str(cart_file),
+    ])
     inject_cartridge(str(cart_file))
     launch_qemu()
 

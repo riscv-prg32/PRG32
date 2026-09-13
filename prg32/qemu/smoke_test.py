@@ -3,7 +3,6 @@ import subprocess
 import sys
 from pathlib import Path
 from prg32.utilities.logging import *
-from prg32.utilities.env_variables import PRG32_ENTRY
 
 def require_cmd(cmd, hint):
     from shutil import which
@@ -27,7 +26,7 @@ def main():
     require_cmd("python3", "Install Python 3 and retry.")
     require_cmd("idf.py", "Run: . $HOME/esp-idf/export.sh")
     # riscv toolchain optional
-    run_step("doctor", sys.executable, PRG32_ENTRY, "doctor")
+    run_step("doctor", sys.executable, "-m", "prg32", "doctor")
 
     run_step("set-target-esp32c3", "idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_DEFAULTS}", "set-target", "esp32c3")
     run_step("build-firmware", "idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_DEFAULTS}", "build")
@@ -36,7 +35,7 @@ def main():
         log_error("build-firmware (missing build-qemu/PRG32.elf)")
     log_ok("firmware-artifact")
 
-    run_step("build-demo-cartridge", sys.executable, PRG32_ENTRY, "build", "examples/games/pong/graphics/game.S", "--firmware-elf", f"{QEMU_BUILD_DIR}/PRG32.elf", "--entry-prefix", "pong_graphics", "--name", "pong", "--out", f"{QEMU_BUILD_DIR}/pong.prg32")
+    run_step("build-demo-cartridge", sys.executable, "-m", "prg32", "cartridge", "build", "examples/games/pong/graphics/game.S", "--portable", "--entry-prefix", "pong_graphics", "--name", "pong", "--out", f"{QEMU_BUILD_DIR}/pong.prg32")
 
     if not Path(f"{QEMU_BUILD_DIR}/pong.prg32").exists():
         log_error("build-demo-cartridge (missing build-qemu/pong.prg32)")
@@ -76,7 +75,7 @@ def main():
         log_error("qemu-flash-image missing (run QEMU once with build-qemu/sdkconfig)")
     log_ok("qemu-flash-image")
 
-    run_step("stage-cartridge-qemu", sys.executable, PRG32_ENTRY, "upload-qemu", f"{QEMU_BUILD_DIR}/pong.prg32", "--flash", f"{QEMU_BUILD_DIR}/qemu_flash.bin")
+    run_step("stage-cartridge-qemu", sys.executable, "-m", "prg32", "qemu", "upload", f"{QEMU_BUILD_DIR}/pong.prg32", "--flash", f"{QEMU_BUILD_DIR}/qemu_flash.bin")
     log_ok("smoke-test-complete")
     print("=== SMOKE TEST PASSED ===")
 

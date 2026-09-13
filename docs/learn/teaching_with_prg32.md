@@ -109,8 +109,8 @@ python3 -m prg32 esp32c6 upload build-esp32c6/platformer-c.prg32 --url http://19
 
 For QEMU
 
-On Windows:
-build against `build-qemu/PRG32.elf` and use `upload-qemu`.
+On Windows, build a portable cartridge with `--portable`, then stage it with
+`python3 -m prg32 qemu upload`.
 
 On Linux or MacOS:
 ```bash

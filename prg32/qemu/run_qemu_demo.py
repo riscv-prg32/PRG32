@@ -2,7 +2,6 @@
 import subprocess
 from pathlib import Path
 from prg32.utilities.logging import *
-from prg32.utilities.env_variables import PRG32_ENTRY
 
 
 def main():
@@ -38,13 +37,13 @@ def main():
         die(f"Missing {QEMU_BUILD_DIR}/PRG32.elf after build")
 
     log_info("Building demo cartridge")
-    subprocess.check_call(["python3", PRG32_ENTRY, "build", DEMO_SOURCE, "--firmware-elf", f"{QEMU_BUILD_DIR}/PRG32.elf", "--entry-prefix", DEMO_PREFIX, "--name", "asteroids", "--out", DEMO_CART])
+    subprocess.check_call(["python3", "-m", "prg32", "cartridge", "build", DEMO_SOURCE, "--portable", "--entry-prefix", DEMO_PREFIX, "--name", "asteroids", "--out", DEMO_CART])
 
     if not Path(DEMO_FLASH).exists():
         die(f"Missing {DEMO_FLASH}. Run QEMU once first with tools/qemu.sh.")
 
     log_info("Staging demo cartridge into QEMU flash")
-    subprocess.check_call(["python3", PRG32_ENTRY, "upload-qemu", DEMO_CART, "--flash", DEMO_FLASH])
+    subprocess.check_call(["python3", "-m", "prg32", "qemu", "upload", DEMO_CART, "--flash", DEMO_FLASH])
 
     log_info("Starting QEMU screen")
     os.execvp("idf.py", ["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_DEFAULTS}", "qemu", "--graphics", "monitor"])

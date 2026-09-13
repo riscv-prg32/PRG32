@@ -15,6 +15,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 build_cartridge() {
     local source_path="$1"
     local out_path="$2"
+    local entry_prefix="${3:-$(basename "$(dirname "$(dirname "$source_path")")")_graphics}"
 
     # Validation
     [[ -f "$source_path" ]] || die "Missing game source: $source_path"
@@ -28,9 +29,10 @@ build_cartridge() {
     
     # 3. Execute the compilation
     CPATH="$BUILD_DIR/config:$BUILD_DIR:${CPATH:+:$CPATH}" \
-    python3 "$GAME_TOOL" build \
+    python3 -m prg32 cartridge build \
         "$source_path" \
-        --firmware-elf "$QEMU_ELF" \
+        --portable \
+        --entry-prefix "$entry_prefix" \
         --name "$game_name" \
         --out "$out_path"
 
@@ -39,19 +41,19 @@ build_cartridge() {
 }
 
 print_usage() {
-    echo "Usage: $0 <path_to_source.S|c> <path_to_output.prg32>"
+    echo "Usage: $0 <path_to_source.S|c> <path_to_output.prg32> [entry_prefix]"
 }
 
 main() {
     set -e 
     
     # Expecting exactly 2 arguments now
-    if [ "$#" -ne 2 ]; then
+    if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
         print_usage
         exit 1
     fi
 
-    build_cartridge "$1" "$2"
+    build_cartridge "$@"
 }
 
 # Only run main if the script is being executed directly, not sourced

@@ -3,19 +3,29 @@ import tempfile
 import zipfile
 import json
 from pathlib import Path
-from prg32.store.utils import infer_architecture, post_multipart, store_url, store_token
+from prg32.store.utils import post_multipart, store_url, store_token
 from prg32.store.metadata import make_metadata
 from prg32.cartridge.build_cartridge import build_cartridge_cli
 
 
 def publish(args: argparse.Namespace) -> None:
-    architecture = args.architecture or infer_architecture(args.firmware_elf)
+    if args.firmware_elf:
+        raise SystemExit("firmware-specific cartridge builds are no longer supported; use --architecture")
+    if not args.architecture:
+        raise SystemExit("publish requires --architecture (esp32c6 or qemu)")
+    architecture = args.architecture
     with tempfile.TemporaryDirectory(prefix="prg32-publish-") as tmp_s:
         tmp = Path(tmp_s)
         cart = tmp / f"{args.name}-{architecture}.prg32"
         build_args = argparse.Namespace(**vars(args))
         build_args.out = str(cart)
         build_args.runtime_url = None
+        build_args.portable = True
+        build_args.legacy_absolute_imports = False
+        build_args.required_feature = []
+        build_args.optional_feature = []
+        build_args.tool_prefix = "riscv32-esp-elf-"
+        build_args.build_dir = None
         build_args.audio_block = None
         build_args.multiplayer = False
         build_args.march = "rv32imc_zicsr_zifencei"

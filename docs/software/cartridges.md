@@ -67,6 +67,11 @@ The PRG32 repository comes with many example cartridge source codes. Here is an 
 ### 1. Build a Portable Cartridge
 Build a portable cartridge that can run on any PRG32 host (QEMU, physical ESP32-C6) that supports the ABI Table. This example uses the portable ABI table with `--portable`, so it does not need a firmware ELF. 
 
+Portable ABI-table output is mandatory for new builds. The builder rejects
+firmware-specific inputs (`--firmware-elf`, `--runtime-url`, and
+`--legacy-absolute-imports`). Existing legacy packages can still load if they
+match their resident firmware; see [the ABI guide](abi.md).
+
 ```bash
 python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \
@@ -490,8 +495,10 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 ### Cartridge Runtime Details
 
-- Uploadable cartridges run from `prg32_cart_exec` and are linked for that
-  runtime address. Rebuild cartridges whenever the resident firmware changes.
+- Uploadable cartridges run from `prg32_cart_exec`. Portable cartridges use
+  position-tolerant code and the ABI table; they need rebuilding only when
+  their ABI requirements are no longer met, as described in
+  [the ABI guide](abi.md).
   This execution buffer is explicitly placed in the `.iram1.data` section with
   16-byte alignment (`__attribute__((aligned(16)))`) so the RISC-V CPU can fetch
   cartridge instructions from high-speed internal RAM (IRAM).
