@@ -220,7 +220,12 @@ python3 -m prg32 upload build-esp32c6/tetris-c.prg32 \
 ```
 
 ### ABI Validation
-Both paths validate the cartridge ABI before deployment. Store downloads are rejected when the cartridge ABI major, ABI hash, required feature bits, import model, or legacy load address are not compatible with the current runtime. Rebuild incompatible cartridges with `--portable` from the matching PRG32 checkout.
+Both paths validate the cartridge ABI before deployment. Store downloads accept
+the current hash and the two compatible historical portable hashes listed in
+[the ABI guide](../software/abi.md); other ABI mismatches, missing required
+features, unsupported import models, and incompatible legacy load addresses are
+rejected. Rebuild incompatible cartridges with `--portable` from the matching
+PRG32 checkout.
 
 ## Preparing Cartridges for the Store
 

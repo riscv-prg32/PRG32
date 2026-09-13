@@ -55,7 +55,16 @@ python -m prg32 qemu run
 
 
 ## 4. Navigate the Startup Menu
-The first screen is the startup menu, where you can, among other things, run a cartridge, set the default boot cartridge, configure Wi-Fi, configure CartridgeStore access, browse the store and download new cartridges, open the audio setup menu, open the developer status-band menu, or show the about screen. The optional performance-test cartridge runs matched RGB565 and full-indexed passes, displays an aggregate summary, and retains compact JSON at `/api/performance.json` until reboot or the next run. Poing can publish a separate application-level result when SELECT starts its performance mode. See the [Performance Test Guide](../performance_test.md).
+With one stored cartridge, PRG32 starts it automatically. With several stored
+cartridges, it starts the saved default. The startup menu appears when no
+cartridge can be selected, or when you hold A+B during boot. From that menu
+you can run a cartridge, set the default, configure Wi-Fi and CartridgeStore,
+open audio or developer settings, and view the about screen. The optional
+performance-test cartridge runs matched RGB565 and full-indexed passes,
+displays an aggregate summary, and retains compact JSON at
+`/api/performance.json` until reboot or the next run. Poing can publish a
+separate application-level result when SELECT starts its performance mode.
+See the [Performance Test Guide](../performance_test.md).
 
 **Navigation Commands:**
 - **Joystick**: Navigate menus (QEMU: keyboard arrows)

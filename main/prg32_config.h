@@ -181,11 +181,10 @@
   (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE)
 #define PRG32_WIFI_AP_ENABLE PRG32_GAME_UPLOAD_ENABLE
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
-/* Normal images autoload their sole/default cartridge; setup remains available
- * through the setup input and whenever no unambiguous cartridge can boot.
-Set to 0 for QEMU CI/CD.
- */
-#define PRG32_BOOT_SETUP_MODE 1
+/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup;
+ * setup also opens when no unambiguous cartridge can boot. Classroom images
+ * may set this to 1 to force setup on every boot. */
+#define PRG32_BOOT_SETUP_MODE 0
 #define PRG32_WIFI_AP_SSID "PRG32"
 #define PRG32_WIFI_AP_PASSWORD "prg32game"
 #define PRG32_WIFI_AP_CHANNEL 6

@@ -66,6 +66,10 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```
    *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
+With the normal `PRG32_BOOT_SETUP_MODE=0` configuration, a single staged
+cartridge starts after the splash screen. Hold A+B during boot to open setup;
+if no cartridge is staged, setup opens automatically.
+
 The reference performance cartridge follows this workflow with additional
 measurement controls and interpretation rules. See
 [Performance Test Guide](../performance_test.md#4-run-the-reference-test-in-qemu).

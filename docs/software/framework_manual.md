@@ -47,6 +47,14 @@ System hotkey:
 - A + B + DOWN on the local joystick: restart the ESP32-C6 firmware from
   anywhere in the PRG32 input path.
 
+## Random Numbers
+
+`prg32_random_number(min, max)` returns an unsigned value between `min` and
+`max`, including both endpoints. It returns `min` if `max <= min` and supports
+the full `0` through `UINT32_MAX` range. The
+[C and assembly demo](../../examples/features/random_number/README.md) shows
+how to call it and update the display on each A-button press.
+
 ## Joystick Text Input
 
 The on-screen keyboard lets games and framework setup screens collect short

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 from pathlib import Path
 import contextlib
 import tempfile
@@ -18,6 +19,7 @@ from prg32.abi.abi_generated import (
     FEATURE_BITS,
     IMPORT_NAMES,
 )
+from prg32.abi.abi_gen import abi_hash
 from prg32.prg32 import main as prg32_main
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,8 +94,14 @@ not-a-symbol
         )
 
 class PortableHeaderTests(unittest.TestCase):
+    def test_compatible_hashes_describe_unchanged_abi_prefixes(self) -> None:
+        abi = json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text())
+        for hash_value, count in ((0x006427C2, 133), (0x6BE6E8D0, 138)):
+            prior = {**abi, "minor": 5, "functions": abi["functions"][:count]}
+            self.assertEqual(abi_hash(prior), hash_value)
+
     def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
-        self.assertEqual(COMPATIBLE_ABI_HASHES, [])
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0])
         payload = b"\0\0\0\0"
         for old_hash in (0xEC21EFE2, 0x5626CB8A):
             header = env_variables.CART_HEADER_V2.pack(
@@ -112,6 +120,49 @@ class PortableHeaderTests(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "portable ABI hash"):
                 runtime_handler.validate_cartridge_contract(header + payload)
 
+    def test_runtime_accepts_older_append_only_portable_cartridges(self) -> None:
+        payload = b"\0\0\0\0"
+        for old_hash in COMPATIBLE_ABI_HASHES:
+            header = env_variables.CART_HEADER_V2.pack(
+                env_variables.CART_MAGIC,
+                env_variables.CART_ABI_MAJOR,
+                1,
+                env_variables.CART_HEADER_V2.size,
+                env_variables.PRG32_CART_FLAG_ABI_TABLE,
+                env_variables.FALLBACK_CART_LOAD_ADDR,
+                len(payload), len(payload), 0, 0, 0, 0,
+                b"old" + b"\0" * 29,
+                old_hash,
+                0, 0, 0, 0, 0,
+                env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
+            )
+            runtime_handler.validate_cartridge_contract(header + payload)
+            runtime_handler.validate_cartridge_contract(
+                header + payload,
+                runtime={"cart_abi_hash": ABI_HASH},
+            )
+
+    def test_current_cartridge_is_rejected_by_an_older_runtime(self) -> None:
+        payload = b"\0\0\0\0"
+        header = env_variables.CART_HEADER_V2.pack(
+            env_variables.CART_MAGIC,
+            env_variables.CART_ABI_MAJOR,
+            1,
+            env_variables.CART_HEADER_V2.size,
+            env_variables.PRG32_CART_FLAG_ABI_TABLE,
+            env_variables.FALLBACK_CART_LOAD_ADDR,
+            len(payload), len(payload), 0, 0, 0, 0,
+            b"new" + b"\0" * 29,
+            ABI_HASH,
+            0, 0, 0, 0, 0,
+            env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
+        )
+        with self.assertRaisesRegex(SystemExit, "portable ABI hash"):
+            runtime_handler.validate_cartridge_contract(
+                header + payload,
+                runtime={"cart_abi_hash": 0x6BE6E8D0},
+            )
+
     def test_performance_abi_is_appended_after_indexed_graphics(self) -> None:
         self.assertEqual(IMPORT_NAMES[122], "prg32_sprite_draw_indexed")
         self.assertEqual(IMPORT_NAMES[123], "prg32_sprite_draw_bitplanes")
@@ -126,13 +177,14 @@ class PortableHeaderTests(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            IMPORT_NAMES[133:],
+            IMPORT_NAMES[133:138],
             [
                 "prg32_palette_set", "prg32_palette_get",
                 "prg32_gfx_pixel_indexed", "prg32_gfx_rect_indexed",
                 "prg32_gfx_clear_indexed",
             ],
         )
+        self.assertEqual(IMPORT_NAMES[138], "prg32_random_number")
 
     def test_portable_build_uses_position_tolerant_riscv_flags(self) -> None:
         # We look in build_cartridge.py now

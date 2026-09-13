@@ -57,6 +57,7 @@ Feature demos live under `examples/features` and isolate one framework topic:
 - multiplayer snapshots
 - audio synthesis
 - onboard RGB LED and audio VU meter
+- bounded random numbers in C and RISC-V assembly
 
 The fuller hardware smoke test lives in the external
 [DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo). It checks

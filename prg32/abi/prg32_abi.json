@@ -1,8 +1,8 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 5,
-  "compatible_hashes": [],
+  "minor": 6,
+  "compatible_hashes": ["0x006427c2", "0x6be6e8d0"],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -969,6 +969,13 @@
       "args": ["uint8_t"],
       "feature": "graphics",
       "notes": "Clear the game viewport to one system-palette index."
+    },
+    {
+      "name": "prg32_random_number",
+      "return": "uint32_t",
+      "args": ["uint32_t", "uint32_t"],
+      "feature": "core",
+      "notes": "Return a uniformly distributed integer between min and max inclusive; return min when max is less than or equal to min."
     }
   ]
 }

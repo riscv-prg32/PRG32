@@ -1,6 +1,17 @@
 # PRG32 Cartridges
 
-PRG32 Cartridges allow users to try new games or tools without reflashing the whole firmware. The base package remains backward compatible with earlier PRG32 cartridges. Audio assets are stored in an optional trailing AUDIO block, and store metadata can be appended after the legacy payload as a `PRG32META` trailer.
+PRG32 Cartridges allow users to try new games or tools without reflashing the
+whole firmware. The base package format remains readable across firmware
+versions, while executable ABI compatibility follows the rules in
+[the ABI guide](abi.md). Audio assets are stored in an optional trailing AUDIO
+block, and store metadata can be appended after the legacy payload as a
+`PRG32META` trailer.
+
+The in-tree cartridges under [`cartridges/`](../../cartridges/README.md) are
+built as portable packages. Bach's host syntax check uses the public PRG32
+headers directly, so its button masks and audio-mode constants match firmware.
+Other cartridge host checks that use small API test headers must keep those
+declarations in sync with the public headers.
 
 ## Architecture and Format
 
@@ -22,6 +33,11 @@ game.prg32
 ```
 
 The firmware exports the PRG32 API addresses and the cartridge RAM address. `python3 -m prg32` links a game against those addresses and creates a `.prg32` package. The firmware validates the package, persists it in the chosen slot, loads any optional AUDIO block, copies code into executable cartridge RAM, and calls `<game>_init`, `<game>_update`, and `<game>_draw`.
+
+When starting a stored cartridge, the firmware reads only its header, code/data
+payload, and optional AUDIO block into temporary RAM. Store metadata and artwork
+remain in flash. A Store-ready package can therefore have a large screenshot or
+icon without making the cartridge itself more expensive to start.
 
 ### Flash Layout & Slots
 
@@ -354,7 +370,11 @@ You can inspect a built cartridge via:
 python3 -m prg32 cartridge summary CARTRIDGE
 ```
 
-The summary shows ABI major/minor, ABI hash, import model, and required or optional feature bits. ABI hash mismatches, missing required features, and incompatible legacy cartridges are rejected by the runtime, store download path, QEMU staging path, and HTTP upload tool with a diagnostic message.
+The summary shows ABI major/minor, ABI hash, import model, and required or
+optional feature bits. The runtime, Store download path, QEMU staging path,
+and HTTP upload tool accept the compatible historical portable hashes listed
+in [the ABI guide](abi.md). They reject other ABI hash mismatches, missing
+required features, and incompatible legacy cartridges with a diagnostic message.
 
 To verify a monolithic cartridge (including metadata):
 

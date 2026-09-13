@@ -10,7 +10,8 @@ This document outlines the high-level layout of the PRG32 repository.
 ```text
 .
 |-- .github/workflows/ci.yml        Firmware, host, and store-ready cartridge CI/CD artifacts
-|-- cartridges/                     In-tree, store-ready portable cartridges
+|-- cartridges/                     In-tree portable cartridges and store-ready bundles
+|   |-- audiotest/                  Source-only audio pan diagnostic cartridge
 |   |-- bachdemo/                   Eight-voice procedural Bach audio showcase
 |   |-- blackjack/                  Casino blackjack game and rules tests
 |   |-- devicedemo/                 Hardware/runtime feature showcase
@@ -19,6 +20,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, cartridge loader)
+|   |   `-- prg32_random.c          Uniform bounded random-number API
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
@@ -34,6 +36,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   `-- usage/                      Getting started, tooling, QEMU, and troubleshooting guides
 |-- examples/
 |   |-- features/                   Focused rendering and firmware feature demos (audio, sprites, dual playfield)
+|   |   `-- random_number/          C and assembly bounded-random examples
 |   `-- games/                      Full game examples in RISC-V assembly and C (asteroids, breakout, pacman, etc.)
 |   |-- pcb/                        Hardware reference designs (Fritzing PCB projects)
 |-- main/                           Minimal resident firmware app and board configuration

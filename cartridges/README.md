@@ -1,8 +1,11 @@
 # PRG32 Cartridges
 
-This directory contains complete, in-tree PRG32 cartridges. Each cartridge
-includes its source code, documentation, and the supporting files needed to
-build a portable package for supported PRG32 targets.
+This directory contains in-tree PRG32 cartridges. The main demos include
+store-ready metadata and assets; Audio Pan Test is a source-only diagnostic.
+Each can be built as a portable package for supported PRG32 targets.
+
+- [Audio Pan Test](audiotest/README.md) cycles notes through stereo positions
+  and reports the selected audio mode.
 
 - [Bach Stereo Showcase](bachdemo/README.md) demonstrates eight-voice
   procedural audio with multiple waveforms, envelopes, filtering, and stereo

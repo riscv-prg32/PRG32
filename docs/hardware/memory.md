@@ -18,6 +18,11 @@ actual impact on a board. The default audio configuration has eight voices at
 cartridge profile described in [profiles](../usage/profiles.md); the profile
 reserves cartridge execution RAM, not a 128 KiB total-system RAM cap.
 
+On cartridge startup, Store artwork and metadata stay in flash. The loader
+temporarily allocates only the header, code/data payload, and optional AUDIO
+block; see [cartridge loading](../software/cartridges.md) for the package
+layout. Package size is therefore not the same as cartridge startup heap use.
+
 ## ESP32-C6 Memory Layout
 
 The memory of the ESP32-C6 can be broadly divided into three main components: **Flash**, **ROM**, and **RAM**.

@@ -50,7 +50,8 @@ header.
 
 Compatibility rules:
 
-- same ABI major and exact generated hash: accepted
+- same ABI major and current hash, or a listed compatible historical hash:
+  accepted when required feature bits are available
 - missing required feature bits: rejected
 - newer incompatible major: rejected
 - legacy absolute imports: supported only for firmware-specific workflows
@@ -86,9 +87,20 @@ Palette changes affect existing
 indexed pixels at the next presentation; the ILI9341 wire format remains
 RGB565. The exact 1.5 hash is generated from `prg32_abi.json`. The merged ABI
 1.5 table retains these five indexed entries after the PR #36 audio changes.
-The generated hash identifies that combined table; rebuild portable cartridges
-against this branch before loading them. Earlier 1.3 and 1.4 hashes are rejected
-because the PR #36 audio changes reused early slots and are not append-only.
+The generated hash identifies that combined table. Earlier 1.3 and 1.4 hashes
+are rejected because the PR #36 audio changes reused early slots and are not
+append-only.
+
+ABI minor `6` appends index 138, `prg32_random_number(uint32_t min,
+uint32_t max)`. It returns a uniform unsigned value in the inclusive range;
+when `max <= min`, it returns `min`. The full `0` to `UINT32_MAX` range is
+supported. Previously built portable cartridges with hashes `0x006427c2`
+(133 entries) and `0x6be6e8d0` (138 entries) remain loadable because those
+tables are unchanged prefixes of this table. This applies to firmware loading,
+Store downloads, and upload/QEMU tooling. The earlier pre-audio-change hashes
+still require a rebuild because their table entries differ. Legacy cartridges
+with firmware-specific absolute imports must be rebuilt against the exact
+firmware image when its symbol addresses change.
 
 The performance broker lifecycle, descriptor layouts, failure semantics, and
 custom-cartridge tutorial are documented in the

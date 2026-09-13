@@ -63,7 +63,8 @@ PYTHONPATH="$PRG32_REPO" python3 -m prg32 esp32c6 upload \
 ```
 
 Validation checks the generated tracker score, all four waveform families,
-eight-channel use, stereo bounds, note balance, metadata, and C syntax. A real
+eight-channel use, stereo bounds, note balance, metadata, and C syntax against
+the PRG32 public headers. Set `PRG32_REPO` when testing outside this tree. A real
 `.prg32` binary requires the RISC-V compiler installed by the PRG32/ESP-IDF
 toolchain; the source bundle itself is platform-independent.
 

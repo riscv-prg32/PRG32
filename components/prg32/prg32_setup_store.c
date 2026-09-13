@@ -412,7 +412,7 @@ static int validate_download_header(const uint8_t *data, size_t len,
     const prg32_cart_header_v2_t *v2 = (const prg32_cart_header_v2_t *)data;
     import_model = v2->import_model;
     if (import_model == PRG32_IMPORT_MODEL_ABI_TABLE) {
-      if (v2->abi_hash != PRG32_ABI_HASH) {
+      if (!PRG32_ABI_HASH_IS_COMPATIBLE(v2->abi_hash)) {
         snprintf(status, status_len, "ABI HASH");
         return -1;
       }

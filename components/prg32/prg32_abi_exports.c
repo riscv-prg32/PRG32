@@ -167,6 +167,7 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_perf_abort,
     (prg32_any_fn_t)prg32_perf_get_state,
     (prg32_any_fn_t)prg32_perf_get_summary,
+    (prg32_any_fn_t)prg32_random_number,
 };
 
 void prg32_abi_exports_keep(void) {

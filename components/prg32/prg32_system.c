@@ -1105,6 +1105,7 @@ void prg32_init(void) {
   uint32_t boot_input = prg32_input_read_menu();
   printf("prg32_init => prg32_cart_stored_count()\n");
   int stored_count = prg32_cart_stored_count();
+  printf("prg32_init: stored cartridges=%d\n", stored_count);
   printf("prg32_init => prg32_wifi_setup_requested()\n");
   printf("prg32_init => prg32_cart_default_slot()\n");
   bool setup_requested =
@@ -1113,8 +1114,12 @@ void prg32_init(void) {
       stored_count == 0 || (stored_count > 1 && prg32_cart_default_slot() < 0);
   printf("prg32_init => autoload_cartridge()\n");
   prg32_display_log_memory("before cartridge load");
-  if (!setup_requested && autoload_cartridge() != 0) {
-    setup_requested = true;
+  if (!setup_requested) {
+    if (autoload_cartridge() != 0) {
+      printf("prg32_init: cartridge autoload failed: %s\n",
+             prg32_cart_last_error());
+      setup_requested = true;
+    }
   }
   if (setup_requested) {
     prg32_gfx_set_fullscreen(1);
