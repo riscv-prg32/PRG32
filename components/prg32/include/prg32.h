@@ -1,6 +1,26 @@
 #ifndef PRG32_H
 #define PRG32_H
 
+/**
+ * @file prg32.h
+ * @brief Stable public C interface shared by resident firmware and cartridges.
+ *
+ * Cartridge authors should include this header instead of ESP-IDF headers. A
+ * portable cartridge calls these functions through the generated ABI table;
+ * it does not link to their firmware addresses. Consequently, declaration
+ * order in this file is not an ABI index: `prg32_abi.json` and the generated
+ * ABI files are authoritative for exported function indices.
+ *
+ * Compatibility rules for this header:
+ * - existing constants, structure layouts, and function signatures are kept
+ *   stable for already-built cartridges;
+ * - new optional services are appended to the ABI and feature-gated;
+ * - pointers supplied by a cartridge must remain valid for the documented
+ *   call duration (or for the asset lifetime where explicitly stated);
+ * - coordinates are signed so drawing can be clipped at viewport edges;
+ * - colors are native RGB565 values unless a function says otherwise.
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #if __has_include("sdkconfig.h")
@@ -15,6 +35,9 @@
 extern "C" {
 #endif
 
+/* Physical framebuffer and cartridge-visible game viewport dimensions. The
+ * 320x200 game viewport is centered vertically in the 320x240 framebuffer;
+ * the remaining 20-pixel bands are owned by the resident firmware. */
 #define PRG32_LCD_W 320
 #define PRG32_LCD_H 240
 #define PRG32_GAME_W 320
@@ -31,11 +54,23 @@ extern "C" {
 #define PRG32_PLAYFIELD_ROWS 32
 #define PRG32_PARALLAX_1X 256
 
+/* Supported packed palette-index widths. Rows are densely packed, most
+ * significant index first; palettes contain RGB565 entries. */
+#define PRG32_SPRITE_BPP_1 1
+#define PRG32_SPRITE_BPP_2 2
+#define PRG32_SPRITE_BPP_4 4
+#define PRG32_SPRITE_BPP_8 8
+
+/* Per-tile collision properties used by the platform helpers. Applications
+ * may combine flags; unknown bits must remain clear for forward compatibility.
+ */
 #define PRG32_TILE_FLAG_SOLID (1u << 0)
 #define PRG32_TILE_FLAG_PLATFORM (1u << 1)
 #define PRG32_TILE_FLAG_HAZARD (1u << 2)
 #define PRG32_TILE_FLAG_COLLECT (1u << 3)
 
+/* Result bits returned by actor movement/step calls. More than one contact can
+ * be reported by one move (for example, ground plus a collectible). */
 #define PRG32_PLATFORM_ON_GROUND (1u << 0)
 #define PRG32_PLATFORM_HIT_LEFT (1u << 1)
 #define PRG32_PLATFORM_HIT_RIGHT (1u << 2)
@@ -43,6 +78,8 @@ extern "C" {
 #define PRG32_PLATFORM_HAZARD (1u << 4)
 #define PRG32_PLATFORM_COLLECT (1u << 5)
 
+/* Stable byte offsets for assembly cartridges. They mirror
+ * prg32_platform_actor_t exactly and must not be changed independently. */
 #define PRG32_PLATFORM_ACTOR_X_OFFSET 0
 #define PRG32_PLATFORM_ACTOR_Y_OFFSET 4
 #define PRG32_PLATFORM_ACTOR_VX_OFFSET 8
@@ -53,6 +90,8 @@ extern "C" {
 #define PRG32_PLATFORM_ACTOR_LAYER_OFFSET 22
 #define PRG32_PLATFORM_ACTOR_SIZE 24
 
+/* Controller bitmask. Player 1 occupies bits 0..6 and player 2 occupies
+ * bits 8..14. SELECT and START are names for the same physical input. */
 #define PRG32_BTN_LEFT (1u << 0)
 #define PRG32_BTN_RIGHT (1u << 1)
 #define PRG32_BTN_UP (1u << 2)
@@ -71,6 +110,7 @@ extern "C" {
 #define PRG32_P2_BTN_START (1u << 14)
 #define PRG32_P2_BTN_SELECT PRG32_P2_BTN_START
 
+/* Common RGB565 colors. Custom colors use RRRRRGGGGGGBBBBB packing. */
 #define PRG32_COLOR_BLACK 0x0000
 #define PRG32_COLOR_WHITE 0xffff
 #define PRG32_COLOR_RED 0xf800
@@ -80,9 +120,12 @@ extern "C" {
 #define PRG32_COLOR_CYAN 0x07ff
 #define PRG32_COLOR_MAGENTA 0xf81f
 
+/* Firmware-owned status-band identifiers. */
 #define PRG32_BAND_TOP 0
 #define PRG32_BAND_BOTTOM 1
 
+/* Cartridge binary-format constants. These values are consumed by packaging
+ * tools and the runtime loader; changing one invalidates stored binaries. */
 #define PRG32_CART_MAGIC "PRG2"
 #define PRG32_CART_ABI_MAJOR 1
 #define PRG32_CART_ABI_MINOR 1
@@ -119,6 +162,7 @@ extern "C" {
 #endif
 
 typedef struct __attribute__((packed)) {
+  /* Legacy fixed header. Multi-byte fields are little-endian on PRG32. */
   char magic[4];
   uint16_t abi_major;
   uint16_t abi_minor;
@@ -135,6 +179,8 @@ typedef struct __attribute__((packed)) {
 } prg32_cart_header_t;
 
 typedef struct __attribute__((packed)) {
+  /* Extended portable header. The initial fields intentionally match
+   * prg32_cart_header_t so old inspection tools can read the common prefix. */
   char magic[4];
   uint16_t abi_major;
   uint16_t abi_minor;
@@ -158,6 +204,8 @@ typedef struct __attribute__((packed)) {
 } prg32_cart_header_v2_t;
 
 typedef struct {
+  /* Snapshot of one cartridge slot. Strings are always NUL-terminated by the
+   * runtime. `loaded` and `stored` are boolean bytes. */
   char slot_name[8];
   char name[PRG32_CART_NAME_LEN];
   uint32_t load_addr;
@@ -173,6 +221,8 @@ typedef struct {
 } prg32_cart_info_t;
 
 typedef struct {
+  /* Animation descriptor for contiguous RGB565 frames. `frames` must remain
+   * valid while the descriptor is used; frame_ms==0 selects frame zero. */
   const uint16_t *frames;
   uint16_t width;
   uint16_t height;
@@ -183,7 +233,32 @@ typedef struct {
   uint16_t transparent;
 } prg32_anim_sprite_t;
 
+/* Compact sprite assets keep palette indices in cartridge memory and are
+ * expanded directly into the native RGB565 framebuffer while drawing. */
 typedef struct {
+  /* Platform actor uses integer game-pixel coordinates and velocities. State
+   * contains PRG32_PLATFORM_* result bits from the most recent move. */
+  const uint8_t *pixels;
+  const uint16_t *palette;
+  uint16_t width;
+  uint16_t height;
+  uint16_t frame_count;
+  uint16_t palette_count;
+  uint8_t bits_per_pixel;
+  int16_t transparent_index;
+} prg32_indexed_sprite_t;
+
+/* Compact descriptors can also travel through the existing RGB565 sprite ABI.
+ * uint16_t assets are naturally aligned, so bit zero remains available as a
+ * format tag without changing any function prototype or animation structure. */
+#define PRG32_SPRITE_INDEXED(asset)                                            \
+  ((const uint16_t *)((uintptr_t)(asset) | (uintptr_t)1u))
+#define PRG32_SPRITE_BITPLANES(asset)                                          \
+  ((const uint16_t *)((uintptr_t)(asset) | (uintptr_t)3u))
+
+typedef struct {
+  /* Wi-Fi credentials copied by prg32_wifi_start_mode(); callers may release
+   * this structure after that call returns. */
   int x;
   int y;
   int vx;
@@ -212,6 +287,8 @@ typedef enum {
 } prg32_band_mode_t;
 
 typedef struct {
+  /* Stateful on-screen keyboard. The caller owns `buffer`; capacity includes
+   * the terminating NUL byte and must remain valid until editing finishes. */
   prg32_wifi_mode_t mode;
   char ssid[32];
   char password[64];
@@ -220,6 +297,7 @@ typedef struct {
 } prg32_wifi_config_t;
 
 typedef struct {
+  /* One blocking legacy note: frequency in Hz followed by duration in ms. */
   char *buffer;
   size_t capacity;
   size_t length;
@@ -236,6 +314,13 @@ typedef struct {
   uint16_t duration_ms;
 } prg32_note_t;
 
+/** @name Runtime and input
+ * `prg32_init()` is firmware-owned; cartridges normally implement their own
+ * init/update/draw callbacks and must not call it. Time values use the
+ * wrapping 32-bit millisecond clock, so compare elapsed differences rather
+ * than absolute deadlines. Input readers return PRG32_BTN_* masks; edge
+ * detection remains the caller's responsibility.
+ * @{ */
 void prg32_init(void);
 void prg32_set_mode(uint32_t mode);
 uint32_t prg32_ticks_ms(void);
@@ -249,12 +334,31 @@ void prg32_diag_set_input_state(uint32_t input_state);
 void prg32_diag_increment_frame(void);
 uint32_t prg32_diag_input_state(void);
 uint32_t prg32_diag_frame_count(void);
-void prg32_audio_beep(uint32_t hz, uint32_t ms);
-void prg32_audio_tone(uint32_t hz, uint32_t ms, uint16_t duty);
-void prg32_audio_note(uint8_t midi_note, uint32_t ms);
-void prg32_audio_play_notes(const prg32_note_t *notes, size_t count);
-void prg32_audio_sample_u8(const uint8_t *samples, size_t count,
-                           uint32_t sample_rate);
+/** @} */
+
+/** @name Basic audio and RGB indicator
+ * Basic audio calls are safe when an output is unavailable: they become
+ * no-ops. Frequencies are Hz, durations are ms, MIDI notes use 0..127, and
+ * sample_u8 consumes unsigned 8-bit PCM centered on 128 for the duration of
+ * the call. The resident runtime owns audio initialization and master volume;
+ * portable cartridges do not initialize hardware directly.
+ * @{ */
+/*
+ * Low-level PWM tone generation for the physical buzzer.
+ * - 'hz': frequency in Hertz.
+ * - 'ms': duration in milliseconds.
+ * - 'duty': duty cycle (PWM ON/OFF percentage), used to control the volume
+ *           of the buzzer by limiting electrical power.
+ */
+void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty);
+void prg32_buzzer_play_notes(const prg32_note_t *notes, size_t count);
+void prg32_buzzer_sample_u8(const uint8_t *samples, size_t count,
+                            uint32_t sample_rate);
+void prg32_audio_note_off(uint8_t channel);
+void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t note,
+                      uint8_t volume, uint32_t duration_ms);
+void prg32_audio_notes(uint8_t channel, uint8_t instrument, uint8_t volume,
+                       const prg32_midi_note_t *notes, size_t count);
 int prg32_rgb_led_init(int gpio);
 int prg32_rgb_led_available(void);
 void prg32_rgb_led_set(uint8_t red, uint8_t green, uint8_t blue);
@@ -263,12 +367,21 @@ void prg32_rgb_led_vu(uint8_t level);
 void prg32_audio_led_vu_enable(int enabled);
 int prg32_audio_led_vu_enabled(void);
 void prg32_audio_led_vu_level(uint8_t level);
+/** @} */
 
 typedef struct {
+  /* Score record copied out of resident storage. */
   char game[24];
   char player[24];
   uint32_t score;
 } prg32_score_t;
+
+/** @name Network setup and score service
+ * Functions returning int use 0 for success unless their name returns a count
+ * or boolean. Output buffers always include their capacity; pass a nonzero
+ * size. Network operations can fail or be compiled as harmless stubs, so a
+ * cartridge must retain a complete offline path.
+ * @{ */
 void prg32_wifi_scores_init(void);
 int prg32_wifi_start_mode(const prg32_wifi_config_t *config);
 prg32_wifi_mode_t prg32_wifi_current_mode(void);
@@ -289,8 +402,13 @@ int prg32_score_get(const char *game, int index, prg32_score_t *out_score);
 int prg32_scoreboard_show(const char *game, const char *title);
 int prg32_score_submit_remote(const char *base_url, const char *game,
                               const char *player, uint32_t score);
+/** @} */
 
-/* CartridgeStore integration. */
+/** @name Cartridge Store integration
+ * URL getters copy normalized NUL-terminated URLs into caller storage.
+ * Discover and ping may block on network timeouts; invoke them from menus, not
+ * a per-frame draw callback. Setup functions run resident modal UI.
+ * @{ */
 int prg32_store_url_get(char *out_url, size_t max_len);
 int prg32_store_url_set(const char *url);
 void prg32_store_url_clear(void);
@@ -299,7 +417,15 @@ int prg32_store_discover(char *out_url, size_t max_len);
 int prg32_store_ping(const char *base_url, char *out_name, size_t name_len);
 void prg32_setup_store_run(void);
 void prg32_setup_store_browse_run(void);
+/** @} */
 
+/** @name Cartridge loader and slots
+ * Slot numbers are 0..PRG32_CART_SLOT_COUNT-1. Install/load functions validate
+ * magic, ABI, feature bits, sizes, CRC, and portable imports before publishing
+ * a new generation. Stream writes must be ordered, non-overlapping chunks and
+ * concluded with the exact total size. Error-returning calls leave diagnostic
+ * text available through prg32_cart_last_error().
+ * @{ */
 void prg32_cart_init(void);
 uintptr_t prg32_cart_load_addr(void);
 size_t prg32_cart_ram_size(void);
@@ -328,13 +454,32 @@ int prg32_cart_call_init(void);
 int prg32_cart_call_update(void);
 int prg32_cart_call_draw(void);
 const char *prg32_cart_last_error(void);
+/** @} */
 
+/** @name Text console
+ * Console output targets the 40x25 character surface. Strings are consumed
+ * synchronously and are not retained after the call.
+ * @{ */
 void prg32_console_clear(void);
 void prg32_console_putc(int ch);
 void prg32_console_write(const char *s);
 void prg32_console_hex32(uint32_t value);
+/** @} */
 
+/** @name Immediate-mode graphics and status bands
+ * Cartridge coordinates address the 320x200 viewport unless fullscreen mode
+ * is enabled by resident UI. Drawing is clipped; non-positive rectangle sizes
+ * draw nothing. `present` publishes the completed back buffer. Cartridge draw
+ * callbacks are already serialized by the runtime and normally should not
+ * acquire the graphics lock themselves.
+ *
+ * Snapshot rows copy RGB565 pixels into caller storage and return the number
+ * copied or a negative error. Band text is copied by the runtime. Fullscreen,
+ * persistent band configuration, and lock management are primarily resident
+ * firmware services and should be used cautiously by cartridges.
+ * @{ */
 void prg32_gfx_clear(uint16_t color);
+void prg32_gfx_clear_indexed(uint8_t index);
 void prg32_gfx_present(void);
 void prg32_gfx_lock(void);
 int prg32_gfx_try_lock(uint32_t timeout_ms);
@@ -355,6 +500,10 @@ void prg32_band_load_config(void);
 void prg32_band_save_config(void);
 void prg32_gfx_pixel(int x, int y, uint16_t color);
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color);
+void prg32_gfx_pixel_indexed(int x, int y, uint8_t index);
+void prg32_gfx_rect_indexed(int x, int y, int w, int h, uint8_t index);
+void prg32_palette_set(uint8_t index, uint16_t rgb565);
+uint16_t prg32_palette_get(uint8_t index);
 void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg);
 int prg32_gfx_snapshot_row_rgb565(int y, uint16_t *out, size_t pixels);
 void prg32_splash_draw(const char *title, const char *subtitle, uint16_t bg,
@@ -370,13 +519,30 @@ void prg32_splash_show_game(const char *title, const char *subtitle,
 void prg32_splash_show_default(void);
 void prg32_debug_overlay_draw(int enabled, int x, int y, uint32_t input_mask,
                               uint32_t frame);
+/** @} */
 
+/** @name On-screen text entry
+ * Initialize once with caller-owned storage, then update once per frame and
+ * draw as needed. `update` returns nonzero when editing completes; inspect the
+ * descriptor's done/cancelled fields to distinguish the outcome.
+ * @{ */
 void prg32_keyboard_init(prg32_keyboard_t *keyboard, char *buffer,
                          size_t capacity);
 int prg32_keyboard_update(prg32_keyboard_t *keyboard, uint32_t input_mask);
 void prg32_keyboard_draw(const prg32_keyboard_t *keyboard, int x, int y);
 int prg32_text_input(char *buffer, size_t capacity, const char *title);
+/** @} */
 
+/** @name Tiles and scrolling playfields
+ * Tiles are 8x8 one-bit masks expanded with RGB565 foreground/background
+ * colors. Playfield maps contain tile IDs; layer, tile, and map coordinates
+ * outside their documented ranges are ignored (getters return zero).
+ *
+ * Scroll and camera positions use pixels. Parallax factors are Q8 fixed point,
+ * where PRG32_PARALLAX_1X means one screen pixel per camera pixel.
+ * `transparent_zero` treats tile ID zero as transparent. The present helper
+ * draws the configured playfield composition and publishes it.
+ * @{ */
 void prg32_tile_clear(uint16_t color);
 void prg32_tile_define(uint8_t id, const uint8_t *bitmap8x8, uint16_t fg,
                        uint16_t bg);
@@ -394,7 +560,15 @@ int prg32_playfield_camera_y(void);
 void prg32_playfield_draw(uint8_t layer, int transparent_zero);
 void prg32_playfield_draw_dual(void);
 void prg32_playfield_present(void);
+/** @} */
 
+/** @name Platform collision helpers
+ * Collision uses axis-aligned integer pixel bounds against tile flags.
+ * actor_move applies a requested delta with collision resolution and returns
+ * PRG32_PLATFORM_* contacts. actor_step additionally derives horizontal and
+ * jump movement from an input mask and applies gravity, all in integer units
+ * per update. Call actor_init before either operation.
+ * @{ */
 void prg32_platform_tile_flags(uint8_t tile_id, uint8_t flags);
 uint8_t prg32_platform_tile_flags_get(uint8_t tile_id);
 uint8_t prg32_platform_tile_at(uint8_t layer, int pixel_x, int pixel_y);
@@ -408,7 +582,18 @@ uint16_t prg32_platform_actor_step(prg32_platform_actor_t *actor,
                                    int jump_speed, int gravity, int max_fall);
 void prg32_platform_camera_follow(const prg32_platform_actor_t *actor,
                                   int deadzone_x, int deadzone_y);
+/** @} */
 
+/** @name Sprites and animation
+ * Hitboxes use half-open rectangles and return a boolean intersection.
+ * RGB565 sprite functions consume row-major pixels. A pixel equal to the
+ * transparent key is skipped. Indexed frame data remains packed in cartridge
+ * memory and is expanded at draw time; frame indices wrap by frame_count.
+ *
+ * PRG32_SPRITE_INDEXED/PRG32_SPRITE_BITPLANES are tagged-pointer adapters for
+ * legacy RGB565 sprite entry points. Use only naturally aligned static asset
+ * descriptors, never arbitrary or dynamically byte-aligned pointers.
+ * @{ */
 int prg32_sprite_hitbox(int ax, int ay, int aw, int ah, int bx, int by, int bw,
                         int bh);
 void prg32_sprite_draw_8x8(int x, int y, const uint8_t *bits, uint16_t fg,
@@ -425,6 +610,13 @@ void prg32_sprite_anim_init(prg32_anim_sprite_t *sprite, const uint16_t *frames,
                             uint16_t transparent);
 void prg32_sprite_anim_update(prg32_anim_sprite_t *sprite, uint32_t now_ms);
 void prg32_sprite_anim_draw(const prg32_anim_sprite_t *sprite, int x, int y);
+void prg32_sprite_draw_indexed(int x, int y,
+                               const prg32_indexed_sprite_t *sprite,
+                               uint32_t frame);
+void prg32_sprite_draw_bitplanes(int x, int y,
+                                 const prg32_indexed_sprite_t *sprite,
+                                 uint32_t frame);
+/** @} */
 
 /* Assembly demos export per-game init/update/draw symbols selected by main. */
 
@@ -432,15 +624,17 @@ void prg32_sprite_anim_draw(const prg32_anim_sprite_t *sprite, int x, int y);
  * @brief Memory statistics for the PRG32 runtime.
  *
  * NOTE: The ESP-IDF API /api/memory also supports retrieving per-task dynamic
- * heap allocations and boot memory checkpoints if you build with tracking enabled:
- * `python3 -m prg32 esp32c6 build --enable-heap-tracking`.
- * That configuration alters the heap allocator struct size and therefore cannot
- * be enabled solely from prg32 code. If enabled, the Python CLI tool will
+ * heap allocations and boot memory checkpoints if you build with tracking
+ * enabled: `python3 -m prg32 esp32c6 build --enable-heap-tracking`. That
+ * configuration alters the heap allocator struct size and therefore cannot be
+ * enabled solely from prg32 code. If enabled, the Python CLI tool will
  * automatically present a detailed dynamic memory breakdown.
  * However this option introduces overhead and should only be enabled during the
  * information collection.
  */
 typedef struct {
+  /* Values are an instantaneous best-effort snapshot and can change as other
+   * FreeRTOS tasks allocate memory. Sizes are bytes. */
   uint32_t static_bss_bytes;
   uint32_t static_data_bytes;
   uint32_t heap_total_bytes;
@@ -449,12 +643,13 @@ typedef struct {
   uint32_t heap_largest_free_block;
 } prg32_memory_stats_t;
 
+/** Fill caller-owned statistics and optionally emit the same summary to the
+ * firmware log. Passing NULL to prg32_memory_get_stats is a no-op. */
 void prg32_memory_get_stats(prg32_memory_stats_t *stats);
 void prg32_memory_log_stats(void);
 
-/**
- * @brief Generate a random number between min and max inclusive.
- * 
+/** Return a uniformly distributed integer in the inclusive range [min, max].
+ * If max is less than or equal to min, return min.
  */
 uint32_t prg32_random_number(uint32_t min, uint32_t max);
 

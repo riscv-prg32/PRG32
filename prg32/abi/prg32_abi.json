@@ -1,7 +1,8 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 2,
+  "minor": 6,
+  "compatible_hashes": ["0x006427c2", "0x6be6e8d0"],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -39,14 +40,7 @@
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_audio_beep",
-      "return": "void",
-      "args": [],
-      "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
-    },
-    {
-      "name": "prg32_audio_tone",
+      "name": "prg32_buzzer_tone",
       "return": "void",
       "args": [],
       "feature": "audio",
@@ -60,14 +54,14 @@
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_audio_play_notes",
+      "name": "prg32_buzzer_play_notes",
       "return": "void",
       "args": [],
       "feature": "audio",
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_audio_sample_u8",
+      "name": "prg32_buzzer_sample_u8",
       "return": "void",
       "args": [],
       "feature": "audio",
@@ -138,6 +132,13 @@
     },
     {
       "name": "prg32_audio_note_off",
+      "return": "void",
+      "args": [],
+      "feature": "audio",
+      "notes": "PRG32 cartridge ABI entry point."
+    },
+    {
+      "name": "prg32_audio_notes",
       "return": "void",
       "args": [],
       "feature": "audio",
@@ -858,11 +859,123 @@
       "notes": "PRG32 cartridge ABI entry point."
     },
     {
-      "name": "prg32_random_number",
+      "name": "prg32_sprite_draw_indexed",
       "return": "void",
       "args": [],
+      "feature": "sprites",
+      "notes": "Draw a packed indexed-color frame without expanding it in cartridge memory."
+    },
+    {
+      "name": "prg32_sprite_draw_bitplanes",
+      "return": "void",
+      "args": [],
+      "feature": "sprites",
+      "notes": "Draw a planar indexed-color frame without expanding it in cartridge memory."
+    },
+    {
+      "name": "prg32_perf_now_us",
+      "return": "uint64_t",
+      "args": [],
+      "feature": "metrics",
+      "notes": "Return the monotonic device timestamp in microseconds."
+    },
+    {
+      "name": "prg32_perf_begin",
+      "return": "int",
+      "args": ["const prg32_perf_suite_desc_t *"],
+      "feature": "metrics",
+      "notes": "Begin a versioned pluggable measurement suite."
+    },
+    {
+      "name": "prg32_perf_case_begin",
+      "return": "int",
+      "args": ["const prg32_perf_case_desc_t *", "uint32_t"],
+      "feature": "metrics",
+      "notes": "Begin a named case and allocate its temporary percentile workspace."
+    },
+    {
+      "name": "prg32_perf_record",
+      "return": "int",
+      "args": ["const prg32_perf_sample_t *"],
+      "feature": "metrics",
+      "notes": "Record one caller-measured frame in the active case."
+    },
+    {
+      "name": "prg32_perf_case_end",
+      "return": "int",
+      "args": [],
+      "feature": "metrics",
+      "notes": "Aggregate the active case and release its temporary workspace."
+    },
+    {
+      "name": "prg32_perf_end",
+      "return": "int",
+      "args": [],
+      "feature": "metrics",
+      "notes": "Complete and publish the active suite."
+    },
+    {
+      "name": "prg32_perf_abort",
+      "return": "int",
+      "args": [],
+      "feature": "metrics",
+      "notes": "Abort safely and release all session workspace."
+    },
+    {
+      "name": "prg32_perf_get_state",
+      "return": "int",
+      "args": ["prg32_perf_state_t *"],
+      "feature": "metrics",
+      "notes": "Copy versioned lifecycle and heap state."
+    },
+    {
+      "name": "prg32_perf_get_summary",
+      "return": "int",
+      "args": ["prg32_performance_summary_t *"],
+      "feature": "metrics",
+      "notes": "Copy the compact completed-run summary."
+    },
+    {
+      "name": "prg32_palette_set",
+      "return": "void",
+      "args": ["uint8_t", "uint16_t"],
+      "feature": "graphics",
+      "notes": "Set one system-palette entry from a native RGB565 value."
+    },
+    {
+      "name": "prg32_palette_get",
+      "return": "uint16_t",
+      "args": ["uint8_t"],
+      "feature": "graphics",
+      "notes": "Read one system-palette entry as native RGB565."
+    },
+    {
+      "name": "prg32_gfx_pixel_indexed",
+      "return": "void",
+      "args": ["int", "int", "uint8_t"],
+      "feature": "graphics",
+      "notes": "Draw one system-palette index."
+    },
+    {
+      "name": "prg32_gfx_rect_indexed",
+      "return": "void",
+      "args": ["int", "int", "int", "int", "uint8_t"],
+      "feature": "graphics",
+      "notes": "Fill a clipped rectangle with one system-palette index."
+    },
+    {
+      "name": "prg32_gfx_clear_indexed",
+      "return": "void",
+      "args": ["uint8_t"],
+      "feature": "graphics",
+      "notes": "Clear the game viewport to one system-palette index."
+    },
+    {
+      "name": "prg32_random_number",
+      "return": "uint32_t",
+      "args": ["uint32_t", "uint32_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return a uniformly distributed integer between min and max inclusive; return min when max is less than or equal to min."
     }
   ]
 }

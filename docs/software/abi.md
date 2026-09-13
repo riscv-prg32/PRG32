@@ -9,6 +9,20 @@ Legacy cartridges can still use firmware-specific absolute imports resolved
 from `/api/runtime` or from a firmware ELF, but that mode is tied to one
 firmware image. New cartridges should be built with `--portable`.
 
+The public declarations in `components/prg32/include/prg32.h` include the
+cartridge-facing contracts for coordinates, lifetimes, return values, and data
+layouts. Documentation-only changes to that header do not change ABI indices,
+hashes, structure layouts, constants, or generated call stubs. Run
+`python3 -m prg32 abi check` after editing it; previously built portable
+cartridges must continue to validate and load without recompilation.
+
+Portable C builds use the medium-any code model and disable compiler-generated
+switch tables. This keeps normal code, literal references, and explicit switch
+dispatch position-relative when QEMU and hardware expose different executable
+buffer addresses. Cartridge sources should not store code or string addresses
+in initialized writable-data pointer tables; use explicit dispatch until the
+reserved relocation fields in the package format are activated.
+
 ## Register Convention
 
 PRG32 follows the standard RISC-V calling convention:
@@ -36,7 +50,8 @@ header.
 
 Compatibility rules:
 
-- same ABI major and matching hash: accepted
+- same ABI major and current hash, or a listed compatible historical hash:
+  accepted when required feature bits are available
 - missing required feature bits: rejected
 - newer incompatible major: rejected
 - legacy absolute imports: supported only for firmware-specific workflows
@@ -53,6 +68,97 @@ extends the original header via `header_size` with `abi_hash`,
 `import_model=legacy-absolute` marks the older firmware-specific path.
 
 ABI minor `1` adds `prg32_sprite_draw_24x24` as an append-only sprite helper.
+ABI minor `3` appends `prg32_sprite_draw_indexed` and
+`prg32_sprite_draw_bitplanes`. The indexed sprite entries remain available,
+but cartridges built with older hashes must be rebuilt for this combined table.
+
+ABI minor `4` appends indices 124 through 132 for the pluggable performance
+broker: `prg32_perf_now_us`, `prg32_perf_begin`,
+`prg32_perf_case_begin`, `prg32_perf_record`,
+`prg32_perf_case_end`, `prg32_perf_end`, `prg32_perf_abort`,
+`prg32_perf_get_state`, and `prg32_perf_get_summary`. The exact 1.4 hash is
+generated from `prg32_abi.json`.
+
+ABI minor `5` appends indices 133 through 137 for the indexed framebuffer:
+`prg32_palette_set`, `prg32_palette_get`, `prg32_gfx_pixel_indexed`,
+`prg32_gfx_rect_indexed`, and `prg32_gfx_clear_indexed`. The five additions
+follow the existing graphics and metrics entries and retain RGB565 signatures.
+Palette changes affect existing
+indexed pixels at the next presentation; the ILI9341 wire format remains
+RGB565. The exact 1.5 hash is generated from `prg32_abi.json`. The merged ABI
+1.5 table retains these five indexed entries after the PR #36 audio changes.
+The generated hash identifies that combined table. Earlier 1.3 and 1.4 hashes
+are rejected because the PR #36 audio changes reused early slots and are not
+append-only.
+
+ABI minor `6` appends index 138, `prg32_random_number(uint32_t min,
+uint32_t max)`. It returns a uniform unsigned value in the inclusive range;
+when `max <= min`, it returns `min`. The full `0` to `UINT32_MAX` range is
+supported. Previously built portable cartridges with hashes `0x006427c2`
+(133 entries) and `0x6be6e8d0` (138 entries) remain loadable because those
+tables are unchanged prefixes of this table. This applies to firmware loading,
+Store downloads, and upload/QEMU tooling. The earlier pre-audio-change hashes
+still require a rebuild because their table entries differ. Legacy cartridges
+with firmware-specific absolute imports must be rebuilt against the exact
+firmware image when its symbol addresses change.
+
+The performance broker lifecycle, descriptor layouts, failure semantics, and
+custom-cartridge tutorial are documented in the
+[Performance Test Guide](/docs/performance_test.md). The concise contract is
+also available in
+[Pluggable Performance Cartridge ABI](/docs/measurement/performance_cartridge_abi.md).
+
+## Compact Sprite ABI Calls
+
+| Symbol | Asset layout |
+|---|---|
+| `prg32_sprite_draw_indexed` | packed palette indices, most-significant pixel first in each byte |
+| `prg32_sprite_draw_bitplanes` | plane-major bitmaps, least-significant value plane first |
+
+Both calls receive `x`, `y`, a pointer to `prg32_indexed_sprite_t`, and a frame
+index. The descriptor points to pixel bytes and an RGB565 palette and records
+width, height, frame count, palette count, bits per pixel, and a signed
+transparent index.
+Supported depths are 1, 2, 4, and 8 bits per pixel. `-1` makes every palette
+entry opaque; 8-bit assets may select any transparent index through 255. Each
+frame starts on its own byte boundary.
+
+Four-bit packed assets contain two pixels per byte, high nibble first, and at most 16 shared palette
+entries. Eight-bit assets contain one pixel per byte and at most 256 shared
+entries. One descriptor palette is shared across every animation frame.
+
+Packed frames are frame-major and each frame begins on a byte boundary.
+Bitplanes are also frame-major; within a frame the least-significant index
+plane comes first. Each plane contains rows in top-to-bottom order. Every row is
+independently byte-aligned, pixel 0 occupies bit 7, and unused low bits in the
+last byte are zero. This permits the renderer to load one byte from each plane
+and reconstruct up to eight adjacent pixels without arbitrary bit addressing.
+
+Generated assets expose a pointer with bit zero tagged as compact (bit one
+selects planar layout). Because RGB565 arrays are naturally aligned, the tag is
+unambiguous and the signatures and layouts of `prg32_anim_sprite_t` and all
+existing sprite functions remain unchanged. Passing the generated tagged alias
+through `prg32_sprite_draw_16x16`, `prg32_sprite_draw_24x24`,
+`prg32_sprite_draw_frame`, or `prg32_sprite_anim_init` makes the existing draw
+and animation paths dispatch indexed data automatically. Untagged pointers use
+the original RGB565 path and its unchanged transparent-color comparison.
+For tagged calls through an existing RGB565 function, the reconstructed RGB565
+palette value is compared with that function's transparent-color argument;
+the descriptor's transparent index is also honored. The additive direct compact
+calls use the descriptor index because their prototypes contain no color key.
+
+These calls add asset encodings, not a new physical display ABI. On ESP32-C6
+drawing targets the indexed game framebuffer and presentation expands it to
+RGB565; legacy RGB565 sprite signatures, screenshots, and the LCD protocol
+remain compatible.
+
+The destination-row optimization is internal. ABI 1.5 appends palette APIs but
+does not change graphics structure layouts or indices. Cartridges built against
+the earlier indexed-only ABI 1.5 hash must be rebuilt for the combined table;
+RGB565 and indexed function signatures remain available. Firmware-specific
+legacy-absolute cartridges retain their existing limitation: they are
+compatible only with the
+firmware image whose exported addresses were used when they were linked.
 
 Store-ready cartridges append a backward-compatible `PRG32META` trailer after
 the payload. The trailer gives host tools and setup-mode clients standard
@@ -73,9 +179,11 @@ The audio ABI is the C API exposed to cartridges:
 | `prg32_audio_play_sample_pan` | play sample with pan | channel or negative |
 | `prg32_audio_stop_channel` | stop one voice | none |
 | `prg32_audio_stop_all` | stop all voices | none |
-| `prg32_audio_note_on` | start instrument note | none |
-| `prg32_audio_note_on_pan` | start instrument note with pan | none |
-| `prg32_audio_note_off` | stop note channel | none |
+| `prg32_audio_note` | play a note asynchronously on a channel | none |
+| `prg32_audio_note_on` | start PCM or synth instrument note | none |
+| `prg32_audio_note_on_pan` | start PCM or synth note with pan | none |
+| `prg32_audio_note_off` | stop PCM or begin synth release | none |
+| `prg32_audio_notes` | play a blocking sequence of notes on the I2S synth. If you need asynchronous audio, consider using tracks. | none |
 | `prg32_audio_play_track` | start tracker stream | none |
 | `prg32_audio_stop_track` | stop tracker stream | none |
 | `prg32_audio_set_tempo` | set tracker BPM | none |
@@ -94,6 +202,13 @@ Pan uses signed values:
 
 Mono builds accept pan calls but mix to one output. Stereo-only programs should
 check `prg32_audio_get_mode()` before making a wiring assumption.
+
+SID-like synthesis is ABI-neutral: bit 15 of the existing instrument
+`sample_id` selects a procedural instrument. No function index, prototype,
+descriptor layout, tracker event, or AUDIO block version changed. Portable
+cartridges built before synthesis therefore remain compatible, and ordinary
+sample IDs retain PCM semantics. The encoding is defined in the
+[audio guide](../tools/audio.md#sid-like-procedural-instruments).
 
 ## RGB LED ABI Calls
 
@@ -114,7 +229,7 @@ Audio calls that return `int` use a non-negative channel number for success and
 a negative value for failure. Common failure causes:
 
 - audio runtime was not initialized
-- sample id is missing
+- ordinary PCM sample id is missing
 - channel id is outside the configured voice table
 - AUDIO block is invalid
 
@@ -237,6 +352,15 @@ Setup screens and cartridge programs use the same button bitmasks:
 | `prg32_score_count` | count local scoreboard records, optionally by game |
 | `prg32_score_get` | copy one local scoreboard record |
 | `prg32_scoreboard_show` | show the built-in local scoreboard screen |
+| `prg32_perf_now_us` | return the monotonic microsecond timer used for benchmark intervals |
+| `prg32_perf_begin` | begin one cartridge-defined performance suite |
+| `prg32_perf_case_begin` | begin one named case and reserve its temporary observations |
+| `prg32_perf_record` | submit one update/draw/present timing observation |
+| `prg32_perf_case_end` | aggregate the active case and release its temporary array |
+| `prg32_perf_end` | finalize a suite and publish its compact result |
+| `prg32_perf_abort` | terminate a suite and release active temporary storage |
+| `prg32_perf_get_state` | copy lifecycle and heap checkpoints into a versioned structure |
+| `prg32_perf_get_summary` | copy the completed suite-wide aggregate |
 | `prg32_performance_test_run` | run the unattended multi-screen setup benchmark |
 | `prg32_performance_has_results` | return nonzero when onboard benchmark results are available |
 | `prg32_performance_summary` | copy the latest benchmark summary into a caller-provided struct |

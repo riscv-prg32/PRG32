@@ -19,6 +19,7 @@ static int g_band_area_valid;
 static uint16_t g_band_color;
 static uint16_t g_last_band_color;
 static uint16_t g_fb[PRG32_LCD_W * PRG32_LCD_H];
+static uint16_t g_palette[256];
 static char g_band_text_cache[2][80];
 static uint16_t g_band_fg_cache[2];
 static uint16_t g_band_bg_cache[2];
@@ -273,6 +274,26 @@ static void draw_band_overlays(void) {
 
 void prg32_display_init(void) {
     prg32_gfx_lock_init();
+    for (unsigned i = 0; i < 256; ++i) {
+        if (i < 16) g_palette[i] = 0;
+        else if (i < 232) {
+            unsigned v = i - 16u, r = v / 36u, g = (v / 6u) % 6u, b = v % 6u;
+            g_palette[i] = (uint16_t)(((r * 31u / 5u) << 11) |
+                ((g * 63u / 5u) << 5) | (b * 31u / 5u));
+        } else {
+            unsigned gray = (i - 232u) * 255u / 23u;
+            g_palette[i] = (uint16_t)(((gray * 31u / 255u) << 11) |
+                ((gray * 63u / 255u) << 5) | (gray * 31u / 255u));
+        }
+    }
+    g_palette[0] = PRG32_COLOR_BLACK;
+    g_palette[1] = PRG32_COLOR_WHITE;
+    g_palette[2] = PRG32_COLOR_RED;
+    g_palette[3] = PRG32_COLOR_GREEN;
+    g_palette[4] = PRG32_COLOR_BLUE;
+    g_palette[5] = PRG32_COLOR_YELLOW;
+    g_palette[6] = PRG32_COLOR_CYAN;
+    g_palette[7] = PRG32_COLOR_MAGENTA;
     esp_lcd_rgb_qemu_config_t cfg = {
         .width = PRG32_LCD_W,
         .height = PRG32_LCD_H,
@@ -295,6 +316,8 @@ void prg32_display_init(void) {
     ESP_LOGI(TAG, "QEMU RGB framebuffer ready at %dx%d", PRG32_LCD_W, PRG32_LCD_H);
     dirty_reset();
 }
+
+void prg32_display_log_memory(const char *checkpoint) { (void)checkpoint; }
 
 uint32_t prg32_ticks_ms(void) {
     return (uint32_t)(esp_timer_get_time() / 1000u);
@@ -340,6 +363,45 @@ void prg32_gfx_pixel(int x, int y, uint16_t color) {
     g_fb[raw_y * PRG32_LCD_W + x] = color;
     dirty_add(x, y, 1, 1);
     prg32_gfx_unlock();
+}
+
+void prg32_gfx_pixel_unlocked(int x, int y, uint16_t color) {
+    int raw_y = logical_y_to_raw(y);
+    g_fb[raw_y * PRG32_LCD_W + x] = color;
+}
+
+uint16_t *prg32_gfx_row_unlocked(int y) {
+    int raw_y = logical_y_to_raw(y);
+    return &g_fb[raw_y * PRG32_LCD_W];
+}
+
+uint8_t *prg32_gfx_indexed_row_unlocked(int y) {
+    (void)y;
+    return NULL;
+}
+
+uint8_t prg32_gfx_index_for_rgb565_unlocked(uint16_t color) {
+    unsigned r = ((color >> 11) & 31u) * 5u / 31u;
+    unsigned g = ((color >> 5) & 63u) * 5u / 63u;
+    unsigned b = (color & 31u) * 5u / 31u;
+    return (uint8_t)(16u + r * 36u + g * 6u + b);
+}
+int prg32_gfx_palette_matches_unlocked(uint8_t index, uint16_t color) {
+    return g_palette[index] == color;
+}
+
+void prg32_palette_set(uint8_t index, uint16_t rgb565) { g_palette[index] = rgb565; }
+uint16_t prg32_palette_get(uint8_t index) { return g_palette[index]; }
+void prg32_gfx_pixel_indexed(int x, int y, uint8_t index) {
+    prg32_gfx_pixel(x, y, g_palette[index]);
+}
+void prg32_gfx_rect_indexed(int x, int y, int w, int h, uint8_t index) {
+    prg32_gfx_rect(x, y, w, h, g_palette[index]);
+}
+void prg32_gfx_clear_indexed(uint8_t index) { prg32_gfx_clear(g_palette[index]); }
+
+void prg32_gfx_dirty_unlocked(int x, int y, int w, int h) {
+    dirty_add(x, y, w, h);
 }
 
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color) {

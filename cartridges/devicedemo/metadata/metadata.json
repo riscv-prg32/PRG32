@@ -1,0 +1,16 @@
+{
+  "abi":"prg32-metadata-1.0",
+  "id":"org.uniparthenope.prg32.device-demo",
+  "title":"PRG32 Device Demo+",
+  "version":"2.0.0-devc6",
+  "summary":"Comprehensive PRG32 development-c6 hardware/runtime showcase including indexed graphics, bitplanes and SID-like synthesis.",
+  "description":"Device Demo+ is the development-c6 successor to the standalone DeviceDemo cartridge. It exercises framebuffer drawing, controller input, indexed and bitplane sprites, tile/playfield and platform helpers, legacy audio, SID-like procedural instruments, tracker playback, portable diagnostics, WiFi/score state and portable cartridge packaging.",
+  "authors":[{"name":"Raffaele Montella","affiliation":"UniParthenope"},{"name":"Ivan Cafiero","affiliation":"UniParthenope"},{"name":"Simone Boscaglia","affiliation":"UniParthenope"}],
+  "license":"MIT",
+  "homepage":"https://github.com/riscv-prg32/DeviceDemo",
+  "repository":"https://github.com/riscv-prg32/PRG32/tree/development-c6/cartridges/devicedemo",
+  "tags":["demo","diagnostics","education","riscv","prg32","esp32c6","indexed-graphics","bitplanes","synth","tracker"],
+  "created_at":"2026-09-04T00:00:00Z",
+  "updated_at":"2026-09-04T00:00:00Z",
+  "runtime":{"platform":"PRG32","isa":"RV32IMAC","architecture":"esp32c6","architectures":[{"id":"esp32c6","label":"ESP32-C6 hardware","target":"esp32c6","isa":"RV32IMAC"},{"id":"qemu","label":"ESP32-C3 QEMU desktop","target":"qemu","isa":"RV32IMAC"}]}
+}

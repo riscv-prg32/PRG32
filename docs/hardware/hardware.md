@@ -51,7 +51,7 @@ for the complete mono build, optional stereo parts and assembly supplies.
 | GPIO10 | CS |
 | GPIO1 | DC |
 | GPIO0 | RST |
-| GPIO5 | BL |
+| GPIO5 | BL / LED |
 
 **Joystick**
 | ESP32-C6 | Input |

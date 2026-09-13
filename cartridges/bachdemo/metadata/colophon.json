@@ -1,0 +1,22 @@
+{
+  "abi": "prg32-colophon-1.0",
+  "title": "Bach Stereo Showcase",
+  "version": "1.0.0",
+  "developer": {"name": "UniParthenope PRG32"},
+  "authors": [
+    {"name": "Raffaele Montella", "role": "project lead"}
+  ],
+  "controls": [
+    {"input": "A / SELECT", "action": "Restart performance"},
+    {"input": "B", "action": "Release all voices"},
+    {"input": "LEFT / RIGHT", "action": "Adjust stereo width"},
+    {"input": "UP / DOWN", "action": "Adjust master volume"}
+  ],
+  "work": "Prelude in C major, BWV 846",
+  "composer": "Johann Sebastian Bach (1685-1750)",
+  "music_status": "Public domain",
+  "arrangement": "Original compact procedural-synthesis arrangement for this cartridge",
+  "recordings_or_samples": "None",
+  "software_license": "MIT",
+  "source_branch": "riscv-prg32/PRG32 development-c6"
+}

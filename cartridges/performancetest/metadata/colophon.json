@@ -1,0 +1,11 @@
+{
+  "abi":"prg32-colophon-1.0",
+  "title":"PRG32 Performance Test",
+  "version":"1.1.0",
+  "release_date":"2026-09-06",
+  "developer":{"name":"UniParthenope PRG32","url":"https://github.com/riscv-prg32/PRG32"},
+  "authors":[{"role":"academic supervisor / project lead","name":"Raffaele Montella - UniParthenope"}],
+  "license":"MIT",
+  "controls":[{"input":"B / SELECT","action":"Abort safely"},{"input":"A","action":"Run again"}],
+  "start_prompt":"Run paired RGB565 and full indexed performance cases"
+}

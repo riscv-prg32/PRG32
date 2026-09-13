@@ -30,7 +30,8 @@ pacman_ascii_init:
     call prg32_console_write      /* Print explanatory message. */
     li a0, 120                    /* Choose a short beep frequency/duration argument. */
     li a1, 30                     /* 30 milliseconds: audible but not annoying. */
-    call prg32_audio_beep         /* Call C PWM audio helper. */
+    li a2, 512
+    call prg32_buzzer_tone         /* Call C PWM audio helper. */
     lw ra, 12(sp)                 /* Restore return address. */
     addi sp, sp, 16               /* Destroy stack frame. */
     ret                           /* Return to the C game loop. */

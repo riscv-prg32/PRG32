@@ -54,7 +54,8 @@ tetris_ascii_init:
     call prg32_console_write
     li a0, 180
     li a1, 40
-    call prg32_audio_beep
+    li a2, 512
+    call prg32_buzzer_tone
 
     lw ra, 12(sp)
     addi sp, sp, 16
@@ -121,7 +122,8 @@ tetris_ascii_update:
     sw t5, 0(t4)
     li a0, 330
     li a1, 40
-    call prg32_audio_beep
+    li a2, 512
+    call prg32_buzzer_tone
     j .Ltetris_ascii_done
 .Ltetris_ascii_store_y:
     sw t2, 0(t1)

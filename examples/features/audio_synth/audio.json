@@ -1,0 +1,23 @@
+{
+  "instruments": [
+    {"sample_id": 34208, "default_volume": 220, "default_pan": 0,
+     "attack": 2, "decay": 24, "sustain": 190, "release": 36},
+    {"sample_id": 34658, "default_volume": 200, "default_pan": -20,
+     "attack": 3, "decay": 18, "sustain": 170, "release": 30},
+    {"sample_id": 35585, "default_volume": 180, "default_pan": 24,
+     "attack": 8, "decay": 28, "sustain": 150, "release": 48},
+    {"sample_id": 36099, "default_volume": 230, "default_pan": 0,
+     "attack": 0, "decay": 8, "sustain": 0, "release": 8}
+  ],
+  "tracks": [
+    {"events": [
+      {"delta": 0, "command": "NOTE_ON", "arg0": 0, "arg1": 36},
+      {"delta": 0, "command": "NOTE_ON", "arg0": 1, "arg1": 64},
+      {"delta": 0, "command": "NOTE_ON", "arg0": 2, "arg1": 67},
+      {"delta": 12, "command": "NOTE_OFF", "arg0": 0},
+      {"delta": 0, "command": "NOTE_OFF", "arg0": 1},
+      {"delta": 0, "command": "NOTE_OFF", "arg0": 2},
+      {"delta": 0, "command": "END"}
+    ]}
+  ]
+}

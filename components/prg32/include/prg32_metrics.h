@@ -70,6 +70,69 @@ typedef struct {
 
 typedef int (*prg32_performance_json_writer_t)(const char *chunk, void *ctx);
 
+/* Public, append-only performance broker ABI. Every descriptor starts with a
+ * contract version and byte size so future firmware can extend it safely. */
+#define PRG32_PERF_ABI_VERSION 1u
+#define PRG32_PERF_COLOR_RGB565 0u
+#define PRG32_PERF_COLOR_INDEXED 1u
+#define PRG32_PERF_COLOR_CUSTOM 2u
+#define PRG32_PERF_STATE_IDLE 0u
+#define PRG32_PERF_STATE_RUNNING 1u
+#define PRG32_PERF_STATE_COMPLETE 2u
+#define PRG32_PERF_STATE_ABORTED 3u
+
+typedef struct {
+    uint16_t abi_version;
+    uint16_t struct_size;
+    uint32_t suite_version;
+    const char *name;
+} prg32_perf_suite_desc_t;
+
+typedef struct {
+    uint16_t abi_version;
+    uint16_t struct_size;
+    uint32_t case_index;
+    uint32_t color_mode;
+    const char *name;
+    const char *metric_goal;
+} prg32_perf_case_desc_t;
+
+typedef struct {
+    uint16_t abi_version;
+    uint16_t struct_size;
+    uint32_t frame_index;
+    uint32_t update_us;
+    uint32_t draw_us;
+    uint32_t present_us;
+    uint32_t frame_total_us;
+    uint32_t input_mask;
+} prg32_perf_sample_t;
+
+typedef struct {
+    uint16_t abi_version;
+    uint16_t struct_size;
+    uint32_t state;
+    uint32_t case_count;
+    int32_t active_case;
+    uint32_t baseline_free_bytes;
+    uint32_t baseline_largest_block;
+    uint32_t peak_free_bytes;
+    uint32_t peak_largest_block;
+    uint32_t after_free_bytes;
+    uint32_t after_largest_block;
+} prg32_perf_state_t;
+
+uint64_t prg32_perf_now_us(void);
+int prg32_perf_begin(const prg32_perf_suite_desc_t *suite);
+int prg32_perf_case_begin(const prg32_perf_case_desc_t *desc,
+                          uint32_t expected_samples);
+int prg32_perf_record(const prg32_perf_sample_t *sample);
+int prg32_perf_case_end(void);
+int prg32_perf_end(void);
+int prg32_perf_abort(void);
+int prg32_perf_get_state(prg32_perf_state_t *out);
+int prg32_perf_get_summary(prg32_performance_summary_t *out);
+
 int prg32_metrics_init(const prg32_metrics_config_t *config);
 int prg32_metrics_start_run(void);
 int prg32_metrics_stop_run(void);

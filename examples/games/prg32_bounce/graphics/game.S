@@ -64,7 +64,8 @@ prg32_bounce_graphics_update:
     sw t1, 0(t0)
     li a0, 660
     li a1, 60
-    call prg32_audio_beep
+    li a2, 512
+    call prg32_buzzer_tone
     j .Lprg32_bounce_graphics_done
 .Lprg32_bounce_graphics_move:
     la t0, prg32_bounce_graphics_x

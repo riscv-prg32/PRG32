@@ -99,6 +99,23 @@ For end-to-end QEMU cartridge testing:
 ./scripts/smoke_test.sh
 ```
 
+Changes under `cartridges/blackjack` or `cartridges/devicedemo` must also pass
+their local checks and package scripts. GitHub Actions repeats these commands
+and uploads both architecture variants plus each Cartridge Store bundle:
+
+```bash
+cc -std=c11 -Wall -Wextra -Werror \
+  cartridges/blackjack/tests/test_rules.c \
+  cartridges/blackjack/blackjack_rules.c \
+  -o /tmp/prg32-blackjack-rules
+/tmp/prg32-blackjack-rules
+cartridges/devicedemo/tests/check_source.sh
+cartridges/blackjack/build.sh
+PRG32_REPO="$PWD" PRG32_ARCHITECTURE=esp32c6 cartridges/devicedemo/scripts/build.sh
+PRG32_REPO="$PWD" PRG32_ARCHITECTURE=qemu cartridges/devicedemo/scripts/build.sh
+PRG32_REPO="$PWD" cartridges/devicedemo/scripts/pack-store-bundle.sh
+```
+
 If a tool is missing, write that clearly in the pull request. Do not claim a
 firmware or QEMU build passed unless it actually ran.
 

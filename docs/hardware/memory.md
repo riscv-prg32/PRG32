@@ -2,6 +2,27 @@
 
 The ESP32-C6 is a highly capable SoC, but memory management is critical for performance and stability, especially in gaming environments like PRG32. This document explains the hardware memory layout and the tools available to analyze it.
 
+The ILI9341 backend reserves 64,000 bytes for the 320x200 indexed game
+framebuffer, 512 bytes for its 256-entry RGB565 palette, and 5,120 bytes for the
+retained 8-row RGB565 SPI strip. This is 63,488 bytes less than the former
+128,000-byte RGB565 game framebuffer plus the same strip buffer. Boot logs
+record free heap, largest free block, and minimum-ever free heap after display
+initialization, before cartridge loading, and immediately before cartridge
+initialization.
+
+The Store browser uses an 8,192-byte sliding JSON input window instead of
+retaining a complete catalog body. Its result entries and HTTP client still
+consume heap; use the boot and runtime checkpoints below to measure their
+actual impact on a board. The default audio configuration has eight voices at
+22,050 Hz. These settings coexist with the optional 128 KiB executable
+cartridge profile described in [profiles](../usage/profiles.md); the profile
+reserves cartridge execution RAM, not a 128 KiB total-system RAM cap.
+
+On cartridge startup, Store artwork and metadata stay in flash. The loader
+temporarily allocates only the header, code/data payload, and optional AUDIO
+block; see [cartridge loading](../software/cartridges.md) for the package
+layout. Package size is therefore not the same as cartridge startup heap use.
+
 ## ESP32-C6 Memory Layout
 
 The memory of the ESP32-C6 can be broadly divided into three main components: **Flash**, **ROM**, and **RAM**.
@@ -25,7 +46,7 @@ The main internal RAM consists of 512 KB of High-Performance SRAM.
 
 **IRAM vs. DRAM:**
 The HP SRAM is a unified block of memory, but it is accessed via different hardware buses depending on what the CPU is doing:
-- **IRAM (Instruction RAM):** When the CPU fetches executable code from SRAM, it uses the instruction bus. Code placed here (using the `IRAM_ATTR` macro) executes significantly faster than code in Flash and is essential for interrupt handlers (ISRs).
+- **IRAM (Instruction RAM):** When the CPU fetches executable code from SRAM, it uses the instruction bus. Code placed here (using the `IRAM_ATTR` macro) executes significantly faster than code in Flash and is essential for interrupt handlers (ISRs). The executable cartridge buffer `prg32_cart_exec` is explicitly placed in the `.iram1.data` section with 16-byte alignment (`__attribute__((aligned(16)))`) so uploaded games run from this high-speed memory.
 - **DRAM (Data RAM):** When the CPU reads or writes variables, it uses the data bus. The exact same physical SRAM is treated as DRAM when accessed this way. 
 
 #### LP SRAM (Low-Power SRAM)

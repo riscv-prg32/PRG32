@@ -1,5 +1,8 @@
 # PRG32 Framework Manual
 
+> [!NOTE]
+> This manual is intended for **users and students** writing cartridges using the provided API. It is **not** intended for developers modifying the underlying ESP-IDF C framework.
+
 PRG32 lets students write game logic in RISC-V assembly or C while a small
 framework provides hardware access.
 
@@ -43,6 +46,14 @@ System hotkey:
 
 - A + B + DOWN on the local joystick: restart the ESP32-C6 firmware from
   anywhere in the PRG32 input path.
+
+## Random Numbers
+
+`prg32_random_number(min, max)` returns an unsigned value between `min` and
+`max`, including both endpoints. It returns `min` if `max <= min` and supports
+the full `0` through `UINT32_MAX` range. The
+[C and assembly demo](../../examples/features/random_number/README.md) shows
+how to call it and update the display on each A-button press.
 
 ## Joystick Text Input
 
@@ -208,16 +219,25 @@ The public API is in `prg32_metrics.h`:
 The resident firmware instruments the cartridge update/draw/present loop when
 metrics are enabled. `prg32_metrics_record` only copies into a ring buffer; HTTP
 upload is handled asynchronously so the measured frame code does not wait for
-the network. See `docs/metrics_api.md` for the server, export workflow, and lab
-exercise.
+the network. See [Performance Metrics](/docs/measurement/metrics_api.md) for
+the server, export workflow, and lab exercise.
 
-Setup mode also includes `PERFORMANCE TEST`, an unattended multi-screen
-benchmark that stores raw frame samples, one-second aggregate windows, and
-per-screen summaries in RAM without streaming every frame. The latest run is
+The optional `performancetest` cartridge provides an unattended multi-case
+benchmark that retains compact per-screen/per-color-mode summaries in RAM
+without streaming every frame. Temporary percentile samples are released at
+the end of each case. The latest run is
 available as `/api/performance.json` until the next benchmark or reboot. The
-built-in screens isolate clear/fill, text overlay, sprite storm, scrolling, and
-mixed-gameplay workloads. Use `tools/prg32_metrics_paper.py` to turn that JSON
-into LaTeX tables, captions, and high-resolution figures for a paper.
+cartridge cases isolate clear/fill, text overlay, sprite storm, scrolling, and
+mixed-gameplay workloads. Every workload runs through matched RGB565 and
+full indexed-native primitives and indexed-color sprite probes; the final screen reports an aggregate summary and
+the complete result endpoint. The JSON API preserves the mode on every case
+summary. See the [Performance Test Guide](/docs/performance_test.md) for the
+execution workflow, interpretation rules, and custom ABI tutorial.
+
+`screen_count` remains five because it counts distinct workloads;
+`result_count` is ten because every workload produces an RGB565 result and an
+indexed result. Both modes ultimately present RGB565 pixels, so the comparison
+isolates compact-asset decoding rather than LCD wire-format bandwidth.
 
 ## Cartridge runtime
 
@@ -286,16 +306,18 @@ Wi-Fi setup, Cartridge Store configuration and browsing, audio setup, the
 developer band menu, the performance test, the about screen, and exit. The Cartridge Store integration
 contract adds manual/discovered store URL entry, browsing, colophon preview, and
 download-to-slot behavior for future firmware work. Use UP/DOWN to choose,
-SELECT or B to confirm, and A to cancel/back. The
+SELECT or A to confirm, and B to cancel/back. The
 device smoke test is now the external
 [DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo), which
 exercises display, input, audio, sprites, scrolling, playfield rendering,
 status bands, and small classroom sketches through the same cartridge ABI used
 by student games.
 
-`PRG32_BOOT_SETUP_MODE` in `main/prg32_config.h` can still force setup on every
-boot for custom classroom images. If `PRG32_PIN_SETUP` is wired, holding it low
-during boot also forces setup mode.
+Normal images autoload their only stored cartridge, or the saved default when
+multiple cartridges are present. `PRG32_BOOT_SETUP_MODE` in
+`main/prg32_config.h` can force setup on every boot for custom classroom
+images. If `PRG32_PIN_SETUP` is wired, holding it low during boot also forces
+setup mode.
 
 Useful calls:
 
@@ -447,12 +469,38 @@ Useful calls:
 - `prg32_sprite_hitbox(...)`: test two axis-aligned rectangles.
 - `prg32_sprite_anim_frame(now_ms, frame_count, frame_ms)`: compute a frame.
 - `prg32_sprite_draw_frame(...)`: draw one frame from a sprite sheet.
+- `prg32_sprite_draw_indexed(...)`: draw a packed 1/2/4/8-bpp palette frame.
+- `prg32_sprite_draw_bitplanes(...)`: draw a planar 1/2/4/8-bpp palette frame.
+- `prg32_gfx_pixel_indexed(...)`, `prg32_gfx_rect_indexed(...)`, and
+  `prg32_gfx_clear_indexed(...)`: write system-palette indices directly.
+- `prg32_palette_set(...)` / `prg32_palette_get(...)`: change or inspect a
+  system-palette entry; changing it recolors existing indexed pixels.
 
 The 16x16 and 24x24 helpers treat `PRG32_COLOR_WHITE` as transparent. For other
 sizes or another transparency key, `prg32_sprite_draw_frame` accepts width,
 height, a pointer to contiguous RGB565 frames, the frame index, and a
 transparent color. This keeps animated sprites usable from assembly without
 requiring a C object.
+
+Compact sprites use `prg32_indexed_sprite_t`, which contains pointers to packed
+pixel data and an RGB565 palette plus width, height, frame count, bit depth, and
+an optional transparent palette index. They save cartridge RAM and flash for
+graphics and animations. On ILI9341 builds their local RGB565 palettes are
+mapped once per draw to the native 8-bit framebuffer; RGB565 expansion happens
+later in the dirty SPI strip. Existing RGB565 signatures and transparency
+behavior are unchanged, although non-system colors are deterministically
+quantized to the 6x6x6 system cube.
+
+The asset converter emits a tagged alias for each descriptor. That alias works
+through the existing 16x16, 24x24, arbitrary-frame, and animation entry points;
+the animation initializer takes dimensions and frame count from the descriptor,
+and the existing animation draw call expands the selected frame. No additional
+framebuffer or runtime decompression buffer is allocated.
+
+Every sprite renderer clips once, holds the graphics mutex once, and records at
+most one dirty rectangle. Indexed 1/2/4/8-bpp and bitplane sources decode to
+8-bit destination indices on ILI9341 builds. QEMU retains its RGB565 host
+surface while exposing the same public palette API.
 
 See `examples/games/frogger/graphics/game.S` for the assembly call sequence and
 `examples/games/frogger/c/game.c` for a fuller game that pairs the 24x24 sprite
@@ -462,20 +510,26 @@ with `prg32_sprite_hitbox`.
 
 PRG32 has two audio layers.
 
+> [!WARNING]
+> **Cartridge Audio Best Practices:** Please don't use the legacy buzzer functions since the physical buzzer is no longer used by default. Just use the new `prg32_audio_note` whenever necessary, the `prg32_audio_note_on` and `_off` if you need to leave something on, the sample functions if you actually need to play a sample, and the track functions if there is a tracker sequence.
+
 The legacy teaching helpers still use PWM to drive a passive buzzer:
 
-- `prg32_audio_beep(hz, ms)`
-- `prg32_audio_tone(hz, ms, duty)`: PWM tone with explicit duty cycle.
-- `prg32_audio_note(midi_note, ms)`: MIDI-like note number to tone.
-- `prg32_audio_play_notes(notes, count)`: blocking sequence of notes/rests.
-- `prg32_audio_sample_u8(samples, count, rate)`: play unsigned 8-bit samples
+- `prg32_buzzer_tone(hz, ms, duty)`: PWM tone with explicit duty cycle (512 is 50%).
+- `prg32_audio_note(channel, instrument, note, volume, duration_ms)`: play an asynchronous audio note playing via I2S on a speaker.
+- `prg32_audio_notes(channel, instrument, volume, notes, count)`: play a blocking sequence of notes where `notes` is an array of `prg32_midi_note_t`.
+- `prg32_buzzer_play_notes(notes, count)`: blocking sequence of notes/rests.
+- `prg32_audio_note_on(channel, instrument, note, volume)`: start a PCM or procedural instrument note.
+- `prg32_buzzer_sample_u8(samples, count, rate)`: play unsigned 8-bit samples via buzzer
   through PWM.
 
 The I2S audio runtime lives in the `prg32_audio` component and targets
 MAX98357A DAC/amplifier boards:
 
-- mono mode: one MAX98357A, default, 22050 Hz, 6 voices
+- mono mode: one MAX98357A, default, 22050 Hz, 8 voices
 - stereo mode: two MAX98357A boards, optional PRG32 Audio Plus, panned voices
+- PCM and SID-like triangle, saw, pulse, and deterministic noise voices
+- per-synth-voice ADSR and resonant low-pass filtering
 
 Useful calls:
 
@@ -484,13 +538,17 @@ Useful calls:
 - `prg32_audio_register_sample(...)`: register unsigned 8-bit PCM.
 - `prg32_audio_play_sample(sample_id, volume, pitch)`: trigger a sample.
 - `prg32_audio_play_sample_pan(sample_id, volume, pitch, pan)`: trigger with pan.
-- `prg32_audio_note_on(channel, instrument, note, volume)`: start a pitched note.
+- `prg32_audio_note_on(channel, instrument, note, volume)`: start a PCM or
+  procedural instrument note.
+- `prg32_audio_note_on_pan(...)`: start a note with a stereo pan override.
+- `prg32_audio_note_off(channel)`: stop PCM immediately or release a synth note.
 - `prg32_audio_play_track(track_id)`: start tracker event playback.
 
 Pitch `1024` means natural sample speed. Volumes use `0..255`. Pan uses
 `-64..+63`; mono mode accepts pan calls but outputs mono.
 
-See `docs/audio.md` for wiring, examples, and the cartridge AUDIO block format.
+See [`docs/tools/audio.md`](../tools/audio.md) for wiring, synth-ID encoding,
+ADSR/filter behavior, examples, and the cartridge AUDIO block format.
 
 The setup audio menu auto-detects the active output path:
 
@@ -541,5 +599,3 @@ When editing framework code:
 - Return simple `int` status codes for APIs called from assembly.
 - Check pointer inputs in helpers that can be called from student code.
 - Keep comments short and educational where they clarify hardware or ABI behavior.
-
-

@@ -8,6 +8,24 @@ PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine
 
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
+## Indexed Framebuffer
+
+On ESP32-C6 hardware, the 320x200 game surface is a 64,000-byte, 8-bit indexed
+framebuffer backed by a deterministic 256-entry RGB565 palette. The ILI9341
+remains in native 16-bit RGB565 mode: dirty indexed rows are expanded into the
+existing small RGB565 SPI strip only during presentation. Compared with the
+previous 128,000-byte framebuffer, this reclaims 63,488 bytes (about 62 KiB)
+without allocating a second full-size RGB565 surface. Existing RGB565 drawing
+calls remain source- and ABI-compatible through deterministic system-palette
+quantization; indexed-native primitives and palette cycling are available for
+cartridges that need exact palette control. See [ILI9341 Hardware and Driver
+Notes](docs/hardware/ili9341.md) and the [Framework Manual](docs/software/framework_manual.md).
+
+The reference Performance Test compares matched RGB565-compatible and full
+indexed-native workloads. Poing is an application example that renders its
+procedural scene with 8-bit indices and can publish a 300-frame gameplay result
+through the same public performance API by pressing SELECT.
+
 ## Academic Profile
 
 - Project domain: Embedded Systems and Computer Architecture Education
@@ -176,6 +194,7 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 - [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
 - [QEMU Virtual Screen](docs/usage/qemu.md): Desktop testing and troubleshooting.
 - [Cartridges](docs/software/cartridges.md): The `.prg32` build/upload workflow.
+- [Cartridge CI/CD](docs/software/cartridges.md#continuous-integration-and-delivery-artifacts): Automated Bach, Blackjack, DeviceDemo, and Poing packages with downloadable previews.
 - [Hardware & Pinouts](docs/hardware/hardware.md): Board, display, and input architecture.
 
 **Learning Materials:**
@@ -187,6 +206,7 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 **APIs & Advanced Features:**
 - [Framework C/Assembly ABI](docs/software/framework_manual.md)
 - [HTTP APIs (Score, Metrics, Multiplayer)](docs/software/api.md)
+- [Performance Test Guide](docs/performance_test.md)
 - [Audio Guide](docs/tools/audio.md)
 - [Assets Tools](docs/tools/assets.md)
 

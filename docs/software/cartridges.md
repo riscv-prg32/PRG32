@@ -1,6 +1,17 @@
 # PRG32 Cartridges
 
-PRG32 Cartridges allow users to try new games or tools without reflashing the whole firmware. The base package remains backward compatible with earlier PRG32 cartridges. Audio assets are stored in an optional trailing AUDIO block, and store metadata can be appended after the legacy payload as a `PRG32META` trailer.
+PRG32 Cartridges allow users to try new games or tools without reflashing the
+whole firmware. The base package format remains readable across firmware
+versions, while executable ABI compatibility follows the rules in
+[the ABI guide](abi.md). Audio assets are stored in an optional trailing AUDIO
+block, and store metadata can be appended after the legacy payload as a
+`PRG32META` trailer.
+
+The in-tree cartridges under [`cartridges/`](../../cartridges/README.md) are
+built as portable packages. Bach's host syntax check uses the public PRG32
+headers directly, so its button masks and audio-mode constants match firmware.
+Other cartridge host checks that use small API test headers must keep those
+declarations in sync with the public headers.
 
 ## Architecture and Format
 
@@ -22,6 +33,11 @@ game.prg32
 ```
 
 The firmware exports the PRG32 API addresses and the cartridge RAM address. `python3 -m prg32` links a game against those addresses and creates a `.prg32` package. The firmware validates the package, persists it in the chosen slot, loads any optional AUDIO block, copies code into executable cartridge RAM, and calls `<game>_init`, `<game>_update`, and `<game>_draw`.
+
+When starting a stored cartridge, the firmware reads only its header, code/data
+payload, and optional AUDIO block into temporary RAM. Store metadata and artwork
+remain in flash. A Store-ready package can therefore have a large screenshot or
+icon without making the cartridge itself more expensive to start.
 
 ### Flash Layout & Slots
 
@@ -178,7 +194,11 @@ typedef struct {
 } prg32_instrument_desc_t;
 ```
 
-The ADSR fields are reserved for future envelope lessons.
+For ordinary sample IDs, instruments retain the original PCM behavior. Sample
+IDs with bit 15 set select ABI-neutral SID-like procedural instruments; their
+ADSR bytes control the generated voice envelope. See
+[`docs/tools/audio.md`](../tools/audio.md#sid-like-procedural-instruments) for
+the encoding and synthesis behavior. The descriptor remains eight bytes.
 
 #### Track Events
 
@@ -324,7 +344,7 @@ A `.prg32` file contains one linked executable image. ESP32-C6 hardware and the 
 Build each variant as a portable cartridge, then attach metadata with the matching `--architecture`.
 
 ```bash
-python3 -m prg32 attach-metadata \
+python3 -m prg32 store attach-metadata \
   build-esp32c6/game.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -333,7 +353,7 @@ python3 -m prg32 attach-metadata \
   --architecture esp32c6 \
   --out dist/game-esp32c6.prg32
 
-python3 -m prg32 attach-metadata \
+python3 -m prg32 store attach-metadata \
   build-qemu/game.prg32 \
   --metadata metadata.json \
   --icon icon.png \
@@ -350,13 +370,88 @@ You can inspect a built cartridge via:
 python3 -m prg32 cartridge summary CARTRIDGE
 ```
 
-The summary shows ABI major/minor, ABI hash, import model, and required or optional feature bits. ABI hash mismatches, missing required features, and incompatible legacy cartridges are rejected by the runtime, store download path, QEMU staging path, and HTTP upload tool with a diagnostic message.
+The summary shows ABI major/minor, ABI hash, import model, and required or
+optional feature bits. The runtime, Store download path, QEMU staging path,
+and HTTP upload tool accept the compatible historical portable hashes listed
+in [the ABI guide](abi.md). They reject other ABI hash mismatches, missing
+required features, and incompatible legacy cartridges with a diagnostic message.
 
 To verify a monolithic cartridge (including metadata):
 
 ```bash
 python3 -m prg32 store inspect-metadata dist/game-esp32c6.prg32
 ```
+
+## In-tree Store-ready Cartridges
+
+The `cartridges/` directory contains complete portable examples with source,
+metadata, screenshots, tests, and reproducible package scripts:
+
+- [`blackjack`](../../cartridges/blackjack/README.md) demonstrates a complete
+  game, host-tested rules, multiplayer presence, indexed graphics, and an AUD0
+  soundtrack.
+- [`devicedemo`](../../cartridges/devicedemo/README.md) is a safe smoke test for
+  cartridge-visible graphics, input, audio, diagnostics, WiFi, and score APIs.
+- [`bachdemo`](../../cartridges/bachdemo/README.md) exercises all eight audio
+  voices, procedural waveforms, filtering, envelopes, and stereo panning.
+- [`poing`](../../cartridges/poing/README.md) stress-tests public drawing calls
+  with a real-time procedural sphere and perspective grid.
+
+The build scripts use `python3 -m prg32 cartridge build` followed by the
+`store` subcommands for metadata attachment. Every cartridge has a PNG
+screenshot and a downloadable 30-second MP4 captured from the cartridge's
+actual QEMU playfield and UART PCM audio:
+
+| Cartridge | Screenshot | MP4 preview |
+| --- | --- | --- |
+| Bach Stereo Showcase | [PNG](../../cartridges/bachdemo/assets/screenshot.png) | [Download MP4](../../cartridges/bachdemo/assets/preview.mp4) |
+| Blackjack | [PNG](../../cartridges/blackjack/screenshot.png) | [Download MP4](../../cartridges/blackjack/preview.mp4) |
+| DeviceDemo+ | [PNG](../../cartridges/devicedemo/assets/screenshot.png) | [Download MP4](../../cartridges/devicedemo/assets/preview.mp4) |
+| Poing | [PNG](../../cartridges/poing/assets/screenshot.png) | [Download MP4](../../cartridges/poing/assets/preview.mp4) |
+
+On macOS, regenerate the previews after sourcing ESP-IDF, building the QEMU
+firmware and all QEMU cartridge packages, and installing `imageio-ffmpeg`:
+
+```bash
+source "$HOME/esp-idf/export.sh"
+python3 tools/capture_cartridge_previews.py
+```
+
+The recorder stages each cartridge into an isolated flash copy, runs it in
+Espressif QEMU, continuously captures 30 seconds from the 320×200 SDL playfield, records the
+firmware's 22050 Hz UART PCM stream, and sends scripted controls for visible
+gameplay. Poing uses its compact QEMU core image during capture because its
+catalog artwork and metadata are irrelevant to execution and can exhaust the
+emulator firmware's transient loading heap. The deterministic validator used
+by CI has no third-party dependencies:
+
+```bash
+python3 tools/validate_cartridge_media.py SCREENSHOT.png PREVIEW.mp4
+```
+
+### Continuous integration and delivery artifacts
+
+GitHub Actions runs the same scripts for pull requests and for pushes to
+`main` and `development-c6`. The cartridge job performs all four cartridges'
+host/source checks, validates their screenshots and audiovisual previews,
+builds portable packages for `esp32c6` and `qemu`, inspects metadata, and
+checks the available bundle ZIPs and checksum manifests.
+The separate host job installs its explicit `pytest` dependency before running
+the repository smoke suite and generated-ABI check.
+
+Successful runs retain four downloadable workflow artifacts for 14 days:
+
+- `blackjack-cartridge-package`, containing both `.prg32` variants and the
+  versioned Cartridge Store bundle.
+- `devicedemo-cartridge-package`, containing both `.prg32` variants and the
+  Cartridge Store bundle.
+- `bachdemo-cartridge-package`, containing both `.prg32` variants plus its
+  screenshot and audiovisual preview.
+- `poing-cartridge-package`, containing both `.prg32` variants plus its
+  screenshot and audiovisual preview.
+
+These are unsigned build artifacts. Publishing them to a Cartridge Store
+remains an explicit authenticated release action.
 
 ## Multiplayer Cartridges
 
@@ -392,6 +487,9 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Uploadable cartridges run from `prg32_cart_exec` and are linked for that
   runtime address. Rebuild cartridges whenever the resident firmware changes.
+  This execution buffer is explicitly placed in the `.iram1.data` section with
+  16-byte alignment (`__attribute__((aligned(16)))`) so the RISC-V CPU can fetch
+  cartridge instructions from high-speed internal RAM (IRAM).
 - Keep `PRG32_CART_RAM_SIZE` small enough for classroom examples unless the
   partition/RAM plan is intentionally revised.
 - Keep `partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`

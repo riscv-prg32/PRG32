@@ -47,6 +47,7 @@ idf_component_register(
         "prg32_metrics.c"
         "prg32_performance.c"
         "prg32_platform.c"
+        "prg32_random.c"
         "prg32_multiplayer.c"
         "prg32_qemu_input.c"
         "prg32_random.c"

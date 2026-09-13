@@ -9,9 +9,19 @@ This document outlines the high-level layout of the PRG32 repository.
 
 ```text
 .
+|-- .github/workflows/ci.yml        Firmware, host, and store-ready cartridge CI/CD artifacts
+|-- cartridges/                     In-tree portable cartridges and store-ready bundles
+|   |-- audiotest/                  Source-only audio pan diagnostic cartridge
+|   |-- bachdemo/                   Eight-voice procedural Bach audio showcase
+|   |-- blackjack/                  Casino blackjack game and rules tests
+|   |-- devicedemo/                 Hardware/runtime feature showcase
+|   |-- performancetest/            RGB565/full-indexed public-ABI measurement reference
+|   `-- poing/                      Indexed procedural graphics and application benchmark
+|       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
-|   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (graphics, input, network, cartridge loader)
-|   `-- prg32_audio/                ESP-IDF component for audio processing, synthesis, and trackers
+|   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, cartridge loader)
+|   |   `-- prg32_random.c          Uniform bounded random-number API
+|   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
@@ -19,12 +29,14 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
 |   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material
-|   |-- measurement/                Scientific measurement and metrics API documentation
-|   |-- software/                   Firmware manuals, C framework details, and ABI definitions
+|   |-- performance_test.md         Canonical performance-test execution, interpretation, and extension guide
+|   |-- measurement/                Scientific methodology, metrics schema, ABI, and validation records
+|   |-- software/                   Firmware manuals, C framework details, and ABI definitions (Note: the framework manual is for cartridge users, not framework developers)
 |   |-- tools/                      Guides for Python tooling and conversion utilities
 |   `-- usage/                      Getting started, tooling, QEMU, and troubleshooting guides
 |-- examples/
 |   |-- features/                   Focused rendering and firmware feature demos (audio, sprites, dual playfield)
+|   |   `-- random_number/          C and assembly bounded-random examples
 |   `-- games/                      Full game examples in RISC-V assembly and C (asteroids, breakout, pacman, etc.)
 |   |-- pcb/                        Hardware reference designs (Fritzing PCB projects)
 |-- main/                           Minimal resident firmware app and board configuration
@@ -41,7 +53,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- scripts/                        Shell/PowerShell scripts for common CI and local workflows (QEMU, flashing)
 |-- sdkconfig*                      Default configuration files for ESP32-C6 hardware and QEMU emulator builds
 |-- tests/                          Host-side unit tests for Python tooling and documentation validation
-|-- tools/                          Standalone developer Python scripts (image conversion, audio packing, metrics, etc.)
+|-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents
 |-- CMakeLists.txt                  Top-level CMake project definition

@@ -1,20 +1,31 @@
 dependencies:
-  espressif/esp_lcd_qemu_rgb:
-    component_hash: e8981dd7399504a5ab647ce28a4876f8467c03b759895f50c24f0cb6095faaa0
+  espressif/esp_websocket_client:
+    component_hash: dc00233af846f3a744ada283a300e0d586040aadc3ee67361645ecdce4523672
     dependencies:
     - name: idf
       require: private
-      version: '>=5.3'
+      version: '>=5.0'
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 1.0.2
+    version: 1.8.0
+  espressif/mdns:
+    component_hash: 3ba256ac95e07c274be53cbd73f06cb846c403b61e8fbdf1be57bdb79db7a63e
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.12.0
   idf:
     source:
       type: idf
     version: 5.4.0
 direct_dependencies:
-- espressif/esp_lcd_qemu_rgb
+- espressif/esp_websocket_client
+- espressif/mdns
 manifest_hash: 3077b00f38d784d3f7751d22524ee50a8c5481b70adc876cf6869ba0f8653801
-target: esp32c3
+target: esp32c6
 version: 2.0.0

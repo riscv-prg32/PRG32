@@ -1,0 +1,3 @@
+# AGENTS.md
+
+This cartridge tracks the PRG32 `development-c6` branch. Before changing APIs, read the corresponding PRG32 documentation and public headers. Keep code and documentation in sync. Prefer compact indexed assets over RGB565 arrays when appropriate. Preserve the portable ABI-table build. Do not introduce firmware-private calls. Before completion run `git diff --check` when in a git tree, `python3 -m prg32 doctor` when the CLI is available, and build at least one of ESP32-C6 or QEMU. Keep DeviceDemo safe: diagnostic pages must not reconfigure WiFi, erase cartridges, or publish network state automatically.

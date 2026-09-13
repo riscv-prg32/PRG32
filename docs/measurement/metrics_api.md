@@ -1,24 +1,41 @@
 # PRG32 Performance Metrics
 
+For a complete operational workflow—including QEMU and ESP32-C6 execution,
+result retrieval, statistical interpretation, and custom performance-cartridge
+development—begin with the
+[Performance Test Guide](../performance_test.md). This document remains the
+field-level reference for performance JSON and streaming metrics.
+
 PRG32 can collect lightweight frame-performance metrics in two ways:
 
-- the setup-mode **Performance Test** runs an unattended benchmark and stores
-  raw samples plus aggregate windows in RAM on the board or QEMU instance
+- the normal **Performance Test cartridge** runs an unattended benchmark and
+  publishes compact aggregate results through the resident broker
 - the optional streaming metrics pipeline records cartridge frames and uploads
   buffered batches to a small Flask/SQLite server
 
-The setup performance test is available in normal firmware builds. Streaming
-metrics are disabled by default so ordinary classroom gameplay is unchanged.
-Enable streaming only for profiling labs, regression checks, or trainer-led
-experiments.
+The resident performance broker is available in normal firmware builds; the
+reference workload is supplied by the optional performance-test cartridge.
+Streaming metrics are disabled by default so ordinary classroom gameplay is
+unchanged. Enable streaming only for profiling labs, regression checks, or
+trainer-led experiments.
 
-## Setup Performance Test
+## Performance Test Cartridge
 
-Open setup mode and choose `PERFORMANCE TEST`. The firmware starts the Wi-Fi
-HTTP API if possible, then runs every measurement screen without further user
-interaction. At the end it shows a summary on the 320x240 setup screen.
+Install and run `cartridges/performancetest` like any other cartridge. It runs
+every measurement screen without further interaction and then shows a summary.
+The workload is not linked into resident firmware.
 
-The unattended sequence currently measures five distinct screens:
+The unattended sequence measures five distinct screens in both `rgb565` and
+`indexed` color modes. Each frame includes the same 24-sprite color probe. The
+RGB565 pass uses RGB565 clear/pixel/rectangle calls and 16-bit sprite pixels;
+the full-indexed pass uses indexed-native primitives plus packed 2-bpp sprites.
+Text is shared and uses exact fixed palette colors. Scene state is reset between
+passes so the two measurements are directly comparable.
+
+Poing also publishes a single-case `poing-indexed-renderer` result when SELECT
+starts its 300-frame gameplay measurement. Treat it as a separate application
+benchmark, identified by suite and case name, rather than as part of the paired
+reference matrix.
 
 | Screen | What It Measures |
 |---|---|
@@ -28,11 +45,12 @@ The unattended sequence currently measures five distinct screens:
 | `scrolling` | horizontal and vertical scrolling with parallax-like stars |
 | `mixed-gameplay` | combined text, sprites, scrolling road, and playfield objects |
 
-The test stores results only in RAM:
+The broker stores compact results only in RAM:
 
-- a new run replaces the previous run
+- a new run replaces the previous compact result
 - rebooting the board or QEMU clears the results
 - no per-frame network traffic is generated during the benchmark
+- raw frame arrays are released as each case ends
 
 Download the JSON file after the summary is visible:
 
@@ -45,8 +63,9 @@ Use the current setup IP address when the board is in infrastructure mode.
 The endpoint streams the response in HTTP chunks, so the ESP32 does not need to
 allocate a second full copy of the raw sample set while serving the file.
 
-The JSON contains top-level run metadata, raw sampled frames, aggregate windows,
-and a summary object. The run metadata includes:
+Compact schema version 2 contains top-level run metadata, compact case
+aggregates, memory checkpoints, and a summary object. It deliberately does not
+retain raw sampled frames or aggregate windows. The run metadata includes:
 
 | Field | Meaning |
 |---|---|
@@ -56,22 +75,26 @@ and a summary object. The run metadata includes:
 | `display_backend` | `ili9341` or `qemu_rgb` |
 | `firmware_git_sha` | firmware source identifier when available |
 | `firmware_version` | ESP-IDF application version string |
-| `game_name` | `setup-performance-test` for this built-in benchmark |
+| `game_name` | suite name supplied by the cartridge; `setup-performance-test` for the reference suite |
 | `cartridge_generation` | loaded cartridge generation counter |
 | `build_type` | `release` or `debug` |
 | `wifi_mode` | `off`, `access_point`, `infrastructure`, or `ap_infrastructure` |
 | `sample_period_frames` | frame sampling period |
 | `screen_count` | number of measurement screens in the unattended run |
+| `result_count` | screen/mode results; currently 10 (5 screens × 2 modes) |
+| `color_modes` | ordered list containing `rgb565` and `indexed` |
 | `started_at_device_us` | ESP timer timestamp when the run began |
 | `started_at_server_ts` | `null` for onboard-only runs |
 
-Each raw sample records:
+The optional streaming metrics pipeline uses raw sample records with these
+fields; they are not retained by the compact performance-cartridge result:
 
 | Field | Meaning |
 |---|---|
 | `frame_index` | benchmark frame number |
 | `screen_index` | zero-based measurement screen index |
 | `screen_name` | measurement screen name |
+| `color_mode` | asset rendering path: `rgb565` or `indexed` |
 | `t_update_us` | update stage time |
 | `t_draw_us` | draw stage time |
 | `t_present_us` | display present time |
@@ -82,12 +105,66 @@ Each raw sample records:
 | `input_mask` | merged menu input mask |
 | `upload_queue_depth` | streaming queue depth, zero for onboard tests |
 
-Each aggregate window includes `frames`, `fps_mean`, frame-time min/mean/p50/p95/p99/max,
-missed deadlines, update/draw/present means, and minimum heap.
+Streaming aggregate windows include `frames`, `fps_mean`, frame-time
+min/mean/p50/p95/p99/max, missed deadlines, update/draw/present means, and
+minimum heap. The compact performance result leaves `aggregate_windows` empty.
 
-The `screen_summaries` array repeats the same aggregate metrics per measurement
-screen. This makes it easier to compare rendering workloads directly in a
-paper without manually filtering raw frame samples.
+The `screen_summaries` array contains one aggregate per screen and color mode.
+Compact schema version 2 leaves `comparisons` empty. Consumers construct paired
+comparisons by joining `screen_summaries` on `screen_index` and `screen_name`
+and separating entries by `color_mode`. The on-device summary reports the
+overall frame count, mean FPS, mean and maximum frame time, missed deadlines,
+and minimum free heap.
+
+### QEMU reference result
+
+The following matrix was captured from an actual ESP32-C3 QEMU run of firmware
+revision `58dde55-dirty` on 2026-09-04. It is a functional reference showing
+that both paths execute in one paired run; QEMU timings must not be presented as
+ESP32-C6 hardware measurements.
+
+This capture predates the direct-row sprite optimization and remains only a
+workflow/baseline artifact. Do not use its values to characterize the current
+renderer. Publish updated numbers only after repeating the paired run on the
+target revision; ESP32-C6 claims require measurements on real ESP32-C6 hardware.
+
+![QEMU RGB565 and indexed-color performance matrix](images/performance_rgb565_vs_indexed.png)
+
+| Workload | RGB565 FPS | Indexed FPS | Indexed difference |
+|---|---:|---:|---:|
+| clear-fill | 33.29 | 33.46 | +0.17 |
+| text-overlay | 33.08 | 33.28 | +0.20 |
+| sprite-storm | 33.48 | 33.14 | -0.34 |
+| scrolling | 33.55 | 33.42 | -0.13 |
+| mixed-gameplay | 33.43 | 33.07 | -0.36 |
+
+The run reported 33.32 overall FPS, 30,008 us mean frame work, 31,372 us p95,
+zero missed deadlines across 600 frames, and 34,920 bytes minimum free heap.
+Because both modes share the same destination and present stage, small
+differences primarily reflect compact-pixel decoding plus normal QEMU timing
+variation. QEMU retains an RGB565 host surface; ESP32-C6 uses an indexed game
+surface and expands dirty strips for the RGB565 LCD transfer.
+
+Compact example:
+
+```json
+{
+  "screen_count": 5,
+  "result_count": 10,
+  "color_modes": ["rgb565", "indexed"],
+  "samples": [],
+  "aggregate_windows": [],
+  "screen_summaries": [
+    {"screen_index": 0, "screen_name": "clear-fill", "color_mode": "rgb565", "fps_mean": 30.1},
+    {"screen_index": 0, "screen_name": "clear-fill", "color_mode": "indexed", "fps_mean": 29.8}
+  ],
+  "comparisons": []
+}
+```
+
+`screen_count` remains the number of distinct workloads. `result_count` is the
+number of workload/mode combinations. This lets older consumers keep treating
+the benchmark as five screens while mode-aware consumers process ten results.
 
 ## Firmware Configuration
 
@@ -219,6 +296,10 @@ The output directory contains:
 - `figure_heap_stability.png`
 - `figure_screen_comparison.png`
 
+`samples.csv` includes a `color_mode` column, and `table_screens.tex` includes
+a Mode column. Older JSON without `color_mode` is interpreted as RGB565 by the
+report generator.
+
 For server-side streaming metrics, export a run from SQLite inside the
 MetricsServer checkout:
 
@@ -241,10 +322,9 @@ plots when `matplotlib` is installed.
 6. Explain how measurement overhead and network conditions affect the results.
 
 
-(?)
 - For reproducible scientific measurements, use
   `sdkconfig.defaults;sdkconfig.defaults.metrics` as described in
-  `docs/scientific_measurement_tutorial.md`.
+  [Scientific Measurement Tutorial](scientific_measurement_tutorial.md).
 
 ## Development Guide
 

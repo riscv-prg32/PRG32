@@ -207,7 +207,7 @@ static int read_stored_header(uint8_t slot,
         memcmp(header->magic, PRG32_CART_MAGIC, sizeof(header->magic)) != 0 ||
         header->header_size < PRG32_CART_HEADER_MIN_SIZE ||
         header->code_size == 0 ||
-        header->header_size + header->code_size > part->size) {
+        (size_t)header->header_size + header->code_size > part->size) {
         return -1;
     }
 
@@ -276,7 +276,7 @@ static int validate_header(const prg32_cart_header_t *h,
     if (h->header_size >= sizeof(prg32_cart_header_v2_t)) {
         const prg32_cart_header_v2_t *v2 = (const prg32_cart_header_v2_t *)h;
         import_model = v2->import_model;
-        if (v2->abi_hash != PRG32_ABI_HASH) {
+        if (!PRG32_ABI_HASH_IS_COMPATIBLE(v2->abi_hash)) {
             set_errorf("cartridge ABI hash mismatch expected=0x%08lx got=0x%08lx",
                        (unsigned long)PRG32_ABI_HASH,
                        (unsigned long)v2->abi_hash);
@@ -459,19 +459,28 @@ int prg32_cart_load_stored(void) {
     }
 
     prg32_cart_header_t header;
-    size_t image_size = 0;
-    if (read_stored_header(g_current_slot, &header, &image_size, NULL) != 0) {
+    size_t stored_size = 0;
+    uint32_t audio_size = 0;
+    if (read_stored_header(g_current_slot, &header, &stored_size,
+                           &audio_size) != 0) {
         g_loaded = false;
         g_stored = false;
         set_errorf("no stored cartridge in %s", slot_name(g_current_slot));
         return -1;
     }
-    uint8_t *image = heap_caps_malloc(image_size, MALLOC_CAP_8BIT);
+    /* Store artwork and metadata remain in flash; execution needs only the
+     * cartridge header, code/data payload, and optional AUDIO block. */
+    size_t load_size = (size_t)header.header_size + header.code_size + audio_size;
+    if (load_size > stored_size) {
+        set_error("invalid stored cartridge length");
+        return -1;
+    }
+    uint8_t *image = heap_caps_malloc(load_size, MALLOC_CAP_8BIT);
     if (!image) {
         set_error("out of memory reading cartridge");
         return -1;
     }
-    esp_err_t err = esp_partition_read(part, 0, image, image_size);
+    esp_err_t err = esp_partition_read(part, 0, image, load_size);
     if (err != ESP_OK) {
         heap_caps_free(image);
         set_error("failed to read stored cartridge");
@@ -483,7 +492,7 @@ int prg32_cart_load_stored(void) {
         set_error("failed to lock cartridge runtime");
         return -1;
     }
-    int rc = load_image_locked(image, image_size);
+    int rc = load_image_locked(image, load_size);
     if (rc == 0) {
         g_stored = true;
     }

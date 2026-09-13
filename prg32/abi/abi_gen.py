@@ -64,6 +64,7 @@ def generated_files(abi: dict) -> dict[Path, str]:
     minor = int(abi["minor"])
     hash_value = abi_hash(abi)
     functions = abi["functions"]
+    compatible_hashes = [int(value, 0) for value in abi.get("compatible_hashes", [])]
 
     enum_lines = [
         "#pragma once",
@@ -78,7 +79,7 @@ def generated_files(abi: dict) -> dict[Path, str]:
     enum_lines.append("};")
     enum_lines.append("")
 
-    hash_h = "\n".join([
+    hash_lines = [
         "#pragma once",
         "",
         f"/* {WARNING} */",
@@ -86,8 +87,19 @@ def generated_files(abi: dict) -> dict[Path, str]:
         f"#define PRG32_ABI_MAJOR {major}u",
         f"#define PRG32_ABI_MINOR {minor}u",
         f"#define PRG32_ABI_HASH 0x{hash_value:08x}u",
-        "",
-    ])
+    ]
+    for index, value in enumerate(compatible_hashes):
+        hash_lines.append(f"#define PRG32_ABI_COMPAT_HASH_{index} 0x{value:08x}u")
+    compatible_terms = ["((value) == PRG32_ABI_HASH)"] + [
+        f"((value) == PRG32_ABI_COMPAT_HASH_{index})"
+        for index in range(len(compatible_hashes))
+    ]
+    hash_lines.append(
+        "#define PRG32_ABI_HASH_IS_COMPATIBLE(value) (" +
+        " || ".join(compatible_terms) + ")"
+    )
+    hash_lines.append("")
+    hash_h = "\n".join(hash_lines)
 
     table = [
         f"/* {WARNING} */",
@@ -119,6 +131,7 @@ def generated_files(abi: dict) -> dict[Path, str]:
         f"ABI_MAJOR = {major}",
         f"ABI_MINOR = {minor}",
         f"ABI_HASH = 0x{hash_value:08x}",
+        f"COMPATIBLE_ABI_HASHES = {compatible_hashes!r}",
         "IMPORT_NAMES = [",
     ]
     for fn in functions:

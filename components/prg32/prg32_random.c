@@ -1,25 +1,24 @@
 #include "prg32.h"
 
-#include <esp_random.h>
-
-static uint32_t random_bounded(uint32_t bound) {
-  if (bound == 0) return 0;
-
-  // this function guarantees that all the possible values are uniform
-  uint32_t x;
-
-  // we limit the acceptable values to the largest that is still divisible 
-  // by the bound to avoid bias 
-  uint32_t limit = UINT32_MAX - (UINT32_MAX % bound);
-
-  do {
-    x = esp_random();
-  } while (x >= limit);
-
-  return x % bound;
-}
+#include "esp_random.h"
 
 uint32_t prg32_random_number(uint32_t min, uint32_t max) {
-    if (max <= min) return min;  
-    return min + random_bounded(max - min + 1);
+    if (max <= min) {
+        return min;
+    }
+
+    /* Unsigned wrap gives zero only when the requested span is 2^32. */
+    uint32_t span = max - min + 1u;
+    if (span == 0u) {
+        return esp_random();
+    }
+
+    /* Reject the incomplete leading interval to avoid modulo bias. */
+    uint32_t threshold = (uint32_t)(-span) % span;
+    uint32_t sample;
+    do {
+        sample = esp_random();
+    } while (sample < threshold);
+
+    return min + sample % span;
 }

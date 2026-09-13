@@ -7,7 +7,13 @@ The PRG32 environment provides an open source server called the **Cartridge Stor
 
 Its standalone repository is [riscv-prg32/CartridgeStore](https://github.com/riscv-prg32/CartridgeStore).
 
-This document records the firmware-side integration contract. The current PRG32 repository includes the cartridge metadata format, host tooling, and setup-mode pseudocode. A full embedded browser/downloader can be added once the classroom network policy and memory budget are fixed for the target boards.
+The on-device browser reads catalog JSON through a bounded 8,192-byte sliding
+window. It retains parsed result entries rather than allocating a full catalog
+body; entries larger than the window are rejected, as are truncated catalogs. See
+[Memory Architecture](../hardware/memory.md) for RAM measurement guidance.
+
+This document records the firmware-side integration contract, including the
+setup-mode catalog browser and downloader, cartridge metadata, and host tooling.
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="100%" height="100%" style="background-color: #f8f9fa;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <defs>
@@ -214,7 +220,12 @@ python3 -m prg32 upload build-esp32c6/tetris-c.prg32 \
 ```
 
 ### ABI Validation
-Both paths validate the cartridge ABI before deployment. Store downloads are rejected when the cartridge ABI major, ABI hash, required feature bits, import model, or legacy load address are not compatible with the current runtime. Rebuild incompatible cartridges with `--portable` from the matching PRG32 checkout.
+Both paths validate the cartridge ABI before deployment. Store downloads accept
+the current hash and the two compatible historical portable hashes listed in
+[the ABI guide](../software/abi.md); other ABI mismatches, missing required
+features, unsupported import models, and incompatible legacy load addresses are
+rejected. Rebuild incompatible cartridges with `--portable` from the matching
+PRG32 checkout.
 
 ## Preparing Cartridges for the Store
 

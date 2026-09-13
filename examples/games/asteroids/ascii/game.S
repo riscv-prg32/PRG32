@@ -32,7 +32,8 @@ asteroids_ascii_init:
     call prg32_console_write      /* Print help. */
     li a0, 660                    /* a0 = beep frequency in Hz. */
     li a1, 40                     /* a1 = duration in milliseconds. */
-    call prg32_audio_beep         /* Short startup sound. */
+    li a2, 512
+    call prg32_buzzer_tone         /* Short startup sound. */
     lw ra, 12(sp)                 /* Restore return address. */
     addi sp, sp, 16               /* Release stack frame. */
     ret                           /* Return to C game loop. */
@@ -84,7 +85,8 @@ asteroids_ascii_update:
     sw t2, 0(t1)                  /* Store score before blocking beep. */
     li a0, 880                    /* Fire beep frequency. */
     li a1, 15                     /* Fire beep duration. */
-    call prg32_audio_beep         /* Play short action sound. */
+    li a2, 512
+    call prg32_buzzer_tone         /* Play short action sound. */
     j .Lasteroids_ascii_update_done /* Score is already stored. */
 9:  sw t2, 0(t1)                  /* Store regular frame score. */
 

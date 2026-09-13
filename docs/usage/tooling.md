@@ -35,13 +35,22 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing
 - `flash-firmware`: flash a published single-file legacy PRG32 firmware image
 ### Utilities
-- `performance`: Get ESP32C6 performance data over HTTP. Must be used in Performance Test.
+- `performance`: download the latest in-RAM Performance Test JSON over HTTP.
+  Results contain paired RGB565/indexed measurements; preserve `color_mode`
+  when filtering or exporting case summaries. See
+  [Performance Test Guide](/docs/performance_test.md) for the complete workflow
+  and [Performance Metrics](/docs/measurement/metrics_api.md) for fields.
 - `screenshot`: Get screenshot of ESP32C6 over HTTP.
 ## QEMU Emulator Tasks (`qemu`)
 - `build`: build QEMU and generate the flash image. Use the `--skip-target` option to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment
 - `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports the `--skip-target` option.
 - `upload`: upload a cartridge to QEMU
+
+Checked-in cartridge preview videos are recorded from real QEMU execution with
+`python3 tools/capture_cartridge_previews.py`. See
+[QEMU Screen Emulator](qemu.md#recording-cartridge-previews) for prerequisites,
+playfield cropping, UART audio capture, and regeneration details.
 
 For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qemu.md).
 ## Cartridge Tasks (`cartridge`)
@@ -69,5 +78,14 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 ## Diagnostic Tasks
 - `doctor`: check local toolchain prerequisites
 - `runtime`: print runtime linker information
+
+## GitHub Actions artifacts
+
+The repository workflow builds Blackjack and DeviceDemo with the same unified
+CLI used locally. Every successful pull request or push to `main` or
+`development-c6` exposes separate downloadable cartridge artifacts containing
+the ESP32-C6 variant, QEMU variant, and store bundle. See the
+[cartridge CI/CD documentation](../software/cartridges.md#continuous-integration-and-delivery-artifacts)
+for validation and retention details.
 
 *(More details will be provided with `--help` on a need basis, e.g., `python3 -m prg32 cartridge build --help`)*

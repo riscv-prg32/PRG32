@@ -37,7 +37,8 @@ asteroids_graphics_init:
     call prg32_console_write            /* Print help. */
     li a0, 660                          /* Startup beep frequency. */
     li a1, 40                           /* Startup beep duration. */
-    call prg32_audio_beep               /* Play startup beep. */
+    li a2, 512
+    call prg32_buzzer_tone               /* Play startup beep. */
     lw ra, 12(sp)                       /* Restore return address. */
     addi sp, sp, 16                     /* Release stack frame. */
     ret                                 /* Return to C game loop. */
@@ -163,7 +164,8 @@ asteroids_graphics_update:
     sw t4, 0(t3)
     li a0, 980
     li a1, 20
-    call prg32_audio_beep
+    li a2, 512
+    call prg32_buzzer_tone
 
 .Lasteroids_score_tick:
     la t1, asteroids_graphics_score     /* Load score address. */

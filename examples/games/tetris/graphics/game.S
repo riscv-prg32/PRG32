@@ -49,7 +49,8 @@ tetris_graphics_init:
     call prg32_console_write
     li a0, 220
     li a1, 40
-    call prg32_audio_beep
+    li a2, 512
+    call prg32_buzzer_tone
 
     lw ra, 12(sp)
     addi sp, sp, 16
@@ -116,7 +117,8 @@ tetris_graphics_update:
     sw t5, 0(t4)
     li a0, 440
     li a1, 50
-    call prg32_audio_beep
+    li a2, 512
+    call prg32_buzzer_tone
     j .Ltetris_graphics_done
 .Ltetris_graphics_store_y:
     sw t2, 0(t1)

@@ -4,7 +4,12 @@ import subprocess
 import sys
 from pathlib import Path
 from prg32.utilities.env_variables import *
-from prg32.abi.abi_generated import ABI_HASH, FEATURE_BITS, IMPORT_NAMES
+from prg32.abi.abi_generated import (
+    ABI_HASH,
+    COMPATIBLE_ABI_HASHES,
+    FEATURE_BITS,
+    IMPORT_NAMES,
+)
 import urllib.error
 import urllib.request
 import json
@@ -164,7 +169,10 @@ def validate_cartridge_contract(
             f"is not compatible with runtime ABI major {expected_major}"
         )
     if h["import_model"] == PRG32_IMPORT_MODEL_ABI_TABLE:
-        if h["abi_hash"] != expected_hash:
+        compatible_hashes = {expected_hash}
+        if expected_hash == ABI_HASH:
+            compatible_hashes.update(COMPATIBLE_ABI_HASHES)
+        if h["abi_hash"] not in compatible_hashes:
             raise SystemExit(
                 f"{context} rejected: portable ABI hash "
                 f"0x{int(h['abi_hash'] or 0):08x} does not match runtime "

@@ -7,7 +7,7 @@ as instrument 0, and a short event list plays a repeating three-note melody.
 
 - register a sample as an instrument
 - understand `NOTE_ON`, `NOTE_OFF`, `JUMP`, and tempo
-- compare event sequencing with blocking `prg32_audio_play_notes`
+- compare event sequencing with blocking `prg32_buzzer_play_notes`
 
 ## Run
 

@@ -66,6 +66,17 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```
    *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
+With the normal `PRG32_BOOT_SETUP_MODE=0` configuration, a single staged
+cartridge starts after the splash screen. Hold A+B during boot to open setup;
+if no cartridge is staged, setup opens automatically.
+
+The reference performance cartridge follows this workflow with additional
+measurement controls and interpretation rules. See
+[Performance Test Guide](../performance_test.md#4-run-the-reference-test-in-qemu).
+QEMU does not expose a cartridge-visible Wi-Fi address, so the completion
+screen shows an explicit `<board-ip>` placeholder; use physical ESP32-C6
+hardware when the JSON result must be retrieved over HTTP.
+
 ## QEMU Audio (UART Redirection)
 
 Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a custom **Credit-Based Flow Control** protocol to redirect the 22050Hz PCM audio stream over the virtual UART port (`tcp::4321`) to the host machine.
@@ -96,6 +107,29 @@ Framework code can call `prg32_diag_set_input_state()` to inject player-1 inputs
 
 **Multiplayer API**:
 The multiplayer API works in QEMU without actual Wi-Fi. Calling `prg32_multiplayer_join()` succeeds locally, `prg32_multiplayer_available()` returns true, and peer snapshots default to empty.
+
+## Recording cartridge previews
+
+`tools/capture_cartridge_previews.py` creates the checked-in 30-second MP4s
+from actual cartridge execution. On macOS it continuously records the QEMU SDL window,
+crops away the window chrome and firmware status bands to retain only the
+320×200 game playfield, records the real 22050 Hz UART PCM stream, and injects
+documented gameplay controls through the QEMU UART keyboard mapper.
+
+```bash
+source "$HOME/esp-idf/export.sh"
+python3 -m prg32 qemu build
+python3 tools/capture_cartridge_previews.py
+```
+
+The script requires macOS `screencapture`, Swift/CoreGraphics, and FFmpeg
+(either `imageio-ffmpeg` or an explicit `--ffmpeg PATH`). The native window
+recorder avoids per-frame screenshot processes, leaving QEMU enough CPU to
+advance animation and its credit-paced audio clock in real time. If screen
+recording delays that clock by more than 250 ms, the tool deterministically
+replays the same cartridge and input sequence with SDL active but without the
+screen recorder, then uses that complete real PCM stream. It never substitutes
+or time-stretches generated audio.
 
 
 ## Troubleshooting

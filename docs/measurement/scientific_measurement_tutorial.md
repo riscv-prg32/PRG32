@@ -228,10 +228,15 @@ figures for PRG32 demos and games.
 
 ## 9. Export Metrics
 
-For the built-in unattended benchmark, use setup mode:
+The [Performance Test Guide](../performance_test.md) is the canonical
+step-by-step reference for building, staging, running, retrieving, and
+interpreting the unattended test. This section places that workflow within a
+larger experimental protocol.
 
-1. Enter setup mode.
-2. Select `PERFORMANCE TEST`.
+For the unattended benchmark, install and run the reference cartridge:
+
+1. Build and install `cartridges/performancetest`.
+2. Run the cartridge.
 3. Do not press any buttons while the automatic measurement screens run.
 4. Wait until the summary screen appears.
 5. Download the latest in-RAM metrics file:
@@ -244,9 +249,17 @@ curl http://192.168.4.1/api/performance.json \
 If the board is connected in infrastructure mode, replace `192.168.4.1` with
 the IP address shown at the top of setup mode. The JSON is cleared by reboot and
 is replaced when a new performance test is run, so archive it immediately after
-each run. The JSON includes raw frame samples, one-second aggregate windows, and
-`screen_summaries` for the clear/fill, text overlay, sprite storm, scrolling,
-and mixed-gameplay screens.
+each run. The benchmark executes the clear/fill, text overlay, sprite storm,
+scrolling, and mixed-gameplay workloads twice: first with RGB565-compatible
+primitives and 16-bit sprite data, then with indexed-native primitives and
+packed 2-bpp sprite data. Both passes draw the same 24 four-color probe sprites
+per frame. Scene state is reset before the indexed pass so each pair receives
+identical positions and animation inputs.
+
+Compact schema version 2 includes ten `screen_summaries` (five workloads times
+two color modes) and leaves `samples`, `aggregate_windows`, and `comparisons`
+empty. Construct paired comparisons by joining summaries on `screen_index` and
+`screen_name`; use `color_mode` rather than inferring the mode from array order.
 
 Create paper-ready artifacts:
 
@@ -258,7 +271,18 @@ python3 tools/prg32_metrics_paper.py data/prg32_performance_run01.json \
 
 This produces LaTeX tables, captions, normalized CSV/JSON data, and
 high-resolution frame-time, stage-time, heap-stability, and per-screen
-comparison charts.
+comparison charts. `table_screens.tex` contains both modes in one table.
+
+A completed QEMU reference matrix is included below as an example of the final
+on-device presentation. It demonstrates the capture workflow and paired table
+format; use repeated ESP32-C6 runs rather than this QEMU screenshot when making
+physical-hardware performance claims.
+
+The checked-in image was produced before the direct-row blitter optimization.
+Keep it labeled as a baseline example and capture a new matrix after changing
+renderer synchronization, clipping, packed decoding, or framebuffer access.
+
+![Completed QEMU RGB565 versus indexed benchmark](images/performance_rgb565_vs_indexed.png)
 
 For streaming cartridge metrics, use the metrics server workflow.
 
@@ -307,6 +331,18 @@ For each run, report:
 - average present time
 - deadline-miss count
 - dropped-sample count
+
+For the built-in dual-mode run, also report RGB565 and indexed results on the
+same row for each workload. Compare at least mean FPS, mean frame time, p95
+frame time, and missed deadlines. Do not claim that indexed storage makes the
+display transfer smaller: both paths ultimately update the same RGB565
+framebuffer. The experiment measures decoding cost and asset-memory reduction,
+while present time should remain comparable.
+
+Repeat the complete paired run several times and preserve each pair when
+computing confidence intervals. This controls for board temperature, Wi-Fi
+activity, and background-task variation better than collecting every RGB565
+run before every indexed run.
 
 For a 30 FPS target, the active-work budget is about 33333 us. A frame can still
 look stable if the active work is lower than this budget and the runtime waits

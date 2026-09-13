@@ -1,0 +1,40 @@
+{
+  "instruments": [
+    {"sample_id": 34208, "default_volume": 170, "default_pan": 0,   "attack": 4, "decay": 32, "sustain": 145, "release": 50},
+    {"sample_id": 34658, "default_volume": 125, "default_pan": -22, "attack": 8, "decay": 28, "sustain": 115, "release": 54},
+    {"sample_id": 35585, "default_volume": 105, "default_pan": 22,  "attack": 12,"decay": 38, "sustain": 90,  "release": 62},
+    {"sample_id": 36099, "default_volume": 80,  "default_pan": 0,   "attack": 0, "decay": 5,  "sustain": 0,   "release": 8},
+    {"sample_id": 35370, "default_volume": 190, "default_pan": -18, "attack": 0, "decay": 8,  "sustain": 80,  "release": 14},
+    {"sample_id": 36099, "default_volume": 125, "default_pan": 22,  "attack": 0, "decay": 6,  "sustain": 0,   "release": 10},
+    {"sample_id": 34657, "default_volume": 235, "default_pan": 0,   "attack": 0, "decay": 18, "sustain": 185, "release": 50},
+    {"sample_id": 34211, "default_volume": 170, "default_pan": 0,   "attack": 0, "decay": 18, "sustain": 45,  "release": 30}
+  ],
+  "tracks": [
+    {"events": [
+      {"delta":0,"command":"SET_TEMPO","arg0":92},
+      {"delta":0,"command":"NOTE_ON","arg0":0,"arg1":36},
+      {"delta":0,"command":"NOTE_ON","arg0":1,"arg1":60},
+      {"delta":0,"command":"NOTE_ON","arg0":2,"arg1":67},
+      {"delta":6,"command":"NOTE_OFF","arg0":1},
+      {"delta":0,"command":"NOTE_ON","arg0":1,"arg1":63},
+      {"delta":6,"command":"NOTE_OFF","arg0":1},
+      {"delta":0,"command":"NOTE_ON","arg0":1,"arg1":65},
+      {"delta":6,"command":"NOTE_OFF","arg0":2},
+      {"delta":0,"command":"NOTE_ON","arg0":2,"arg1":70},
+      {"delta":6,"command":"NOTE_OFF","arg0":0},
+      {"delta":0,"command":"NOTE_ON","arg0":0,"arg1":41},
+      {"delta":0,"command":"NOTE_OFF","arg0":1},
+      {"delta":0,"command":"NOTE_ON","arg0":1,"arg1":60},
+      {"delta":6,"command":"NOTE_OFF","arg0":1},
+      {"delta":0,"command":"NOTE_ON","arg0":1,"arg1":65},
+      {"delta":6,"command":"NOTE_OFF","arg0":1},
+      {"delta":0,"command":"NOTE_ON","arg0":1,"arg1":68},
+      {"delta":6,"command":"NOTE_OFF","arg0":2},
+      {"delta":0,"command":"NOTE_ON","arg0":2,"arg1":72},
+      {"delta":6,"command":"NOTE_OFF","arg0":0},
+      {"delta":0,"command":"NOTE_OFF","arg0":1},
+      {"delta":0,"command":"NOTE_OFF","arg0":2},
+      {"delta":0,"command":"JUMP","arg0":0,"arg1":0}
+    ]}
+  ]
+}

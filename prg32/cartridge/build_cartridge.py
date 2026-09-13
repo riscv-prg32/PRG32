@@ -224,6 +224,12 @@ def build_cartridge_core(source: str,
                 compile_cmd[1:1] = [
                     "-mcmodel=medany",
                     "-msmall-data-limit=0",
+                    # QEMU and hardware may place the executable buffer at a
+                    # different address. Avoid compiler-generated absolute
+                    # switch/pointer tables until relocation records are part
+                    # of the portable package format.
+                    "-fno-jump-tables",
+                    "-fno-tree-switch-conversion",
                 ]
         else:
             compile_cmd[1:1] = ["-x", "assembler-with-cpp"]

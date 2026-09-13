@@ -4,6 +4,7 @@ idf_component_register(
         "audio_assets.c"
         "audio_i2s.c"
         "audio_mixer.c"
+        "audio_synth.c"
         "audio_tracker.c"
         "prg32_qemu_audio.c"
     INCLUDE_DIRS "include"

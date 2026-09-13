@@ -42,12 +42,30 @@ For QEMU:
 idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
 ```
 
-Optional extension: build your rectangle game as a `.prg32` cartridge and upload
-it without reflashing the resident firmware. Use `docs/cartridges.md`.
+Optional extension: build your rectangle game as a `.prg32` cartridge and
+upload it without reflashing the resident firmware. Use
+[Cartridge Format and Tooling](../../software/cartridges.md).
 
 Feature extension: run one demo under `examples/features` and identify which
 helper implements scrolling, animation, or dual playfields.
 
+Memory extension: convert one sprite in RGB565 and 4-bpp indexed modes, record
+the generated pixel-data sizes, and draw both. Then install and run the
+performance-test cartridge. Download `/api/performance.json`, match entries in
+`screen_summaries` by `screen_index` and `screen_name`, and compare their
+`rgb565` and `indexed` color modes. Compact schema version 2 leaves the
+`comparisons` array empty; students construct the pairing explicitly. Follow
+the [Performance Test Guide](../../performance_test.md) for the controlled
+workflow and interpretation rules.
+
+Performance extension: repeat the paired benchmark with one fixed firmware
+revision and optimization profile. Treat draw time as CPU composition work and
+present time as indexed-strip expansion plus RGB565 display-transfer work on
+ESP32-C6. The source renderers use equivalent one-lock, clipped-row,
+one-dirty-update policies.
+
 ## Reflection
 
-Explain why clearing every frame is simple but not always efficient.
+Explain why clearing every frame is simple but not always efficient. Why does
+indexed asset storage save cartridge memory without reducing the RGB565 display
+transfer size?

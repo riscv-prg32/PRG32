@@ -1,0 +1,9 @@
+{
+  "abi":"prg32-colophon-1.0","title":"PRG32 Device Demo+","subtitle":"development-c6 complete feature showcase","version":"2.0.0-devc6","release_date":"2026-09-04",
+  "developer":{"name":"UniParthenope PRG32","url":"https://github.com/riscv-prg32/DeviceDemo"},
+  "authors":[{"role":"academic supervisor / project lead","name":"Raffaele Montella - UniParthenope"},{"role":"computer science student","name":"Ivan Cafiero - UniParthenope"},{"role":"computer science student","name":"Simone Boscaglia - UniParthenope"}],
+  "license":"MIT","copyright":"Copyright 2026 UniParthenope PRG32 contributors",
+  "acknowledgements":["Based on riscv-prg32/DeviceDemo and expanded for the PRG32 development-c6 feature set."],
+  "controls":[{"input":"LEFT / RIGHT","action":"Previous / next demo page"},{"input":"B or SELECT","action":"Advance page"},{"input":"A and directions","action":"Interact with current feature demo"}],
+  "start_prompt":"Use LEFT/RIGHT to browse all development-c6 demonstrations"
+}

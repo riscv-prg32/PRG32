@@ -2,7 +2,8 @@
 
 PRG32 audio is a small retro-style digital audio runtime for classroom games.
 It keeps the first steps as simple as a buzzer command, while giving students a
-path toward PCM samples, tracker-like music, and stereo panning.
+path toward PCM samples, SID-like procedural synthesis, tracker music, and
+stereo panning.
 
 The setup menu includes an audio page that auto-detects the currently usable
 output path: none, PWM buzzer, mono I2S, or stereo I2S. Trainers can adjust the
@@ -16,14 +17,14 @@ The audio stack has four pieces:
 ```text
 PRG32 program
 |-- sample, note, and track API calls
-|-- AUDIO cartridge block assets
+|-- AUDIO cartridge block descriptors and optional PCM assets
 |-- signed 16-bit mono/stereo mixer
 `-- ESP-IDF I2S output to MAX98357A amplifier boards
 ```
 
-The runtime uses unsigned 8-bit mono samples as source assets and mixes them as
-signed 16-bit PCM internally. Integer and fixed-point arithmetic keep the real
-time path teachable and avoid floating point inside the mixer.
+The runtime mixes unsigned 8-bit mono samples and procedural synth voices as
+signed 16-bit PCM. Integer and fixed-point arithmetic keep the real-time path
+teachable and avoid floating point inside the mixer.
 
 ## Audio Modes
 
@@ -162,6 +163,9 @@ Stereo:
 
 ## Audio API
 
+> [!WARNING]
+> **Cartridge Best Practices:** Please don't use the legacy PWM buzzer functions since the buzzer is not used. Just use `prg32_audio_note` whenever necessary, the `_on` and `_off` functions if you need to leave a note sustaining, the sample functions if you actually need to play a PCM sample, and the track functions if there is a tracker sequence.
+
 Core calls:
 
 - `prg32_audio_init(config)`: initialize the I2S mixer runtime.
@@ -177,13 +181,48 @@ Core calls:
 - `prg32_audio_led_vu_enable(enabled)`: let audio tests and PWM helpers drive
   the RGB LED VU meter.
 
-RGB LED helpers:
-
-- `prg32_rgb_led_init(gpio)`: initialize the board LED on a free GPIO.
-- `prg32_rgb_led_set(red, green, blue)`: set the LED color.
-- `prg32_rgb_led_vu(level)`: map a 0-255 level to blue/green/yellow/red.
-
 Pitch uses `1024` as the natural sample speed. Volumes use `0..255`.
+
+**I2S vs PWM Audio API Differences:**
+- **I2S Engine (`prg32_audio_note`)**: Uses standard MIDI **notes** (e.g. 60 for Middle C) and true audio synthesis. It automatically reads your configured wave samples and pitches them perfectly to the musical note.
+- **PWM Buzzer (`prg32_buzzer_tone`)**: Buzzers cannot play complex samples, they only pulse a pin ON/OFF. Thus, they require raw **frequencies** (e.g. 262 Hz for Middle C) and a **duty cycle** parameter. The duty cycle acts as the buzzer's volume control by reducing the ON/OFF percentage, thereby limiting electrical power.
+
+## Volume Scaling
+
+The internal audio engine uses a 0-255 scale for sample volumes, master volumes, and I2S amplitude. However, human hearing perceives sound intensity logarithmically, and cheap hardware amplifier breakouts often brown out or heavily clip signals near their absolute mathematical maximum limits.
+
+To present a safe, human-friendly 0-100% volume slider to the user, PRG32 maps the 0-100% UI value to a custom, capped absolute scale using a **mixed linear/quadratic curve**:
+
+- **Linear Component (30%)**: Ensures that low percentages (like 5%) are immediately audible and mathematically round up to non-zero values.
+- **Quadratic Component (70%)**: Smoothly ramps up the volume to match the logarithmic sensitivity of the human ear, keeping the standard "sweet spot" comfortable around 50%.
+- **Clipping (Max 70)**: Caps the absolute maximum internal output volume at 70/255 to prevent severe electrical clipping and power supply strain on basic 3-watt speakers.
+
+## Global Audio Settings (NVS)
+
+PRG32 automatically handles global audio state for all cartridges via the on-device Audio Menu.
+
+The system loads the user's preferences from the `prg32` NVS namespace on boot:
+- **Master Volume** (`volume_pct`): Defaults to the internal C macro `PRG32_AUDIO_DEFAULT_VOLUME_PCT` (70%).
+- **Audio Output Mode** (`audio_mode`): Determines whether the audio engine mixes in Mono or true Stereo. Defaults to your compile-time `menuconfig` setting.
+
+Because these settings are managed by the firmware setup menu and persisted to NVS, they take precedence over the compile-time defaults defined in `menuconfig`. Cartridges do **not** need to manually manage master volume, read from NVS, or configure the mode.
+
+## Cartridge Audio Usage
+
+Cartridges should be completely agnostic to the system's global volume or whether audio is disabled entirely. If the user disabled audio in `menuconfig`, the API functions simply act as harmless stubs.
+
+To play a simple tone or note from a cartridge you can use the ABI macro:
+```c
+// Play Middle C (MIDI 60) for 135ms
+prg32_audio_note(0, PRG32_DEFAULT_INSTRUMENT_ID, 60, 255, 135);
+```
+
+## Advanced Audio Concepts
+
+For a deeper understanding of the async audio APIs, polyphony, and how the internal mixer engine works, see the following dedicated guides:
+- [Audio API Reference & Polyphony Guide](../software/audio_polyphony.md)
+- [How `prg32_audio_note_on` and Instruments Work](../software/audio_note_internals.md)
+- [How `prg32_audio_play_track` Works Under the Hood](../software/audio_track_internals.md)
 
 ## Cartridge AUDIO Block
 
@@ -226,11 +265,69 @@ Convert WAV files:
 python3 tools/wav2prg32sample.py jump.wav --rate 22050 --normalize --out build/jump.raw
 ```
 
-## Instruments
+## SID-Like Procedural Instruments
 
-Instruments map tracker notes to samples. The first implementation stores ADSR
-fields for future lessons, but playback currently uses sample id, default
-volume, and default pan.
+Instruments map tracker notes either to PCM sample slots `0..63` or to a
+procedural oscillator. A synth ID uses bit 15 as its marker, which cannot
+collide with the 64 PCM slots:
+
+```text
+bit 15       synth marker (1)
+bits 14:12   reserved (currently ignored)
+bits 11:10   resonance, 0..3
+bits 9:6     low-pass cutoff, 0..15
+bits 5:2     pulse width, 0..15
+bits 1:0     triangle=0, saw=1, pulse=2, noise=3
+```
+
+Use `PRG32_AUDIO_SYNTH_TRI`, `PRG32_AUDIO_SYNTH_SAW`,
+`PRG32_AUDIO_SYNTH_PULSE`, or `PRG32_AUDIO_SYNTH_NOISE` rather than assembling
+the bits by hand. Pulse-width positions map to duty cycles 1/17 through 16/17,
+so neither endpoint can become permanently silent or permanently high.
+
+```c
+static const prg32_instrument_desc_t bass = {
+    .sample_id = PRG32_AUDIO_SYNTH_PULSE(6, 8, 2),
+    .default_volume = 220,
+    .default_pan = PRG32_AUDIO_PAN_CENTER,
+    .attack = 2,
+    .decay = 28,
+    .sustain = 180,
+    .release = 36,
+};
+```
+
+The oscillators use a 32-bit phase accumulator. MIDI note 69 is 440 Hz, and
+the phase increment is calculated once when a note starts. Noise uses a
+deterministic 23-bit LFSR seeded with `0x7ffff8`, taps 22 and 17, zero-state
+protection, and one update per oscillator phase wrap. The synth is inspired by
+the SID signal path; it is not a cycle-accurate 6581 or 8580 emulator.
+
+Every synth voice applies the existing instrument ADSR bytes. A zero attack or
+decay is immediate. Other timing values follow a quadratic mapping from about
+1 ms to about 2 seconds. Sustain maps directly from `0..255` to the envelope
+level. `prg32_audio_note_off()` begins release for synth voices and retains the
+legacy immediate-stop behavior for PCM voices.
+
+The output passes through a bounded fixed-point state-variable low-pass filter.
+The 16 cutoff and four resonance settings are musical control positions rather
+than calibrated SID frequencies. Extreme state is clamped to keep malformed or
+high-resonance combinations stable.
+
+Synth and PCM voices share the same allocator, master/channel volume, pan law,
+mono collapse, stereo output, and tracker event format. A tracker `NOTE_ON`
+therefore starts a synth whenever its instrument descriptor contains a synth
+ID; `NOTE_OFF` releases it. No public function, descriptor, event, or AUDIO
+block layout changed.
+
+Procedural oscillators require no waveform bytes in the cartridge. A sustained
+one-second PCM tone at 22050 Hz needs 22050 asset bytes, while its synth
+instrument needs only the existing eight-byte descriptor. Runtime voice state
+and the normal audio buffers still consume RAM, so this is an asset-storage
+saving rather than zero-cost audio.
+
+Pulse width, cutoff, and pan are fixed for the life of a note. Automatic LFOs,
+ring modulation, and oscillator sync are not currently implemented.
 
 ## Tracker Events
 

@@ -105,12 +105,12 @@ Checkpoint:
 
 ## 6. Add Sound
 
-Use `prg32_audio_beep(hz, ms)`:
+Use `prg32_buzzer_tone(hz, ms, 512)`:
 
 ```asm
 li a0, 440
 li a1, 60
-call prg32_audio_beep
+call prg32_buzzer_tone
 ```
 
 For a first game, play a short beep only on an event such as collision, scoring,

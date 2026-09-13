@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="36" fill="#07111f"/>
+  <path d="M24 151 C48 95 72 207 96 151 S144 95 168 151 S216 207 232 128"
+        fill="none" stroke="#20d8d0" stroke-width="12" stroke-linecap="round"/>
+  <path d="M24 128 C48 72 72 184 96 128 S144 72 168 128 S216 184 232 105"
+        fill="none" stroke="#d943ef" stroke-width="8" stroke-linecap="round" opacity=".9"/>
+  <circle cx="45" cy="66" r="12" fill="#ffe45c"/>
+  <path d="M57 66 V27 H91 V38 H69 V85 C69 103 53 113 39 106 C29 101 27 88 34 79 C40 71 48 68 57 70Z"
+        fill="#ffe45c"/>
+  <text x="128" y="222" fill="#ffffff" font-family="sans-serif" font-size="34"
+        font-weight="700" text-anchor="middle">BWV 846</text>
+</svg>

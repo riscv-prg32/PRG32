@@ -7,26 +7,26 @@ feel stuck.
 
 ## Steps
 
-1. Call `prg32_audio_beep` during initialization.
+1. Call `prg32_buzzer_tone` during initialization.
 2. Add a second beep when a collision occurs.
 3. Use a short duration first:
 
 ```asm
 li a0, 880
 li a1, 20
-call prg32_audio_beep
+call prg32_buzzer_tone
 ```
 
 4. Try `200 ms` and observe how it changes responsiveness.
 5. Move the beep so it triggers only once per collision.
-6. In C, try `prg32_audio_note(69, 80)` for an A4 note.
+6. In C, try `prg32_audio_note(0, PRG32_DEFAULT_INSTRUMENT_ID, 69, 255, 80)` for an A4 note.
 7. Use `tools/prg32_audio_convert.py` to prepare a short WAV effect.
 
 ## Checkpoint
 
 The game should make a sound on collision and continue moving smoothly. Advanced
-students can compare `prg32_audio_beep`, `prg32_audio_play_notes`, and
-`prg32_audio_sample_u8`.
+students can compare `prg32_buzzer_tone`, `prg32_buzzer_play_notes`, and
+`prg32_buzzer_sample_u8`.
 
 QEMU can verify that the code path reaches the audio calls, but final sound
 behavior must be checked on hardware with the passive buzzer or MAX98357A audio
@@ -34,7 +34,7 @@ board.
 
 ## Extension: I2S Audio
 
-1. Wire one MAX98357A as shown in `docs/audio.md`.
+1. Wire one MAX98357A as shown in `docs/tools/audio.md`.
 2. Run `examples/features/audio_mono_beep`.
 3. Replace the generated square sample with a short WAV converted through
    `tools/wav2prg32sample.py`.
@@ -43,6 +43,17 @@ board.
 
 Checkpoint: the cartridge can call `prg32_audio_play_sample(0, 255, 1024)` and
 hear sample `0` without reflashing the resident firmware.
+
+## Extension: Procedural Synthesis
+
+1. Pack and build `examples/features/audio_synth` using its README.
+2. Compare its descriptor-only AUDIO block with a one-second 22050 Hz PCM asset.
+3. Listen to triangle bass, pulse lead, saw harmony, and deterministic noise.
+4. Release the chord and identify its attack, decay, sustain, and release stages.
+5. In stereo, compare the centered bass with the left and right voices.
+
+Checkpoint: the synth cartridge plays through the same note and tracker calls as
+PCM cartridges, while an older PCM cartridge still plays unchanged.
 
 ## Reflection
 
