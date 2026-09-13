@@ -90,6 +90,24 @@ the retro frame. Unless a program sets a band color explicitly, the upper and
 lower horizontal bands are filled with the same color passed to
 `prg32_gfx_clear`.
 
+### Indexed Framebuffer
+
+On ESP32-C6 hardware, the 320x200 game surface is a 64,000-byte, 8-bit indexed
+framebuffer backed by a deterministic 256-entry RGB565 palette. The ILI9341
+remains in native 16-bit RGB565 mode: dirty indexed rows are expanded into the
+existing small RGB565 SPI strip only during presentation. Compared with the
+previous 128,000-byte framebuffer, this reclaims 63,488 bytes (about 62 KiB)
+without allocating a second full-size RGB565 surface. Existing RGB565 drawing
+calls remain source- and ABI-compatible through deterministic system-palette
+quantization; indexed-native primitives and palette cycling are available for
+cartridges that need exact palette control. See [ILI9341 Hardware and Driver
+Notes](../hardware/ili9341.md).
+
+The reference Performance Test compares matched RGB565-compatible and full
+indexed-native workloads. Poing is an application example that renders its
+procedural scene with 8-bit indices and can publish a 300-frame gameplay result
+through the same public performance API by pressing SELECT.
+
 The QEMU renderer exposes the same 320x240 physical screen and centers the
 320x200 PRG32 game viewport inside it. Student assembly code does not change;
 only the selected display backend changes.

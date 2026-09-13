@@ -37,12 +37,13 @@ Please refer to the [Hardware & Pinouts](docs/hardware/hardware.md) guide for fu
 4. Include support for `esp32c3` and `esp32c6`.
 5. (Optional) Check the QEMU RISC-V emulator box during installation if you want to use the QEMU desktop emulator.
 6. Open the "ESP-IDF PowerShell" shortcut created by the installer.
-7. Clone the project and verify your setup from that shell:
+7. Clone the project and verify your setup from that shell (the ESP-IDF environment is already active, so `pip` will install into it):
 
 ```powershell
 cd $HOME\Documents
 git clone https://github.com/riscv-prg32/PRG32
 cd PRG32
+pip install pyaudio zeroconf
 python -m prg32 doctor
 ```
 
@@ -61,7 +62,7 @@ where `idf.py` has not been exported.
 Install dependencies (Debian/Ubuntu):
 ```bash
 sudo apt update
-sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip python3-zeroconf cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 curl zip
+sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip python3-zeroconf cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 curl zip portaudio19-dev
 ```
 
 Install QEMU native libraries (optional, required for QEMU desktop emulator only):
@@ -76,6 +77,8 @@ git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
+# Install Python packages inside the ESP-IDF environment
+pip install pyaudio zeroconf
 # Optional: install QEMU desktop emulator
 python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
 ```
@@ -104,7 +107,7 @@ reconnect the USB cable after logging in again.
 
 Install dependencies:
 ```bash
-brew install git cmake ninja dfu-util ccache libusb python curl zip
+brew install git cmake ninja dfu-util ccache libusb python curl zip portaudio
 ```
 
 Install QEMU native libraries (optional, required for QEMU desktop emulator only):
@@ -119,6 +122,8 @@ git clone -b v5.4 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh esp32c3,esp32c6
 . ./export.sh
+# Install Python packages inside the ESP-IDF environment
+pip install pyaudio zeroconf
 # Optional: install QEMU desktop emulator
 python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
 ```
@@ -177,7 +182,6 @@ using the `idf.py` commands in `docs/qemu.md` for QEMU screen builds.
 
 > [!IMPORTANT]
 > For assistance with setup or execution issues, please refer to the [troubleshooting guide](docs/usage/troubleshooting.md).
-
 
 ## Documentation Index
 
