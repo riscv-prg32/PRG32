@@ -706,6 +706,7 @@ static void audio_menu(void) {
         prg32_audio_set_mode(g_setup_audio_mode);
         prg32_audio_save_global_settings();
         output = g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO ? SETUP_AUDIO_I2S_STEREO : SETUP_AUDIO_I2S_MONO;
+        g_setup_audio_output = output;
       } else if (choice == 2 && prg32_rgb_led_available()) {
         prg32_audio_led_vu_enable(!prg32_audio_led_vu_enabled());
       } else if (choice == 3) {
