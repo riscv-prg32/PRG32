@@ -18,7 +18,14 @@ Before writing or modifying any code, you MUST complete these steps:
 5. **Follow Redirects:** If a file tells you to look elsewhere, you MUST follow the redirect and read the target file.
 *Do not guess architectural patterns. Read the docs first.*
 
-## [PHASE 2: EXECUTION & DOCUMENTATION]
+## [PHASE 2: VALIDATION RUNS]
+1. At the start of every session you must ask the user a question:
+"Would you like to validate my edits by building the prg32 framework or do you prefer to run the builds on your own?"
+
+2. If the answer to the builds is yes, you should then ask:
+"For what architecture are you building for? ESP32C6 or QEMU?"
+
+## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:
 
 - **No Ghost Edits:** Do not revert or modify files unrelated to the user's explicit prompt. Treat untracked files as user-owned.
@@ -26,7 +33,7 @@ When modifying code, you are bound by these rules:
 - **DRY Docs:** Do not duplicate information. If a concept exists, link to the existing file rather than rewriting it.
 - **Contributors:** Read `CONTRIBUTORS.md` for metadata formatting when updating docs.
 
-## [PHASE 3: VALIDATION]
+## [PHASE 4: VALIDATION]
 Before reporting task completion, you MUST run the following checks. 
 
 **Pre-requisite:** Source the ESP-IDF environment. Run `source $HOME/esp-idf/export.sh`. If it is not found, STOP and ask the user for the ESP-IDF path.
@@ -39,10 +46,20 @@ git diff --check
 # 2. Run Python linting/tooling
 python3 -m prg32 doctor
 python3 -m py_compile python3 -m prg32
+```
 
-# 3. If you are working on ESP32c6, Build the physical firmware:
+If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture you are building on. 
+
+If you are working on ESP32c6, Build the physical firmware:
+```bash
 python3 -m prg32 esp32c6 build
+```
 
-# 3. Otherwise if you are working on QEMU, Build the QEMU firmware:
+If you are working on QEMU, Build the QEMU firmware:
+```bash
 python3 -m prg32 qemu build
 ```
+
+[PHASE 5: DOCUMENTATION EDITING]
+After being done with editing, you should modify all relevant documentation in docs/ and the repository structure.
+NEVER edit the README unless explicitly specified.

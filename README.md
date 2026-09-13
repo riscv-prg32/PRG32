@@ -8,7 +8,6 @@ PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine
 
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
-
 ### Hardware
 
 The platform is designed around the **Espressif ESP32-C6** microcontroller and uses accessible, low-cost components for easy classroom assembly. The standard hardware setup includes:
@@ -17,7 +16,6 @@ The platform is designed around the **Espressif ESP32-C6** microcontroller and u
 - **Input**: A simple digital joystick and action buttons wired directly to GPIO pins.
 
 Please refer to the [Hardware & Pinouts](docs/hardware/hardware.md) guide for further information about the full bill of materials, breadboard wiring diagrams, and PCB references.
-
 
 ## Academic Profile
 
