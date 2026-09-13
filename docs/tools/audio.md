@@ -205,7 +205,7 @@ The system loads the user's preferences from the `prg32` NVS namespace on boot:
 - **Master Volume** (`volume_pct`): Defaults to the internal C macro `PRG32_AUDIO_DEFAULT_VOLUME_PCT` (70%).
 - **Audio Output Mode** (`audio_mode`): Determines whether the audio engine mixes in Mono or true Stereo. Defaults to your compile-time `menuconfig` setting.
 
-Because these settings are managed by the firmware setup menu and persisted to NVS, they take precedence over the compile-time defaults defined in `menuconfig`. Cartridges do **not** need to manually manage master volume, read from NVS, or configure the mode.
+Because these settings are managed by the firmware setup menu and persisted to NVS, they take precedence over the compile-time defaults defined in `menuconfig`. When the user toggles the mode in the menu, the global output state is immediately updated to ensure features like the test tune reflect the active setting. Cartridges do **not** need to manually manage master volume, read from NVS, or configure the mode.
 
 ## Cartridge Audio Usage
 

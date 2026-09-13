@@ -8,23 +8,16 @@ PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine
 
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
-## Indexed Framebuffer
 
-On ESP32-C6 hardware, the 320x200 game surface is a 64,000-byte, 8-bit indexed
-framebuffer backed by a deterministic 256-entry RGB565 palette. The ILI9341
-remains in native 16-bit RGB565 mode: dirty indexed rows are expanded into the
-existing small RGB565 SPI strip only during presentation. Compared with the
-previous 128,000-byte framebuffer, this reclaims 63,488 bytes (about 62 KiB)
-without allocating a second full-size RGB565 surface. Existing RGB565 drawing
-calls remain source- and ABI-compatible through deterministic system-palette
-quantization; indexed-native primitives and palette cycling are available for
-cartridges that need exact palette control. See [ILI9341 Hardware and Driver
-Notes](docs/hardware/ili9341.md) and the [Framework Manual](docs/software/framework_manual.md).
+### Hardware
 
-The reference Performance Test compares matched RGB565-compatible and full
-indexed-native workloads. Poing is an application example that renders its
-procedural scene with 8-bit indices and can publish a 300-frame gameplay result
-through the same public performance API by pressing SELECT.
+The platform is designed around the **Espressif ESP32-C6** microcontroller and uses accessible, low-cost components for easy classroom assembly. The standard hardware setup includes:
+- **Display**: A 2.8" SPI ILI9341 TFT display. PRG32 uses the classic retro-game resolution of 320x200 with a 256-entry RGB565 palette.
+- **Audio**: One or two MAX98357A I2S amplifiers for mono or stereo sound.
+- **Input**: A simple digital joystick and action buttons wired directly to GPIO pins.
+
+Please refer to the [Hardware & Pinouts](docs/hardware/hardware.md) guide for further information about the full bill of materials, breadboard wiring diagrams, and PCB references.
+
 
 ## Academic Profile
 
@@ -70,7 +63,7 @@ where `idf.py` has not been exported.
 Install dependencies (Debian/Ubuntu):
 ```bash
 sudo apt update
-sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 curl zip
+sudo apt install -y git wget flex bison gperf python3 python3-venv python3-pip python3-zeroconf cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 curl zip
 ```
 
 Install QEMU native libraries (optional, required for QEMU desktop emulator only):
