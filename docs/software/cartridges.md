@@ -67,6 +67,11 @@ The PRG32 repository comes with many example cartridge source codes. Here is an 
 ### 1. Build a Portable Cartridge
 New `.prg32` cartridges use the portable ABI table and do not depend on a particular firmware ELF. Build an example after loading the ESP-IDF environment:
 
+Portable ABI-table output is mandatory for new builds. The builder rejects
+firmware-specific inputs (`--firmware-elf`, `--runtime-url`, and
+`--legacy-absolute-imports`). Existing legacy packages can still load if they
+match their resident firmware; see [the ABI guide](abi.md).
+
 ```bash
 python3 -m prg32 cartridge build \
   examples/games/asteroids/graphics/game.S \

@@ -16,6 +16,42 @@ The platform is designed around the **Espressif ESP32-C6** microcontroller and u
 - **Input**: A simple digital joystick and action buttons wired directly to GPIO pins.
 
 Please refer to the [Hardware & Pinouts](docs/hardware/hardware.md) guide for further information about the full bill of materials, breadboard wiring diagrams, and PCB references.
+## Cartridge Builds
+
+New `.prg32` cartridges use the portable ABI table and do not depend on a
+particular firmware ELF. Build an example after loading the ESP-IDF environment:
+
+```bash
+python3 -m prg32 cartridge build \
+  examples/games/asteroids/graphics/game.S \
+  --portable \
+  --entry-prefix asteroids_graphics \
+  --name asteroids \
+  --out build-esp32c6/asteroids.prg32
+```
+
+The builder rejects firmware-specific absolute-import builds. Existing
+cartridges of that kind remain loadable only with matching resident firmware.
+See the [cartridge guide](docs/software/cartridges.md) for hardware and QEMU
+upload instructions and the [ABI guide](docs/software/abi.md) for compatibility.
+
+## Indexed Framebuffer
+
+On ESP32-C6 hardware, the 320x200 game surface is a 64,000-byte, 8-bit indexed
+framebuffer backed by a deterministic 256-entry RGB565 palette. The ILI9341
+remains in native 16-bit RGB565 mode: dirty indexed rows are expanded into the
+existing small RGB565 SPI strip only during presentation. Compared with the
+previous 128,000-byte framebuffer, this reclaims 63,488 bytes (about 62 KiB)
+without allocating a second full-size RGB565 surface. Existing RGB565 drawing
+calls remain source- and ABI-compatible through deterministic system-palette
+quantization; indexed-native primitives and palette cycling are available for
+cartridges that need exact palette control. See [ILI9341 Hardware and Driver
+Notes](docs/hardware/ili9341.md) and the [Framework Manual](docs/software/framework_manual.md).
+
+The reference Performance Test compares matched RGB565-compatible and full
+indexed-native workloads. Poing is an application example that renders its
+procedural scene with 8-bit indices and can publish a 300-frame gameplay result
+through the same public performance API by pressing SELECT.
 
 ## Academic Profile
 
