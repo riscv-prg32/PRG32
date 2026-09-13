@@ -10,9 +10,11 @@ arranged to keep the game controls accessible on the front and the compute and a
 - Rear, from left to right when viewed from the rear: left speaker, left
   MAX98357A, ESP32-C6 development board, right MAX98357A, and right speaker.
 
-The right-channel mode resistor is placed beside the right MAX98357A on the
-rear. Through-hole pads remain visible from both PCB sides even when the module
-body is mounted on the indicated side.
+The **390 kΩ** right-channel mode resistor is placed beside the right
+MAX98357A on the rear. The Fritzing PCB view uses a 1206 resistor footprint;
+the breadboard view depicts the equivalent axial resistor. Through-hole pads
+remain visible from both PCB sides even when the module body is mounted on the
+indicated side.
 
 ## Reference Prototype Figures
 

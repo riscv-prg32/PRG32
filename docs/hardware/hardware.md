@@ -119,7 +119,12 @@ By changing the voltage on the SD pin, you are telling the amplifier which data 
 - Left Channel Only: Voltage higher than 1.4V
 - Shutdown (Mute): Grounded (Under 0.16V)
 
-Instead of using an additional GPIO for the SD, you can use the VIN with no resistance for the left channel speaker and with an appropriate resistance to target the right channel speaker.
+In the reference stereo wiring, connect the right MAX98357A `SD/MODE` pin to
+`VIN` through a **390 kΩ resistor** to select the right channel. The left
+module uses the breakout's left-channel selection. The 390 kΩ value applies
+to the reference module and 5 V supply shown in the schematic; verify the
+`SD/MODE` voltage for another breakout or supply before substituting parts.
+See the [bill of materials](where_to_buy.md) for the resistor and footprint.
 
 ## Software Configuration
 
