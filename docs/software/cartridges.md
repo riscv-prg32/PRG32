@@ -65,7 +65,7 @@ When you have a running PRG32 configuration, you have multiple options to run yo
 The PRG32 repository comes with many example cartridge source codes. Here is an example of how to build and upload the cartridge of the game "Asteroids".
 
 ### 1. Build a Portable Cartridge
-Build a portable cartridge that can run on any PRG32 host (QEMU, physical ESP32-C6) that supports the ABI Table. This example uses the portable ABI table with `--portable`, so it does not need a firmware ELF. 
+New `.prg32` cartridges use the portable ABI table and do not depend on a particular firmware ELF. Build an example after loading the ESP-IDF environment:
 
 Portable ABI-table output is mandatory for new builds. The builder rejects
 firmware-specific inputs (`--firmware-elf`, `--runtime-url`, and
@@ -80,6 +80,9 @@ python3 -m prg32 cartridge build \
   --name asteroids \
   --out build-esp32c6/asteroids.prg32
 ```
+
+The builder rejects firmware-specific absolute-import builds (`--firmware-elf`, `--runtime-url`, and `--legacy-absolute-imports`). Existing cartridges of that kind remain loadable only with matching resident firmware.
+See [the ABI guide](abi.md) for compatibility.
 
 ### 2. Upload to Board (ESP32-C6)
 Upload it to the physical board over Wi-Fi:
