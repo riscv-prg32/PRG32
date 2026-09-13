@@ -402,6 +402,7 @@ Firmware clients uses compact REST calls:
 |---|---|---|
 | `CONFIGURE STORE FIRST` in `BROWSE STORE` | No store URL configured | Use `CARTRIDGE STORE` -> `AUTO-DISCOVER` or `MANUAL ENTRY` |
 | `UNAVAILABLE` in `BROWSE STORE` | Wi-Fi not connected or store down | Check Wi-Fi and ping the store from a PC |
+| `UNAVAILABLE: INVALID CATALOG` | Store returned an unknown JSON format, or a single game is too large for the parser. | Verify the store catalog endpoint returns a top-level array, or a JSON object containing a `games`, `items`, or `cartridges` array. Ensure game records are small. |
 | `NOT FOUND` after `AUTO-DISCOVER` | mDNS unreachable across Wi-Fi | Use `MANUAL ENTRY` with the store IP address |
 | `NOT COMPATIBLE WITH THIS FIRMWARE` | No matching architecture in catalog | Publish the matching architecture variant first |
 | `TOO LARGE` during download | Cartridge exceeds slot partition | Re-flash with a larger partition, or use a smaller cartridge |

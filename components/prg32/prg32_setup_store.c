@@ -276,6 +276,9 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
 
     if (!found_games_array) {
       const char *g = strstr(p, "\"games\"");
+      if (!g) g = strstr(p, "\"items\"");
+      if (!g) g = strstr(p, "\"cartridges\"");
+
       if (g) {
         const char *bracket = strchr(g, '[');
         if (bracket) {
@@ -284,13 +287,23 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
           last_parsed = p;
         }
       } else {
-        if (window_len > 10) {
-          size_t keep = 10;
-          memmove(window, window + window_len - keep, keep);
-          window_len = keep;
-          window[window_len] = '\0';
+        const char *s = p;
+        while (*s && isspace((unsigned char)*s)) {
+          s++;
         }
-        continue;
+        if (*s == '[') {
+          found_games_array = true;
+          p = s + 1;
+          last_parsed = p;
+        } else {
+          if (window_len > 15) {
+            size_t keep = 15;
+            memmove(window, window + window_len - keep, keep);
+            window_len = keep;
+            window[window_len] = '\0';
+          }
+          continue;
+        }
       }
     }
 
@@ -333,6 +346,15 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
 
         last_parsed = end + 1;
         p = end + 1;
+        
+        const char *check = p;
+        while (*check && (isspace((unsigned char)*check) || *check == ',')) {
+          check++;
+        }
+        if (*check == ']') {
+          games_array_closed = true;
+          break;
+        }
       }
 
       size_t consumed = (size_t)(last_parsed - window);
