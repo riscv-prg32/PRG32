@@ -3,7 +3,6 @@
  * This file is intentionally verbose: every instruction is commented so
  * first-year students can connect RISC-V assembly to visible hardware effects.
  */
-#include "prg32_config.h"
 .option norelax
 .section .data
 pong_graphics_paddle_x: .word 120       /* Paddle x coordinate in pixels. */

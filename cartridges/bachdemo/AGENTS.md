@@ -1,7 +1,7 @@
 # Contributor guidance
 
 This is an external PRG32 cartridge targeting `riscv-prg32/PRG32` branch
-`development-c6`.
+`main`.
 
 - Preserve the portable cartridge ABI and the `bach_stereo` entry prefix.
 - Regenerate `assets/audio.json` through `scripts/generate_audio.py`; do not

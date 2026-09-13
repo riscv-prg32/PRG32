@@ -1,6 +1,6 @@
 # Feature matrix
 
-| Page | Demonstrates | development-c6 relevance |
+| Page | Demonstrates | Runtime relevance |
 |---|---|---|
 | Overview | viewport, bands, diagnostics | baseline runtime |
 | Input | P1/P2/controller | local multiplayer input |

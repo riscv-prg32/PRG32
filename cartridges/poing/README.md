@@ -31,7 +31,7 @@ The implementation deliberately avoids pre-rendered animation frames, floating p
 
 ## Build
 
-From a checkout of PRG32's `development-c6-128KiB` branch, with its Python tooling and RISC-V toolchain available:
+From a checkout of PRG32's `main` branch, with its Python tooling and RISC-V toolchain available:
 
 ```sh
 ./build.sh /path/to/PRG32 esp32c6
@@ -56,7 +56,7 @@ architecture variants, and retains the packages and downloadable media in the
 
 ## Compatibility
 
-Targeted at PRG32 `development-c6-128KiB`, portable ABI 1.5, 320×200 centered game viewport. Entry prefix: `poing`.
+Targeted at PRG32 `main`, portable ABI 1.6, 320×200 centered game viewport. Entry prefix: `poing`.
 
 ## Originality
 

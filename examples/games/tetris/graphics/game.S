@@ -6,7 +6,6 @@
  * a compact example of input, frame timing, memory variables, and repeated
  * sprite-like drawing from assembly.
  */
-#include "prg32_config.h"
 .option norelax
 
 .equ TETRIS_BOARD_X, 120

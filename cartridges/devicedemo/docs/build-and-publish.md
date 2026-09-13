@@ -25,7 +25,8 @@ screenshot.
 The build scripts use the current unified `python3 -m prg32` command groups:
 `cartridge build`, `store attach-metadata`, and `store pack-bundle`.
 
-The source intentionally targets `development-c6`, because indexed/bitplane sprite APIs and procedural synth instrument identifiers are introduced there.
+The source targets the portable ABI on `main`, which includes indexed and
+bitplane sprite APIs and procedural synth instrument identifiers.
 
 DeviceDemo uses explicit switch dispatch for its page names and draw callbacks.
 This keeps local code and string references PC-relative when a portable
@@ -35,7 +36,7 @@ address; it deliberately avoids initialized absolute-pointer tables.
 ## Automated builds
 
 `.github/workflows/ci.yml` runs this two-architecture build on pull requests and
-pushes to `main` and `development-c6`. It validates both cartridge formats and
+pushes to `main` and `main`. It validates both cartridge formats and
 the bundle archive, then retains them in the `devicedemo-cartridge-package`
 workflow artifact for 14 days. The workflow does not publish to an external
 Cartridge Store or require store credentials.

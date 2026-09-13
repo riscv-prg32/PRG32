@@ -1,6 +1,6 @@
 # PRG32 Blackjack — Casino Edition
 
-A complete Blackjack cartridge targeting the PRG32 `development-c6` firmware line. It uses the branch's indexed-color sprite API and SID-like procedural audio/tracker support.
+A complete Blackjack cartridge targeting the PRG32 `main` firmware line. It uses the branch's indexed-color sprite API and SID-like procedural audio/tracker support.
 
 ![Blackjack gameplay screenshot](screenshot.png)
 
@@ -28,7 +28,7 @@ The table is drawn directly in the 320×200 PRG32 viewport. Cards use high-contr
 
 ## Build
 
-Place this directory at `cartridges/blackjack` in a checkout of `riscv-prg32/PRG32` on branch `development-c6`, then run:
+Place this directory at `cartridges/blackjack` in a checkout of `riscv-prg32/PRG32` on branch `main`, then run:
 
 ```sh
 ./cartridges/blackjack/build.sh

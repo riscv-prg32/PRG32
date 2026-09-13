@@ -17,7 +17,7 @@ voice leading to the PRG32 eight-voice mixer.
 | 7 | Breath/accent | Filtered noise | alternating edges |
 
 The JSON generator encodes synth IDs exactly as documented by
-`development-c6`: bit 15 marks procedural synthesis; resonance occupies bits
+`main`: bit 15 marks procedural synthesis; resonance occupies bits
 11:10, cutoff bits 9:6, pulse width bits 5:2, and waveform bits 1:0. The
 instruments deliberately cover all four waveform values and multiple filter,
 resonance, pulse-width, ADSR, volume, and pan settings.

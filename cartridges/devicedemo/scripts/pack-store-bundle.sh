@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-prg32_repo="${PRG32_REPO:-"$repo_dir/../../.."}"
+prg32_repo="${PRG32_REPO:-"$repo_dir/../.."}"
 stage="$repo_dir/dist/store-bundle"; rm -rf "$stage"; mkdir -p "$stage"
 cp "$repo_dir/metadata/manifest.json" "$stage/manifest.json"
 cp "$repo_dir/assets/icon.png" "$stage/icon.png"; cp "$repo_dir/assets/screenshot.png" "$stage/screenshot.png"

@@ -7,6 +7,12 @@ them as deterministic system-palette indices in its 320x200 framebuffer. Use
 `prg32_gfx_*_indexed` for lessons that require exact indices, and
 `prg32_palette_set` to demonstrate palette cycling without rewriting pixels.
 
+Portable cartridge builds need only the public API. The Pong and Tetris
+graphics assembly examples no longer include the board-specific
+`main/prg32_config.h`, so they compile against either firmware target without
+an ESP-IDF-generated `sdkconfig.h`. The optional `PRG32_DEBUG` blocks remain
+disabled unless the assembler is explicitly given that macro.
+
 ## Audio Examples
 
 | Example | Purpose | Hardware |

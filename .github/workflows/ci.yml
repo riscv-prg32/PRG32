@@ -81,6 +81,16 @@ jobs:
       - name: Check Poing renderer
         run: cartridges/poing/tests/run.sh
 
+      - name: Build portable graphics assembly examples
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          for game in pong tetris; do
+            python3 -m prg32 cartridge build "examples/games/$game/graphics/game.S" \
+              --portable --entry-prefix "${game}_graphics" --name "$game" \
+              --out "/tmp/prg32-${game}-graphics.prg32"
+          done
+
       - name: Validate cartridge screenshots and audiovisual previews
         run: |
           python3 tools/validate_cartridge_media.py cartridges/bachdemo/assets/screenshot.png cartridges/bachdemo/assets/preview.mp4
@@ -119,6 +129,18 @@ jobs:
           PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poing/build.sh "$GITHUB_WORKSPACE" esp32c6
           PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poing/build.sh "$GITHUB_WORKSPACE" qemu
 
+      - name: Build Audio Pan Test and Performance Test packages
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          for arch in esp32c6 qemu; do
+            python3 -m prg32 cartridge build cartridges/audiotest/src/audiotest.c \
+              --portable --entry-prefix audiotest --name AudioTest \
+              --architecture "$arch" --out "cartridges/audiotest/audiotest-$arch.prg32"
+            PRG32_REPO="$GITHUB_WORKSPACE" PRG32_ARCHITECTURE="$arch" \
+              cartridges/performancetest/scripts/build.sh
+          done
+
       - name: Validate cartridge packages
         shell: bash
         run: |
@@ -141,6 +163,12 @@ jobs:
             cartridges/poing/dist/poing-esp32c6.prg32
           python3 -m prg32 store inspect-metadata \
             cartridges/poing/dist/poing-esp32c6.prg32
+          python3 -m prg32 cartridge summary cartridges/audiotest/audiotest-esp32c6.prg32
+          python3 -m prg32 cartridge summary cartridges/audiotest/audiotest-qemu.prg32
+          for arch in esp32c6 qemu; do
+            python3 -m prg32 cartridge summary "cartridges/performancetest/dist/performancetest-$arch.prg32"
+            python3 -m prg32 store inspect-metadata "cartridges/performancetest/dist/performancetest-$arch.prg32"
+          done
 
       - name: Upload Blackjack package
         uses: actions/upload-artifact@v4
@@ -189,5 +217,21 @@ jobs:
             cartridges/poing/dist/poing-qemu.prg32
             cartridges/poing/assets/screenshot.png
             cartridges/poing/assets/preview.mp4
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Audio Pan Test packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiotest-cartridge-package
+          path: cartridges/audiotest/audiotest-*.prg32
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Performance Test packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: performancetest-cartridge-package
+          path: cartridges/performancetest/dist/performancetest-*.prg32
           if-no-files-found: error
           retention-days: 14

@@ -76,7 +76,7 @@ static void value_bar(int x, int y, int w, int v, int max, uint16_t color) {
 }
 
 static void page_overview(uint32_t now,uint32_t input){
-  (void)now;(void)input; header("PRG32 DEVICE DEMO +","development-c6 feature tour");
+  (void)now;(void)input; header("PRG32 DEVICE DEMO +","main feature tour");
   text(8,50,"Native RV32IMAC cartridge on ESP32-C6",PRG32_COLOR_WHITE);
   text(8,64,"320x200 indexed framebuffer / RGB565 LCD",PRG32_COLOR_WHITE);
   text(8,78,"Indexed + bitplane sprites / tiles / playfields",C_LIME);
@@ -350,7 +350,7 @@ void devicedemo_init(void) {
   prg32_gfx_set_fullscreen(0);
   prg32_band_set_mode(PRG32_BAND_TOP, PRG32_BAND_MODE_GAME);
   prg32_band_set_mode(PRG32_BAND_BOTTOM, PRG32_BAND_MODE_FPS);
-  prg32_band_set_game_info("DeviceDemo+ development-c6");
+  prg32_band_set_game_info("DeviceDemo+ main");
   prg32_platform_actor_init(&g_actor, 0, 24, 120, 12, 14);
 }
 void devicedemo_update(void) {

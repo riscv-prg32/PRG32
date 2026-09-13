@@ -9,8 +9,8 @@ After sourcing ESP-IDF, build a portable cartridge from the repository root:
 ```bash
 python3 -m prg32 cartridge build cartridges/audiotest/src/audiotest.c \
   --portable --entry-prefix audiotest --name AudioTest \
-  --out build/audiotest.prg32
-python3 -m prg32 cartridge summary build/audiotest.prg32
+  --out build-esp32c6/audiotest.prg32
+python3 -m prg32 cartridge summary build-esp32c6/audiotest.prg32
 ```
 
 The resulting package uses the current ABI table and has no external audio

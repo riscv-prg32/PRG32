@@ -432,14 +432,15 @@ python3 tools/validate_cartridge_media.py SCREENSHOT.png PREVIEW.mp4
 ### Continuous integration and delivery artifacts
 
 GitHub Actions runs the same scripts for pull requests and for pushes to
-`main` and `development-c6`. The cartridge job performs all four cartridges'
-host/source checks, validates their screenshots and audiovisual previews,
-builds portable packages for `esp32c6` and `qemu`, inspects metadata, and
+`main` and `development-c6`. The cartridge job covers all six in-tree
+cartridges: it runs available host/source checks, validates the four cartridges'
+screenshots and audiovisual previews, builds portable packages for `esp32c6`
+and `qemu`, inspects metadata where present, and
 checks the available bundle ZIPs and checksum manifests.
 The separate host job installs its explicit `pytest` dependency before running
 the repository smoke suite and generated-ABI check.
 
-Successful runs retain four downloadable workflow artifacts for 14 days:
+Successful runs retain six downloadable workflow artifacts for 14 days:
 
 - `blackjack-cartridge-package`, containing both `.prg32` variants and the
   versioned Cartridge Store bundle.
@@ -449,6 +450,10 @@ Successful runs retain four downloadable workflow artifacts for 14 days:
   screenshot and audiovisual preview.
 - `poing-cartridge-package`, containing both `.prg32` variants plus its
   screenshot and audiovisual preview.
+- `audiotest-cartridge-package`, containing source-only Audio Pan Test builds
+  for both architectures.
+- `performancetest-cartridge-package`, containing Performance Test builds for
+  both architectures.
 
 These are unsigned build artifacts. Publishing them to a Cartridge Store
 remains an explicit authenticated release action.

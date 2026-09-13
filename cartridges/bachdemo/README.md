@@ -1,7 +1,7 @@
 # PRG32 Bach Stereo Showcase
 
 An advanced, store-ready PRG32 classical-audio cartridge for the
-`development-c6` branch. It performs a compact original chiptune arrangement
+`main` branch. It performs a compact original chiptune arrangement
 of J. S. Bach's *Prelude in C major*, BWV 846, using only PRG32's procedural
 audio instruments—there are no copied recordings, samples, or modern score
 assets.
@@ -34,11 +34,11 @@ the same cartridge folds down safely on mono hardware.
 
 ## Build
 
-Use a sibling checkout of `riscv-prg32/PRG32` on branch `development-c6`, or
+Use a sibling checkout of `riscv-prg32/PRG32` on branch `main`, or
 set `PRG32_REPO`:
 
 ```sh
-git clone --branch development-c6 https://github.com/riscv-prg32/PRG32.git
+git clone --branch main https://github.com/riscv-prg32/PRG32.git
 export PRG32_REPO=/path/to/PRG32
 ./scripts/build.sh esp32c6
 ./scripts/build.sh qemu

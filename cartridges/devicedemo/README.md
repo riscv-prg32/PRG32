@@ -1,6 +1,6 @@
 # PRG32 Device Demo+
 
-`cartridges/devicedemo` is the in-tree, improved successor to [`riscv-prg32/DeviceDemo`](https://github.com/riscv-prg32/DeviceDemo), targeting the PRG32 `development-c6` branch.
+`cartridges/devicedemo` is the in-tree, improved successor to [`riscv-prg32/DeviceDemo`](https://github.com/riscv-prg32/DeviceDemo), targeting the PRG32 `main` branch.
 
 It is a normal portable `.prg32` cartridge and Cartridge Store package, not setup-firmware-only diagnostics.
 
@@ -26,7 +26,7 @@ The multiplayer service is documented and surfaced as a supported runtime servic
 
 ## Build
 
-From a `development-c6` checkout, this directory is already under `cartridges/devicedemo`:
+From a `main` checkout, this directory is already under `cartridges/devicedemo`:
 
 ```sh
 export PRG32_REPO=/path/to/PRG32

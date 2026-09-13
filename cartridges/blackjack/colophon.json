@@ -7,7 +7,7 @@
   "developer": {"name": "PRG32 Blackjack Contributors"},
   "authors": [],
   "license": "MIT",
-  "acknowledgements": ["Built for the PRG32 development-c6 firmware features"],
+  "acknowledgements": ["Built for the PRG32 main firmware features"],
   "content_notice": "Simulated casino gambling with virtual credits only.",
   "controls": [
     {"input": "A", "action": "Hit / confirm / next round"},

@@ -81,10 +81,10 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 
 ## GitHub Actions artifacts
 
-The repository workflow builds Blackjack and DeviceDemo with the same unified
+The repository workflow builds all six in-tree cartridges with the same unified
 CLI used locally. Every successful pull request or push to `main` or
-`development-c6` exposes separate downloadable cartridge artifacts containing
-the ESP32-C6 variant, QEMU variant, and store bundle. See the
+`development-c6` exposes separate downloadable cartridge artifacts for
+ESP32-C6 and QEMU. Blackjack and DeviceDemo also include Store bundles. See the
 [cartridge CI/CD documentation](../software/cartridges.md#continuous-integration-and-delivery-artifacts)
 for validation and retention details.
 

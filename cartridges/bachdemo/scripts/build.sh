@@ -8,7 +8,7 @@ python_bin="${PYTHON:-python3}"
 export PYTHONPATH="$prg32_repo${PYTHONPATH:+:$PYTHONPATH}"
 
 if [[ ! -f "$prg32_repo/tools/prg32audio_pack.py" ]]; then
-  echo "error: set PRG32_REPO to a development-c6 checkout" >&2
+  echo "error: set PRG32_REPO to a PRG32 checkout" >&2
   exit 2
 fi
 
