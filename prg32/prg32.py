@@ -156,14 +156,14 @@ def main(argv: list[str]) -> int:
     p = cartridge_sub.add_parser(
         "build", 
         help="build a .prg32 cartridge from assembly or C",
-        # You choose either --target OR --firmware-elf
+        # Portable ABI-table cartridges are the only supported build output.
         usage="%(prog)s SOURCE_PATH --out OUT_PATH --name NAME --entry-prefix PREFIX [options]"
     )
     p.add_argument("source", help="Source file path (.c or .S)")
     p.add_argument("--out", required=True, help="Output path for the compiled cartridge (.prg32)")
     p.add_argument("--name", required=True, help="Name of the cartridge")
     p.add_argument("--entry-prefix", required=True, help="Prefix for the entry point functions (e.g., 'pong')")
-    p.add_argument("--runtime-url", help="URL of a device to fetch runtime metadata from")
+    p.add_argument("--runtime-url", help="Deprecated: firmware-specific cartridge builds are unsupported")
     p.add_argument("--build-dir", help="Directory for intermediate build files")
     p.add_argument(
         "--audio-block",
@@ -171,7 +171,7 @@ def main(argv: list[str]) -> int:
     )
     p.add_argument("--multiplayer", action="store_true", help="Enable multiplayer support for the cartridge")
     p.add_argument("--portable", action="store_true", help="Build a portable cartridge using the ABI table")
-    p.add_argument("--legacy-absolute-imports", action="store_true", help="Build using legacy absolute memory imports")
+    p.add_argument("--legacy-absolute-imports", action="store_true", help="Deprecated: firmware-specific cartridge builds are unsupported")
     p.add_argument("--required-feature", action="append", default=[], help="Specify a required PRG32 hardware feature")
     p.add_argument("--optional-feature", action="append", default=[], help="Specify an optional PRG32 hardware feature")
     p.add_argument("--march", default="rv32imc_zicsr_zifencei", help="RISC-V architecture string")
@@ -179,7 +179,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the RISC-V GCC toolchain")
     arch_group = p.add_mutually_exclusive_group(required=False)
     arch_group.add_argument("--architecture", choices=["esp32c6", "qemu"], help="Target architecture (esp32c6 or qemu)")
-    arch_group.add_argument("--firmware-elf", help="Path to custom firmware ELF (disables portable build by default)")
+    arch_group.add_argument("--firmware-elf", help="Deprecated: firmware-specific cartridge builds are unsupported")
     p.set_defaults(func=build_cartridge_cli)
 
     p = cartridge_sub.add_parser("summary", help="print the PRG32 cartridge summary (ABI, feature bits, etc.)", usage="%(prog)s CARTRIDGE [options]")
@@ -248,9 +248,9 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out", required=True, help="Output path for the downloaded cartridge")
     p.set_defaults(func=store_download)
 
-    p = store_sub.add_parser("publish", help="build and publish a cartridge bundle", usage="%(prog)s SOURCE --firmware-elf ELF --entry-prefix PREFIX --name NAME [options]")
+    p = store_sub.add_parser("publish", help="build and publish a cartridge bundle", usage="%(prog)s SOURCE --architecture ARCH --entry-prefix PREFIX --name NAME [options]")
     p.add_argument("source", help="Source directory containing the game files")
-    p.add_argument("--firmware-elf", required=True, help="Path to the runtime firmware ELF")
+    p.add_argument("--firmware-elf", help="Deprecated: firmware-specific cartridge builds are unsupported")
     p.add_argument("--entry-prefix", required=True, help="Prefix for the entry point functions")
     p.add_argument("--name", required=True, help="Name of the game")
     p.add_argument("--store-url", help="URL of the CartridgeStore to publish to")

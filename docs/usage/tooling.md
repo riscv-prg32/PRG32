@@ -54,7 +54,8 @@ playfield cropping, UART audio capture, and regeneration details.
 
 For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qemu.md).
 ## Cartridge Tasks (`cartridge`)
-- `build`: build a `.prg32` cartridge from assembly or C source code.
+- `build`: build a portable ABI-table `.prg32` cartridge from assembly or C
+  source code. Firmware-specific build options are rejected.
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 
 For detailed instructions and examples on building cartridges, see [docs/cartridges.md](/docs/software/cartridges.md).

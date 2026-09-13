@@ -18,8 +18,8 @@ Tasks should remain simple wrappers around:
 - `idf.py -B build-qemu gdb`
 - `tools/qemu.sh` and `tools/qemu.ps1`
 - `python3 -m prg32 cartridge build ...`
-- `python3 -m prg32 upload ...`
-- `python3 -m prg32 upload-qemu ...`
+- `python3 -m prg32 esp32c6 upload ...`
+- `python3 -m prg32 qemu upload ...`
 
 Do not hard-code one instructor machine path. Use workspace-relative paths and
 standard ESP-IDF configuration variables where possible.

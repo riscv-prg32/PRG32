@@ -280,7 +280,7 @@ name.
 ### 4. Stage the Cartridge into QEMU Flash
 
 ```bash
-python3 -m prg32 upload-qemu \
+python3 -m prg32 qemu upload \
   build-qemu/tetris-graphics.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```

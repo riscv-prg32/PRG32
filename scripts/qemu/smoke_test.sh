@@ -58,7 +58,7 @@ ok "firmware-artifact"
 run_step "build-demo-cartridge" \
   python3 -m prg32 cartridge build \
     examples/games/pong/graphics/game.S \
-    --firmware-elf "$QEMU_BUILD_DIR/PRG32.elf" \
+    --portable \
     --entry-prefix pong_graphics \
     --name pong \
     --out "$QEMU_BUILD_DIR/pong.prg32"
@@ -109,7 +109,7 @@ fi
 ok "qemu-flash-image"
 
 run_step "stage-cartridge-qemu" \
-  python3 -m prg32 upload-qemu \
+  python3 -m prg32 qemu upload \
     "$QEMU_BUILD_DIR/pong.prg32" \
     --flash "$QEMU_BUILD_DIR/qemu_flash.bin"
 

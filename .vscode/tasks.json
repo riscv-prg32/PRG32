@@ -182,11 +182,12 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "python3 -m prg32",
+        "-m",
+        "prg32",
+        "cartridge",
         "build",
         "${input:prg32GameSource}",
-        "--firmware-elf",
-        "${input:prg32FirmwareElf}",
+        "--portable",
         "--entry-prefix",
         "${input:prg32EntryPrefix}",
         "--name",
@@ -201,7 +202,9 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "python3 -m prg32",
+        "-m",
+        "prg32",
+        "esp32c6",
         "upload",
         "${input:prg32CartOut}",
         "--url",
@@ -214,8 +217,10 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "python3 -m prg32",
-        "upload-qemu",
+        "-m",
+        "prg32",
+        "qemu",
+        "upload",
         "${input:prg32QemuCartOut}",
         "--flash",
         "build-qemu/qemu_flash.bin"
@@ -241,12 +246,6 @@
       "type": "promptString",
       "description": "Assembly game source",
       "default": "examples/games/asteroids/graphics/game.S"
-    },
-    {
-      "id": "prg32FirmwareElf",
-      "type": "promptString",
-      "description": "Resident firmware ELF",
-      "default": "build-esp32c6/PRG32.elf"
     },
     {
       "id": "prg32EntryPrefix",

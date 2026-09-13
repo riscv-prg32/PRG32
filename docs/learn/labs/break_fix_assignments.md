@@ -69,14 +69,12 @@ hardware.
 Fix it: rebuild with the default ILI9341 backend for the board, or use the QEMU
 build only with `idf.py qemu --graphics monitor`.
 
-## Assignment 8 - Cartridge Linked for the Wrong Firmware
+## Assignment 8 - Firmware-Specific Cartridge Build
 
-Break it: build a `.prg32` cartridge using an old
-`build-esp32c6/PRG32.elf`, then flash a new resident firmware and upload the old
-cartridge.
+Break it: pass `--firmware-elf build-esp32c6/PRG32.elf` to a
+`python3 -m prg32 cartridge build` command.
 
-Symptoms: `/api/games` rejects the upload with a runtime-address error, or the
-game does not start.
+Symptoms: the builder rejects the firmware-specific option before compilation.
 
-Fix it: rebuild the cartridge with `--portable` so it uses the generated ABI
-table, then inspect the summary for ABI hash and required feature bits.
+Fix it: remove `--firmware-elf`, build with `--portable`, then inspect the
+cartridge summary for its ABI hash, import model, and required feature bits.

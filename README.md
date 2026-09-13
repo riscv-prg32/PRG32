@@ -8,6 +8,24 @@ PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine
 
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
+## Cartridge Builds
+
+New `.prg32` cartridges use the portable ABI table and do not depend on a
+particular firmware ELF. Build an example after loading the ESP-IDF environment:
+
+```bash
+python3 -m prg32 cartridge build \
+  examples/games/asteroids/graphics/game.S \
+  --portable \
+  --entry-prefix asteroids_graphics \
+  --name asteroids \
+  --out build-esp32c6/asteroids.prg32
+```
+
+The builder rejects firmware-specific absolute-import builds. Existing
+cartridges of that kind remain loadable only with matching resident firmware.
+See the [cartridge guide](docs/software/cartridges.md) for hardware and QEMU
+upload instructions and the [ABI guide](docs/software/abi.md) for compatibility.
 
 ### Hardware
 

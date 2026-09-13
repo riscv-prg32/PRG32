@@ -140,10 +140,11 @@ python3 -m prg32 upload \
   --url http://192.168.4.1
 ```
 
-For QEMU, build against `build-qemu/PRG32.elf` and stage the cartridge:
+For QEMU, build the same source with `--portable` and an output path under
+`build-qemu/`, then stage that cartridge:
 
 ```bash
-python3 -m prg32 upload-qemu \
+python3 -m prg32 qemu upload \
   build-qemu/animated-sprites.prg32 \
   --flash build-qemu/qemu_flash.bin
 ```

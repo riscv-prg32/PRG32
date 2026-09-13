@@ -142,14 +142,15 @@ python3 -m prg32 esp32c6 upload build-esp32c6/pong-c.prg32 --url http://192.168.
 
 For QEMU
 
-On Windows:
-build against `build-qemu/PRG32.elf` and stage with `upload-qemu`
+On Windows, build a portable cartridge with `--portable` and stage it with
+`python3 -m prg32 qemu upload`.
 
 On Linux or MacOS:
 ```bash
 ./scripts/qemu/build_qemu.sh
 ./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh```
+./scripts/qemu/launch_qemu.sh
+```
 
 ## 6. Move to Tiles and Platform Games
 

@@ -5,9 +5,11 @@ ABI table supplied by the resident firmware. The table is generated from
 `prg32/abi/prg32_abi.json`; generated files contain the function indices, ABI hash,
 and firmware table population code.
 
-Legacy cartridges can still use firmware-specific absolute imports resolved
-from `/api/runtime` or from a firmware ELF, but that mode is tied to one
-firmware image. New cartridges should be built with `--portable`.
+The builder now produces only portable ABI-table cartridges. It rejects
+`--firmware-elf`, `--runtime-url`, and `--legacy-absolute-imports` for cartridge
+builds. Existing firmware-specific absolute-import packages remain loadable
+when they match the resident firmware, but developers must rebuild them as
+portable cartridges to distribute them independently of a firmware image.
 
 The public declarations in `components/prg32/include/prg32.h` include the
 cartridge-facing contracts for coordinates, lifetimes, return values, and data
@@ -54,7 +56,8 @@ Compatibility rules:
   accepted when required feature bits are available
 - missing required feature bits: rejected
 - newer incompatible major: rejected
-- legacy absolute imports: supported only for firmware-specific workflows
+- legacy absolute imports: existing matching packages remain loadable; new
+  builds are rejected
 
 Feature bits currently cover audio, Wi-Fi, multiplayer, metrics, audio-plus,
 keyboard, tilemap, platformer, and sprites.
@@ -98,9 +101,10 @@ supported. Previously built portable cartridges with hashes `0x006427c2`
 (133 entries) and `0x6be6e8d0` (138 entries) remain loadable because those
 tables are unchanged prefixes of this table. This applies to firmware loading,
 Store downloads, and upload/QEMU tooling. The earlier pre-audio-change hashes
-still require a rebuild because their table entries differ. Legacy cartridges
-with firmware-specific absolute imports must be rebuilt against the exact
-firmware image when its symbol addresses change.
+still require a rebuild because their table entries differ. Existing legacy
+cartridges with firmware-specific absolute imports are usable only when their
+addresses match the resident firmware; rebuild their source as portable
+cartridges before distributing them for other firmware images.
 
 The performance broker lifecycle, descriptor layouts, failure semantics, and
 custom-cartridge tutorial are documented in the
