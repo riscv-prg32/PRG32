@@ -41,7 +41,7 @@ icon without making the cartridge itself more expensive to start.
 
 ### Flash Layout & Slots
 
-`partitions_prg32.csv` is used by both hardware and QEMU builds:
+`profiles/partitions_prg32.csv` is used by both hardware and QEMU builds:
 
 ```text
 factory: resident PRG32 firmware
@@ -513,5 +513,5 @@ This is intentionally a classroom loader, not a general dynamic linker.
 - When changing the default `PRG32_CART_RAM_PROFILE` in Kconfig or the
   `sdkconfig.defaults*` files, update `DEFAULT_CART_RAM_KIB` in
   `prg32/utilities/env_variables.py` so host-side checks match the firmware.
-- Keep `partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`
+- Keep `profiles/partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`
   in sync when changing cartridge slots.

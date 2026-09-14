@@ -34,7 +34,7 @@ Here are common issues and solutions when working with the PRG32 framework.
 ## Cartridge and Partition Issues
 
 - **Cartridge upload fails**: The emulator flash image might be missing, or the cartridge is too large. Run QEMU once to generate `build-qemu/qemu_flash.bin`, then rerun your upload command.
-- **Partition mismatch errors**: Run `python3 -m prg32 doctor` and verify `partitions_prg32.csv` plus the selected cartridge slot.
+- **Partition mismatch errors**: Run `python3 -m prg32 doctor` and verify `profiles/partitions_prg32.csv` plus the selected cartridge slot.
 - **A staged cartridge opens setup instead of starting**: Check that
   `PRG32_BOOT_SETUP_MODE` is `0` in `main/prg32_config.h`, rebuild the firmware,
   and inspect the serial line `prg32_init: cartridge autoload failed`. A

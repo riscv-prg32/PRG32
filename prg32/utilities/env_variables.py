@@ -50,7 +50,7 @@ PRG32_CART_FLAG_ABI_TABLE = 1 << 2
 PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE = 0
 PRG32_IMPORT_MODEL_ABI_TABLE = 1
 AUDIO_BLOCK_MAGIC = b"AUD0"
-DEFAULT_PARTITION_TABLE = ROOT_DIR / "partitions_prg32.csv"
+DEFAULT_PARTITION_TABLE = ROOT_DIR / "profiles/partitions_prg32.csv"
 DEFAULT_CART_SLOT = "cart0"
 # Executable cartridge RAM window, mirroring Kconfig PRG32_CART_RAM_KIB.
 # The default firmware profile (sdkconfig.defaults and sdkconfig.defaults.qemu)

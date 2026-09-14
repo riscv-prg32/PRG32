@@ -45,7 +45,7 @@ class PartitionParsingTests(unittest.TestCase):
 
     def test_read_partition_slot(self) -> None:
         offset, size = partition_handler.read_partition_slot(
-            ROOT / "partitions_prg32.csv",
+            ROOT / "profiles/partitions_prg32.csv",
             "cart0",
         )
         self.assertEqual(offset, 0x210000)
@@ -421,7 +421,7 @@ class ModuleImportTests(unittest.TestCase):
 
 class DoctorTests(unittest.TestCase):
     def test_host_only_doctor_does_not_require_esp_idf(self) -> None:
-        rc = prg32_main(["doctor", "--host-only", "--partitions", str(ROOT / "partitions_prg32.csv")])
+        rc = prg32_main(["doctor", "--host-only", "--partitions", str(ROOT / "profiles/partitions_prg32.csv")])
         self.assertEqual(rc, 0)
 
 
