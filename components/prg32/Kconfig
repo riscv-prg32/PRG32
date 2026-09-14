@@ -195,6 +195,42 @@ config PRG32_STORE_URL
         Example: http://192.168.1.42:5080
         In QEMU builds, mDNS is unavailable; set this to reach a LAN server.
 
+menu "Wi-Fi Configuration"
+
+choice PRG32_WIFI_BOOT_MODE
+    prompt "Wi-Fi Boot Mode"
+    default PRG32_WIFI_BOOT_MODE_AP
+    help
+        Select the initial Wi-Fi mode at boot.
+        Access Point (AP) mode hosts its own network.
+        Infrastructure (STA) mode connects to an existing network.
+
+config PRG32_WIFI_BOOT_MODE_AP
+    bool "Access Point (AP)"
+    help
+        The board creates its own network (e.g. SSID "PRG32").
+
+config PRG32_WIFI_BOOT_MODE_STA
+    bool "Infrastructure (STA)"
+    help
+        The board connects to an existing local network.
+
+endchoice
+
+config PRG32_WIFI_SSID
+    string "Wi-Fi SSID"
+    default "PRG32"
+    help
+        The SSID of the network. If in AP mode, this is the network name
+        broadcasted by the device. If in STA mode, this is the network
+        to connect to.
+
+config PRG32_WIFI_PASSWORD
+    string "Wi-Fi Password"
+    default "prg32game"
+    help
+        The password of the network. Must be at least 8 characters for WPA2.
+
 endmenu
 
 endmenu

@@ -170,6 +170,16 @@ For fixed classroom deployments, you can bake the store URL directly into the fi
 CONFIG_PRG32_STORE_URL="http://192.168.1.42:5080"
 ```
 
+You can also set or clear the Cartridge Store URL locally using the Python CLI, which updates your `profiles/sdkconfig.defaults.local` file without modifying tracked files:
+
+```bash
+# Set the Cartridge Store URL
+python3 -m prg32 store set-url "http://192.168.1.42:5080"
+
+# Clear the local URL override
+python3 -m prg32 store clear-url
+```
+
 ### Host Tools Configuration (Python)
 
 When using the host-side Python tooling (e.g., publishing or downloading from your PC), you can pass the configuration as CLI flags (`--store-url` and `--token`) or save them in a JSON config file to avoid typing them every time. CLI flags override the JSON config.

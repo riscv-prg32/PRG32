@@ -1,15 +1,21 @@
 # PRG32 Profiles
 
-PRG32 uses different RAM profiles to adjust how much internal executable RAM the resident firmware reserves for uploadable cartridges. The active profile dictates the cartridge size limits and the available drawing features.
+PRG32 uses different SDK configuration profiles to adjust how the resident firmware is built. While some profiles adjust the available RAM for uploadable cartridges, others configure the framework for different hardware targets (like the QEMU emulator) or enable runtime features like metrics streaming. The active profile dictates the cartridge size limits, available drawing features, and the target platform.
 
-## Default Profiles
+## Base Profiles
 
 - **Classroom Profile (32 KiB)**: An optional smaller window for builds that
   prioritize resident-runtime heap.
 - **Extended Profile (64 KiB)**: The default for physical ESP32-C6 and QEMU
   builds. The default stored package limit is also 64 KiB.
+- **QEMU Emulator Profile**: The default used by QEMU emulator builds (`profiles/sdkconfig.defaults.qemu`). It configures the system for the emulator (using `esp32c3` as the target, enabling the RGB display, UART input, and failure on real hardware) and extends cartridge RAM to 64 KiB. Use with:
+  ```bash
+  idf.py -B build-qemu -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" set-target esp32c3
+  ```
 
-## 128 KiB ESP32-C6 Profile
+## Optional Profiles
+
+### 128 KiB ESP32-C6 Profile (`sdkconfig.defaults.esp32c6_128k`)
 
 The optional physical-board profile reserves 128 KiB of executable cartridge
 RAM and uses the ILI9341 low-memory renderer: the persistent framebuffer is
@@ -19,7 +25,7 @@ during LCD transfer. This keeps the game coordinate system unchanged. Full
 
 ```bash
 idf.py -B build-esp32c6-128k \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6_128k" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.esp32c6_128k" \
   set-target esp32c6
 idf.py -B build-esp32c6-128k build
 ```

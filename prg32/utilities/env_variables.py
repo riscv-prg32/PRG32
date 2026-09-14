@@ -13,7 +13,7 @@ ESP32C6_BUILD_DIR = "build-esp32c6"
 ESP32C6_IMAGE = f"{ESP32C6_BUILD_DIR}/PRG32.bin"
 ESP32C6_ELF = f"{ESP32C6_BUILD_DIR}/PRG32.elf"
 ESP32C6_SDKCONFIG = f"{ESP32C6_BUILD_DIR}/sdkconfig"
-ESP32C6_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults"
+ESP32C6_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6"
 
 # QEMU environment variables
 QEMU_BUILD_DIR = "build-qemu"
@@ -21,7 +21,7 @@ QEMU_IMAGE = f"{QEMU_BUILD_DIR}/qemu_flash.bin"
 QEMU_EFUSE = f"{QEMU_BUILD_DIR}/qemu_efuse.bin"
 QEMU_ELF = f"{QEMU_BUILD_DIR}/PRG32.elf"
 QEMU_SDKCONFIG= f"{QEMU_BUILD_DIR}/sdkconfig"
-QEMU_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults.qemu"
+QEMU_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu"
 
 # Metrics variables
 METRICS_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults.metrics"

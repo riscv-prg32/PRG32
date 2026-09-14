@@ -79,12 +79,12 @@ Use the normal ESP32-C6 defaults plus the metrics profile:
 ```bash
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.metrics" \
   set-target esp32c6
 
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.metrics" \
   build
 ```
 
@@ -110,7 +110,7 @@ For ESP32-C6 hardware:
 ```bash
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.metrics" \
   flash monitor
 ```
 
@@ -120,7 +120,7 @@ On Windows:
 ```bash
 idf.py -B build-qemu \
   -D SDKCONFIG=build-qemu/sdkconfig \
-  -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" \
   qemu --graphics monitor
 ```
 

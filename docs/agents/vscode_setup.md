@@ -14,7 +14,7 @@ Tasks should remain simple wrappers around:
 - `idf.py menuconfig`
 - `idf.py build`
 - `idf.py flash monitor`
-- `idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor`
+- `idf.py -B build-qemu -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor`
 - `idf.py -B build-qemu gdb`
 - `tools/qemu.sh` and `tools/qemu.ps1`
 - `python3 -m prg32 cartridge build ...`

@@ -152,16 +152,8 @@
 /* Optional Wi-Fi score REST API. Fill credentials before flashing. */
 #define PRG32_WIFI_SCORES_ENABLE 0
 
-#if __has_include("prg32_env.h")
-#include "prg32_env.h"
-#endif
-
-#ifndef PRG32_WIFI_SSID
-#define PRG32_WIFI_SSID "YOUR_WIFI_SSID"
-#endif
-#ifndef PRG32_WIFI_PASSWORD
-#define PRG32_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-#endif
+#define PRG32_WIFI_SSID CONFIG_PRG32_WIFI_SSID
+#define PRG32_WIFI_PASSWORD CONFIG_PRG32_WIFI_PASSWORD
 #define PRG32_SCORE_MAX 16
 #define PRG32_IDLE_HEARTBEAT_MS 5000
 
@@ -178,8 +170,8 @@
 #endif
 
 #define PRG32_WIFI_STA_ENABLE                                                  \
-  (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE)
-#define PRG32_WIFI_AP_ENABLE PRG32_GAME_UPLOAD_ENABLE
+  (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_STA)
+#define PRG32_WIFI_AP_ENABLE (PRG32_GAME_UPLOAD_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_AP)
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
 /* Autoload the sole/default cartridge. Hold A+B at boot to enter setup;
  * setup also opens when no unambiguous cartridge can boot. Classroom images
@@ -194,7 +186,7 @@
 
 /* CartridgeStore integration constants. */
 #define PRG32_STORE_URL_MAX_LEN 128
-#define PRG32_STORE_SERVER_URL "http://193.205.230.7:5080/"
+#define PRG32_STORE_SERVER_URL CONFIG_PRG32_STORE_URL
 #define PRG32_STORE_MDNS_SERVICE "_prg32store"
 #define PRG32_STORE_MDNS_PROTO "_tcp"
 #define PRG32_STORE_MDNS_TIMEOUT_MS 3000

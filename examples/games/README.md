@@ -152,8 +152,8 @@ idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAUL
 ### 4. Or Build for QEMU Graphics Testing
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 QEMU shows the graphics viewport in a desktop window. Use the monitor terminal
@@ -244,14 +244,14 @@ cartridge directly into the emulator flash image.
 ### 1. Build QEMU Firmware
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu build
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" build
 ```
 
 ### 2. Run QEMU Once to Create the Flash Image
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 Stop QEMU after the first successful launch. This creates
@@ -288,7 +288,7 @@ python3 -m prg32 qemu upload \
 ### 5. Run QEMU Again
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 The resident firmware loads the staged cartridge from the QEMU flash image.

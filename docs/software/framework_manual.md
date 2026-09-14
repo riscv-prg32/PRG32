@@ -123,7 +123,7 @@ Display backend selection:
 Use the QEMU defaults file when running on a desktop:
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 When the QEMU backend is selected, `main/prg32_config.h` disables physical GPIO
