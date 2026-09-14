@@ -21,18 +21,16 @@ Before writing or modifying any code, you MUST complete these steps:
 ## [PHASE 2: VALIDATION RUNS]
 1. At the start of every session you must ask the user a question:
 "Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
-The possible answers should be:
+The possible answers should include:
 - "Yes, please validate the edits by building the PRG32 framework.".
 - "No, I prefer to run the builds on my own.".
-- "Other (write your answer).".
 
 2. IF AND ONLY IF the answer is yes, you should then ask:
 "For what architecture are you building for? ESP32C6 or QEMU?"
-The possible answers should be:
+The possible answers should include:
 - ESP32C6.
 - QEMU.
 - Both.
-- Other (write your answer).
 
 ## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:

@@ -126,7 +126,7 @@ idf.py -B build-qemu \
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
+python3 -m prg32 qemu build
 ```
 
 Wait until the runtime splash and setup screen are visible. Note the IP address
@@ -169,8 +169,8 @@ python3 -m prg32 qemu upload \
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh
+python3 -m prg32 qemu upload <path_to_cartridge.prg32>
+python3 -m prg32 qemu run
 ```
 
 ## 7. Run The Measurement

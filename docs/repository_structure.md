@@ -50,9 +50,6 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- qemu/                       Emulator launch, staging, and automated smoke testing
 |   |-- store/                      CartridgeStore integration (publishing, formatting, metadata)
 |   `-- utilities/                  Common utility functions for logging, environment checks, and partitions
-|-- scripts/                        Shell/PowerShell scripts for common CI and local workflows (QEMU, flashing)
-|-- profiles/                       Default configuration files for ESP32-C6 hardware and QEMU emulator builds
-|-- tests/                          Host-side unit tests for Python tooling, documentation validation, and host-compiled firmware C (random, audio synth/tracker)
 |-- profiles/                       Default configuration files and partition tables
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and cartridge slots
 |   `-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds

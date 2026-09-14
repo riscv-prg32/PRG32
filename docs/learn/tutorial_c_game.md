@@ -116,7 +116,7 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=pro
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
+python3 -m prg32 qemu build
 ```
 
 Restore the default `main/CMakeLists.txt` and `main/main.c` after the lab.
@@ -147,9 +147,9 @@ On Windows, build a portable cartridge with `--portable` and stage it with
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
-./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh
+python3 -m prg32 qemu build
+python3 -m prg32 qemu upload <path_to_cartridge.prg32>
+python3 -m prg32 qemu run
 ```
 
 ## 6. Move to Tiles and Platform Games

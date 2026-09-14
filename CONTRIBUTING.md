@@ -96,7 +96,7 @@ idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu buil
 For end-to-end QEMU cartridge testing:
 
 ```bash
-./scripts/smoke_test.sh
+python3 prg32/qemu/smoke_test.py
 ```
 
 Changes under `cartridges/blackjack` or `cartridges/devicedemo` must also pass
