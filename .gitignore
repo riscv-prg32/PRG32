@@ -75,7 +75,8 @@ Testing/
 *.prg32
 
 # Local environment configuration
-prg32_env.h
+sdkconfig
+profiles/sdkconfig.defaults.local
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 

@@ -51,8 +51,9 @@ Run these exact commands to validate your work:
 git diff --check
 
 # 2. Run Python linting/tooling
+python3 -m compileall prg32 tests tools
 python3 -m prg32 doctor
-python3 -m py_compile python3 -m prg32
+python3 -m prg32 test
 ```
 
 If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture you are building on. 
