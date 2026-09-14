@@ -76,6 +76,8 @@ Testing/
 
 # Local environment configuration
 prg32_env.h
+.vscode/c_cpp_properties.json
+.vscode/launch.json
 
 # Local Python tooling
 .venv/
