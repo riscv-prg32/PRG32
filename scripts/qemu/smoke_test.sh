@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 QEMU_BUILD_DIR="build-qemu"
 QEMU_SDKCONFIG="$QEMU_BUILD_DIR/sdkconfig"
-QEMU_DEFAULTS="sdkconfig.defaults.qemu"
+QEMU_DEFAULTS="profiles/sdkconfig.defaults.qemu"
 cd "$ROOT_DIR"
 
 ok() {
@@ -77,7 +77,7 @@ cmd = [
     "idf.py",
     "-B", "build-qemu",
     "-D", "SDKCONFIG=build-qemu/sdkconfig",
-    "-D", "SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu",
+    "-D", "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu",
     "qemu",
     "--graphics",
     "monitor",

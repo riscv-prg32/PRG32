@@ -15,7 +15,7 @@ thing, and explain what changed.
 
 Run the VS Code task `PRG32: set target esp32c6`, then run `PRG32: build`.
 These tasks use the dedicated `build-esp32c6` directory and
-`sdkconfig.defaults`, so they keep the real ILI9341 board build separate from
+`profiles/sdkconfig.defaults`, so they keep the real ILI9341 board build separate from
 QEMU.
 
 Flash with `PRG32: flash monitor`. On the physical ESP32-C6 board, the monitor

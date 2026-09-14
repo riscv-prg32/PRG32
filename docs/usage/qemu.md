@@ -6,7 +6,7 @@ PRG32 can run on a desktop with Espressif QEMU and show the 320x240 PRG32 screen
 
 While the physical PRG32 board uses an ESP32-C6 target with an ILI9341 SPI display, the QEMU emulator targets the **ESP32-C3** using a virtual RGB display backend (`CONFIG_PRG32_DISPLAY_QEMU_RGB`). This is because Espressif's maintained RISC-V QEMU graphics path requires the ESP32-C3.
 
-- **Separate Build Environment**: QEMU uses a separate build directory (`build-qemu`) and defaults file (`sdkconfig.defaults.qemu`) to ensure physical board configurations remain untouched.
+- **Separate Build Environment**: QEMU uses a separate build directory (`build-qemu`) and defaults file (`profiles/sdkconfig.defaults.qemu`) to ensure physical board configurations remain untouched.
 - **Unified ABI**: Both physical and QEMU targets share the same 32-bit RISC-V calling convention and PRG32 ABI. Only the display backend changes.
 - **Screen Resolution**: Framework screens use the full 320x240 resolution, while game code draws into a centered 320x200 viewport.
 

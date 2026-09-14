@@ -12,10 +12,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 build_qemu() {
     step "Configuring QEMU target (esp32c3)"
-    idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
+    idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu set-target esp32c3
 
     step "Building QEMU firmware and flash_image"
-    idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+    idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
     
     [[ -f "$BUILD_DIR/PRG32.elf" ]] || die "Missing $BUILD_DIR/PRG32.elf after build."
     log_info "Firmware build ready"

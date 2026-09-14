@@ -20,10 +20,19 @@ Before writing or modifying any code, you MUST complete these steps:
 
 ## [PHASE 2: VALIDATION RUNS]
 1. At the start of every session you must ask the user a question:
-"Would you like to validate my edits by building the prg32 framework or do you prefer to run the builds on your own?"
+"Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
+The possible answers should be:
+- "Yes, please validate the edits by building the PRG32 framework.".
+- "No, I prefer to run the builds on my own.".
+- "Other (write your answer).".
 
-2. If the answer to the builds is yes, you should then ask:
+2. IF AND ONLY IF the answer is yes, you should then ask:
 "For what architecture are you building for? ESP32C6 or QEMU?"
+The possible answers should be:
+- ESP32C6.
+- QEMU.
+- Both.
+- Other (write your answer).
 
 ## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:
@@ -60,6 +69,6 @@ If you are working on QEMU, Build the QEMU firmware:
 python3 -m prg32 qemu build
 ```
 
-[PHASE 5: DOCUMENTATION EDITING]
-After being done with editing, you should modify all relevant documentation in docs/ and the repository structure.
-NEVER edit the README unless explicitly specified.
+## [PHASE 5: DOCUMENTATION EDITING]
+After being done with editing, you should modify all relevant documentation in docs/ and the [repository structure](docs/repository_structure.md).
+NEVER edit the [README](/README.md) unless explicitly specified.

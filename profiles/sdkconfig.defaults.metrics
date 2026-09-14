@@ -1,5 +1,5 @@
-# Optional profiling/lab profile. Use together with sdkconfig.defaults:
-# idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" build
+# Optional profiling/lab profile. Use together with profiles/sdkconfig.defaults:
+# idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics" build
 CONFIG_PRG32_METRICS_ENABLE=y
 CONFIG_PRG32_METRICS_SERVER_URL="http://192.168.4.2:8080"
 CONFIG_PRG32_METRICS_BOARD_ID="prg32-board"

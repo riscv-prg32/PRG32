@@ -7,7 +7,7 @@ from prg32.utilities.logging import *
 def main():
     QEMU_BUILD_DIR = "build-qemu"
     QEMU_SDKCONFIG = f"{QEMU_BUILD_DIR}/sdkconfig"
-    QEMU_DEFAULTS = "sdkconfig.defaults.qemu"
+    QEMU_DEFAULTS = "profiles/sdkconfig.defaults.qemu"
     DEMO_SOURCE = "examples/games/asteroids/graphics/game.S"
     DEMO_PREFIX = "asteroids_graphics"
     DEMO_CART = f"{QEMU_BUILD_DIR}/asteroids.prg32"

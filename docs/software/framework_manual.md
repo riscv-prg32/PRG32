@@ -123,7 +123,7 @@ Display backend selection:
 Use the QEMU defaults file when running on a desktop:
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
 ```
 
 When the QEMU backend is selected, `main/prg32_config.h` disables physical GPIO
@@ -275,7 +275,7 @@ Important constants:
   configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 and QEMU
   builds default to the 64 KiB extended profile. The optional
   `PRG32_CART_RAM_LARGE_128` profile reserves 128 KiB on ESP32-C6 when built
-  with `sdkconfig.defaults.esp32c6_128k`; it requires matching rebuilt
+  with `profiles/sdkconfig.defaults.esp32c6_128k`; it requires matching rebuilt
   cartridges and raises the stored-image limit to 128 KiB. The window remains
   static because legacy cartridges are linked to the exported
   `prg32_cart_exec` address; portable cartridges use the ABI table.

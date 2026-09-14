@@ -19,7 +19,7 @@ during LCD transfer. This keeps the game coordinate system unchanged. Full
 
 ```bash
 idf.py -B build-esp32c6-128k \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp32c6_128k" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6_128k" \
   set-target esp32c6
 idf.py -B build-esp32c6-128k build
 ```

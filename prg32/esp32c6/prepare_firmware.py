@@ -18,7 +18,7 @@ def prepare_firmware_esp32c6(args: argparse.Namespace) -> None:
             "-D",
             f"SDKCONFIG={args.build_dir}/sdkconfig",
             "-D",
-            "SDKCONFIG_DEFAULTS=sdkconfig.defaults",
+            "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults",
             "build",
         ], cwd=ROOT_DIR)
     if not flasher_args.exists():

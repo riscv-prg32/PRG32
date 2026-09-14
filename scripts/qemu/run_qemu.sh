@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="build-qemu"
 SDKCONFIG="$BUILD_DIR/sdkconfig"
-SDKCONFIG_DEFAULTS="sdkconfig.defaults.qemu"
+SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults.qemu"
 FLASH_IMAGE="$BUILD_DIR/qemu_flash.bin"
 QEMU_EFUSE="$BUILD_DIR/qemu_efuse.bin"
 FLASH_SIZE=$((4 * 1024 * 1024))

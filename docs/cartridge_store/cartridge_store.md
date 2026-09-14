@@ -164,7 +164,7 @@ The store advertises `_prg32store._tcp` on port `5080`.
 Bare IPv4 addresses are expanded to `http://<address>:5080`.
 
 #### Hardcoding the Store URL
-For fixed classroom deployments, you can bake the store URL directly into the firmware. Set `CONFIG_PRG32_STORE_URL` in `menuconfig` or append it to the relevant `sdkconfig.defaults` file before building:
+For fixed classroom deployments, you can bake the store URL directly into the firmware. Set `CONFIG_PRG32_STORE_URL` in `menuconfig` or append it to the relevant `profiles/sdkconfig.defaults` file before building:
 
 ```text
 CONFIG_PRG32_STORE_URL="http://192.168.1.42:5080"
@@ -408,7 +408,7 @@ Firmware clients uses compact REST calls:
 | `TOO LARGE` during download | Cartridge exceeds slot partition | Re-flash with a larger partition, or use a smaller cartridge |
 | `401` from `prg32_game.py publish` | Missing or invalid API token | Add `--token` or set `store_token` in `~/.prg32/config.json` |
 | Published game is not visible | Upload is pending editor review | Ask an editor to verify the submission in Cartridge Store |
-| QEMU build shows `NOT FOUND` for mDNS | Expected: mDNS is unavailable in QEMU | Set `CONFIG_PRG32_STORE_URL` in `sdkconfig.defaults.qemu` |
+| QEMU build shows `NOT FOUND` for mDNS | Expected: mDNS is unavailable in QEMU | Set `CONFIG_PRG32_STORE_URL` in `profiles/sdkconfig.defaults.qemu` |
 
 ### Common Missing Tool Fixes
 
@@ -417,8 +417,8 @@ Firmware clients uses compact REST calls:
 | `idf.py: command not found` | ESP-IDF shell not exported | Run `. $HOME/esp-idf/export.sh` or use ESP-IDF PowerShell |
 | `missing tool: riscv32-esp-elf-gcc` | ESP-IDF toolchain missing or not on `PATH` | Run `./install.sh esp32c3,esp32c6`, then export ESP-IDF |
 | `ninja: command not found` | Host build tool missing | Install Ninja with the platform package manager |
-| QEMU build cannot find virtual RGB component | Wrong target or defaults | Use `esp32c3` and `sdkconfig.defaults.qemu` |
-| Physical display is black | QEMU build flashed to board or wrong pins | Rebuild `build-esp32c6` with `sdkconfig.defaults`; check `main/prg32_config.h` |
+| QEMU build cannot find virtual RGB component | Wrong target or defaults | Use `esp32c3` and `profiles/sdkconfig.defaults.qemu` |
+| Physical display is black | QEMU build flashed to board or wrong pins | Rebuild `build-esp32c6` with `profiles/sdkconfig.defaults`; check `main/prg32_config.h` |
 | Upload cannot reach board | Host is not on PRG32 Wi-Fi or wrong URL | Connect to `PRG32` AP and use `http://192.168.4.1` |
 | Store publish returns `401` | Missing or invalid token | Ask for the classroom token or omit auth only on open stores |
 | Store publish returns `400` | Bad manifest or zip layout | Check `manifest.json` and `unzip -l` output |

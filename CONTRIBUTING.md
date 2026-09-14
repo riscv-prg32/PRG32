@@ -65,9 +65,9 @@ idf.py flash monitor
 QEMU commands:
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu build
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu qemu --graphics monitor
 ```
 
 PlatformIO users can open the repository root and use the `prg32-esp32c6`
@@ -90,7 +90,7 @@ When ESP-IDF is available, also run:
 
 ```bash
 idf.py build
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
+idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults.qemu build
 ```
 
 For end-to-end QEMU cartridge testing:

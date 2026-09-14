@@ -404,7 +404,7 @@ No sound:
   because the firmware failed to start I2S
 - confirm speaker wires are on speaker outputs
 - confirm audio is enabled in Kconfig
-- confirm the build uses `sdkconfig.defaults`, not `sdkconfig.defaults.qemu`
+- confirm the build uses `profiles/sdkconfig.defaults`, not `profiles/sdkconfig.defaults.qemu`
 - confirm the selected GPIOs do not conflict with display or joystick wiring
 
 Only one stereo speaker works:

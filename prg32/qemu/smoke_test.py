@@ -22,7 +22,7 @@ def main():
     ROOT = Path(__file__).resolve().parents[2]
     QEMU_BUILD_DIR = "build-qemu"
     QEMU_SDKCONFIG = f"{QEMU_BUILD_DIR}/sdkconfig"
-    QEMU_DEFAULTS = "sdkconfig.defaults.qemu"
+    QEMU_DEFAULTS = "profiles/sdkconfig.defaults.qemu"
     require_cmd("python3", "Install Python 3 and retry.")
     require_cmd("idf.py", "Run: . $HOME/esp-idf/export.sh")
     # riscv toolchain optional

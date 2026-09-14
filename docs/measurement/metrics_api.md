@@ -180,11 +180,11 @@ with the normal board defaults:
 ```bash
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics" \
   set-target esp32c6
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics" \
   build
 ```
 
@@ -323,7 +323,7 @@ plots when `matplotlib` is installed.
 
 
 - For reproducible scientific measurements, use
-  `sdkconfig.defaults;sdkconfig.defaults.metrics` as described in
+  `profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.metrics` as described in
   [Scientific Measurement Tutorial](scientific_measurement_tutorial.md).
 
 ## Development Guide

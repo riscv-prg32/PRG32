@@ -16,5 +16,5 @@ export QEMU_IMAGE="$BUILD_DIR/qemu_flash.bin"
 export QEMU_EFUSE="$BUILD_DIR/qemu_efuse.bin"
 export QEMU_ELF="$BUILD_DIR/PRG32.elf"
 export SDKCONFIG="$BUILD_DIR/sdkconfig"
-export SDKCONFIG_DEFAULTS="sdkconfig.defaults.qemu"
+export SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults.qemu"
 export FLASH_SIZE=$((4 * 1024 * 1024))
