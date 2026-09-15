@@ -20,7 +20,7 @@ def wifi_set(args: argparse.Namespace):
     if mode == "ap":
         updates["CONFIG_PRG32_WIFI_BOOT_MODE_AP"] = "y"
         updates["CONFIG_PRG32_WIFI_BOOT_MODE_STA"] = "n"
-    elif mode == "sta":
+    elif mode in ["sta", "infrastructure"]:
         updates["CONFIG_PRG32_WIFI_BOOT_MODE_AP"] = "n"
         updates["CONFIG_PRG32_WIFI_BOOT_MODE_STA"] = "y"
     

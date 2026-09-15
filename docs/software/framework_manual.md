@@ -334,8 +334,8 @@ status bands, and small classroom sketches through the same cartridge ABI used
 by student games.
 
 Normal images autoload their only stored cartridge, or the saved default when
-multiple cartridges are present. `PRG32_BOOT_SETUP_MODE` in
-`main/prg32_config.h` can force setup on every boot for custom classroom
+multiple cartridges are present. `PRG32_BOOT_SETUP_MODE` in `idf.py menuconfig`
+(`PRG32 Firmware Features -> Boot Setup Mode`) can force setup on every boot for custom classroom
 images. If `PRG32_PIN_SETUP` is wired, holding it low during boot also forces
 setup mode.
 
@@ -388,7 +388,7 @@ npm install
 npm start
 ```
 
-Configure the board-side endpoint in `main/prg32_config.h` with
+Configure the board-side endpoint in `idf.py menuconfig` (`PRG32 Firmware Features -> Multiplayer Server URL`) with
 `PRG32_MULTIPLAYER_SERVER_URL`. QEMU exposes the same API with an offline local
 stub: `prg32_multiplayer_available()` returns true, `join` succeeds for a
 non-empty signature, and peer snapshots are empty by default.
@@ -595,7 +595,7 @@ PRG32 exposes a small addressable RGB LED API:
 
 The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
 boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
-to `-1` in `main/prg32_config.h`. Set it only when the LED pin is free on the
+to `-1` in `idf.py menuconfig`. Set it only when the LED pin is free on the
 chosen board wiring.
 
 ## Development Guide
@@ -613,7 +613,7 @@ When editing framework code:
 - Keep dependencies in `components/prg32/CMakeLists.txt`.
 - Keep `REQUIRES` and `PRIV_REQUIRES` independent of `CONFIG_*` choices; ESP-IDF
   expands component requirements before configuration-dependent source choices.
-- Keep app-specific pin and feature config in `main/prg32_config.h`.
+- Configure app-specific pins and features using `idf.py menuconfig` (under PRG32 framework).
 - Preserve `prg32_init()` as the one-call framework initializer.
 - Do not expose ESP-IDF-only types in the public ABI unless absolutely needed.
 - Return simple `int` status codes for APIs called from assembly.

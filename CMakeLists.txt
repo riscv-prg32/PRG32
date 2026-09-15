@@ -21,6 +21,10 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.defaults.local")
     set(EXTRA_CONFIGS "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.defaults.local")
 endif()
 
+if(DEFINED SDKCONFIG_DEFAULTS AND SDKCONFIG_DEFAULTS STREQUAL "sdkconfig.defaults" AND NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults")
+    set(SDKCONFIG_DEFAULTS "profiles/sdkconfig.defaults")
+endif()
+
 if(EXTRA_CONFIGS)
     if(DEFINED ENV{SDKCONFIG_DEFAULTS})
         set(SDKCONFIG_DEFAULTS "$ENV{SDKCONFIG_DEFAULTS};${EXTRA_CONFIGS}")

@@ -13,7 +13,7 @@ hardware documentation; update affected entries in the same change.
 - Cross-check the bill of materials with [hardware.md](hardware.md),
   [the PCB reference](../pcb/README.md), [audio documentation](../tools/audio.md),
   and the canonical firmware configuration in
-  [main/prg32_config.h](../../main/prg32_config.h) and
+  [components/prg32/Kconfig](../../components/prg32/Kconfig) and
   [audio Kconfig](../../components/prg32_audio/Kconfig).
 - Keep baseline mono quantities, total stereo quantities and optional items
   explicit. Check electrical compatibility and mechanical fit separately.

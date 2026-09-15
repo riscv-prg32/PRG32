@@ -286,7 +286,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--token", help="Authentication token for the store")
     p.set_defaults(func=publish_bundle)
 
-    p = store_sub.add_parser("set-url", help="Set the local CartridgeStore URL for the next build", usage="%(prog)s URL")
+    p = store_sub.add_parser("set-url", help="Set the local CartridgeStore URL for local builds", usage="%(prog)s URL")
     p.add_argument("url", help="URL of the CartridgeStore")
     p.set_defaults(func=store_set_url)
 
@@ -296,16 +296,16 @@ def main(argv: list[str]) -> int:
     # ==========================================
     # 'wifi' Subcommand Menu
     # ==========================================
-    wifi_p = sub.add_parser("wifi", help="Manage local WiFi configuration")
+    wifi_p = sub.add_parser("wifi", help="Manage local WiFi configuration", description="Manage local WiFi credentials and mode (AP or INFRASTRUCTURE) for the next firmware build.")
     wifi_sub = wifi_p.add_subparsers(dest="sub_cmd", required=True)
 
-    p = wifi_sub.add_parser("set", help="Set local WiFi credentials for the next build")
-    p.add_argument("--ssid", required=True, help="Network SSID")
-    p.add_argument("--password", default="", help="Network password (min 8 chars for WPA2)")
-    p.add_argument("--mode", choices=["ap", "sta"], default="ap", help="WiFi boot mode (default: ap)")
+    p = wifi_sub.add_parser("set", help="Set local WiFi credentials and mode", description="Configure the local WiFi SSID, password, and operating mode (Access Point or Infrastructure).")
+    p.add_argument("--ssid", required=True, help="Network SSID (name of the network)")
+    p.add_argument("--password", default="", help="Network password (minimum 8 characters for WPA2, leave empty for open networks)")
+    p.add_argument("--mode", type=str.lower, choices=["ap", "sta", "infrastructure"], default="ap", help="WiFi boot mode: 'ap' (create an Access Point) or 'infrastructure' / 'sta' (connect to an existing network). Default: ap")
     p.set_defaults(func=wifi_set)
 
-    p = wifi_sub.add_parser("clear", help="Clear local WiFi credentials")
+    p = wifi_sub.add_parser("clear", help="Clear local WiFi credentials", description="Remove any local WiFi overrides so the firmware uses its default behavior.")
     p.set_defaults(func=wifi_clear)
 
     p = sub.add_parser("doctor", help="check local toolchain prerequisites", usage="%(prog)s [options]")

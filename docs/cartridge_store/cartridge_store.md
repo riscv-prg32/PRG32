@@ -428,7 +428,7 @@ Firmware clients uses compact REST calls:
 | `missing tool: riscv32-esp-elf-gcc` | ESP-IDF toolchain missing or not on `PATH` | Run `./install.sh esp32c3,esp32c6`, then export ESP-IDF |
 | `ninja: command not found` | Host build tool missing | Install Ninja with the platform package manager |
 | QEMU build cannot find virtual RGB component | Wrong target or defaults | Use `esp32c3` and `profiles/sdkconfig.defaults.qemu` |
-| Physical display is black | QEMU build flashed to board or wrong pins | Rebuild `build-esp32c6` with `profiles/sdkconfig.defaults`; check `main/prg32_config.h` |
+| Physical display is black | QEMU build flashed to board or wrong pins | Rebuild `build-esp32c6` with `profiles/sdkconfig.defaults`; check `idf.py menuconfig` |
 | Upload cannot reach board | Host is not on PRG32 Wi-Fi or wrong URL | Connect to `PRG32` AP and use `http://192.168.4.1` |
 | Store publish returns `401` | Missing or invalid token | Ask for the classroom token or omit auth only on open stores |
 | Store publish returns `400` | Bad manifest or zip layout | Check `manifest.json` and `unzip -l` output |

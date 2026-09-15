@@ -21,7 +21,7 @@ The chosen network settings are stored persistently in non-volatile storage (NVS
 
 ## Technical Details
 
-When running in Access Point mode (`PRG32_WIFI_MODE_AP` or `PRG32_WIFI_MODE_APSTA`), the default classroom values configured in `main/prg32_config.h` are:
+When running in Access Point mode (`PRG32_WIFI_MODE_AP` or `PRG32_WIFI_MODE_APSTA`), the default classroom values configured in `idf.py menuconfig` are:
 
 - **SSID:** `PRG32`
 - **Password:** `prg32game`
@@ -45,7 +45,7 @@ To set your Wi-Fi configuration, run the following command in the PRG32 root:
 python3 -m prg32 wifi set --ssid "YOUR_WIFI_SSID" --password "YOUR_WIFI_PASSWORD" --mode sta
 ```
 
-- `--mode`: Can be `sta` (connect to an existing network) or `ap` (create your own access point).
+- `--mode`: Can be `sta` / `infrastructure` (connect to an existing network) or `ap` (create your own access point).
 - The tooling saves this to `profiles/sdkconfig.defaults.local`, which is ignored by Git, ensuring you don't accidentally commit your network password.
 - You only need to run this command once. It will be remembered for all future builds.
 

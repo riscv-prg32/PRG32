@@ -1,4 +1,4 @@
-menu "PRG32 framework"
+menu "PRG32 Framework"
 
 choice PRG32_DISPLAY_BACKEND
     prompt "Display backend"
@@ -233,4 +233,206 @@ config PRG32_WIFI_PASSWORD
 
 endmenu
 
+menu "PRG32 Board Configuration"
+
+config PRG32_PIN_LCD_MOSI
+    int "LCD MOSI GPIO"
+    default 7
+
+config PRG32_PIN_LCD_MISO
+    int "LCD MISO GPIO"
+    default 2
+
+config PRG32_PIN_LCD_SCLK
+    int "LCD SCLK GPIO"
+    default 6
+
+config PRG32_PIN_LCD_CS
+    int "LCD CS GPIO"
+    default 10
+
+config PRG32_PIN_LCD_DC
+    int "LCD DC GPIO"
+    default 1
+
+config PRG32_PIN_LCD_RST
+    int "LCD RST GPIO"
+    default 0
+
+config PRG32_PIN_LCD_BL
+    int "LCD Backlight GPIO"
+    default 5
+
+config PRG32_PIN_BTN_UP
+    int "Joystick UP GPIO"
+    default 3
+
+config PRG32_PIN_BTN_DOWN
+    int "Joystick DOWN GPIO"
+    default 13
+
+config PRG32_PIN_BTN_LEFT
+    int "Joystick LEFT GPIO"
+    default 18
+
+config PRG32_PIN_BTN_RIGHT
+    int "Joystick RIGHT GPIO"
+    default 19
+
+config PRG32_PIN_BTN_START
+    int "START Button GPIO"
+    default 20
+
+config PRG32_PIN_BTN_A
+    int "A Button GPIO"
+    default 21
+
+config PRG32_PIN_BTN_B
+    int "B Button GPIO"
+    default 22
+
+config PRG32_ENABLE_SEPARATE_SELECT_PIN
+    bool "Enable separate SELECT button pin"
+    default n
+
+config PRG32_PIN_BTN_SELECT
+    int "SELECT Button GPIO"
+    depends on PRG32_ENABLE_SEPARATE_SELECT_PIN
+    default 20
+
+config PRG32_PIN_SETUP
+    int "Dedicated SETUP Button GPIO"
+    default -1
+
+config PRG32_PIN_BUZZER
+    int "Buzzer GPIO"
+    default -1
+
+config PRG32_AUDIO_I2S_BCLK_GPIO
+    int "I2S BCLK GPIO"
+    depends on PRG32_AUDIO_ENABLED
+    default 4
+
+config PRG32_AUDIO_I2S_LRCLK_GPIO
+    int "I2S LRCLK/WS GPIO"
+    depends on PRG32_AUDIO_ENABLED
+    default 11
+
+config PRG32_AUDIO_I2S_DATA_GPIO
+    int "I2S DATA/DIN GPIO"
+    depends on PRG32_AUDIO_ENABLED
+    default 23
+
+config PRG32_AUDIO_I2S_SD_GPIO
+    int "I2S SD/shutdown GPIO"
+    depends on PRG32_AUDIO_ENABLED
+    default -1
+    help
+        Optional amplifier shutdown/control GPIO. Set to -1 when not wired.
+
+config PRG32_PIN_RGB_LED
+    int "RGB LED GPIO"
+    default 8
+
+config PRG32_QEMU_UART_1_TX
+    int "QEMU UART 1 TX (Python Listener)"
+    default 4
+
+config PRG32_QEMU_UART_1_RX
+    int "QEMU UART 1 RX (Python Listener)"
+    default 5
+
+config PRG32_LCD_SPI_CLOCK_HZ
+    int "LCD SPI Clock (Hz)"
+    default 27000000
+
+config PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL
+    int "LCD Backlight Active Level"
+    default 1
+
+config PRG32_LCD_BOOT_TEST_MS
+    int "LCD Boot Test Delay (ms)"
+    default 0
+
+config PRG32_LCD_SOFT_SPI
+    int "LCD Soft SPI Mode"
+    default 0
+
+config PRG32_BOOT_SIGNAL_ENABLE
+    int "Enable Boot Signal"
+    default 0
+
+config PRG32_BOOT_DIAGNOSTIC_DELAY_MS
+    int "Boot Diagnostic Delay (ms)"
+    default 0
+
+endmenu
+
+menu "PRG32 Firmware Features"
+
+choice PRG32_DEFAULT_CONSOLE_MODE
+    prompt "Default Console Mode"
+    default PRG32_DEFAULT_MODE_UART_LCD_MIRROR
+
+config PRG32_DEFAULT_MODE_UART_ONLY
+    bool "UART Only"
+
+config PRG32_DEFAULT_MODE_LCD_ONLY
+    bool "LCD Only"
+
+config PRG32_DEFAULT_MODE_UART_LCD_MIRROR
+    bool "UART + LCD Mirror"
+
+endchoice
+
+config PRG32_DEBUG
+    int "PRG32 Debug Level"
+    default 0
+
+config PRG32_GAME_UPLOAD_ENABLE
+    bool "Enable Game Upload (SoftAP + HTTP)"
+    default n if PRG32_DISPLAY_QEMU_RGB
+    default y
+
+config PRG32_WIFI_SCORES_ENABLE
+    bool "Enable Wi-Fi Scores API"
+    default n
+
+config PRG32_AUDIO_DEFAULT_VOLUME_PCT
+    int "Default Audio Volume (%)"
+    default 70
+    range 0 100
+
+config PRG32_MULTIPLAYER_ENABLE
+    bool "Enable Multiplayer Service"
+    default y
+
+config PRG32_MULTIPLAYER_SERVER_URL
+    string "Multiplayer Server URL"
+    depends on PRG32_MULTIPLAYER_ENABLE
+    default "ws://192.168.4.2:8081"
+
+config PRG32_BOOT_SETUP_MODE
+    int "Boot Setup Mode"
+    default 0
+
+config PRG32_WIFI_AP_CHANNEL
+    int "Wi-Fi AP Channel"
+    default 6
+
+config PRG32_WIFI_AP_MAX_CONN
+    int "Wi-Fi AP Max Connections"
+    default 4
+
+config PRG32_WIFI_COUNTRY_CODE
+    string "Wi-Fi Country Code"
+    default "IT"
+
+config PRG32_WIFI_STA_LEGACY_PROTOCOLS
+    int "Wi-Fi STA Legacy Protocols Enabled"
+    default 1
+
+endmenu
+
+endmenu
 endmenu

@@ -14,13 +14,9 @@ Local scoreboard records persist in the dedicated `scores` NVS partition and
   are not erased when a cartridge slot is replaced.
 ## Enable Wi-Fi
 
-Edit `main/prg32_config.h`:
-
-```c
-#define PRG32_WIFI_SCORES_ENABLE 1
-#define PRG32_WIFI_SSID "your-network"
-#define PRG32_WIFI_PASSWORD "your-password"
-```
+Enable Wi-Fi scores and set your SSID/Password through `idf.py menuconfig` -> `PRG32 Framework`:
+- `PRG32 Firmware Features -> Enable Wi-Fi Scores API`
+- `Wi-Fi Configuration -> Wi-Fi SSID / Password`
 
 Then build and flash normally with ESP-IDF.
 
