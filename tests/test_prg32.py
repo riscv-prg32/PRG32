@@ -51,6 +51,17 @@ class PartitionParsingTests(unittest.TestCase):
         self.assertEqual(offset, 0x210000)
         self.assertEqual(size, 128 * 1024)
 
+
+class CartridgeSizeCompatibilityTests(unittest.TestCase):
+    def test_legacy_32_kib_cartridge_remains_accepted(self) -> None:
+        runtime_handler.ensure_cart_max_size(b"\0" * (32 * 1024))
+
+    def test_64_kib_limit_is_inclusive(self) -> None:
+        runtime_handler.ensure_cart_max_size(b"\0" * (64 * 1024))
+
+        with self.assertRaises(SystemExit):
+            runtime_handler.ensure_cart_max_size(b"\0" * (64 * 1024 + 1))
+
 class SymbolParsingTests(unittest.TestCase):
     def test_parse_nm_ignores_non_symbol_lines(self) -> None:
         symbols = runtime_handler.parse_nm(

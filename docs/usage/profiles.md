@@ -4,8 +4,10 @@ PRG32 uses different RAM profiles to adjust how much internal executable RAM the
 
 ## Default Profiles
 
-- **Classroom Profile (32 KiB)**: The default for physical ESP32-C6 classroom boards. It leaves more SRAM available to the resident runtime, Wi-Fi, setup menus, diagnostics, and standard framebuffer work.
-- **Extended Profile (64 KiB)**: The default used by QEMU emulator builds.
+- **Classroom Profile (32 KiB)**: An optional smaller window for builds that
+  prioritize resident-runtime heap.
+- **Extended Profile (64 KiB)**: The default for physical ESP32-C6 and QEMU
+  builds. The default stored package limit is also 64 KiB.
 
 ## 128 KiB ESP32-C6 Profile
 

@@ -52,7 +52,7 @@ cart3:   uploaded cartridge slot 3
 scores:  persistent local scoreboard storage
 ```
 
-The checked-in classroom firmware supports four persistent slots (`cart0` to `cart3`). Each slot stores a `.prg32` package up to 128 KiB. Only one cartridge is loaded into executable RAM at a time, so additional slots cost flash space, not runtime RAM.
+The checked-in classroom firmware supports four persistent slots (`cart0` to `cart3`). Each slot stores a `.prg32` package up to 64 KiB. Only one cartridge is loaded into executable RAM at a time, so additional slots cost flash space, not runtime RAM.
 
 After reset, one stored cartridge starts automatically. When multiple slots contain games, PRG32 enters setup unless a default cartridge has been saved. Use `DEFAULT CARTRIDGE` in setup to choose the slot that should boot automatically, or `RUN CARTRIDGE` to inspect slots.
 

@@ -77,7 +77,7 @@ python3 -m pip install pillow mido
 ```
 
 Generated arrays can be included in firmware examples or packaged into
-uploadable cartridges when they fit inside the 128 KiB cartridge package limit.
+uploadable cartridges when they fit inside the default 64 KiB cartridge package limit.
 
 ## Compact Indexed and Bitplane Sprites
 

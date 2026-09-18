@@ -67,8 +67,7 @@ config PRG32_SPLASH_SOUND_ENABLED
 
 choice PRG32_CART_RAM_PROFILE
     prompt "Executable cartridge RAM profile"
-    default PRG32_CART_RAM_EXTENDED if PRG32_DISPLAY_QEMU_RGB
-    default PRG32_CART_RAM_CLASSROOM
+    default PRG32_CART_RAM_EXTENDED
     help
         Choose how much internal executable RAM the resident firmware reserves
         for uploadable cartridges. This memory has a fixed exported address so
@@ -124,7 +123,7 @@ config PRG32_CART_RAM_KIB
 config PRG32_CART_MAX_KIB
     int "Maximum stored cartridge image size in KiB"
     default 128 if PRG32_CART_RAM_LARGE_128
-    default 128
+    default 64
     range 32 128
     help
         Maximum accepted .prg32 image size. Keep this at or below the size of

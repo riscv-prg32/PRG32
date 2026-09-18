@@ -89,10 +89,10 @@ def fetch_runtime(url: str) -> dict:
         raise SystemExit(f"failed to read runtime from {endpoint}: {exc}") from exc
 
 def ensure_cart_max_size(data: bytes) -> None:
-    if len(data) > 128 * 1024:
+    if len(data) > 64 * 1024:
         raise SystemExit(
             f"cartridge is {len(data)} bytes, which exceeds the PRG32 hardware "
-            "limit of 128 KiB (131072 bytes)."
+            "limit of 64 KiB (65536 bytes)."
         )
 
 def runtime(args: argparse.Namespace) -> None:
@@ -141,7 +141,7 @@ def validate_cartridge_contract(
     context: str = "cartridge",
 ) -> None:
     h = cartridge_contract(data)
-    runtime_max_size = int((runtime or {}).get("cart_max_size", 128 * 1024))
+    runtime_max_size = int((runtime or {}).get("cart_max_size", 64 * 1024))
     if len(data) > runtime_max_size:
         raise SystemExit(
             f"{context} rejected: cartridge is {len(data)} bytes, but the "
