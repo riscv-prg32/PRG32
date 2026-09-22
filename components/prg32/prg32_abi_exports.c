@@ -168,6 +168,13 @@ static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
     (prg32_any_fn_t)prg32_perf_get_state,
     (prg32_any_fn_t)prg32_perf_get_summary,
     (prg32_any_fn_t)prg32_random_number,
+    (prg32_any_fn_t)prg32_btkbd_state,
+    (prg32_any_fn_t)prg32_btkbd_read_key,
+    (prg32_any_fn_t)prg32_btkbd_modifiers,
+    (prg32_any_fn_t)prg32_btkbd_key_down,
+    (prg32_any_fn_t)prg32_btkbd_flush,
+    (prg32_any_fn_t)prg32_btkbd_set_mapping,
+    (prg32_any_fn_t)prg32_btkbd_device_name,
 };
 
 void prg32_abi_exports_keep(void) {

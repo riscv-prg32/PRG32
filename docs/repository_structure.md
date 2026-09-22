@@ -14,19 +14,24 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- audiotest/                  Source-only audio pan diagnostic cartridge
 |   |-- bachdemo/                   Eight-voice procedural Bach audio showcase
 |   |-- blackjack/                  Casino blackjack game and rules tests
+|   |-- c-language/                 C editor, compiler and VM using the Bluetooth keyboard ABI; host tests
 |   |-- devicedemo/                 Hardware/runtime feature showcase
 |   |-- performancetest/            RGB565/full-indexed public-ABI measurement reference
 |   `-- poing/                      Indexed procedural graphics and application benchmark
 |       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, cartridge loader)
-|   |   `-- prg32_random.c          Uniform bounded random-number API
+|   |   |-- prg32_random.c          Uniform bounded random-number API
+|   |   |-- prg32_btkbd.c           Keyboard logic: boot reports -> key queue, repeat, key-to-joystick mapping
+|   |   |-- prg32_btkbd_ble.c       NimBLE HID-over-GATT keyboard transport (scan, pair, bond, notify)
+|   |   `-- prg32_setup_btkbd.c     SETUP > BLUETOOTH KEYBOARD screens (pair, forget, mapping)
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
+|   |   |-- bluetooth_keyboard.md   Bluetooth LE keyboard pairing, mapping, ABI use and internals
 |   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material
 |   |-- performance_test.md         Canonical performance-test execution, interpretation, and extension guide

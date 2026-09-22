@@ -404,6 +404,9 @@ metadata, screenshots, tests, and reproducible package scripts:
   voices, procedural waveforms, filtering, envelopes, and stereo panning.
 - [`poing`](../../cartridges/poing/README.md) stress-tests public drawing calls
   with a real-time procedural sphere and perspective grid.
+- [`c-language`](../../cartridges/c-language/README.md) is a C editor, compiler
+  and virtual machine that reads a Bluetooth keyboard through ABI 1.7; its host
+  test runs programs through the real compiler and VM.
 
 The build scripts use `python3 -m prg32 cartridge build` followed by the
 `store` subcommands for metadata attachment. Every cartridge has a PNG
@@ -440,7 +443,7 @@ python3 tools/validate_cartridge_media.py SCREENSHOT.png PREVIEW.mp4
 ### Continuous integration and delivery artifacts
 
 GitHub Actions runs the same scripts for pull requests and for pushes to
-`main` and `development-c6`. The cartridge job covers all six in-tree
+`main` and `development-c6`. The cartridge job covers all seven in-tree
 cartridges: it runs available host/source checks, validates the four cartridges'
 screenshots and audiovisual previews, builds portable packages for `esp32c6`
 and `qemu`, inspects metadata where present, and
@@ -448,7 +451,7 @@ checks the available bundle ZIPs and checksum manifests.
 The separate host job installs its explicit `pytest` dependency before running
 the repository smoke suite and generated-ABI check.
 
-Successful runs retain six downloadable workflow artifacts for 14 days:
+Successful runs retain seven downloadable workflow artifacts for 14 days:
 
 - `blackjack-cartridge-package`, containing both `.prg32` variants and the
   versioned Cartridge Store bundle.
@@ -462,6 +465,8 @@ Successful runs retain six downloadable workflow artifacts for 14 days:
   for both architectures.
 - `performancetest-cartridge-package`, containing Performance Test builds for
   both architectures.
+- `c-language-cartridge-package`, containing PRG32 C builds for both
+  architectures.
 
 These are unsigned build artifacts. Publishing them to a Cartridge Store
 remains an explicit authenticated release action.

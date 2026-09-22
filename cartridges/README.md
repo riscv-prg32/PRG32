@@ -14,6 +14,9 @@ Each can be built as a portable package for supported PRG32 targets.
 - [Blackjack](blackjack/README.md) is a complete casino blackjack game with
   solo and multiplayer modes, tested game rules, indexed graphics, persistent
   scores, and procedural audio.
+- [PRG32 C](c-language/README.md) is a C programming environment: a
+  syntax-coloured editor, a one-pass compiler and a bounds-checked virtual
+  machine driven by a Bluetooth keyboard (or the QEMU console).
 - [DeviceDemo+](devicedemo/README.md) is a cartridge-level hardware and runtime
   feature showcase covering graphics, input, audio, diagnostics, Wi-Fi, and
   score APIs.

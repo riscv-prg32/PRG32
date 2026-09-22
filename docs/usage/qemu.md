@@ -102,6 +102,16 @@ QEMU disables physical GPIO buttons and the buzzer, enabling a small UART-consol
 | A button | `J` or `Z` |
 | B button | `K`, `X`, `Backspace`, or `Esc` |
 
+The same console is also the PRG32 keyboard for cartridges that read typed
+keys through the [Bluetooth keyboard ABI](../hardware/bluetooth_keyboard.md):
+characters, `Enter`, `Backspace`, `Tab`, `Esc`, arrows, `Home`, `End`,
+`Delete`, `Page Up`/`Page Down` and `F1`–`F12` are forwarded, and CTRL+letter
+arrives as codes 1–26. A cartridge that calls `prg32_btkbd_set_mapping(0)`,
+such as [PRG32 C](../../cartridges/c-language/README.md), receives keys only and
+the table above is suspended until the next cartridge starts. Some terminals
+intercept function keys; use the CTRL shortcuts offered by the cartridge
+instead.
+
 **Diagnostic Input Injection**:
 Framework code can call `prg32_diag_set_input_state()` to inject player-1 inputs in QEMU-oriented tests. 
 

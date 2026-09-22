@@ -1,4 +1,5 @@
 #include "prg32.h"
+#include "prg32_btkbd_internal.h"
 #include "prg32_config.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -25,7 +26,8 @@ uint32_t prg32_qemu_input_read(void);
  * PRG32 controller layer.
  *
  * The runtime reads the reference GPIO joystick on hardware, QEMU keyboard
- * input on desktop builds, and diagnostic input used by tests.
+ * input on desktop builds, keys of a paired Bluetooth keyboard mapped to
+ * buttons (see prg32_btkbd.c), and diagnostic input used by tests.
  *
  * The game sees only the stable PRG32 bitmask: LEFT/RIGHT/UP/DOWN/SELECT/A/B.
  * This is intentionally similar to memory-mapped input registers on 1980s
@@ -64,6 +66,7 @@ static uint32_t read_gpio_buttons(void) {
 uint32_t prg32_controller_read(void) {
     uint32_t v = read_gpio_buttons();
     v |= prg32_qemu_input_read();
+    v |= prg32_btkbd_buttons();
     v |= prg32_diag_input_state();
 #if PRG32_RESTART_HOTKEY_ENABLE
     if ((v & PRG32_RESTART_HOTKEY_P1) == PRG32_RESTART_HOTKEY_P1) {

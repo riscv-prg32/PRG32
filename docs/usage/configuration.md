@@ -19,3 +19,14 @@ When you save changes in `menuconfig`, they are stored in the `sdkconfig` file l
 While `menuconfig` and `sdkconfig.defaults` provide the baseline compile-time configuration, the PRG32 framework also allows certain system settings (such as master volume or audio output modes) to be configured dynamically by the user via the on-device Setup Menu.
 
 These user preferences are stored in the ESP32-C6's Non-Volatile Storage (NVS) under the `prg32` namespace. At boot time, any valid setting found in NVS will take precedence and dynamically override the compile-time default. If you wipe the NVS flash or if a setting is unconfigured, the system automatically falls back to your `sdkconfig.defaults` values.
+
+## Bluetooth Keyboard Options
+
+`sdkconfig.defaults` enables the NimBLE Bluetooth LE host (central role, one
+connection, bonds persisted in NVS) and `CONFIG_PRG32_BT_KEYBOARD`, shown in
+menuconfig as *PRG32 framework > Enable Bluetooth LE keyboard host*. Disable it
+to save about 300 KB of flash and 28 KB of static RAM; the keyboard ABI then
+reports `PRG32_BTKBD_STATE_UNAVAILABLE`. The setup menu stores the bonded
+keyboard (`kbd_peer`), the key mapping (`kbd_map`) and the MAP TO CONTROLS
+option (`kbd_map_on`) in the `prg32` NVS namespace. See the
+[Bluetooth keyboard guide](../hardware/bluetooth_keyboard.md).

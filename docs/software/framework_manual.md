@@ -58,7 +58,9 @@ how to call it and update the display on each A-button press.
 ## Joystick Text Input
 
 The on-screen keyboard lets games and framework setup screens collect short
-alphanumeric text without a USB keyboard.
+alphanumeric text without a physical keyboard. For typing with a real
+Bluetooth LE keyboard, see the `prg32_btkbd_*` calls in the
+[Bluetooth keyboard guide](../hardware/bluetooth_keyboard.md).
 
 Useful calls:
 

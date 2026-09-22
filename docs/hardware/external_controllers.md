@@ -20,3 +20,8 @@ and `prg32_input_read_player(2)` returns `0` for source compatibility.
 
 Multiplayer cartridges should exchange remote player input through the PRG32
 multiplayer API instead of wiring a second local controller.
+
+A paired Bluetooth LE keyboard can drive the same bitmask: with the setup
+option MAP TO CONTROLS enabled, its mapped keys are ORed into the player 1
+mask. Mapping, customization and pairing are described in the
+[Bluetooth keyboard guide](bluetooth_keyboard.md).

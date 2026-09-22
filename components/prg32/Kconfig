@@ -42,6 +42,17 @@ config PRG32_QEMU_UART_INPUT
         them into the normal PRG32 player 1 input bits. This is for desktop
         classroom testing only; physical ESP32-C6 builds still use GPIO buttons.
 
+config PRG32_BT_KEYBOARD
+    bool "Enable Bluetooth LE keyboard host"
+    depends on BT_NIMBLE_ENABLED
+    default y
+    help
+        Pair a Bluetooth LE (HID over GATT) keyboard from SETUP > BLUETOOTH
+        KEYBOARD. Typed keys are available to cartridges through the
+        prg32_btkbd_* ABI, and keys can be mapped to the joystick buttons.
+        Requires the NimBLE host (CONFIG_BT_NIMBLE_ENABLED). Without it the
+        ABI stays available and reports PRG32_BTKBD_STATE_UNAVAILABLE.
+
 config PRG32_SPLASH_ENABLED
     bool "Show PRG32 startup splash"
     default y

@@ -14,7 +14,7 @@ const prg32_abi_table_t prg32_abi_table = {
                          PRG32_FEATURE_MULTIPLAYER | PRG32_FEATURE_METRICS |
                          PRG32_FEATURE_AUDIO_PLUS | PRG32_FEATURE_KEYBOARD |
                          PRG32_FEATURE_TILEMAP | PRG32_FEATURE_PLATFORMER |
-                         PRG32_FEATURE_SPRITES,
+                         PRG32_FEATURE_SPRITES | PRG32_FEATURE_BTKEYBOARD,
     .functions = {
         [PRG32_ABI_FN_PRG32_TICKS_MS] = (const void *)prg32_ticks_ms,
         [PRG32_ABI_FN_PRG32_INPUT_READ] = (const void *)prg32_input_read,
@@ -155,5 +155,12 @@ const prg32_abi_table_t prg32_abi_table = {
         [PRG32_ABI_FN_PRG32_GFX_RECT_INDEXED] = (const void *)prg32_gfx_rect_indexed,
         [PRG32_ABI_FN_PRG32_GFX_CLEAR_INDEXED] = (const void *)prg32_gfx_clear_indexed,
         [PRG32_ABI_FN_PRG32_RANDOM_NUMBER] = (const void *)prg32_random_number,
+        [PRG32_ABI_FN_PRG32_BTKBD_STATE] = (const void *)prg32_btkbd_state,
+        [PRG32_ABI_FN_PRG32_BTKBD_READ_KEY] = (const void *)prg32_btkbd_read_key,
+        [PRG32_ABI_FN_PRG32_BTKBD_MODIFIERS] = (const void *)prg32_btkbd_modifiers,
+        [PRG32_ABI_FN_PRG32_BTKBD_KEY_DOWN] = (const void *)prg32_btkbd_key_down,
+        [PRG32_ABI_FN_PRG32_BTKBD_FLUSH] = (const void *)prg32_btkbd_flush,
+        [PRG32_ABI_FN_PRG32_BTKBD_SET_MAPPING] = (const void *)prg32_btkbd_set_mapping,
+        [PRG32_ABI_FN_PRG32_BTKBD_DEVICE_NAME] = (const void *)prg32_btkbd_device_name,
     },
 };

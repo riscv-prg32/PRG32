@@ -653,6 +653,93 @@ void prg32_memory_log_stats(void);
  */
 uint32_t prg32_random_number(uint32_t min, uint32_t max);
 
+/** @name Bluetooth LE keyboard (ABI 1.7, feature "btkeyboard")
+ * A keyboard paired in SETUP > BLUETOOTH KEYBOARD delivers two things:
+ * - typed keys, read one at a time with prg32_btkbd_read_key(). Printable
+ *   keys and ENTER, TAB, BACKSPACE, ESC return their ASCII value; CTRL+A..Z
+ *   return 1..26; other keys return PRG32_KEY_* codes >= 0x100; 0 means no
+ *   key is waiting. Held keys repeat after 500 ms.
+ * - optional joystick emulation: while the setup option "MAP TO CONTROLS" is
+ *   on, mapped keys also set PRG32_BTN_* bits in prg32_input_read(). A text
+ *   cartridge can call prg32_btkbd_set_mapping(0) to receive keys only; the
+ *   firmware restores the mapping when the next cartridge starts.
+ * On QEMU the UART console acts as the keyboard (state
+ * PRG32_BTKBD_STATE_CONSOLE), so the same cartridge runs on the desktop.
+ * @{ */
+#define PRG32_BTKBD_STATE_UNAVAILABLE 0u
+#define PRG32_BTKBD_STATE_IDLE 1u
+#define PRG32_BTKBD_STATE_SCANNING 2u
+#define PRG32_BTKBD_STATE_CONNECTING 3u
+#define PRG32_BTKBD_STATE_PAIRING 4u
+#define PRG32_BTKBD_STATE_CONNECTED 5u
+#define PRG32_BTKBD_STATE_CONSOLE 6u
+
+/* Key codes returned by prg32_btkbd_read_key(). */
+#define PRG32_KEY_BACKSPACE 0x08
+#define PRG32_KEY_TAB 0x09
+#define PRG32_KEY_ENTER 0x0A
+#define PRG32_KEY_ESCAPE 0x1B
+#define PRG32_KEY_UP 0x101
+#define PRG32_KEY_DOWN 0x102
+#define PRG32_KEY_LEFT 0x103
+#define PRG32_KEY_RIGHT 0x104
+#define PRG32_KEY_HOME 0x105
+#define PRG32_KEY_END 0x106
+#define PRG32_KEY_PAGE_UP 0x107
+#define PRG32_KEY_PAGE_DOWN 0x108
+#define PRG32_KEY_INSERT 0x109
+#define PRG32_KEY_DELETE 0x10A
+#define PRG32_KEY_F1 0x111 /* F1..F12 are 0x111..0x11C */
+
+/* Modifier bits returned by prg32_btkbd_modifiers() (USB HID layout). */
+#define PRG32_KEYMOD_LCTRL (1u << 0)
+#define PRG32_KEYMOD_LSHIFT (1u << 1)
+#define PRG32_KEYMOD_LALT (1u << 2)
+#define PRG32_KEYMOD_LGUI (1u << 3)
+#define PRG32_KEYMOD_RCTRL (1u << 4)
+#define PRG32_KEYMOD_RSHIFT (1u << 5)
+#define PRG32_KEYMOD_RALT (1u << 6)
+#define PRG32_KEYMOD_RGUI (1u << 7)
+#define PRG32_KEYMOD_CTRL (PRG32_KEYMOD_LCTRL | PRG32_KEYMOD_RCTRL)
+#define PRG32_KEYMOD_SHIFT (PRG32_KEYMOD_LSHIFT | PRG32_KEYMOD_RSHIFT)
+#define PRG32_KEYMOD_ALT (PRG32_KEYMOD_LALT | PRG32_KEYMOD_RALT)
+
+/* USB HID usage IDs for prg32_btkbd_key_down(). Letters are 0x04..0x1D. */
+#define PRG32_HID_KEY_LETTER(ch) (0x04u + (uint32_t)((ch) - 'A'))
+#define PRG32_HID_KEY_1 0x1Eu /* digits 1..9 are 0x1E..0x26, 0 is 0x27 */
+#define PRG32_HID_KEY_ENTER 0x28u
+#define PRG32_HID_KEY_ESCAPE 0x29u
+#define PRG32_HID_KEY_BACKSPACE 0x2Au
+#define PRG32_HID_KEY_TAB 0x2Bu
+#define PRG32_HID_KEY_SPACE 0x2Cu
+#define PRG32_HID_KEY_F1 0x3Au
+#define PRG32_HID_KEY_RIGHT 0x4Fu
+#define PRG32_HID_KEY_LEFT 0x50u
+#define PRG32_HID_KEY_DOWN 0x51u
+#define PRG32_HID_KEY_UP 0x52u
+#define PRG32_HID_KEY_LCTRL 0xE0u
+#define PRG32_HID_KEY_LSHIFT 0xE1u
+
+/** Return one PRG32_BTKBD_STATE_* value describing the keyboard link. */
+uint32_t prg32_btkbd_state(void);
+/** Pop the next typed key (see the key codes above); 0 when none is waiting.
+ * Never blocks, so it is safe to call from a cartridge update callback. */
+int prg32_btkbd_read_key(void);
+/** Return the PRG32_KEYMOD_* bits currently held. */
+uint32_t prg32_btkbd_modifiers(void);
+/** Return nonzero while the key with this USB HID usage is held down. */
+int prg32_btkbd_key_down(uint32_t hid_usage);
+/** Discard queued keys and cancel key repeat. */
+void prg32_btkbd_flush(void);
+/** Enable (1) or disable (0) the keyboard-to-joystick mapping for the running
+ * cartridge; returns the previous value. The setup option still applies:
+ * when the mapping is off in setup, this call cannot turn it on. */
+int prg32_btkbd_set_mapping(int enabled);
+/** Copy the connected or bonded keyboard name (NUL terminated, truncated to
+ * capacity). Returns its length, or -1 when no keyboard is known. */
+int prg32_btkbd_device_name(char *buffer, size_t capacity);
+/** @} */
+
 #ifdef __cplusplus
 }
 #endif

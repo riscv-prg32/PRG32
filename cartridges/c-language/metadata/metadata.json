@@ -1,0 +1,13 @@
+{
+  "abi": "prg32-metadata-1.0",
+  "id": "org.uniparthenope.prg32.c-language",
+  "title": "PRG32 C",
+  "version": "1.0.0",
+  "summary": "Write and run C programs on PRG32 with a Bluetooth keyboard.",
+  "description": "A syntax-coloured editor, a one-pass C compiler and a bounds-checked stack virtual machine in one portable cartridge. Supports int, char, pointers, arrays, functions, recursion, the full C operator set, printf, keyboard input and simple graphics.",
+  "authors": [{"name": "Raffaele Montella", "affiliation": "UniParthenope"}],
+  "license": "MIT",
+  "repository": "https://github.com/riscv-prg32/PRG32/tree/main/cartridges/c-language",
+  "tags": ["programming", "c", "interpreter", "keyboard", "education", "riscv", "prg32"],
+  "runtime": {"platform": "PRG32", "isa": "RV32IMAC", "architecture": "esp32c6", "architectures": [{"id": "esp32c6", "target": "esp32c6", "isa": "RV32IMAC"}, {"id": "qemu", "target": "qemu", "isa": "RV32IMAC"}]}
+}

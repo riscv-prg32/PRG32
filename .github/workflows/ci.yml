@@ -81,6 +81,11 @@ jobs:
       - name: Check Poing renderer
         run: cartridges/poing/tests/run.sh
 
+      - name: Check PRG32 C interpreter
+        run: |
+          cartridges/c-language/tests/check_source.sh
+          cartridges/c-language/tests/run_host_tests.sh
+
       - name: Build portable graphics assembly examples
         shell: bash
         run: |
@@ -139,6 +144,8 @@ jobs:
               --architecture "$arch" --out "cartridges/audiotest/audiotest-$arch.prg32"
             PRG32_REPO="$GITHUB_WORKSPACE" PRG32_ARCHITECTURE="$arch" \
               cartridges/performancetest/scripts/build.sh
+            PRG32_REPO="$GITHUB_WORKSPACE" PRG32_ARCHITECTURE="$arch" \
+              cartridges/c-language/scripts/build.sh
           done
 
       - name: Validate cartridge packages
@@ -168,6 +175,8 @@ jobs:
           for arch in esp32c6 qemu; do
             python3 -m prg32 cartridge summary "cartridges/performancetest/dist/performancetest-$arch.prg32"
             python3 -m prg32 store inspect-metadata "cartridges/performancetest/dist/performancetest-$arch.prg32"
+            python3 -m prg32 cartridge summary "cartridges/c-language/dist/c-language-$arch.prg32"
+            python3 -m prg32 store inspect-metadata "cartridges/c-language/dist/c-language-$arch.prg32"
           done
 
       - name: Upload Blackjack package
@@ -233,5 +242,15 @@ jobs:
         with:
           name: performancetest-cartridge-package
           path: cartridges/performancetest/dist/performancetest-*.prg32
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload PRG32 C packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: c-language-cartridge-package
+          path: |
+            cartridges/c-language/dist/c-language-esp32c6.prg32
+            cartridges/c-language/dist/c-language-qemu.prg32
           if-no-files-found: error
           retention-days: 14

@@ -15,6 +15,7 @@
 #define PRG32_FEATURE_TILEMAP      (1u << 6)
 #define PRG32_FEATURE_PLATFORMER   (1u << 7)
 #define PRG32_FEATURE_SPRITES      (1u << 8)
+#define PRG32_FEATURE_BTKEYBOARD   (1u << 9)
 
 typedef struct prg32_abi_table {
     uint32_t magic;

@@ -25,6 +25,7 @@ FEATURE_BITS = {
     "tilemap": "PRG32_FEATURE_TILEMAP",
     "platformer": "PRG32_FEATURE_PLATFORMER",
     "sprites": "PRG32_FEATURE_SPRITES",
+    "btkeyboard": "PRG32_FEATURE_BTKEYBOARD",
 }
 
 
@@ -118,7 +119,7 @@ def generated_files(abi: dict) -> dict[Path, str]:
         "                         PRG32_FEATURE_MULTIPLAYER | PRG32_FEATURE_METRICS |",
         "                         PRG32_FEATURE_AUDIO_PLUS | PRG32_FEATURE_KEYBOARD |",
         "                         PRG32_FEATURE_TILEMAP | PRG32_FEATURE_PLATFORMER |",
-        "                         PRG32_FEATURE_SPRITES,",
+        "                         PRG32_FEATURE_SPRITES | PRG32_FEATURE_BTKEYBOARD,",
         "    .functions = {",
     ]
     for fn in functions:
@@ -161,6 +162,7 @@ def feature_value(name: str) -> int:
         "tilemap",
         "platformer",
         "sprites",
+        "btkeyboard",
     ]
     return 1 << order.index(name)
 

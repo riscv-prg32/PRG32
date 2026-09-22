@@ -9,6 +9,7 @@ set(PRG32_PRIV_REQUIRES
     esp_netif
     nvs_flash
     json
+    bt
     spi_flash
 )
 
@@ -31,6 +32,8 @@ idf_component_register(
         "prg32_audio.c"
         "assets/prg32_splash_logo.c"
         "prg32_bands.c"
+        "prg32_btkbd.c"
+        "prg32_btkbd_ble.c"
         "prg32_cart.c"
         "prg32_console.c"
         "prg32_controller.c"
@@ -52,6 +55,7 @@ idf_component_register(
         "prg32_qemu_input.c"
         "prg32_random.c"
         "prg32_sprite.c"
+        "prg32_setup_btkbd.c"
         "prg32_setup_store.c"
         "prg32_splash.c"
         "prg32_store.c"

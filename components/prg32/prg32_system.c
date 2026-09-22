@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "prg32.h"
+#include "prg32_btkbd_internal.h"
 #include "prg32_config.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -884,11 +885,12 @@ static void about_menu(void) {
 
 static void settings_menu(void) {
   int choice = 0;
-  const int option_count = 4;
+  const int option_count = 5;
   static const char *options[] = {
       "WIFI SETUP",
       "STORE SETUP",
       "AUDIO SETUP",
+      "BLUETOOTH KEYBOARD",
       "DEVELOPER SETTINGS",
   };
   prg32_input_wait_released(SETUP_KEYS);
@@ -916,6 +918,8 @@ static void settings_menu(void) {
       } else if (choice == 2) {
         audio_menu();
       } else if (choice == 3) {
+        prg32_setup_btkbd_run();
+      } else if (choice == 4) {
         developer_menu();
       }
       prg32_input_wait_released(SETUP_KEYS);
@@ -1089,6 +1093,11 @@ void prg32_init(void) {
   printf("prg32_init => prg32_input_init()\n");
   prg32_input_init();
   PRG32_MEM_CHECKPOINT("prg32_input");
+  /* Start the Bluetooth keyboard before setup so a bonded keyboard can
+   * reconnect in the background and navigate the setup menus. */
+  printf("prg32_init => prg32_btkbd_init()\n");
+  prg32_btkbd_init();
+  PRG32_MEM_CHECKPOINT("prg32_btkbd");
 #ifdef PRG32_STORE_SERVER_URL
   char current_url[PRG32_STORE_URL_MAX_LEN];
   if (prg32_store_url_get(current_url, sizeof(current_url)) != 0) {

@@ -106,12 +106,16 @@ not-a-symbol
 class PortableHeaderTests(unittest.TestCase):
     def test_compatible_hashes_describe_unchanged_abi_prefixes(self) -> None:
         abi = json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text())
-        for hash_value, count in ((0x006427C2, 133), (0x6BE6E8D0, 138)):
-            prior = {**abi, "minor": 5, "functions": abi["functions"][:count]}
+        for hash_value, minor, count in (
+            (0x006427C2, 5, 133),
+            (0x6BE6E8D0, 5, 138),
+            (0x260F6136, 6, 139),
+        ):
+            prior = {**abi, "minor": minor, "functions": abi["functions"][:count]}
             self.assertEqual(abi_hash(prior), hash_value)
 
     def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
-        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0])
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0, 0x260F6136])
         payload = b"\0\0\0\0"
         for old_hash in (0xEC21EFE2, 0x5626CB8A):
             header = env_variables.CART_HEADER_V2.pack(
@@ -195,6 +199,18 @@ class PortableHeaderTests(unittest.TestCase):
             ],
         )
         self.assertEqual(IMPORT_NAMES[138], "prg32_random_number")
+
+    def test_bluetooth_keyboard_abi_is_appended_after_random(self) -> None:
+        self.assertEqual(
+            IMPORT_NAMES[139:146],
+            [
+                "prg32_btkbd_state", "prg32_btkbd_read_key",
+                "prg32_btkbd_modifiers", "prg32_btkbd_key_down",
+                "prg32_btkbd_flush", "prg32_btkbd_set_mapping",
+                "prg32_btkbd_device_name",
+            ],
+        )
+        self.assertEqual(len(IMPORT_NAMES), 146)
 
     def test_portable_build_uses_position_tolerant_riscv_flags(self) -> None:
         # We look in build_cartridge.py now

@@ -60,7 +60,8 @@ Compatibility rules:
   builds are rejected
 
 Feature bits currently cover audio, Wi-Fi, multiplayer, metrics, audio-plus,
-keyboard, tilemap, platformer, and sprites.
+keyboard (the on-screen keyboard), tilemap, platformer, sprites, and
+btkeyboard (bit 9, the Bluetooth keyboard calls).
 
 ## Cartridge Package ABI
 
@@ -105,6 +106,14 @@ still require a rebuild because their table entries differ. Existing legacy
 cartridges with firmware-specific absolute imports are usable only when their
 addresses match the resident firmware; rebuild their source as portable
 cartridges before distributing them for other firmware images.
+
+ABI minor `7` appends indices 139 through 145 for the
+[Bluetooth keyboard](#bluetooth-keyboard-abi-calls) under the new `btkeyboard`
+feature bit. The 1.6 hash `0x260f6136` (139 entries) is listed as compatible,
+so every cartridge built for ABI 1.6 (and the two older compatible hashes)
+still loads without recompilation. Cartridges using the keyboard calls need
+ABI 1.7 firmware; build them with `--required-feature btkeyboard` so older
+firmware rejects them with a clear message.
 
 The performance broker lifecycle, descriptor layouts, failure semantics, and
 custom-cartridge tutorial are documented in the
@@ -228,6 +237,34 @@ the same GPIO as the board LED. Check availability before depending on it.
 | `prg32_rgb_led_set` | set red, green, blue intensity | none |
 | `prg32_rgb_led_off` | turn the LED off | none |
 | `prg32_rgb_led_vu` | map a 0-255 level to spectrum color | none |
+
+## Bluetooth Keyboard ABI Calls
+
+Available on every build (feature `btkeyboard`). On QEMU the UART console
+provides the keys. Usage and pairing are described in the
+[Bluetooth keyboard guide](../hardware/bluetooth_keyboard.md).
+
+| Index | Symbol | Purpose | Return |
+|---:|---|---|---|
+| 139 | `prg32_btkbd_state(void)` | link state: `PRG32_BTKBD_STATE_UNAVAILABLE`, `IDLE`, `SCANNING`, `CONNECTING`, `PAIRING`, `CONNECTED`, `CONSOLE` | `uint32_t` |
+| 140 | `prg32_btkbd_read_key(void)` | pop the next typed key; never blocks | key code or `0` |
+| 141 | `prg32_btkbd_modifiers(void)` | held `PRG32_KEYMOD_*` bits (USB HID layout) | `uint32_t` |
+| 142 | `prg32_btkbd_key_down(uint32_t usage)` | whether a USB HID usage (`PRG32_HID_KEY_*`) is held | `int` |
+| 143 | `prg32_btkbd_flush(void)` | discard queued keys and stop key repeat | none |
+| 144 | `prg32_btkbd_set_mapping(int enabled)` | enable/disable key-to-joystick mapping for the running cartridge (reset when the next cartridge starts; cannot override the setup option OFF) | previous value |
+| 145 | `prg32_btkbd_device_name(char *buf, size_t cap)` | copy the connected or bonded keyboard name | length or `-1` |
+
+Key codes: printable keys, `PRG32_KEY_ENTER` (10), `PRG32_KEY_TAB` (9),
+`PRG32_KEY_BACKSPACE` (8) and `PRG32_KEY_ESCAPE` (27) are ASCII; CTRL+A..Z
+return 1..26; arrows, HOME, END, PAGE UP/DOWN, INSERT, DELETE and F1..F12 are
+`PRG32_KEY_*` values from `0x101`. Held keys repeat after 500 ms every 60 ms.
+
+```asm
+    call prg32_btkbd_read_key   /* a0 = key or 0 */
+    beqz a0, .Lno_key
+    li   t0, 10                 /* PRG32_KEY_ENTER */
+    beq  a0, t0, .Lenter
+```
 
 ## Error Values
 

@@ -1,8 +1,8 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 6,
-  "compatible_hashes": ["0x006427c2", "0x6be6e8d0"],
+  "minor": 7,
+  "compatible_hashes": ["0x006427c2", "0x6be6e8d0", "0x260f6136"],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -976,6 +976,55 @@
       "args": ["uint32_t", "uint32_t"],
       "feature": "core",
       "notes": "Return a uniformly distributed integer between min and max inclusive; return min when max is less than or equal to min."
+    },
+    {
+      "name": "prg32_btkbd_state",
+      "return": "uint32_t",
+      "args": [],
+      "feature": "btkeyboard",
+      "notes": "Return the PRG32_BTKBD_STATE_* value of the Bluetooth LE keyboard link (CONSOLE on QEMU)."
+    },
+    {
+      "name": "prg32_btkbd_read_key",
+      "return": "int",
+      "args": [],
+      "feature": "btkeyboard",
+      "notes": "Pop the next typed key: ASCII, CTRL+letter 1..26, or PRG32_KEY_* >= 0x100; 0 when the queue is empty. Never blocks."
+    },
+    {
+      "name": "prg32_btkbd_modifiers",
+      "return": "uint32_t",
+      "args": [],
+      "feature": "btkeyboard",
+      "notes": "Return the PRG32_KEYMOD_* bits currently held."
+    },
+    {
+      "name": "prg32_btkbd_key_down",
+      "return": "int",
+      "args": ["uint32_t"],
+      "feature": "btkeyboard",
+      "notes": "Return nonzero while the key with this USB HID usage is held."
+    },
+    {
+      "name": "prg32_btkbd_flush",
+      "return": "void",
+      "args": [],
+      "feature": "btkeyboard",
+      "notes": "Discard queued keys and cancel key repeat."
+    },
+    {
+      "name": "prg32_btkbd_set_mapping",
+      "return": "int",
+      "args": ["int"],
+      "feature": "btkeyboard",
+      "notes": "Enable or disable the keyboard-to-joystick mapping for the running cartridge; return the previous value. Reset when the next cartridge starts."
+    },
+    {
+      "name": "prg32_btkbd_device_name",
+      "return": "int",
+      "args": ["char *", "size_t"],
+      "feature": "btkeyboard",
+      "notes": "Copy the connected or bonded keyboard name; return its length or -1."
     }
   ]
 }

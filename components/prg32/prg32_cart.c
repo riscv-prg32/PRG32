@@ -1,4 +1,5 @@
 #include "prg32.h"
+#include "prg32_btkbd_internal.h"
 #include "prg32_config.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -917,6 +918,9 @@ static int call_entry(prg32_cart_entry_t entry) {
 }
 
 int prg32_cart_call_init(void) {
+    /* A previous cartridge may have disabled the keyboard-to-joystick
+     * mapping with prg32_btkbd_set_mapping(0); start each one clean. */
+    prg32_btkbd_session_reset();
     return call_entry(g_init);
 }
 

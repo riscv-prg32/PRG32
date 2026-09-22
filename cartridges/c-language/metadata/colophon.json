@@ -1,0 +1,18 @@
+{
+  "abi": "prg32-colophon-1.0",
+  "title": "PRG32 C",
+  "version": "1.0.0",
+  "release_date": "2026-09-22",
+  "developer": {"name": "UniParthenope PRG32", "url": "https://github.com/riscv-prg32/PRG32"},
+  "authors": [{"role": "academic supervisor / project lead", "name": "Raffaele Montella - UniParthenope"}],
+  "license": "MIT",
+  "controls": [
+    {"input": "Keyboard", "action": "Edit the program"},
+    {"input": "F5 / CTRL+R", "action": "Compile and run"},
+    {"input": "ESC / CTRL+C", "action": "Stop the running program"},
+    {"input": "F3 / CTRL+E", "action": "Next example"},
+    {"input": "F1", "action": "Help"},
+    {"input": "Joystick A", "action": "Run without a keyboard"}
+  ],
+  "start_prompt": "Pair a Bluetooth keyboard, type C, press F5"
+}
