@@ -6,7 +6,7 @@ import argparse
 import sys
 from prg32.utilities.env_variables import *
 from prg32.utilities.environment_check import doctor
-from prg32.utilities.runtime_handler import runtime
+from prg32.utilities.runtime_handler import parse_cart_ram_kib, runtime
 
 from prg32.cartridge.build_cartridge import build_cartridge_cli
 
@@ -143,6 +143,10 @@ def main(argv: list[str]) -> int:
     p.add_argument("--flash", default=QEMU_IMAGE, help="Path to the QEMU flash image")
     p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Path to the partition table CSV")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to stage into")
+    p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
+        help="Executable cartridge RAM of the QEMU firmware in KiB "
+             "(default: CONFIG_PRG32_CART_RAM_KIB from the sdkconfig next to --flash, "
+             f"else {DEFAULT_CART_RAM_KIB}; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
     p.set_defaults(func=upload_qemu)
 
 
@@ -177,6 +181,9 @@ def main(argv: list[str]) -> int:
     p.add_argument("--march", default="rv32imc_zicsr_zifencei", help="RISC-V architecture string")
     p.add_argument("--mabi", default="ilp32", help="RISC-V ABI string")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the RISC-V GCC toolchain")
+    p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
+        help=f"Executable cartridge RAM of the target firmware in KiB (default: {DEFAULT_CART_RAM_KIB}, "
+             f"the extended profile; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
     arch_group = p.add_mutually_exclusive_group(required=False)
     arch_group.add_argument("--architecture", choices=["esp32c6", "qemu"], help="Target architecture (esp32c6 or qemu)")
     arch_group.add_argument("--firmware-elf", help="Deprecated: firmware-specific cartridge builds are unsupported")

@@ -279,6 +279,8 @@ Important constants:
   cartridges and raises the stored-image limit to 128 KiB. The window remains
   static because legacy cartridges are linked to the exported
   `prg32_cart_exec` address; portable cartridges use the ABI table.
+  Host tools assume the 64 KiB window unless told otherwise with
+  `--cart-ram-kib`; see [PRG32 Profiles](../usage/profiles.md#matching-host-tools-to-the-profile).
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
 Important functions:

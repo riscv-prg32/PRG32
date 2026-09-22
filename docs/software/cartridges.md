@@ -490,6 +490,9 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Cartridge package size is 128 KiB.
 - For details on executable Cartridge RAM limits and expanding the cartridge limits using profiles, see the [PRG32 Profiles](/docs/usage/profiles.md) documentation.
+- `cartridge build` and `qemu upload` check executable RAM against the 64 KiB
+  default profile. Pass `--cart-ram-kib 32` to target the classroom profile;
+  see [Matching Host Tools to the Profile](/docs/usage/profiles.md#matching-host-tools-to-the-profile).
 
 ## Development Guide
 
@@ -507,5 +510,8 @@ This is intentionally a classroom loader, not a general dynamic linker.
   cartridge instructions from high-speed internal RAM (IRAM).
 - Keep `PRG32_CART_RAM_SIZE` small enough for classroom examples unless the
   partition/RAM plan is intentionally revised.
+- When changing the default `PRG32_CART_RAM_PROFILE` in Kconfig or the
+  `sdkconfig.defaults*` files, update `DEFAULT_CART_RAM_KIB` in
+  `prg32/utilities/env_variables.py` so host-side checks match the firmware.
 - Keep `partitions_prg32.csv`, `sdkconfig.defaults`, and `sdkconfig.defaults.qemu`
   in sync when changing cartridge slots.

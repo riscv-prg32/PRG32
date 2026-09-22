@@ -291,6 +291,134 @@ class QemuUploadTests(unittest.TestCase):
             self.assertEqual(erased, b"\xff" * len(erased))
 
 
+def portable_header(mem_size: int, code_size: int = 4) -> bytes:
+    """Pack a minimal portable v2 header that declares mem_size bytes of RAM."""
+    return env_variables.CART_HEADER_V2.pack(
+        env_variables.CART_MAGIC,
+        env_variables.CART_ABI_MAJOR,
+        env_variables.CART_ABI_MINOR,
+        env_variables.CART_HEADER_V2.size,
+        env_variables.PRG32_CART_FLAG_ABI_TABLE,
+        env_variables.FALLBACK_CART_LOAD_ADDR,
+        code_size, mem_size, 0, 0, 0, 0,
+        b"ram" + b"\0" * 29,
+        ABI_HASH,
+        0, 0, 0, 0, 0,
+        env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
+    )
+
+
+class CartRamProfileTests(unittest.TestCase):
+    # A cartridge that fits the 64 KiB extended profile but not the
+    # 32 KiB classroom profile.
+    MEM_SIZE_40_KIB = 40 * 1024
+
+    def test_fallback_matches_default_firmware_profile(self) -> None:
+        self.assertEqual(env_variables.DEFAULT_CART_RAM_KIB, 64)
+        self.assertEqual(env_variables.FALLBACK_CART_RAM_SIZE, 64 * 1024)
+        for defaults in ("sdkconfig.defaults", "sdkconfig.defaults.qemu"):
+            text = (ROOT / defaults).read_text(encoding="utf-8")
+            self.assertIn("CONFIG_PRG32_CART_RAM_EXTENDED=y", text, defaults)
+
+    def test_contract_uses_64_kib_without_runtime_info(self) -> None:
+        data = portable_header(self.MEM_SIZE_40_KIB) + b"\0\0\0\0"
+        runtime_handler.validate_cartridge_contract(data)
+        with self.assertRaisesRegex(SystemExit, "executable RAM"):
+            runtime_handler.validate_cartridge_contract(
+                data,
+                runtime={"cart_ram_size": 32 * 1024},
+            )
+
+    def test_parse_cart_ram_kib_uses_kconfig_range(self) -> None:
+        self.assertEqual(runtime_handler.parse_cart_ram_kib("32"), 32)
+        self.assertEqual(runtime_handler.parse_cart_ram_kib("128"), 128)
+        for bad in ("8", "256", "big"):
+            with self.assertRaises(argparse.ArgumentTypeError):
+                runtime_handler.parse_cart_ram_kib(bad)
+
+    def test_resolve_prefers_option_then_sdkconfig_then_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sdkconfig = Path(tmp) / "sdkconfig"
+            self.assertEqual(
+                runtime_handler.resolve_cart_ram_size(None, sdkconfig)[0],
+                64 * 1024,
+            )
+            sdkconfig.write_text(
+                "CONFIG_PRG32_CART_RAM_CLASSROOM=y\n"
+                "CONFIG_PRG32_CART_RAM_KIB=32\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                runtime_handler.resolve_cart_ram_size(None, sdkconfig),
+                (32 * 1024, str(sdkconfig)),
+            )
+            self.assertEqual(
+                runtime_handler.resolve_cart_ram_size(128, sdkconfig)[0],
+                128 * 1024,
+            )
+
+    def _stage(self, tmp_path: Path, cart_ram_kib: int | None) -> None:
+        flash = tmp_path / "qemu_flash.bin"
+        cart = tmp_path / "big.prg32"
+        partitions = tmp_path / "partitions.csv"
+        flash.write_bytes(b"\x00" * 512)
+        cart.write_bytes(portable_header(self.MEM_SIZE_40_KIB) + b"\0\0\0\0")
+        partitions.write_text("cart0, data, 0x40, 0x10, 256,\n", encoding="utf-8")
+        upload_qemu.upload_qemu(argparse.Namespace(
+            flash=str(flash),
+            cartridge=str(cart),
+            partitions=str(partitions),
+            slot="cart0",
+            cart_ram_kib=cart_ram_kib,
+        ))
+
+    def test_qemu_upload_accepts_extended_cartridge_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self._stage(Path(tmp), None)
+
+    def test_qemu_upload_honours_classroom_option_and_sdkconfig(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(SystemExit, "executable RAM"):
+                self._stage(Path(tmp), 32)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "sdkconfig").write_text(
+                "CONFIG_PRG32_CART_RAM_KIB=32\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(SystemExit, "executable RAM"):
+                self._stage(Path(tmp), None)
+            # An explicit option overrides the sdkconfig profile.
+            self._stage(Path(tmp), 64)
+
+
+class ModuleImportTests(unittest.TestCase):
+    def test_every_prg32_module_imports(self) -> None:
+        # Catches stale imports left behind by tooling refactors, such as
+        # helpers importing names that env_variables no longer defines.
+        import importlib
+        import pkgutil
+        import prg32
+
+        for module in pkgutil.walk_packages(prg32.__path__, "prg32."):
+            with self.subTest(module=module.name):
+                importlib.import_module(module.name)
+
+    def test_inject_cartridge_is_shared_by_qemu_helpers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            flash = tmp_path / "qemu_flash.bin"
+            cart = tmp_path / "game.prg32"
+            partitions = tmp_path / "partitions.csv"
+            flash.write_bytes(b"\x00" * 256)
+            cart.write_bytes(portable_header(4) + b"\0\0\0\0")
+            partitions.write_text("cart0, data, 0x40, 0x10, 128,\n", encoding="utf-8")
+            upload_qemu.inject_cartridge(
+                str(cart),
+                flash=str(flash),
+                partitions=str(partitions),
+            )
+            self.assertEqual(flash.read_bytes()[0x10:0x14], b"PRG2")
+
+
 class DoctorTests(unittest.TestCase):
     def test_host_only_doctor_does_not_require_esp_idf(self) -> None:
         rc = prg32_main(["doctor", "--host-only", "--partitions", str(ROOT / "partitions_prg32.csv")])

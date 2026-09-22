@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import os
 import sys
-from prg32.utilities.env_variables import BUILD_DIR, SDKCONFIG, SDKCONFIG_DEFAULTS, QEMU_IMAGE, QEMU_EFUSE
+from prg32.utilities.env_variables import QEMU_BUILD_DIR, QEMU_SDKCONFIG, QEMU_SDKCONFIG_DEFAULTS, QEMU_IMAGE, QEMU_EFUSE
 from prg32.utilities.logging import *
 
 
@@ -15,7 +15,7 @@ def ensure_idf_env():
 
 def ensure_qemu_flash():
     step(f"Ensuring QEMU flash image exists ({QEMU_IMAGE})")
-    p = Path(BUILD_DIR)
+    p = Path(QEMU_BUILD_DIR)
     p.mkdir(parents=True, exist_ok=True)
     flash = Path(QEMU_IMAGE)
     if not flash.exists():
@@ -39,17 +39,17 @@ def ensure_qemu_efuse():
 
 def build_qemu_firmware():
     step("Configuring QEMU target (esp32c3)")
-    subprocess.check_call(["idf.py", "-B", BUILD_DIR, "-D", f"SDKCONFIG={SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={SDKCONFIG_DEFAULTS}", "set-target", "esp32c3"])
+    subprocess.check_call(["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_SDKCONFIG_DEFAULTS}", "set-target", "esp32c3"])
     step("Building QEMU firmware")
-    subprocess.check_call(["idf.py", "-B", BUILD_DIR, "-D", f"SDKCONFIG={SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={SDKCONFIG_DEFAULTS}", "build"])
-    if not Path(f"{BUILD_DIR}/PRG32.elf").exists():
-        die(f"Missing {BUILD_DIR}/PRG32.elf after build.")
+    subprocess.check_call(["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_SDKCONFIG_DEFAULTS}", "build"])
+    if not Path(f"{QEMU_BUILD_DIR}/PRG32.elf").exists():
+        die(f"Missing {QEMU_BUILD_DIR}/PRG32.elf after build.")
     log_ok("Firmware build ready")
 
 
 def generate_flash_image():
     step("Generating QEMU flash image")
-    cwd = Path(BUILD_DIR)
+    cwd = Path(QEMU_BUILD_DIR)
     subprocess.check_call([sys.executable, "-m", "esptool", "--chip=esp32c3", "merge_bin", "--output=qemu_flash.bin", "--fill-flash-size=4MB", "@flash_args"], cwd=str(cwd))
 
 
