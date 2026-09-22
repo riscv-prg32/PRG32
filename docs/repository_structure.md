@@ -21,7 +21,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, cartridge loader)
 |   |   `-- prg32_random.c          Uniform bounded random-number API
-|   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core
+|   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
@@ -52,7 +52,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   `-- utilities/                  Common utility functions for logging, environment checks, and partitions
 |-- scripts/                        Shell/PowerShell scripts for common CI and local workflows (QEMU, flashing)
 |-- sdkconfig*                      Default configuration files for ESP32-C6 hardware and QEMU emulator builds
-|-- tests/                          Host-side unit tests for Python tooling and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, documentation validation, and host-compiled firmware C (random, audio synth/tracker)
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents

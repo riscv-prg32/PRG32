@@ -33,16 +33,18 @@ This is where the actual track data is interpreted. Inside `audio_tracker.c`, `p
 
 1. It adds `elapsed_ms` to `tracker->tick_accum`.
 2. It enters a `while` loop that runs as long as the track is active.
-3. Inside the loop, it calculates `ms_per_tick` based on the tracker's current tempo (BPM). If `tick_accum < ms_per_tick`, it breaks out of the loop. Calculating this inside the loop ensures dynamic tempo changes take effect instantly.
 
 Inside this `while` loop, the tracker handles timing and event execution:
-- **If it's waiting:** If `tracker->next_delta > 0`, it subtracts `ms_per_tick` from `tick_accum`, decrements `next_delta`, and loops. (This is how it waits between notes).
-- **If it's time to play:** If `tracker->next_delta == 0`, it fetches the next `prg32_audio_event_t` from the track data.
+- **If it's waiting:** If `tracker->next_delta > 0`, it calculates `ms_per_tick` from the current tempo (BPM). If `tick_accum < ms_per_tick`, it breaks out of the loop and waits for the next call. Otherwise it subtracts `ms_per_tick` from `tick_accum`, decrements `next_delta`, and loops. Calculating `ms_per_tick` for every tick ensures `SET_TEMPO` takes effect instantly. Waiting is the **only** thing that consumes ticks.
+- **If it's time to play:** If `tracker->next_delta == 0`, it fetches the next `prg32_audio_event_t` from the track data without consuming any time.
 - It sets `tracker->next_delta = event.delta_ticks`. This establishes the wait time *after* the current event.
-- It calls `execute_event(&event)` to actually perform the action.
+- It calls `execute_event(&event)` to actually perform the action (or handles `JUMP`/`END` itself).
 
 > [!NOTE]
-> Because it evaluates `next_delta == 0` first without consuming a tick, multiple events with `delta_ticks = 0` (like a chord) are processed instantly in the exact same real-time tick.
+> Because fetching an event consumes no time, multiple events with `delta_ticks = 0` (like a chord) are processed in the exact same tick. The first events of a track run on the very first `prg32_audio_tracker_step` call after `prg32_audio_play_track`.
+
+> [!IMPORTANT]
+> One step executes at most `PRG32_AUDIO_TRACKER_MAX_EVENTS_PER_STEP` (256) events. This protects the audio task from malformed tracks, such as a delta-0 `JUMP` to itself, that would otherwise never wait. Any remaining events resume on the next step.
 
 ## 4. Executing Events (`execute_event`)
 

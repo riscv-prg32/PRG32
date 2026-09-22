@@ -1,5 +1,8 @@
 #include "audio_internal.h"
 
+/* Upper bound on events executed by one tracker step without waiting. */
+#define PRG32_AUDIO_TRACKER_MAX_EVENTS_PER_STEP 256u
+
 static uint32_t tick_ms(void) {
   uint16_t bpm = g_prg32_audio.tracker.tempo_bpm;
   if (bpm == 0) {
@@ -90,7 +93,6 @@ void prg32_audio_tracker_step(uint32_t elapsed_ms) {
   }
   prg32_audio_track_slot_t *track = &g_prg32_audio.tracks[tracker->track_id];
   tracker->tick_accum += elapsed_ms;
-  uint32_t ms_per_tick = tick_ms();
 
   // DEBUG LOG
   static int log_div = 0;
@@ -101,12 +103,26 @@ void prg32_audio_tracker_step(uint32_t elapsed_ms) {
            (unsigned long)tracker->event_index);
   }
 
-  while (tracker->active && tracker->tick_accum >= ms_per_tick) {
-    tracker->tick_accum -= ms_per_tick;
+  /* Only waiting consumes ticks.  While next_delta is zero, events are
+   * fetched and executed in the same tick, so delta-0 NOTE_ONs form a chord.
+   * The per-step cap stops a malformed track (for example a delta-0 JUMP to
+   * itself) from spinning forever; remaining events resume on the next step. */
+  uint32_t events_this_step = 0;
+  while (tracker->active) {
     if (tracker->next_delta > 0) {
+      /* Recomputed per tick so SET_TEMPO takes effect immediately. */
+      uint32_t ms_per_tick = tick_ms();
+      if (tracker->tick_accum < ms_per_tick) {
+        break;
+      }
+      tracker->tick_accum -= ms_per_tick;
       tracker->next_delta--;
       continue;
     }
+    if (events_this_step >= PRG32_AUDIO_TRACKER_MAX_EVENTS_PER_STEP) {
+      break;
+    }
+    events_this_step++;
     if (tracker->event_index >= track->event_count) {
       tracker->active = false;
       printf("TRACKER STOPPED: END OF TRACK\n");
