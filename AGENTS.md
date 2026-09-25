@@ -54,6 +54,16 @@ git diff --check
 python3 -m compileall prg32 tests tools
 python3 -m prg32 doctor
 python3 -m prg32 test
+
+# 3. Run CI Tests (from GitHub Actions)
+python3 -m prg32.esp32c6.ci_smoke_test
+python3 -m prg32 abi check
+cartridges/devicedemo/tests/check_source.sh
+cartridges/bachdemo/scripts/test.sh
+cartridges/poing/tests/run.sh
+cc -std=c11 -Wall -Wextra -Werror cartridges/blackjack/tests/test_rules.c cartridges/blackjack/blackjack_rules.c -o /tmp/prg32-blackjack-rules
+/tmp/prg32-blackjack-rules
+sha256sum --check cartridges/blackjack/SHA256SUMS
 ```
 
 If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture the edits are targeting. 

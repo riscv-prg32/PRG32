@@ -316,7 +316,7 @@ class CartRamProfileTests(unittest.TestCase):
     def test_fallback_matches_default_firmware_profile(self) -> None:
         self.assertEqual(env_variables.DEFAULT_CART_RAM_KIB, 64)
         self.assertEqual(env_variables.FALLBACK_CART_RAM_SIZE, 64 * 1024)
-        for defaults in ("sdkconfig.defaults", "sdkconfig.defaults.qemu"):
+        for defaults in ("profiles/sdkconfig.defaults", "profiles/sdkconfig.defaults.qemu"):
             text = (ROOT / defaults).read_text(encoding="utf-8")
             self.assertIn("CONFIG_PRG32_CART_RAM_EXTENDED=y", text, defaults)
 
