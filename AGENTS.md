@@ -56,7 +56,7 @@ python3 -m prg32 doctor
 python3 -m prg32 test
 ```
 
-If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture you are building on. 
+If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture the edits are targeting. 
 
 If you are working on ESP32c6, Build the physical firmware:
 ```bash

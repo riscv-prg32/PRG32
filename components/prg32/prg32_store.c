@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "esp_crt_bundle.h"
 
 #if !CONFIG_PRG32_DISPLAY_QEMU_RGB
 #include "mdns.h"
@@ -222,6 +223,7 @@ int prg32_store_ping(const char *base_url, char *out_name, size_t name_len) {
         .timeout_ms = PRG32_STORE_HTTP_TIMEOUT_MS,
         .event_handler = capture_http,
         .user_data = &capture,
+        .crt_bundle_attach = esp_crt_bundle_attach,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
     if (!client) {
