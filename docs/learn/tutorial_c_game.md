@@ -101,22 +101,22 @@ void app_main(void) {
 Build for hardware:
 
 ```bash
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults flash monitor
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults build
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults flash monitor
 ```
 
 Or build for QEMU:
 
 On Windows:
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" set-target esp32c3
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
+python3 -m prg32 qemu build
 ```
 
 Restore the default `main/CMakeLists.txt` and `main/main.c` after the lab.
@@ -147,9 +147,9 @@ On Windows, build a portable cartridge with `--portable` and stage it with
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
-./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh
+python3 -m prg32 qemu build
+python3 -m prg32 qemu upload <path_to_cartridge.prg32>
+python3 -m prg32 qemu run
 ```
 
 ## 6. Move to Tiles and Platform Games

@@ -44,80 +44,23 @@ Reflection:
 - What would you improve next?
 ```
 
-## Local Setup
-
-Recommended setup:
-
-1. Open `PRG32.code-workspace` in VS Code.
-2. Install the recommended extensions.
-3. Install and source ESP-IDF for ESP32-C3 and ESP32-C6.
-4. Use QEMU for early graphics/debugging work.
-5. Use the ESP32-C6 board for final hardware validation.
-
-ESP-IDF commands:
-
-```bash
-idf.py set-target esp32c6
-idf.py build
-idf.py flash monitor
-```
-
-QEMU commands:
-
-```bash
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu set-target esp32c3
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
-```
-
-PlatformIO users can open the repository root and use the `prg32-esp32c6`
-environment for physical board builds.
-
 ## Validation Checklist
 
 Run these checks before opening a pull request:
 
 ```bash
-git diff --check
-PYTHONPYCACHEPREFIX=/tmp/prg32-pycache python3 -m py_compile \
-  python3 -m prg32 \
-  tools/prg32_metrics_paper.py
-PYTHONPYCACHEPREFIX=/tmp/prg32-pycache python3 -m unittest discover -s tests
-python3 -m prg32 doctor --host-only
+python3 -m compileall prg32 tests tools
+python3 -m prg32 doctor
+python3 -m prg32 test
 ```
 
-When ESP-IDF is available, also run:
+Then verify that the project is building correctly:
 
 ```bash
-idf.py build
-idf.py -B build-qemu -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu build
+python3 -m prg32 qemu build-and-run
+python3 -m prg32 esp32c6 build-and-flash
 ```
 
-For end-to-end QEMU cartridge testing:
-
-```bash
-./scripts/smoke_test.sh
-```
-
-Changes under `cartridges/blackjack` or `cartridges/devicedemo` must also pass
-their local checks and package scripts. GitHub Actions repeats these commands
-and uploads both architecture variants plus each Cartridge Store bundle:
-
-```bash
-cc -std=c11 -Wall -Wextra -Werror \
-  cartridges/blackjack/tests/test_rules.c \
-  cartridges/blackjack/blackjack_rules.c \
-  -o /tmp/prg32-blackjack-rules
-/tmp/prg32-blackjack-rules
-cartridges/devicedemo/tests/check_source.sh
-cartridges/blackjack/build.sh
-PRG32_REPO="$PWD" PRG32_ARCHITECTURE=esp32c6 cartridges/devicedemo/scripts/build.sh
-PRG32_REPO="$PWD" PRG32_ARCHITECTURE=qemu cartridges/devicedemo/scripts/build.sh
-PRG32_REPO="$PWD" cartridges/devicedemo/scripts/pack-store-bundle.sh
-```
-
-If a tool is missing, write that clearly in the pull request. Do not claim a
-firmware or QEMU build passed unless it actually ran.
 
 ## Coding Guidelines
 
@@ -128,9 +71,7 @@ firmware or QEMU build passed unless it actually ran.
   changes the default firmware behavior.
 - Keep example games in `examples/games`; do not move them into the default app.
 - Keep focused rendering demonstrations in `examples/features`.
-- Do not reintroduce legacy `urg32` paths or symbols.
-- Keep generated files, local databases, build outputs, and `.prg32` cartridges
-  out of commits.
+- Keep generated files, local databases, build outputs, and `.prg32` cartridges out of commits.
 - Keep docs in sync when commands, paths, APIs, examples, or lab flows change.
 
 ## Assembly Guidelines

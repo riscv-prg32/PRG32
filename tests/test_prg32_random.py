@@ -4,17 +4,16 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-
-import pytest
+import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_random_number_range_and_rejection_sampling() -> None:
+def check_random_number_range_and_rejection_sampling() -> None:
     compiler = shutil.which("cc")
     if compiler is None:
-        pytest.skip("host C compiler unavailable")
+        raise unittest.SkipTest("host C compiler unavailable")
 
     with tempfile.TemporaryDirectory() as directory:
         temporary = Path(directory)
@@ -69,3 +68,8 @@ int main(void) {
             check=True,
         )
         subprocess.run([str(executable)], check=True)
+
+
+class RandomNumberTests(unittest.TestCase):
+    def test_random_number_range_and_rejection_sampling(self) -> None:
+        check_random_number_range_and_rejection_sampling()

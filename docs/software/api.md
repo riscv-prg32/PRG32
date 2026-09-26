@@ -34,14 +34,11 @@ bodies compact because they run on constrained hardware.
 The board API is served by the PRG32 firmware when Wi-Fi support is enabled.
 It is used by host tools, labs, and setup workflows.
 
-Enable Wi-Fi in `main/prg32_config.h` or through project configuration:
+Enable Wi-Fi features through project configuration (`idf.py menuconfig -> PRG32 framework -> PRG32 Firmware Features`):
 
-```c
-#define PRG32_WIFI_ENABLE 1
-#define PRG32_WIFI_SCORES_ENABLE 1
-#define PRG32_WIFI_SSID "your-network"
-#define PRG32_WIFI_PASSWORD "your-password"
-```
+- **Enable Game Upload (SoftAP + HTTP)**
+- **Enable Wi-Fi Scores API**
+- **Wi-Fi SSID / Password** (under Wi-Fi Configuration)
 
 The board can also run as an access point. In that mode the usual URL is:
 

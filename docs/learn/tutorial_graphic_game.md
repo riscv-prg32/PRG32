@@ -183,12 +183,12 @@ For a desktop graphics test, run:
 
 On Windows:
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
+python3 -m prg32 qemu build
 ```
 
 QEMU is best for:

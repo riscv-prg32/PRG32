@@ -9,7 +9,7 @@ import tempfile
 
 from prg32.utilities.logging import *
 from prg32.utilities.env_variables import *
-from prg32.utilities.runtime_handler import parse_nm, run
+from prg32.utilities.runtime_handler import parse_nm, resolve_cart_ram_size, run
 from prg32.abi.abi_generated import ABI_HASH, ABI_MAJOR, ABI_MINOR, FEATURE_BITS, IMPORT_NAMES
 def write_linker(path: Path, load_addr: int, init_symbol: str) -> None:
     path.write_text(
@@ -149,27 +149,19 @@ def build_cartridge_core(source: str,
                          audio_block : str | None = None,
                          runtime_url: str | None = None,
                          firmware_elf : str | None = None,
-                         name: str | None = None) -> None:
-    
+                         name: str | None = None,
+                         cart_ram_size: int = FALLBACK_CART_RAM_SIZE) -> None:
+
     if not portable or legacy_absolute_imports or runtime_url or firmware_elf:
         raise SystemExit(
             "firmware-specific cartridge builds are no longer supported; "
             "build a portable ABI-table cartridge instead"
         )
-    
-    runtime = {
-        "cart_load_addr": 0x40800000,
-        "cart_ram_size": FALLBACK_CART_RAM_SIZE,
-    }
 
-    load_addr = int(runtime["cart_load_addr"])
-    if "cart_ram_size" not in runtime:
-        print(
-            "warning: runtime did not report cart_ram_size; "
-            f"using fallback {FALLBACK_CART_RAM_SIZE} bytes",
-            file=sys.stderr,
-        )
-    ram_size = int(runtime.get("cart_ram_size", FALLBACK_CART_RAM_SIZE))
+    # Portable builds have no runtime to query, so the executable RAM limit
+    # comes from the selected firmware profile (--cart-ram-kib, default 64).
+    load_addr = FALLBACK_CART_LOAD_ADDR
+    ram_size = int(cart_ram_size)
     req_features = feature_mask(required_features)
     opt_features = feature_mask(optional_features)
 
@@ -285,7 +277,11 @@ def build_cartridge_core(source: str,
         end = linked_symbols["__cart_end"]
         mem_size = end - start
         if mem_size <= 0 or mem_size > ram_size:
-            raise SystemExit(f"cartridge needs {mem_size} bytes, runtime has {ram_size}")
+            raise SystemExit(
+                f"cartridge needs {mem_size} bytes, runtime has {ram_size} "
+                f"({ram_size // 1024} KiB cartridge RAM profile; "
+                "see --cart-ram-kib)"
+            )
         if len(code) > mem_size:
             raise SystemExit("internal error: binary is larger than cartridge memory")
 
@@ -360,6 +356,9 @@ def build_cartridge_cli(args: argparse.Namespace) -> None:
     if build_dir:
         env['CPATH'] = f"{build_dir}/config:{build_dir}:{env.get('CPATH','')}"
 
+    cart_ram_size, ram_source = resolve_cart_ram_size(getattr(args, "cart_ram_kib", None))
+    log_info(f"Cartridge RAM limit: {cart_ram_size} bytes ({ram_source})")
+
     build_cartridge_core(source=args.source,
                          out=args.out,
                          entry_prefix=args.entry_prefix,
@@ -374,5 +373,6 @@ def build_cartridge_cli(args: argparse.Namespace) -> None:
                          audio_block=args.audio_block,
                          runtime_url=args.runtime_url,
                          firmware_elf=firmware_elf,
-                         name=args.name
+                         name=args.name,
+                         cart_ram_size=cart_ram_size,
                          )

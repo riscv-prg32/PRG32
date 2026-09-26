@@ -114,9 +114,9 @@ On Windows, build a portable cartridge with `--portable`, then stage it with
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
-./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh
+python3 -m prg32 qemu build
+python3 -m prg32 qemu upload <path_to_cartridge.prg32>
+python3 -m prg32 qemu run
 ```
 
 ## Comparing Assembly And C

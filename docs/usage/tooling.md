@@ -45,7 +45,19 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `build`: build QEMU and generate the flash image. Use the `--skip-target` option to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment
 - `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports the `--skip-target` option.
-- `upload`: upload a cartridge to QEMU
+- `upload`: upload a cartridge to QEMU. `--cart-ram-kib` sets the executable
+  RAM limit; by default it is read from `build-qemu/sdkconfig`, else 64 KiB
+  (see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).
+
+Two interactive helpers wrap `cartridge build` and QEMU staging for the
+graphics versions of the example games in `examples/games/`:
+
+- `python3 -m prg32.qemu.load_cart <game>|list`: build one game and stage it
+  into `build-qemu/qemu_flash.bin`.
+- `python3 -m prg32.qemu.start`: a menu that builds, stages, and runs a game.
+
+Both call `inject_cartridge()` in `prg32/qemu/upload_qemu.py`, the same
+validation and staging code used by `qemu upload`.
 
 Checked-in cartridge preview videos are recorded from real QEMU execution with
 `python3 tools/capture_cartridge_previews.py`. See
@@ -55,7 +67,9 @@ playfield cropping, UART audio capture, and regeneration details.
 For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qemu.md).
 ## Cartridge Tasks (`cartridge`)
 - `build`: build a portable ABI-table `.prg32` cartridge from assembly or C
-  source code. Firmware-specific build options are rejected.
+  source code. Firmware-specific build options are rejected. `--cart-ram-kib`
+  sets the executable RAM limit (default 64; use 32 for the classroom profile,
+  see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 
 For detailed instructions and examples on building cartridges, see [docs/cartridges.md](/docs/software/cartridges.md).

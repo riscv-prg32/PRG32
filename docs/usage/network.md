@@ -21,7 +21,7 @@ The chosen network settings are stored persistently in non-volatile storage (NVS
 
 ## Technical Details
 
-When running in Access Point mode (`PRG32_WIFI_MODE_AP` or `PRG32_WIFI_MODE_APSTA`), the default classroom values configured in `main/prg32_config.h` are:
+When running in Access Point mode (`PRG32_WIFI_MODE_AP` or `PRG32_WIFI_MODE_APSTA`), the default classroom values configured in `idf.py menuconfig` are:
 
 - **SSID:** `PRG32`
 - **Password:** `prg32game`
@@ -33,27 +33,27 @@ In Station mode (`PRG32_WIFI_MODE_STA`), the IP address will be assigned by the 
 
 QEMU builds keep physical Wi-Fi disabled by default (`CONFIG_PRG32_DISPLAY_QEMU_RGB`), but games can still compile against the same API and exercise setup screens. However, mDNS, CartridgeStore downloads, and multiplayer capabilities generally require specific forwarding or bridging on the virtual QEMU network to function, or they rely on local configuration overrides.
 
-## Advanced: Hardcoding Wi-Fi Credentials
+## Advanced: Pre-configuring Wi-Fi Credentials
 
 For advanced users or developers who frequently flash the firmware, it can be tedious to manually configure the network via the setup menu on every full wipe. 
 
-You can automatically provide your infrastructure Wi-Fi credentials at compile time by using the environment header:
+You can use the PRG32 Python tooling to set your Wi-Fi credentials *before* building. These credentials will be securely merged into your local build environment without touching tracked source files.
 
-1. Copy `main/prg32_env_example.h` and rename the copy to `main/prg32_env.h`.
-2. Edit `main/prg32_env.h` and replace the placeholder values with your actual network credentials:
+To set your Wi-Fi configuration, run the following command in the PRG32 root:
 
-```c
-#ifndef PRG32_ENV_H
-#define PRG32_ENV_H
-
-#define PRG32_WIFI_SSID "YOUR_WIFI_SSID"
-#define PRG32_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-
-#endif
+```bash
+python3 -m prg32 wifi set --ssid "YOUR_WIFI_SSID" --password "YOUR_WIFI_PASSWORD" --mode sta
 ```
 
-This ensures your board automatically connects to the designated Wi-Fi when running in `PRG32_WIFI_MODE_STA` or `PRG32_WIFI_MODE_APSTA`, keeping your development process streamlined.
+- `--mode`: Can be `sta` / `infrastructure` (connect to an existing network) or `ap` (create your own access point).
+- The tooling saves this to `profiles/sdkconfig.defaults.local`, which is ignored by Git, ensuring you don't accidentally commit your network password.
+- You only need to run this command once. It will be remembered for all future builds.
 
+To clear the credentials and return to the default behavior:
+
+```bash
+python3 -m prg32 wifi clear
+```
 ## Development Guide
 
 > [!IMPORTANT]

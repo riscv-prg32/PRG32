@@ -3,17 +3,17 @@ from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
-
-import pytest
+import tempfile
+import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_sprite_rendering_is_pixel_exact(tmp_path: Path) -> None:
+def check_sprite_rendering_is_pixel_exact(tmp_path: Path) -> None:
     compiler = shutil.which("cc")
     if compiler is None:
-        pytest.skip("a host C compiler is required")
+        raise unittest.SkipTest("a host C compiler is required")
     harness = tmp_path / "sprite_render_test.c"
     harness.write_text(
         r'''
@@ -102,3 +102,9 @@ int main(void) {
         check=True,
     )
     subprocess.run([str(executable)], check=True)
+
+
+class SpriteRenderTests(unittest.TestCase):
+    def test_sprite_rendering_is_pixel_exact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            check_sprite_rendering_is_pixel_exact(Path(tmp))

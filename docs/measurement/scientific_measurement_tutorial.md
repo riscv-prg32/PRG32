@@ -79,16 +79,16 @@ Use the normal ESP32-C6 defaults plus the metrics profile:
 ```bash
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.metrics" \
   set-target esp32c6
 
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.metrics" \
   build
 ```
 
-Set these values in `sdkconfig.defaults.metrics` or through `menuconfig`:
+Set these values in `profiles/sdkconfig.defaults.metrics` or through `menuconfig`:
 
 ```text
 CONFIG_PRG32_METRICS_ENABLE=y
@@ -110,7 +110,7 @@ For ESP32-C6 hardware:
 ```bash
 idf.py -B build-esp32c6-metrics \
   -D SDKCONFIG=build-esp32c6-metrics/sdkconfig \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.metrics" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.metrics" \
   flash monitor
 ```
 
@@ -120,13 +120,13 @@ On Windows:
 ```bash
 idf.py -B build-qemu \
   -D SDKCONFIG=build-qemu/sdkconfig \
-  -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" \
   qemu --graphics monitor
 ```
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/build_qemu.sh
+python3 -m prg32 qemu build
 ```
 
 Wait until the runtime splash and setup screen are visible. Note the IP address
@@ -169,8 +169,8 @@ python3 -m prg32 qemu upload \
 
 On Linux or MacOS:
 ```bash
-./scripts/qemu/qemu_inject_cartridge.sh <path_to_cartridge.prg32>
-./scripts/qemu/launch_qemu.sh
+python3 -m prg32 qemu upload <path_to_cartridge.prg32>
+python3 -m prg32 qemu run
 ```
 
 ## 7. Run The Measurement
@@ -373,7 +373,7 @@ For results, include:
 Attach or archive:
 
 - repository commit hash
-- `sdkconfig` or `sdkconfig.defaults.metrics`
+- `sdkconfig` or `profiles/sdkconfig.defaults.metrics`
 - cartridge source and `.prg32` image
 - metrics database or exported CSV files
 - screenshot BMP/PNG files

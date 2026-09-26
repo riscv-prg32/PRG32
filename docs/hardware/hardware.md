@@ -128,7 +128,7 @@ See the [bill of materials](where_to_buy.md) for the resistor and footprint.
 
 ## Software Configuration
 
-These pins match `main/prg32_config.h` for the ESP32-C6 physical ILI9341 build.
+These pins match the default `idf.py menuconfig` settings for the ESP32-C6 physical ILI9341 build.
 
 The firmware enables the internal pull-up on every button input, so a pressed
 button connects its GPIO to GND. START and SELECT are names for the same
@@ -141,7 +141,7 @@ buzzer is wired or initialized. Audio uses the I2S amplifier described below.
 
 The LCD backlight defaults to active-high. If a specific breakout uses an
 active-low backlight transistor, set `PRG32_LCD_BACKLIGHT_ACTIVE_LEVEL` to `0`
-in `main/prg32_config.h`.
+in `idf.py menuconfig`.
 
 ### Onboard RGB LED
 

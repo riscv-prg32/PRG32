@@ -20,10 +20,17 @@ Before writing or modifying any code, you MUST complete these steps:
 
 ## [PHASE 2: VALIDATION RUNS]
 1. At the start of every session you must ask the user a question:
-"Would you like to validate my edits by building the prg32 framework or do you prefer to run the builds on your own?"
+"Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
+The possible answers should include:
+- "Yes, please validate the edits by building the PRG32 framework.".
+- "No, I prefer to run the builds on my own.".
 
-2. If the answer to the builds is yes, you should then ask:
+2. IF AND ONLY IF the answer is yes, you should then ask:
 "For what architecture are you building for? ESP32C6 or QEMU?"
+The possible answers should include:
+- ESP32C6.
+- QEMU.
+- Both.
 
 ## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:
@@ -44,11 +51,22 @@ Run these exact commands to validate your work:
 git diff --check
 
 # 2. Run Python linting/tooling
+python3 -m compileall prg32 tests tools
 python3 -m prg32 doctor
-python3 -m py_compile python3 -m prg32
+python3 -m prg32 test
+
+# 3. Run CI Tests (from GitHub Actions)
+python3 -m prg32.esp32c6.ci_smoke_test
+python3 -m prg32 abi check
+cartridges/devicedemo/tests/check_source.sh
+cartridges/bachdemo/scripts/test.sh
+cartridges/poing/tests/run.sh
+cc -std=c11 -Wall -Wextra -Werror cartridges/blackjack/tests/test_rules.c cartridges/blackjack/blackjack_rules.c -o /tmp/prg32-blackjack-rules
+/tmp/prg32-blackjack-rules
+sha256sum --check cartridges/blackjack/SHA256SUMS
 ```
 
-If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture you are building on. 
+If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture the edits are targeting. 
 
 If you are working on ESP32c6, Build the physical firmware:
 ```bash
@@ -60,6 +78,6 @@ If you are working on QEMU, Build the QEMU firmware:
 python3 -m prg32 qemu build
 ```
 
-[PHASE 5: DOCUMENTATION EDITING]
-After being done with editing, you should modify all relevant documentation in docs/ and the repository structure.
-NEVER edit the README unless explicitly specified.
+## [PHASE 5: DOCUMENTATION EDITING]
+After being done with editing, you should modify all relevant documentation in docs/ and the [repository structure](docs/repository_structure.md).
+NEVER edit the [README](/README.md) unless explicitly specified.

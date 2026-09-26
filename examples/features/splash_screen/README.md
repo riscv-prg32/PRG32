@@ -43,8 +43,8 @@ For the C version, use `../examples/features/splash_screen/c/demo.c` and the
 Build:
 
 ```bash
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults set-target esp32c6
-idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults build flash monitor
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults set-target esp32c6
+idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults build flash monitor
 ```
 
 Checkpoint: the first splash pauses briefly, then the draw helper keeps a

@@ -15,7 +15,7 @@ python3 -m prg32 doctor
 The `doctor` tool verifies:
 - Whether the **ESP-IDF** toolchain is properly loaded (e.g., `idf.py` is in your `PATH`).
 - Whether the **RISC-V compiler** (`riscv32-esp-elf-gcc`) is available.
-- Whether the **partitions file** (`partitions_prg32.csv`) exists and can be parsed correctly for cartridge slots.
+- Whether the **partitions file** (`profiles/partitions_prg32.csv`) exists and can be parsed correctly for cartridge slots.
 
 If any of these checks fail, ensure you have sourced the ESP-IDF export script (e.g., `. ~/esp-idf/export.sh`) before attempting to build the project.
 

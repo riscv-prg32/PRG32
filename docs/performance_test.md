@@ -518,7 +518,6 @@ cartridges/myperformancetest/
 |-- README.md
 |-- src/
 |   `-- myperformancetest.c
-|-- scripts/
 |   `-- build.sh
 `-- dist/                         generated packages
 ```

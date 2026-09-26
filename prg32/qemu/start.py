@@ -6,7 +6,7 @@ from prg32.utilities.logging import *
 from prg32.utilities.environment_check import check_python, load_idf_env, validate_project_layout, ensure_qemu_flash, ensure_qemu_efuse, ensure_qemu_firmware
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import inject_cartridge
-from prg32.utilities.env_variables import GAMES_DIR, BUILD_DIR
+from prg32.utilities.env_variables import GAMES_DIR, QEMU_BUILD_DIR
 
 
 def discover_games():
@@ -32,7 +32,7 @@ def print_game_menu(games):
 
 def run_game_flow(game_name: str):
     source_file = Path(GAMES_DIR) / game_name / "graphics" / "game.S"
-    cart_file = Path(BUILD_DIR) / f"{game_name}.prg32"
+    cart_file = Path(QEMU_BUILD_DIR) / f"{game_name}.prg32"
     ensure_qemu_efuse()
     subprocess.check_call([
         sys.executable, "-m", "prg32", "cartridge", "build",

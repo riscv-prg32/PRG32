@@ -68,10 +68,12 @@ void prg32_audio_synth_start(prg32_audio_voice_t *voice,
                              uint8_t note, uint32_t sample_rate) {
     prg32_audio_synth_voice_t *synth = &voice->synth_state;
     uint16_t id = instrument->sample_id;
+    /* Decode the PRG32_AUDIO_SYNTH_ID layout from prg32_audio.h:
+     * bits 11:10 resonance, 9:6 cutoff, 5:2 pulse width, 1:0 waveform. */
     synth->waveform = id & 0x03u;
-    synth->resonance = (id >> 4) & 0x07u;
-    synth->cutoff = (id >> 7) & 0x07u;
-    uint32_t pulse_position = ((id >> 10) & 0x0fu) + 1u;
+    synth->resonance = (id >> 10) & 0x03u;
+    synth->cutoff = (id >> 6) & 0x0fu;
+    uint32_t pulse_position = ((id >> 2) & 0x0fu) + 1u;
     synth->pulse_threshold = (uint32_t)(((uint64_t)pulse_position << 32) / 17u);
     synth->phase_increment = note_phase_increment(note, sample_rate);
     synth->lfsr = SYNTH_LFSR_SEED;
@@ -169,14 +171,17 @@ static int32_t filter_sample(prg32_audio_synth_voice_t *synth, int32_t input) {
         3616, 4512, 5536, 6688, 7936, 9280, 10752, 12288,
     };
     static const uint16_t damping_q15[4] = {32767, 24576, 16384, 8192};
+    /* Mask the indices so a corrupted voice can never read past a table. */
+    uint8_t cutoff = synth->cutoff & 0x0fu;
+    uint8_t resonance = synth->resonance & 0x03u;
     int32_t low = synth->filter_low;
     int32_t band = synth->filter_band;
     low = clamp_filter((int64_t)low +
-                       (((int64_t)cutoff_q15[synth->cutoff] * band) >> 15));
+                       (((int64_t)cutoff_q15[cutoff] * band) >> 15));
     int32_t high = clamp_filter((int64_t)input - low -
-        (((int64_t)damping_q15[synth->resonance] * band) >> 15));
+        (((int64_t)damping_q15[resonance] * band) >> 15));
     band = clamp_filter((int64_t)band +
-                        (((int64_t)cutoff_q15[synth->cutoff] * high) >> 15));
+                        (((int64_t)cutoff_q15[cutoff] * high) >> 15));
     synth->filter_low = low;
     synth->filter_band = band;
     if (low > 32767) return 32767;

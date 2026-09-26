@@ -123,7 +123,7 @@ Display backend selection:
 Use the QEMU defaults file when running on a desktop:
 
 ```bash
-idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS=sdkconfig.defaults.qemu qemu --graphics monitor
+idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" qemu --graphics monitor
 ```
 
 When the QEMU backend is selected, `main/prg32_config.h` disables physical GPIO
@@ -275,10 +275,12 @@ Important constants:
   configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 and QEMU
   builds default to the 64 KiB extended profile. The optional
   `PRG32_CART_RAM_LARGE_128` profile reserves 128 KiB on ESP32-C6 when built
-  with `sdkconfig.defaults.esp32c6_128k`; it requires matching rebuilt
+  with `profiles/sdkconfig.defaults.esp32c6_128k`; it requires matching rebuilt
   cartridges and raises the stored-image limit to 128 KiB. The window remains
   static because legacy cartridges are linked to the exported
   `prg32_cart_exec` address; portable cartridges use the ABI table.
+  Host tools assume the 64 KiB window unless told otherwise with
+  `--cart-ram-kib`; see [PRG32 Profiles](../usage/profiles.md#matching-host-tools-to-the-profile).
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
 
 Important functions:
@@ -332,8 +334,8 @@ status bands, and small classroom sketches through the same cartridge ABI used
 by student games.
 
 Normal images autoload their only stored cartridge, or the saved default when
-multiple cartridges are present. `PRG32_BOOT_SETUP_MODE` in
-`main/prg32_config.h` can force setup on every boot for custom classroom
+multiple cartridges are present. `PRG32_BOOT_SETUP_MODE` in `idf.py menuconfig`
+(`PRG32 Firmware Features -> Boot Setup Mode`) can force setup on every boot for custom classroom
 images. If `PRG32_PIN_SETUP` is wired, holding it low during boot also forces
 setup mode.
 
@@ -386,7 +388,7 @@ npm install
 npm start
 ```
 
-Configure the board-side endpoint in `main/prg32_config.h` with
+Configure the board-side endpoint in `idf.py menuconfig` (`PRG32 Firmware Features -> Multiplayer Server URL`) with
 `PRG32_MULTIPLAYER_SERVER_URL`. QEMU exposes the same API with an offline local
 stub: `prg32_multiplayer_available()` returns true, `join` succeeds for a
 non-empty signature, and peer snapshots are empty by default.
@@ -593,7 +595,7 @@ PRG32 exposes a small addressable RGB LED API:
 
 The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
 boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
-to `-1` in `main/prg32_config.h`. Set it only when the LED pin is free on the
+to `-1` in `idf.py menuconfig`. Set it only when the LED pin is free on the
 chosen board wiring.
 
 ## Development Guide
@@ -611,7 +613,7 @@ When editing framework code:
 - Keep dependencies in `components/prg32/CMakeLists.txt`.
 - Keep `REQUIRES` and `PRIV_REQUIRES` independent of `CONFIG_*` choices; ESP-IDF
   expands component requirements before configuration-dependent source choices.
-- Keep app-specific pin and feature config in `main/prg32_config.h`.
+- Configure app-specific pins and features using `idf.py menuconfig` (under PRG32 framework).
 - Preserve `prg32_init()` as the one-call framework initializer.
 - Do not expose ESP-IDF-only types in the public ABI unless absolutely needed.
 - Return simple `int` status codes for APIs called from assembly.

@@ -6,7 +6,8 @@ import argparse
 import sys
 from prg32.utilities.env_variables import *
 from prg32.utilities.environment_check import doctor
-from prg32.utilities.runtime_handler import runtime
+from prg32.utilities.runtime_handler import parse_cart_ram_kib, runtime
+from prg32.utilities.tests_runner import run_tests
 
 from prg32.cartridge.build_cartridge import build_cartridge_cli
 
@@ -26,8 +27,10 @@ from prg32.store.metadata import attach_metadata, inspect_metadata
 from prg32.store.store_api import store_discover, store_list, store_download
 from prg32.store.publish import publish, pack_bundle, publish_bundle
 from prg32.store.utils import ARCHITECTURE_PROFILES
+from prg32.store.config_cli import store_set_url, store_clear_url
 
 from prg32.abi.abi_gen import abi_gen_cmd, abi_check_cmd
+from prg32.wifi.wifi_cli import wifi_set, wifi_clear
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -143,6 +146,10 @@ def main(argv: list[str]) -> int:
     p.add_argument("--flash", default=QEMU_IMAGE, help="Path to the QEMU flash image")
     p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Path to the partition table CSV")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to stage into")
+    p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
+        help="Executable cartridge RAM of the QEMU firmware in KiB "
+             "(default: CONFIG_PRG32_CART_RAM_KIB from the sdkconfig next to --flash, "
+             f"else {DEFAULT_CART_RAM_KIB}; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
     p.set_defaults(func=upload_qemu)
 
 
@@ -177,6 +184,9 @@ def main(argv: list[str]) -> int:
     p.add_argument("--march", default="rv32imc_zicsr_zifencei", help="RISC-V architecture string")
     p.add_argument("--mabi", default="ilp32", help="RISC-V ABI string")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the RISC-V GCC toolchain")
+    p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
+        help=f"Executable cartridge RAM of the target firmware in KiB (default: {DEFAULT_CART_RAM_KIB}, "
+             f"the extended profile; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
     arch_group = p.add_mutually_exclusive_group(required=False)
     arch_group.add_argument("--architecture", choices=["esp32c6", "qemu"], help="Target architecture (esp32c6 or qemu)")
     arch_group.add_argument("--firmware-elf", help="Deprecated: firmware-specific cartridge builds are unsupported")
@@ -276,6 +286,27 @@ def main(argv: list[str]) -> int:
     p.add_argument("--token", help="Authentication token for the store")
     p.set_defaults(func=publish_bundle)
 
+    p = store_sub.add_parser("set-url", help="Set the local CartridgeStore URL for local builds", usage="%(prog)s URL")
+    p.add_argument("url", help="URL of the CartridgeStore")
+    p.set_defaults(func=store_set_url)
+
+    p = store_sub.add_parser("clear-url", help="Clear the local CartridgeStore URL")
+    p.set_defaults(func=store_clear_url)
+
+    # ==========================================
+    # 'wifi' Subcommand Menu
+    # ==========================================
+    wifi_p = sub.add_parser("wifi", help="Manage local WiFi configuration", description="Manage local WiFi credentials and mode (AP or INFRASTRUCTURE) for the next firmware build.")
+    wifi_sub = wifi_p.add_subparsers(dest="sub_cmd", required=True)
+
+    p = wifi_sub.add_parser("set", help="Set local WiFi credentials and mode", description="Configure the local WiFi SSID, password, and operating mode (Access Point or Infrastructure).")
+    p.add_argument("--ssid", required=True, help="Network SSID (name of the network)")
+    p.add_argument("--password", default="", help="Network password (minimum 8 characters for WPA2, leave empty for open networks)")
+    p.add_argument("--mode", type=str.lower, choices=["ap", "sta", "infrastructure"], default="ap", help="WiFi boot mode: 'ap' (create an Access Point) or 'infrastructure' / 'sta' (connect to an existing network). Default: ap")
+    p.set_defaults(func=wifi_set)
+
+    p = wifi_sub.add_parser("clear", help="Clear local WiFi credentials", description="Remove any local WiFi overrides so the firmware uses its default behavior.")
+    p.set_defaults(func=wifi_clear)
 
     p = sub.add_parser("doctor", help="check local toolchain prerequisites", usage="%(prog)s [options]")
     p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Path to the partition table CSV")
@@ -293,6 +324,9 @@ def main(argv: list[str]) -> int:
     p.add_argument("--firmware-elf", help="Path to the firmware ELF to analyze")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the toolchain")
     p.set_defaults(func=runtime)
+
+    p = sub.add_parser("test", help="run unit tests and smoke tests", usage="%(prog)s [options]")
+    p.set_defaults(func=run_tests)
 
     args = parser.parse_args(argv)
     args.func(args)

@@ -25,7 +25,7 @@ curl -X POST http://localhost:5000/api/scores \
   -d '{"game":"pong","player":"Ada","score":42}'
 ```
 
-3. Enable Wi-Fi scores in `main/prg32_config.h` if using board networking.
+3. Enable Wi-Fi scores in `idf.py menuconfig` (`PRG32 Firmware Features -> Enable Wi-Fi Scores API`) if using board networking.
 4. Submit a local score with `prg32_score_submit`.
 5. Start the multiplayer relay in another terminal:
 
@@ -36,7 +36,7 @@ npm install
 npm start
 ```
 
-6. Configure `PRG32_MULTIPLAYER_SERVER_URL` in `main/prg32_config.h` to point at
+6. Configure `PRG32_MULTIPLAYER_SERVER_URL` in `idf.py menuconfig` (`PRG32 Firmware Features -> Multiplayer Server URL`) to point at
    the server host.
 7. In a small C cartridge, call:
 

@@ -88,6 +88,47 @@ def fetch_runtime(url: str) -> dict:
     except urllib.error.URLError as exc:
         raise SystemExit(f"failed to read runtime from {endpoint}: {exc}") from exc
 
+def parse_cart_ram_kib(text: str) -> int:
+    """argparse type for --cart-ram-kib, using the Kconfig custom-profile range."""
+    try:
+        kib = int(text, 0)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"invalid KiB value: {text!r}") from exc
+    if kib < MIN_CART_RAM_KIB or kib > MAX_CART_RAM_KIB:
+        raise argparse.ArgumentTypeError(
+            f"cartridge RAM must be between {MIN_CART_RAM_KIB} and "
+            f"{MAX_CART_RAM_KIB} KiB (got {kib})"
+        )
+    return kib
+
+def cart_ram_kib_from_sdkconfig(path: Path) -> int | None:
+    """Read CONFIG_PRG32_CART_RAM_KIB from a generated sdkconfig, if present."""
+    if not path.is_file():
+        return None
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if line.startswith("CONFIG_PRG32_CART_RAM_KIB="):
+            try:
+                return int(line.split("=", 1)[1], 0)
+            except ValueError:
+                return None
+    return None
+
+def resolve_cart_ram_size(cart_ram_kib: int | None,
+                          sdkconfig: Path | None = None) -> tuple[int, str]:
+    """Choose the executable cartridge RAM size in bytes and describe its source.
+
+    Priority: explicit --cart-ram-kib, then CONFIG_PRG32_CART_RAM_KIB from the
+    given sdkconfig, then the default firmware profile (64 KiB).
+    """
+    if cart_ram_kib is not None:
+        return cart_ram_kib * 1024, "--cart-ram-kib"
+    if sdkconfig is not None:
+        sdk_kib = cart_ram_kib_from_sdkconfig(sdkconfig)
+        if sdk_kib is not None:
+            return sdk_kib * 1024, str(sdkconfig)
+    return FALLBACK_CART_RAM_SIZE, "default firmware profile"
+
 def ensure_cart_max_size(data: bytes) -> None:
     if len(data) > 64 * 1024:
         raise SystemExit(

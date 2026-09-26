@@ -184,8 +184,12 @@ python3 -m prg32 cartridge build \
   --out ../work/hello_world/hello_world.prg32
 ```
 
-Boot up the ESP32C6 to the setup menu and make sure that your computer and the board are connected to the **same WiFi**. To do this, you can set up an Access Point on the ESP32C6, or you can connect to a local WiFi network. See the [Network](network.md) documentation file for more information.
+Boot up the ESP32C6 to the setup menu and make sure that your computer and the board are connected to the **same WiFi**.
 
+> [!TIP]
+> You can pre-configure your board's Wi-Fi connection *before* building the firmware by running:
+> `python3 -m prg32 wifi set --ssid "YourSSID" --password "YourPwd" --mode sta`
+> This avoids having to configure it on the physical board's screen.
 Upload the cartridge to the board.
 ```
 python3 -m prg32 esp32c6 upload ../work/hello_world/hello_world.prg32

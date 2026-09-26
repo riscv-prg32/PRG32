@@ -13,7 +13,7 @@ ESP32C6_BUILD_DIR = "build-esp32c6"
 ESP32C6_IMAGE = f"{ESP32C6_BUILD_DIR}/PRG32.bin"
 ESP32C6_ELF = f"{ESP32C6_BUILD_DIR}/PRG32.elf"
 ESP32C6_SDKCONFIG = f"{ESP32C6_BUILD_DIR}/sdkconfig"
-ESP32C6_SDKCONFIG_DEFAULTS = "sdkconfig.defaults"
+ESP32C6_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6"
 
 # QEMU environment variables
 QEMU_BUILD_DIR = "build-qemu"
@@ -21,10 +21,10 @@ QEMU_IMAGE = f"{QEMU_BUILD_DIR}/qemu_flash.bin"
 QEMU_EFUSE = f"{QEMU_BUILD_DIR}/qemu_efuse.bin"
 QEMU_ELF = f"{QEMU_BUILD_DIR}/PRG32.elf"
 QEMU_SDKCONFIG= f"{QEMU_BUILD_DIR}/sdkconfig"
-QEMU_SDKCONFIG_DEFAULTS = "sdkconfig.defaults.qemu"
+QEMU_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu"
 
 # Metrics variables
-METRICS_SDKCONFIG_DEFAULTS = "sdkconfig.defaults.metrics"
+METRICS_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults.metrics"
 
 # Target Defaults
 TARGET_DEFAULTS = {
@@ -50,9 +50,18 @@ PRG32_CART_FLAG_ABI_TABLE = 1 << 2
 PRG32_IMPORT_MODEL_LEGACY_ABSOLUTE = 0
 PRG32_IMPORT_MODEL_ABI_TABLE = 1
 AUDIO_BLOCK_MAGIC = b"AUD0"
-DEFAULT_PARTITION_TABLE = ROOT_DIR / "partitions_prg32.csv"
+DEFAULT_PARTITION_TABLE = ROOT_DIR / "profiles/partitions_prg32.csv"
 DEFAULT_CART_SLOT = "cart0"
-FALLBACK_CART_RAM_SIZE = 32 * 1024
+# Executable cartridge RAM window, mirroring Kconfig PRG32_CART_RAM_KIB.
+# The default firmware profile (sdkconfig.defaults and sdkconfig.defaults.qemu)
+# is CONFIG_PRG32_CART_RAM_EXTENDED, a 64 KiB window. Host tools use this value
+# when no runtime information is available; pass --cart-ram-kib 32 to target
+# the classroom profile.
+DEFAULT_CART_RAM_KIB = 64
+CLASSROOM_CART_RAM_KIB = 32
+MIN_CART_RAM_KIB = 16
+MAX_CART_RAM_KIB = 128
+FALLBACK_CART_RAM_SIZE = DEFAULT_CART_RAM_KIB * 1024
 FALLBACK_CART_LOAD_ADDR = 0x40800000
 FLASH_SIZE = 4 * 1024 * 1024
 

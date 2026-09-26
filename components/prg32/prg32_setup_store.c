@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "esp_crt_bundle.h"
 
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #define STORE_MAX_GAMES 40
@@ -210,6 +211,7 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
       .method = HTTP_METHOD_GET,
       .timeout_ms = PRG32_STORE_HTTP_TIMEOUT_MS,
       .keep_alive_enable = false,
+      .crt_bundle_attach = esp_crt_bundle_attach,
   };
   esp_http_client_handle_t client = esp_http_client_init(&config);
   if (!client) {
@@ -474,6 +476,7 @@ static int stream_download(const char *base_url, const store_game_t *game,
       .url = url,
       .method = HTTP_METHOD_GET,
       .timeout_ms = PRG32_STORE_HTTP_TIMEOUT_MS,
+      .crt_bundle_attach = esp_crt_bundle_attach,
   };
   esp_http_client_handle_t client = esp_http_client_init(&config);
   if (!client) {
@@ -695,8 +698,7 @@ void prg32_setup_store_run(void) {
         prg32_input_wait_released(MENU_CANCEL);
         return;
       }
-      if (((input & PRG32_BTN_SELECT) && !(last & PRG32_BTN_SELECT)) ||
-          ((input & PRG32_BTN_B) && !(last & PRG32_BTN_B))) {
+      if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
         prg32_input_wait_released(MENU_ACCEPT);
         if (choice == 0) {
           char found[PRG32_STORE_URL_MAX_LEN];

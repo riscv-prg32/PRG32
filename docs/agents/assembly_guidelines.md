@@ -20,9 +20,6 @@ When adding a game:
 3. Add a local `README.md` with controls and learning goals.
 4. Update `examples/games/README.md`.
 5. Update the example list in `README.md`.
-6. Add `PRG32_GAME_<NAME>_ASCII` and `PRG32_GAME_<NAME>_GRAPHICS` identifiers in
-   `main/prg32_config.h` if the examples list uses selection constants.
-7. Add `PRG32_GAME_<NAME>_C` when a C version is provided.
 
 Assembly conventions:
 

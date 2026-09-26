@@ -212,7 +212,9 @@ SID-like synthesis is ABI-neutral: bit 15 of the existing instrument
 descriptor layout, tracker event, or AUDIO block version changed. Portable
 cartridges built before synthesis therefore remain compatible, and ordinary
 sample IDs retain PCM semantics. The encoding is defined in the
-[audio guide](../tools/audio.md#sid-like-procedural-instruments).
+[audio guide](../tools/audio.md#sid-like-procedural-instruments). The later
+[synth ID decoder fix](../tools/audio.md#synth-id-decoder-fix) and delta-0
+tracker timing fix change runtime behaviour only, not the ABI.
 
 ## RGB LED ABI Calls
 
