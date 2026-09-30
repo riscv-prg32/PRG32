@@ -253,11 +253,11 @@ config PRG32_PIN_LCD_CS
 
 config PRG32_PIN_LCD_DC
     int "LCD DC GPIO"
-    default 1
+    default 8
 
 config PRG32_PIN_LCD_RST
     int "LCD RST GPIO"
-    default 0
+    default 9
 
 config PRG32_PIN_LCD_BL
     int "LCD Backlight GPIO"

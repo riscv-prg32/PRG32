@@ -29,12 +29,14 @@ static const char *TAG = "prg32_lcd";
 #endif
 
 #ifndef PRG32_LCD_MADCTL
-#define PRG32_LCD_MADCTL 0x28
+#define PRG32_LCD_MADCTL 0xE8 
 #endif
 
 #ifndef PRG32_LCD_BOOT_TEST_MS
 #define PRG32_LCD_BOOT_TEST_MS 0
 #endif
+
+
 
 #define PRG32_VIEWPORT_Y ((PRG32_LCD_H - PRG32_GAME_H) / 2)
 #define PRG32_LCD_FLUSH_ROWS 8
