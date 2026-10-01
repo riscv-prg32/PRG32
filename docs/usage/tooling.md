@@ -14,6 +14,7 @@ python3 -m prg32 <command> [subcommand] [options]
 - `store`: CartridgeStore and metadata tasks
 - `doctor`: Check local toolchain prerequisites
 - `runtime`: Print runtime linker information
+- `debug`: Control an optional PRG32-QT debugger over its device HTTP API
 
 ## ESP32C6 SoC Tasks (`esp32c6`)
 All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6` group.
@@ -93,6 +94,9 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 ## Diagnostic Tasks
 - `doctor`: check local toolchain prerequisites
 - `runtime`: print runtime linker information
+- `debug`: query state or send `enable`, `disable`, `pause`, `step`, `resume`,
+  and playback `speed` commands to PRG32-QT. See the
+  [Web API reference](../software/api.md#prg32-qt-optional-debugger-api).
 
 ## GitHub Actions artifacts
 

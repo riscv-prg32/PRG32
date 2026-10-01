@@ -200,6 +200,7 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep us
 **APIs & Advanced Features:**
 - [Framework C/Assembly ABI](docs/software/framework_manual.md)
 - [HTTP APIs (Score, Metrics, Multiplayer)](docs/software/api.md)
+- [PRG32-QT Debugger and SDK Commands](docs/software/api.md#prg32-qt-optional-debugger-api)
 - [Performance Test Guide](docs/performance_test.md)
 - [Audio Guide](docs/tools/audio.md)
 - [Assets Tools](docs/tools/assets.md)

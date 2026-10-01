@@ -36,6 +36,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 
 - [Application Binary Interface (ABI)](software/abi.md)
 - [Web API Reference](software/api.md)
+- [PRG32-QT Optional Debugger API](software/api.md#prg32-qt-optional-debugger-api)
 - [C Framework Manual](software/framework_manual.md)
 - [Updating Controllers and Wi-Fi](software/framework_manual_update_controllers_wifi.md)
 - [Memory Architecture](hardware/memory.md)

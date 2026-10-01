@@ -11,6 +11,50 @@ This document describes the HTTP and discovery APIs used around PRG32:
 The APIs are intentionally small and readable. They are suitable for classroom
 experiments with `curl`, Python, or simple JavaScript clients.
 
+## PRG32-QT Optional Debugger API
+
+PRG32-QT extends the common device API with an optional host-side RV32IMAC
+debugger. This route is not implemented by the constrained ESP32-C6 firmware;
+clients must discover it from `GET /api` before offering debugger controls.
+
+```http
+GET /api/debug?address=0x40800000&length=128
+POST /api/debug
+Content-Type: application/json
+```
+
+The GET response includes enabled/running/paused state, the update/draw phase,
+playback speed, PC, all 32 integer registers, highlighted disassembly, and up to
+1024 bytes of bounded guest memory. POST accepts these command objects:
+
+```json
+{"command":"enable","enabled":true}
+{"command":"pause"}
+{"command":"step"}
+{"command":"resume"}
+{"command":"speed","speed":0.25}
+```
+
+Supported playback multipliers are `0.1`, `0.25`, `0.5`, `1`, `2`, and `4`.
+One step retires one guest instruction; resume completes a partially stepped
+update/draw cycle before continuous frames continue. The desktop panel also
+offers non-executing jumps to the cartridge header's init, update, and draw
+entry offsets.
+
+Use the unified SDK client against a discovered PRG32-QT URL:
+
+```bash
+python3 -m prg32 debug enable --url http://prg32-host.local:8080
+python3 -m prg32 debug pause --url http://prg32-host.local:8080
+python3 -m prg32 debug step --url http://prg32-host.local:8080
+python3 -m prg32 debug speed --speed 0.25 --url http://prg32-host.local:8080
+python3 -m prg32 debug state --url http://prg32-host.local:8080
+python3 -m prg32 debug resume --url http://prg32-host.local:8080
+```
+
+Python applications can import `debugger_request` from `prg32.debug` to use
+the same JSON contract without invoking the CLI.
+
 ## Common Conventions
 
 Use plain HTTP on classroom networks unless a reverse proxy adds HTTPS.

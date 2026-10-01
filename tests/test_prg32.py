@@ -7,6 +7,7 @@ from pathlib import Path
 import contextlib
 import tempfile
 import unittest
+from unittest import mock
 
 from prg32.utilities import partition_handler, runtime_handler, env_variables
 from prg32.cartridge import build_cartridge
@@ -21,8 +22,24 @@ from prg32.abi.abi_generated import (
 )
 from prg32.abi.abi_gen import abi_hash
 from prg32.prg32 import main as prg32_main
+from prg32.debug import debugger_request
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class DebuggerClientTests(unittest.TestCase):
+    @mock.patch("prg32.debug.urllib.request.urlopen")
+    def test_debugger_request_posts_command_json(self, urlopen) -> None:
+        response = mock.MagicMock()
+        response.__enter__.return_value = io.BytesIO(b'{"ok":true,"pc":1082130432}')
+        urlopen.return_value = response
+
+        state = debugger_request("http://prg32.local:8080/", "speed", speed=0.25)
+
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "http://prg32.local:8080/api/debug")
+        self.assertEqual(json.loads(request.data), {"command": "speed", "speed": 0.25})
+        self.assertEqual(state["pc"], 1082130432)
 
 class PortableBuildPolicyTests(unittest.TestCase):
     def test_firmware_specific_build_is_rejected_before_toolchain_runs(self) -> None:

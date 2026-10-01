@@ -29,6 +29,7 @@ from prg32.store.publish import publish, pack_bundle, publish_bundle
 from prg32.store.utils import ARCHITECTURE_PROFILES
 from prg32.store.config_cli import store_set_url, store_clear_url
 
+from prg32.debug import SUPPORTED_SPEEDS, debug_cli
 from prg32.abi.abi_gen import abi_gen_cmd, abi_check_cmd
 from prg32.wifi.wifi_cli import wifi_set, wifi_clear
 
@@ -327,6 +328,12 @@ def main(argv: list[str]) -> int:
 
     p = sub.add_parser("test", help="run unit tests and smoke tests", usage="%(prog)s [options]")
     p.set_defaults(func=run_tests)
+
+    p = sub.add_parser("debug", help="control the optional PRG32-QT cartridge debugger")
+    p.add_argument("command", choices=["state", "enable", "disable", "pause", "step", "resume", "speed"])
+    p.add_argument("--url", required=True, help="URL of the PRG32-QT host")
+    p.add_argument("--speed", type=float, choices=SUPPORTED_SPEEDS, help="Playback multiplier for the speed command")
+    p.set_defaults(func=debug_cli)
 
     args = parser.parse_args(argv)
     args.func(args)
