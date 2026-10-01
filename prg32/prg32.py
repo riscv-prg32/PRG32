@@ -33,16 +33,48 @@ from prg32.debug import SUPPORTED_SPEEDS, debug_cli
 from prg32.abi.abi_gen import abi_gen_cmd, abi_check_cmd
 from prg32.wifi.wifi_cli import wifi_set, wifi_clear
 
+class AbbrevDict(dict):
+    def __contains__(self, key):
+        if dict.__contains__(self, key):
+            return True
+        candidates = [k for k in self.keys() if k.startswith(key)]
+        return len(candidates) == 1
+
+    def __getitem__(self, key):
+        if dict.__contains__(self, key):
+            return dict.__getitem__(self, key)
+        candidates = [k for k in self.keys() if k.startswith(key)]
+        if len(candidates) == 1:
+            return dict.__getitem__(self, candidates[0])
+        raise KeyError(key)
+
+    def __iter__(self):
+        return iter(list(self.keys()))
+
+class AbbrevSubParsersAction(argparse._SubParsersAction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._name_parser_map = AbbrevDict()
+        self.choices = self._name_parser_map
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser_name = values[0]
+        if parser_name not in self._name_parser_map:
+            candidates = [name for name in self._name_parser_map if name.startswith(parser_name)]
+            if len(candidates) == 1:
+                values[0] = candidates[0]
+        super().__call__(parser, namespace, values, option_string)
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub = parser.add_subparsers(dest="cmd", required=True, action=AbbrevSubParsersAction)
 
     # ==========================================
     # 'esp32c6' Subcommand Menu
     # ==========================================
     esp32c6_p = sub.add_parser("esp32c6", help="ESP32C6 SoC tasks")
     # Add a subparser tracker specifically for sub-commands of qemu
-    esp32c6_sub = esp32c6_p.add_subparsers(dest="sub_cmd", required=True)
+    esp32c6_sub = esp32c6_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
 
 
     p = esp32c6_sub.add_parser("build", help="build the ESP32C6 firmware")
@@ -122,7 +154,7 @@ def main(argv: list[str]) -> int:
     # ==========================================
     qemu_p = sub.add_parser("qemu", help="QEMU emulator tasks")
     # Add a subparser tracker specifically for sub-commands of qemu
-    qemu_sub = qemu_p.add_subparsers(dest="sub_cmd", required=True)
+    qemu_sub = qemu_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
     
     p =  qemu_sub.add_parser("build", help="build QEMU and generate the flash image")
     p.add_argument("--skip-target", action="store_true", 
@@ -159,7 +191,7 @@ def main(argv: list[str]) -> int:
     # 'cartridge' Subcommand Menu
     # ==========================================
     cartridge_p = sub.add_parser("cartridge", help="Cartridge tasks (build, summary, etc.)")
-    cartridge_sub = cartridge_p.add_subparsers(dest="sub_cmd", required=True)
+    cartridge_sub = cartridge_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
 
     p = cartridge_sub.add_parser(
         "build", 
@@ -201,7 +233,7 @@ def main(argv: list[str]) -> int:
     # 'abi' Subcommand Menu
     # ==========================================
     abi_p = sub.add_parser("abi", help="ABI tooling tasks")
-    abi_sub = abi_p.add_subparsers(dest="sub_cmd", required=True)
+    abi_sub = abi_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
 
     p = abi_sub.add_parser("gen", help="generate PRG32 portable cartridge ABI C headers (e.g. prg32_abi_index.h) from prg32_abi.json")
     p.set_defaults(func=abi_gen_cmd)
@@ -213,7 +245,7 @@ def main(argv: list[str]) -> int:
     # 'store' Subcommand Menu
     # ==========================================
     store_p = sub.add_parser("store", help="CartridgeStore and metadata tasks")
-    store_sub = store_p.add_subparsers(dest="sub_cmd", required=True)
+    store_sub = store_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
 
     p = store_sub.add_parser(
         "attach-metadata",
@@ -298,7 +330,7 @@ def main(argv: list[str]) -> int:
     # 'wifi' Subcommand Menu
     # ==========================================
     wifi_p = sub.add_parser("wifi", help="Manage local WiFi configuration", description="Manage local WiFi credentials and mode (AP or INFRASTRUCTURE) for the next firmware build.")
-    wifi_sub = wifi_p.add_subparsers(dest="sub_cmd", required=True)
+    wifi_sub = wifi_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
 
     p = wifi_sub.add_parser("set", help="Set local WiFi credentials and mode", description="Configure the local WiFi SSID, password, and operating mode (Access Point or Infrastructure).")
     p.add_argument("--ssid", required=True, help="Network SSID (name of the network)")
