@@ -28,7 +28,10 @@ def store_url(args: argparse.Namespace) -> str:
     value = getattr(args, "store_url", None) or read_store_config().get("store_url")
     if not value:
         raise SystemExit("missing --store-url and no store_url in ~/.prg32/config.json")
-    return str(value).rstrip("/")
+    url = str(value).rstrip("/")
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    return url
 
 
 def store_token(args: argparse.Namespace) -> str | None:

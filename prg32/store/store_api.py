@@ -50,7 +50,6 @@ def store_discover(args: argparse.Namespace) -> None:
         print(f"  URL: {url}")
         print(f"  ABI: {abi or STORE_DISCOVERY_ABI}")
 
-
 def store_list(args: argparse.Namespace) -> None:
     body = json_request(store_url(args) + "/api/games?limit=100")
     rows = catalog_items(body)
@@ -68,7 +67,6 @@ def store_list(args: argparse.Namespace) -> None:
             f"{str(item.get('title', ''))[:24]:24} "
             f"{str(item.get('version', ''))[:8]:8} {arch_text}"
         )
-
 
 def store_download(args: argparse.Namespace) -> None:
     query = {"architecture": args.architecture}
