@@ -10,7 +10,8 @@ def run_tests(args) -> None:
     import os
     env.update(os.environ)
     env["PYTHONPYCACHEPREFIX"] = "/tmp/prg32-pycache"
-    
+    env["PYTHONPATH"] = str(Path.cwd())
+
     try:
         subprocess.check_call(
             [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
@@ -25,7 +26,7 @@ def run_tests(args) -> None:
     smoke_test_path = Path("prg32/qemu/smoke_test.py")
     if smoke_test_path.exists():
         try:
-            subprocess.check_call([sys.executable, str(smoke_test_path)])
+            subprocess.check_call([sys.executable, str(smoke_test_path)], env=env)
             log_ok("Smoke test passed")
         except subprocess.CalledProcessError:
             log_error("Smoke test failed")
