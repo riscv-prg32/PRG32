@@ -332,7 +332,7 @@ config PRG32_AUDIO_I2S_SD_GPIO
 
 config PRG32_PIN_RGB_LED
     int "RGB LED GPIO"
-    default 8
+    default -1
 
 config PRG32_QEMU_UART_1_TX
     int "QEMU UART 1 TX (Python Listener)"
