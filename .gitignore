@@ -83,6 +83,7 @@ profiles/sdkconfig.defaults.local
 # Local Python tooling
 .venv/
 __pycache__/
+prg32.egg-info/
 tools/prg32_score_server/*.db
 tools/prg32_score_server/*.db-*
 tools/prg32_metrics_server/*.db

@@ -1,6 +1,9 @@
 import sys
 from . import prg32
 
-if __name__ == "__main__":
+def main():
     # sys.argv[1:] passes only the actual arguments (like 'qemu' and 'launch')
-    prg32.main(sys.argv[1:])
+    sys.exit(prg32.main(sys.argv[1:]))
+
+if __name__ == "__main__":
+    main()
