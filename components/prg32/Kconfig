@@ -414,7 +414,16 @@ config PRG32_MULTIPLAYER_SERVER_URL
 
 config PRG32_BOOT_SETUP_MODE
     int "Boot Setup Mode"
-    default 0
+    default 1
+    help
+        If enabled, at boot the firmware will always go directly to the setup mode. Otherwise, if a cartridge is stored, the first one will be loaded directly.
+
+config PRG32_ENABLE_BOOT_SETUP_COMBO
+    bool "Enable A+B Setup Shortcut"
+    default n
+    help
+        If enabled, holding A + B at boot will force PRG32 to enter the setup
+        mode instead of loading the default cartridge.
 
 config PRG32_WIFI_AP_CHANNEL
     int "Wi-Fi AP Channel"
