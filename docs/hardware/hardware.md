@@ -82,7 +82,8 @@ for the complete mono build, optional stereo parts and assembly supplies.
 | GPIO4 | BCLK | BCLK |
 | GPIO11 | LRC / WS | LRC / WS |
 | GPIO23 | DIN | DIN |
-| optional SD GPIO | SD | SD |
+| Same as VIN (> 1.4V) | SD	| - |
+| 0.77V to 1.4V |	-	| SD |
 
 ## Build Step
 

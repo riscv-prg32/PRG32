@@ -6,6 +6,9 @@ You run the tooling as a module via Python:
 ```bash
 python3 -m prg32 <command> [subcommand] [options]
 ```
+
+> [!TIP]
+> The PRG32 CLI supports command and subcommand abbreviations! You can type unique prefixes instead of full names. For example, `python3 -m prg32 e b` is equivalent to `python3 -m prg32 esp32c6 build`.
 ## Main Commands
 - `esp32c6`: ESP32C6 SoC tasks
 - `qemu`: QEMU emulator tasks

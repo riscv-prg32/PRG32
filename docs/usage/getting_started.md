@@ -71,7 +71,7 @@ See the [Performance Test Guide](../performance_test.md).
 - **Button A (SET)**: Confirm selection (QEMU: keyboard 'Z')
 - **Button B (RST)**: Go back (QEMU: keyboard 'X')
 - **A + B + DOWN (Hold)**: Restart the PRG32 firmware
-- **A + B (Hold during boot)**: Force enter setup (also happens automatically on first boot when no cartridge is stored)
+- **A + B (Hold during boot)**: Force enter setup (requires `Enable A+B Setup Shortcut` to be enabled in menuconfig)
 
 Setup screens also show the active Wi-Fi mode and current IP address.
 

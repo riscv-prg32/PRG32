@@ -47,6 +47,7 @@ jobs:
         shell: bash
         run: |
           . "$IDF_PATH/export.sh"
+          export SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.cicd"
           idf.py set-target esp32c6
           idf.py build
 

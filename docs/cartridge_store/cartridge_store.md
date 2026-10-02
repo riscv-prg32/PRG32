@@ -182,7 +182,7 @@ python3 -m prg32 store clear-url
 
 ### Host Tools Configuration (Python)
 
-When using the host-side Python tooling (e.g., publishing or downloading from your PC), you can pass the configuration as CLI flags (`--store-url` and `--token`) or save them in a JSON config file to avoid typing them every time. CLI flags override the JSON config.
+When using the host-side Python tooling (e.g., publishing or downloading from your PC), you can pass the configuration as CLI flags (`--store-url` and `--token`) or save them in a JSON config file to avoid typing them every time. CLI flags override the JSON config. If a scheme (like `http://` or `https://`) is not provided in the URL, `https://` will be used by default.
 
 Create `~/.prg32/config.json` (or `%USERPROFILE%\.prg32\config.json` on Windows):
 

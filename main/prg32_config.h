@@ -163,10 +163,15 @@
 #else
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
 #endif
-/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup;
- * setup also opens when no unambiguous cartridge can boot. Classroom images
+/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup if enabled.
+ * Setup also opens when no unambiguous cartridge can boot. Classroom images
  * may set this to 1 to force setup on every boot. */
 #define PRG32_BOOT_SETUP_MODE CONFIG_PRG32_BOOT_SETUP_MODE
+#ifdef CONFIG_PRG32_ENABLE_BOOT_SETUP_COMBO
+#define PRG32_ENABLE_BOOT_SETUP_COMBO 1
+#else
+#define PRG32_ENABLE_BOOT_SETUP_COMBO 0
+#endif
 #define PRG32_WIFI_AP_SSID CONFIG_PRG32_WIFI_SSID
 #define PRG32_WIFI_AP_PASSWORD CONFIG_PRG32_WIFI_PASSWORD
 #define PRG32_WIFI_AP_CHANNEL CONFIG_PRG32_WIFI_AP_CHANNEL

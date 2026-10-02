@@ -10,6 +10,7 @@ set(PRG32_PRIV_REQUIRES
     nvs_flash
     json
     spi_flash
+    mbedtls
 )
 
 if(IDF_TARGET STREQUAL "esp32c3")
