@@ -11,6 +11,9 @@ def prepare_firmware_esp32c6(args: argparse.Namespace) -> None:
     out_dir = ROOT_DIR / args.out_dir
     flasher_args = build_dir / "flasher_args.json"
     if not args.skip_build:
+        defaults = "profiles/sdkconfig.defaults"
+        if getattr(args, 'debug', False):
+            defaults += ";profiles/sdkconfig.defaults.debug"
         run([
             "idf.py",
             "-B",
@@ -18,7 +21,7 @@ def prepare_firmware_esp32c6(args: argparse.Namespace) -> None:
             "-D",
             f"SDKCONFIG={args.build_dir}/sdkconfig",
             "-D",
-            "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults",
+            f"SDKCONFIG_DEFAULTS={defaults}",
             "build",
         ], cwd=ROOT_DIR)
     if not flasher_args.exists():

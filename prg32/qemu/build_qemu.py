@@ -7,7 +7,10 @@ from prg32.utilities.env_variables import QEMU_BUILD_DIR, QEMU_SDKCONFIG, QEMU_S
 
 def set_target_qemu(args: argparse.Namespace):
     step("Configuring QEMU target (esp32c3)...")
-    subprocess.check_call(["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_SDKCONFIG_DEFAULTS}", "set-target", "esp32c3"])
+    defaults = QEMU_SDKCONFIG_DEFAULTS
+    if getattr(args, 'debug', False):
+        defaults += ";profiles/sdkconfig.defaults.debug"
+    subprocess.check_call(["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "set-target", "esp32c3"])
 
 def build_qemu(args: argparse.Namespace):
     if (args.skip_target):
@@ -16,7 +19,10 @@ def build_qemu(args: argparse.Namespace):
         set_target_qemu(args)
 
     step("Building QEMU...")
-    subprocess.check_call(["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={QEMU_SDKCONFIG_DEFAULTS}", "build"])
+    defaults = QEMU_SDKCONFIG_DEFAULTS
+    if getattr(args, 'debug', False):
+        defaults += ";profiles/sdkconfig.defaults.debug"
+    subprocess.check_call(["idf.py", "-B", QEMU_BUILD_DIR, "-D", f"SDKCONFIG={QEMU_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "build"])
     log_ok(f"Created {QEMU_BUILD_DIR} directory.")
 
     # Verify

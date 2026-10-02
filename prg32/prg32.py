@@ -82,6 +82,7 @@ def main(argv: list[str]) -> int:
         help="Skip setting target to ESP32C6 (it takes more time to build and it is useless if you have set the target before)"
     )
     p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=build_esp32c6)
 
     p = esp32c6_sub.add_parser("flash", help="flash the ESP32C6 image. Does not do anything when a cartridge is running!")
@@ -92,6 +93,7 @@ def main(argv: list[str]) -> int:
         help="Skip setting target to ESP32C6 (it takes less time to build and it is useless if you have set the target before)"
     )
     p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=build_and_flash_esp32c6)
 
     p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
@@ -134,6 +136,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out-dir", default="publish/legacy-firmware", help="Path to the output directory")
     p.add_argument("--name", default="PRG32-legacy-esp32c6", help="Name of the output binary")
     p.add_argument("--skip-build", action="store_true", help="Skip the ESP-IDF build step")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=prepare_firmware_esp32c6)
 
     p = esp32c6_sub.add_parser("flash-firmware", help="flash a published single-file legacy PRG32 firmware image", usage="%(prog)s MANIFEST --port PORT [options]")
@@ -160,6 +163,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--skip-target", action="store_true", 
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=build_and_flash_qemu)
 
     p = qemu_sub.add_parser("run", help="run the QEMU emulator environment")
@@ -169,6 +173,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--skip-target", action="store_true", 
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=build_and_launch_qemu)
 
     p = qemu_sub.add_parser("upload", 

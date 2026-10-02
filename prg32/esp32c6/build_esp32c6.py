@@ -10,7 +10,10 @@ def set_target_esp32c6(args: argparse.Namespace):
     import os, shutil
     if os.path.exists(ESP32C6_BUILD_DIR):
         shutil.rmtree(ESP32C6_BUILD_DIR, ignore_errors=True)
-    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "set-target", "esp32c6"])
+    defaults = ESP32C6_SDKCONFIG_DEFAULTS
+    if getattr(args, 'debug', False):
+        defaults += ";profiles/sdkconfig.defaults.debug"
+    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "set-target", "esp32c6"])
 
 def build_esp32c6(args: argparse.Namespace):
     if args.skip_target:
@@ -28,7 +31,10 @@ def build_esp32c6(args: argparse.Namespace):
             f.write(f"\nCONFIG_HEAP_TASK_TRACKING={'y' if enable_tracking else 'n'}\n")
 
     step("Building ESP32C6...")
-    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "build"])
+    defaults = ESP32C6_SDKCONFIG_DEFAULTS
+    if getattr(args, 'debug', False):
+        defaults += ";profiles/sdkconfig.defaults.debug"
+    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "build"])
     log_ok(f"Created {ESP32C6_BUILD_DIR} directory.")
 
     # Verify
@@ -38,7 +44,10 @@ def build_esp32c6(args: argparse.Namespace):
 
 def flash_esp32c6(args: argparse.Namespace):
     step("Flashing the ESP32C6 firmware and flash_image via USB")
-    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "flash", "monitor"])
+    defaults = ESP32C6_SDKCONFIG_DEFAULTS
+    if getattr(args, 'debug', False):
+        defaults += ";profiles/sdkconfig.defaults.debug"
+    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "flash", "monitor"])
 
 def build_and_flash_esp32c6(args: argparse.Namespace):
     build_esp32c6(args)
