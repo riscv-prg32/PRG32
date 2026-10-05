@@ -23,6 +23,7 @@ Here are common issues and solutions when working with the PRG32 framework.
 
 ## QEMU Emulator Issues
 
+- **QEMU build fails with `fatal error: <header>.h: No such file or directory` while the ESP32-C6 build succeeds**: The header's ESP-IDF component is missing from `PRG32_PRIV_REQUIRES` in `components/prg32/CMakeLists.txt` and is only reachable transitively on ESP32-C6. See [explicit component requirements](qemu.md#how-it-works).
 - **Virtual screen window does not appear**: Ensure that host SDL2 libraries are properly installed (see the main `README.md`). If you are bypassing the Python tooling and running `idf.py qemu` manually, check that the `--graphics monitor` flag is included in your command.
 - **QEMU runs but the game does not move**: Ensure the QEMU monitor terminal window has focus, *not* the graphical QEMU screen. The terminal captures input via the UART console. Use arrow keys or `W`/`A`/`S`/`D` for joystick 1, `Enter`/`Space` for SELECT, `J`/`Z` for A, and `K`/`X` for B.
 

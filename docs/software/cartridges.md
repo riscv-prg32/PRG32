@@ -447,6 +447,9 @@ and `qemu`, inspects metadata where present, and
 checks the available bundle ZIPs and checksum manifests.
 The separate host job installs its explicit `pytest` dependency before running
 the repository smoke suite and generated-ABI check.
+Two firmware jobs build the resident runtime for both targets: the physical
+ESP32-C6 firmware and the ESP32-C3 QEMU firmware (`python3 -m prg32 qemu build`),
+so a change that compiles for only one target is caught before merging.
 
 Successful runs retain six downloadable workflow artifacts for 14 days:
 

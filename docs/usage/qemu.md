@@ -14,6 +14,7 @@ While the physical PRG32 board uses an ESP32-C6 target with an ILI9341 SPI displ
 
 - **Display Backends**: `components/prg32/Kconfig` switches between the physical ILI9341 SPI TFT (`CONFIG_PRG32_DISPLAY_ILI9341`) and the Espressif QEMU virtual RGB panel (`CONFIG_PRG32_DISPLAY_QEMU_RGB`).
 - **Dependencies**: The `components/prg32/idf_component.yml` manifest pulls the `espressif/esp_lcd_qemu_rgb` component exclusively when the target is ESP32-C3.
+- **Explicit Component Requirements**: `components/prg32/CMakeLists.txt` lists every ESP-IDF component whose headers the framework includes directly in `PRG32_PRIV_REQUIRES`. This includes `mbedtls`, which provides `esp_crt_bundle.h` for the Cartridge Store TLS client. Do not rely on a header being reachable through another component: the ESP32-C6 target appends `esp_websocket_client` and `mdns`, which expose `mbedtls` transitively, but the ESP32-C3 QEMU target does not, so a missing requirement fails only the QEMU build.
 - **Screenshots**: The QEMU backend exposes the same framebuffer snapshot API, meaning the `/api/screenshot.bmp` endpoint generates identical 320x240 BMPs as the real hardware.
 
 ## Prerequisites and Installation
