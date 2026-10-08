@@ -9,7 +9,7 @@ This document outlines the high-level layout of the PRG32 repository.
 
 ```text
 .
-|-- .github/workflows/ci.yml        Firmware, host, and store-ready cartridge CI/CD artifacts
+|-- .github/workflows/ci.yml        ESP32-C6 and QEMU firmware builds, host checks, and store-ready cartridge CI/CD artifacts
 |-- cartridges/                     In-tree portable cartridges and store-ready bundles
 |   |-- audiotest/                  Source-only audio pan diagnostic cartridge
 |   |-- bachdemo/                   Eight-voice procedural Bach audio showcase

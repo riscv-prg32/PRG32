@@ -51,6 +51,24 @@ jobs:
           idf.py set-target esp32c6
           idf.py build
 
+  esp-idf-qemu-build:
+    name: ESP-IDF QEMU firmware build
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4.1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Configure Git workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Build QEMU (ESP32-C3) firmware
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          python3 -m prg32 qemu build
+
   cartridge-build:
     name: Cartridge checks and packages
     runs-on: ubuntu-latest
