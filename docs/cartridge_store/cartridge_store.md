@@ -200,7 +200,9 @@ CartridgeStore provides a shared classroom catalog for `.prg32` artifacts. QEMU 
 Two installation paths are available:
 
 ### On-Device Installation
-After obtaining a connection to a Cartridge Store, you can browse available cartridges, view metadata/colophon, and download a cartridge into one of the available slots (`cart0`, `cart1`, `cart2`, or `cart3`).
+After obtaining a connection to a Cartridge Store, you can browse available
+cartridges, view metadata/colophon, and download a cartridge into one of the
+eight available slots (`cart0` through `cart7`).
 
 1. Enter setup mode.
 2. Open `BROWSE STORE`.

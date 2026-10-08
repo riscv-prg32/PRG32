@@ -89,8 +89,8 @@
 #define PRG32_PIN_BUZZER CONFIG_PRG32_PIN_BUZZER
 
 /*
- * Many ESP32-C6 boards route the onboard addressable RGB LED to GPIO8. The
- * reference PRG32 ILI9341 harness uses GPIO1 for LCD D/C, leaving GPIO8 free.
+ * The board profile owns the RGB LED assignment. The reference configuration
+ * disables it because GPIO8 is reserved for the ILI9341 D/C signal.
  */
 #define PRG32_PIN_RGB_LED CONFIG_PRG32_PIN_RGB_LED
 

@@ -980,6 +980,10 @@ static int setup_menu(void) {
     printf("setup_menu => prg32_input_read_menu()\n");
     uint32_t last = prg32_input_read_menu();
     while (1) {
+      if (prg32_cart_is_loaded()) {
+        printf("setup_menu => cartridge loaded asynchronously\n");
+        return 0;
+      }
       printf("setup_menu => prg32_input_read_menu()\n");
       uint32_t input = prg32_input_read_menu();
       if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {

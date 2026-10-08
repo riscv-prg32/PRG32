@@ -43,12 +43,20 @@ static const char *const g_cart_labels[PRG32_CART_SLOT_COUNT] = {
     "cart1",
     "cart2",
     "cart3",
+    "cart4",
+    "cart5",
+    "cart6",
+    "cart7",
 };
 static const uint8_t g_cart_subtypes[PRG32_CART_SLOT_COUNT] = {
     0x40,
     0x41,
     0x42,
     0x43,
+    0x44,
+    0x45,
+    0x46,
+    0x47,
 };
 
 static const esp_partition_t *g_cart_partitions[PRG32_CART_SLOT_COUNT];

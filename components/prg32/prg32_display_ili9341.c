@@ -29,7 +29,8 @@ static const char *TAG = "prg32_lcd";
 #endif
 
 #ifndef PRG32_LCD_MADCTL
-#define PRG32_LCD_MADCTL 0xE8 
+/* Landscape orientation with both row and column address order reversed. */
+#define PRG32_LCD_MADCTL 0xE8
 #endif
 
 #ifndef PRG32_LCD_BOOT_TEST_MS
