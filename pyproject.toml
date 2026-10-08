@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prg32"
+version = "0.1.0"
+description = "PRG32 command-line tooling"
+readme = "README.md"
+authors = [
+  { name = "PRG32 Contributors" }
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pyaudio",
+    "zeroconf",
+    "pillow",
+    "mido",
+    "pytest"
+]
+
+[project.scripts]
+prg32 = "prg32.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["prg32*"]

@@ -253,11 +253,11 @@ config PRG32_PIN_LCD_CS
 
 config PRG32_PIN_LCD_DC
     int "LCD DC GPIO"
-    default 1
+    default 8
 
 config PRG32_PIN_LCD_RST
     int "LCD RST GPIO"
-    default 0
+    default 9
 
 config PRG32_PIN_LCD_BL
     int "LCD Backlight GPIO"
@@ -332,7 +332,7 @@ config PRG32_AUDIO_I2S_SD_GPIO
 
 config PRG32_PIN_RGB_LED
     int "RGB LED GPIO"
-    default 8
+    default -1
 
 config PRG32_QEMU_UART_1_TX
     int "QEMU UART 1 TX (Python Listener)"
@@ -414,7 +414,16 @@ config PRG32_MULTIPLAYER_SERVER_URL
 
 config PRG32_BOOT_SETUP_MODE
     int "Boot Setup Mode"
-    default 0
+    default 1
+    help
+        If enabled, at boot the firmware will always go directly to the setup mode. Otherwise, if a cartridge is stored, the first one will be loaded directly.
+
+config PRG32_ENABLE_BOOT_SETUP_COMBO
+    bool "Enable A+B Setup Shortcut"
+    default n
+    help
+        If enabled, holding A + B at boot will force PRG32 to enter the setup
+        mode instead of loading the default cartridge.
 
 config PRG32_WIFI_AP_CHANNEL
     int "Wi-Fi AP Channel"

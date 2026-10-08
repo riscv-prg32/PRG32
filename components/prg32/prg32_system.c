@@ -56,7 +56,7 @@ prg32_system_get_boot_checkpoints(prg32_boot_checkpoint_t **out_checkpoints) {
 #include "nvs_flash.h"
 
 #ifndef PRG32_BOOT_SETUP_MODE
-#define PRG32_BOOT_SETUP_MODE 0
+#define PRG32_BOOT_SETUP_MODE 1
 #endif
 
 #ifndef CONFIG_PRG32_AUDIO_ENABLED
@@ -448,8 +448,6 @@ static prg32_audio_mode_t g_setup_audio_mode = PRG32_SYS_AUDIO_DEFAULT_MODE;
 static setup_audio_output_t g_setup_audio_output = SETUP_AUDIO_NONE;
 static int g_setup_audio_detected;
 
-
-
 static const char *audio_output_name(setup_audio_output_t output) {
   if (output == SETUP_AUDIO_I2S_STEREO) {
     return "STEREO I2S";
@@ -556,7 +554,6 @@ static setup_audio_output_t detect_audio_output(void) {
   return g_setup_audio_output;
 }
 
-
 static void draw_test_tune_status(const char *text) {
   prg32_gfx_rect(24, 148, 240, 16, PRG32_COLOR_BLACK);
   prg32_gfx_text8(24, 148, text, PRG32_COLOR_WHITE, 0);
@@ -638,7 +635,8 @@ static void prg32_audio_load_global_settings(void) {
   }
   if (vol_pct > 100)
     vol_pct = 100;
-  if (audio_mode != PRG32_AUDIO_MODE_MONO && audio_mode != PRG32_AUDIO_MODE_STEREO)
+  if (audio_mode != PRG32_AUDIO_MODE_MONO &&
+      audio_mode != PRG32_AUDIO_MODE_STEREO)
     audio_mode = PRG32_SYS_AUDIO_DEFAULT_MODE;
   g_setup_audio_volume = vol_pct;
   g_setup_audio_mode = audio_mode;
@@ -699,13 +697,16 @@ static void audio_menu(void) {
       prg32_audio_save_global_settings();
     }
     if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
-      if (choice == 1 && (output == SETUP_AUDIO_I2S_MONO || output == SETUP_AUDIO_I2S_STEREO)) {
+      if (choice == 1 && (output == SETUP_AUDIO_I2S_MONO ||
+                          output == SETUP_AUDIO_I2S_STEREO)) {
         g_setup_audio_mode = (g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO)
                                  ? PRG32_AUDIO_MODE_MONO
                                  : PRG32_AUDIO_MODE_STEREO;
         prg32_audio_set_mode(g_setup_audio_mode);
         prg32_audio_save_global_settings();
-        output = g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO ? SETUP_AUDIO_I2S_STEREO : SETUP_AUDIO_I2S_MONO;
+        output = g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO
+                     ? SETUP_AUDIO_I2S_STEREO
+                     : SETUP_AUDIO_I2S_MONO;
         g_setup_audio_output = output;
       } else if (choice == 2 && prg32_rgb_led_available()) {
         prg32_audio_led_vu_enable(!prg32_audio_led_vu_enabled());
@@ -744,7 +745,8 @@ static void audio_menu(void) {
     prg32_gfx_text8(24, 82, line, PRG32_COLOR_WHITE, 0);
     draw_volume_bar(168, 82, g_setup_audio_volume);
 
-    snprintf(line, sizeof(line), "I2S MODE: %s", g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO ? "STEREO" : "MONO");
+    snprintf(line, sizeof(line), "I2S MODE: %s",
+             g_setup_audio_mode == PRG32_AUDIO_MODE_STEREO ? "STEREO" : "MONO");
     prg32_gfx_text8(8, 104, choice == 1 ? ">" : " ", PRG32_COLOR_GREEN, 0);
     prg32_gfx_text8(24, 104, line, PRG32_COLOR_WHITE, 0);
 
@@ -1111,7 +1113,9 @@ void prg32_init(void) {
   printf("prg32_init => prg32_cart_default_slot()\n");
   bool setup_requested =
       PRG32_BOOT_SETUP_MODE || prg32_wifi_setup_requested() ||
+#if PRG32_ENABLE_BOOT_SETUP_COMBO
       ((boot_input & PRG32_BTN_A) && (boot_input & PRG32_BTN_B)) ||
+#endif
       stored_count == 0 || (stored_count > 1 && prg32_cart_default_slot() < 0);
   printf("prg32_init => autoload_cartridge()\n");
   prg32_display_log_memory("before cartridge load");

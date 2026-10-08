@@ -61,5 +61,6 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- CMakeLists.txt                  Top-level CMake project definition
 |-- CONTRIBUTING.md                 Guidelines for human contributors
 |-- CONTRIBUTORS.md                 Academic contributor metadata
-`-- PRG32.code-workspace            VS Code workspace configuration
+|-- PRG32.code-workspace            VS Code workspace configuration
+`-- pyproject.toml                  Python package configuration for the PRG32 tooling
 ```
