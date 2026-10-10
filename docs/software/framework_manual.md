@@ -281,7 +281,8 @@ Important constants:
   `prg32_cart_exec` address; portable cartridges use the ABI table.
   Host tools assume the 64 KiB window unless told otherwise with
   `--cart-ram-kib`; see [PRG32 Profiles](../usage/profiles.md#matching-host-tools-to-the-profile).
-- `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots.
+- `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots; the
+  checked-in partition profile provides eight.
 
 Important functions:
 
@@ -289,7 +290,7 @@ Important functions:
 - `prg32_cart_install(image, size, persist)`: validate, load, and optionally store.
 - `prg32_cart_store_slot(slot, image, size)`: validate and store an image without running it.
 - `prg32_cart_install_slot(slot, image, size, persist)`: install to one of
-  `cart0` through `cart3`.
+  `cart0` through `cart7`.
 - `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot.
 - `prg32_cart_default_slot()`: read the saved default boot cartridge.
 - `prg32_cart_set_default_slot(slot)`: save a default slot, or pass `-1` to clear it.

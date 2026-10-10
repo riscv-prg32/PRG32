@@ -240,6 +240,11 @@ curl "$PRG32_DEVICE_URL/api/performance.json" \
   --output data/prg32_performance_run01.json
 ```
 
+The firmware streams the completed schema through a bounded formatting buffer
+large enough for the summary header and each individual workload record. An
+empty response is therefore a transport or firmware error, not a valid result
+document; accept only JSON containing `"ok": true` and `"schema_version": 2`.
+
 Before analysis, record experimental provenance alongside the JSON:
 
 - firmware commit and dirty/clean state;

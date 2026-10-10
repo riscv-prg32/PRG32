@@ -49,8 +49,8 @@ for the complete mono build, optional stereo parts and assembly supplies.
 | GPIO2 | MISO / touch DO |
 | GPIO6 | SCLK |
 | GPIO10 | CS |
-| GPIO1 | DC |
-| GPIO0 | RST |
+| GPIO8 | DC |
+| GPIO9 | RST |
 | GPIO5 | BL / LED |
 
 **Joystick**
@@ -153,11 +153,12 @@ prg32_rgb_led_init(gpio);
 prg32_rgb_led_set(red, green, blue);
 ```
 
-The physical firmware sets `PRG32_PIN_RGB_LED` to GPIO8 for the WS2812-style
-onboard LED. GPIO8 does not overlap the current display harness, whose LCD D/C
-line is GPIO1. The setup audio menu can use the LED as a spectrum-style VU
-meter. QEMU builds set the RGB LED pin to `-1` and do not initialize physical
-LED hardware.
+The physical firmware sets `PRG32_PIN_RGB_LED` to `-1` because GPIO8 is used by
+the reference display harness for LCD D/C. The setup audio menu therefore does
+not offer the RGB LED spectrum-style VU meter in this configuration. A custom
+harness may assign the LED to a different unused GPIO after checking every
+display, input, and audio signal for conflicts. QEMU builds also set the RGB LED
+pin to `-1` and do not initialize physical LED hardware.
 
 ### Audio Configuration
 

@@ -23,7 +23,11 @@ PRG32 firmware
 |-- cart0 flash partition
 |-- cart1 flash partition
 |-- cart2 flash partition
-`-- cart3 flash partition
+|-- cart3 flash partition
+|-- cart4 flash partition
+|-- cart5 flash partition
+|-- cart6 flash partition
+`-- cart7 flash partition
 
 game.prg32
 |-- PRG2 cartridge header
@@ -49,10 +53,17 @@ cart0:   uploaded cartridge slot 0
 cart1:   uploaded cartridge slot 1
 cart2:   uploaded cartridge slot 2
 cart3:   uploaded cartridge slot 3
+cart4:   uploaded cartridge slot 4
+cart5:   uploaded cartridge slot 5
+cart6:   uploaded cartridge slot 6
+cart7:   uploaded cartridge slot 7
 scores:  persistent local scoreboard storage
 ```
 
-The checked-in classroom firmware supports four persistent slots (`cart0` to `cart3`). Each slot stores a `.prg32` package up to 64 KiB. Only one cartridge is loaded into executable RAM at a time, so additional slots cost flash space, not runtime RAM.
+The checked-in classroom firmware supports eight persistent slots (`cart0` to
+`cart7`). Each 128 KiB partition stores a `.prg32` package up to the configured
+64 KiB default. Only one cartridge is loaded into executable RAM at a time, so
+additional slots cost flash space, not runtime RAM.
 
 After reset, one stored cartridge starts automatically. When multiple slots contain games, PRG32 enters setup unless a default cartridge has been saved. Use `DEFAULT CARTRIDGE` in setup to choose the slot that should boot automatically, or `RUN CARTRIDGE` to inspect slots.
 
