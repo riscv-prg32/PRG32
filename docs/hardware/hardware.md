@@ -1,6 +1,10 @@
 # PRG32 Hardware
 
-This page is a guide to recreate the PRG32 setup for new users on a breadboard or DIY configuration. If you are looking for the PCB reference design, please see [`docs/pcb/README.md`](/docs/pcb/README.md).
+This page is the canonical wiring guide for the physical ESP32-C6 firmware
+profile. It describes the default values in `components/prg32/Kconfig`,
+`components/prg32_audio/Kconfig`, and `profiles/sdkconfig.defaults.esp32c6`.
+For the matching PCB reference design, see
+[`docs/hardware/pcb/README.md`](/docs/hardware/pcb/README.md).
 
 ![PRG32 breadboard prototype with the ESP32-C6 centered across the breadboard, display above it, joystick and buttons at the front, and stereo audio components at the sides](images/prg32-breadboard-prototype.svg)
 
@@ -134,8 +138,11 @@ These pins match the default `idf.py menuconfig` settings for the ESP32-C6 physi
 The firmware enables the internal pull-up on every button input, so a pressed
 button connects its GPIO to GND. START and SELECT are names for the same
 GPIO20 input in the default configuration. The reference hardware has no
-dedicated SETUP button: hold A+B during startup to enter setup mode. Setup mode
-also opens automatically when the firmware cannot select a cartridge to boot.
+dedicated SETUP button. The shipped profile sets `PRG32_BOOT_SETUP_MODE=1`, so
+setup opens automatically on every boot. If that option is changed to `0`,
+setup still opens when the firmware cannot select a cartridge. Holding A+B can
+force setup only when `CONFIG_PRG32_ENABLE_BOOT_SETUP_COMBO=y`; that shortcut
+is disabled by default.
 
 `PRG32_PIN_BUZZER` is `-1` in the current physical configuration, so no passive
 buzzer is wired or initialized. Audio uses the I2S amplifier described below.
@@ -162,9 +169,12 @@ pin to `-1` and do not initialize physical LED hardware.
 
 ### Audio Configuration
 
-The default audio Kconfig pins avoid the reference display, joystick, and
-passive buzzer wiring. If a breakout needs explicit SD/shutdown control, assign
-`CONFIG_PRG32_AUDIO_I2S_SD_GPIO` to another unused GPIO before flashing.
+The shipped profiles enable I2S audio at 22,050 Hz with eight voices and mono
+output. The default audio Kconfig pins avoid the reference display, joystick,
+and passive buzzer wiring. If a breakout needs explicit SD/shutdown control,
+assign `CONFIG_PRG32_AUDIO_I2S_SD_GPIO` to another unused GPIO before flashing.
+Select `CONFIG_PRG32_AUDIO_MODE_STEREO=y` when assembling the optional two-
+amplifier stereo circuit.
 
 On the Adafruit MAX98357A breakout, `SD` also selects the channel mode. Leave it
 in the breakout's default enabled state for mono, or drive it from the optional
@@ -172,10 +182,11 @@ SD GPIO. Do not tie `SD` directly to GND because that shuts the amplifier down.
 PRG32 mono audio is carried as duplicated left/right I2S slots, so a single
 MAX98357A works whether the breakout averages both slots or selects one slot.
 
-The QEMU defaults are for the ESP32-C3 virtual display path. They set all
-physical display, button, setup, buzzer, and RGB LED pins to `-1`; keyboard
-input arrives through the QEMU UART console. Audio remains enabled in the QEMU
-configuration but does not use the ESP32-C6 classroom wiring documented here.
+The QEMU defaults are for the ESP32-C3 virtual display path. At runtime,
+`main/prg32_config.h` sets all physical display, button, setup, buzzer, and RGB
+LED pins to `-1`; keyboard input arrives through the QEMU UART console. Audio
+remains enabled in the QEMU configuration but uses the emulator audio path,
+not the ESP32-C6 classroom wiring documented here.
 
 ## Troubleshooting
 
