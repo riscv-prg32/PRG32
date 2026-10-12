@@ -131,17 +131,22 @@ See the [bill of materials](where_to_buy.md) for the resistor and footprint.
 
 These pins correspond to the `prototype1` hardware pin profile (`profiles/sdkconfig.pins.prototype1`), representing the reference first prototype breadboard build.
 
-Hardware pin configurations are not defaulted in Kconfig; every physical build must specify an explicit pin profile (see [PRG32 Profiles](../usage/profiles.md#hardware-pin-profiles)). When building the firmware with the PRG32 CLI, select the profile using:
+Hardware pin configurations default to "None" in Kconfig so that builds without a specified profile halt immediately at build time (see [PRG32 Profiles](../usage/profiles.md#hardware-pin-profiles)).
 
-```bash
-python3 -m prg32 esp32c6 build --pin-profile prototype1
-```
+You can select a pin setup either interactively or via the CLI:
+- **Interactive Menuconfig**: Open `idf.py menuconfig`, navigate to `Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration` -> `Hardware Pin Profile`, and choose `prototype1 (First Prototype Breadboard)` to load `profiles/sdkconfig.pins.prototype1`, or select `Custom Profile` to configure GPIO numbers manually in `menuconfig`.
+- **PRG32 CLI**:
+  ```bash
+  # See available pin setup possibilities
+  python3 -m prg32 esp32c6 pins
 
-If building directly with ESP-IDF, append the profile fragment to `SDKCONFIG_DEFAULTS`:
-
-```bash
-idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" build
-```
+  # Build specifying the profile
+  python3 -m prg32 esp32c6 build --pin-profile prototype1
+  ```
+- **Direct ESP-IDF Build**: Append the profile fragment to `SDKCONFIG_DEFAULTS`:
+  ```bash
+  idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" build
+  ```
 
 
 The firmware enables the internal pull-up on every button input, so a pressed

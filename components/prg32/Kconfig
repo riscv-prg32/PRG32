@@ -235,18 +235,63 @@ endmenu
 
 menu "PRG32 Board Configuration"
 
+choice PRG32_PIN_PROFILE_CHOICE
+    prompt "Hardware Pin Profile"
+    default PRG32_PIN_PROFILE_NONE
+    help
+        Select the hardware pin configuration profile.
+        "None": pins are unconfigured and the build will halt unless a profile is specified.
+        "prototype1": reference breadboard pin profile loaded from profiles/sdkconfig.pins.prototype1.
+        "Custom": configure GPIO pins manually below in menuconfig.
+
+config PRG32_PIN_PROFILE_NONE
+    bool "None (no default - build halts)"
+    help
+        No pin profile selected. The build will halt with an error explaining
+        that a pin profile must be chosen either via menuconfig or by passing
+        --pin-profile <name> to the build command.
+
+config PRG32_PIN_PROFILE_PROTOTYPE1
+    bool "prototype1 (First Prototype Breadboard)"
+    help
+        Reference breadboard pin configuration profile loaded from
+        profiles/sdkconfig.pins.prototype1. Pin numbers are defined in the
+        profile file and will override the menuconfig defaults during build.
+
+config PRG32_PIN_PROFILE_CUSTOM
+    bool "Custom Profile (configure pins manually in menuconfig)"
+    help
+        Specify custom GPIO pins directly in menuconfig below.
+
+endchoice
+
+config PRG32_PIN_PROFILE_CUSTOM_NAME
+    string "Custom Pin Profile Name"
+    depends on PRG32_PIN_PROFILE_CUSTOM
+    default "custom"
+    help
+        Name identifier for your custom pin configuration profile.
+
+config PRG32_DEFAULT_PIN_PROFILE
+    string "Hardware Pin Profile Name"
+    default "" if PRG32_PIN_PROFILE_NONE
+    default "prototype1" if PRG32_PIN_PROFILE_PROTOTYPE1
+    default PRG32_PIN_PROFILE_CUSTOM_NAME if PRG32_PIN_PROFILE_CUSTOM
+    default ""
+    help
+        Name identifier of the hardware pin profile.
+
+config PRG32_PIN_PROFILE_NAME
+    string
+    default PRG32_DEFAULT_PIN_PROFILE
+
 config PRG32_PINS_CONFIGURED
     bool "PRG32 Pin Profile Configured"
+    default y if PRG32_PIN_PROFILE_CUSTOM
     default n
     help
         Indicates that a hardware pin profile has been selected and loaded.
         Hardware builds without this option set will be rejected at build time.
-
-config PRG32_PIN_PROFILE_NAME
-    string "Hardware Pin Profile Name"
-    default ""
-    help
-        Name of the active hardware pin configuration profile (e.g. prototype1).
 
 config PRG32_PIN_LCD_MOSI
     int "LCD MOSI GPIO"

@@ -15,7 +15,7 @@ ESP32C6_ELF = f"{ESP32C6_BUILD_DIR}/PRG32.elf"
 ESP32C6_SDKCONFIG = f"{ESP32C6_BUILD_DIR}/sdkconfig"
 ESP32C6_SDKCONFIG_DEFAULTS = "profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6"
 PROFILES_DIR = ROOT_DIR / "profiles"
-DEFAULT_PIN_PROFILE = "prototype1"
+DEFAULT_PIN_PROFILE = ""
 
 # QEMU environment variables
 QEMU_BUILD_DIR = "build-qemu"

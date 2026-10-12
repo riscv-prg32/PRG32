@@ -39,6 +39,39 @@ if(EXTRA_CONFIGS)
     endif()
 endif()
 
+if(NOT SDKCONFIG_DEFAULTS MATCHES "sdkconfig\\.pins\\.")
+    set(PRG32_CANDIDATE_SDKCONFIG "")
+    if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/sdkconfig")
+        set(PRG32_CANDIDATE_SDKCONFIG "${CMAKE_CURRENT_BINARY_DIR}/sdkconfig")
+    elseif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/build-esp32c6/sdkconfig")
+        set(PRG32_CANDIDATE_SDKCONFIG "${CMAKE_CURRENT_LIST_DIR}/build-esp32c6/sdkconfig")
+    elseif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig")
+        set(PRG32_CANDIDATE_SDKCONFIG "${CMAKE_CURRENT_LIST_DIR}/sdkconfig")
+    endif()
+
+    if(PRG32_CANDIDATE_SDKCONFIG)
+        file(STRINGS "${PRG32_CANDIDATE_SDKCONFIG}" PRG32_SDK_LINES)
+        set(PRG32_IS_CUSTOM FALSE)
+        set(PRG32_AUTOPROFILE "")
+        foreach(PRG32_LINE ${PRG32_SDK_LINES})
+            if(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_CUSTOM=y")
+                set(PRG32_IS_CUSTOM TRUE)
+            elseif(PRG32_LINE MATCHES "^CONFIG_PRG32_DEFAULT_PIN_PROFILE=\"([^\"]+)\"")
+                set(PRG32_AUTOPROFILE "${CMAKE_MATCH_1}")
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "prototype1")
+            endif()
+        endforeach()
+
+        if(NOT PRG32_IS_CUSTOM AND PRG32_AUTOPROFILE AND NOT PRG32_AUTOPROFILE STREQUAL "none")
+            set(PRG32_PROFILE_FILE "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.pins.${PRG32_AUTOPROFILE}")
+            if(EXISTS "${PRG32_PROFILE_FILE}")
+                set(SDKCONFIG_DEFAULTS "${SDKCONFIG_DEFAULTS};${PRG32_PROFILE_FILE}")
+            endif()
+        endif()
+    endif()
+endif()
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(PRG32)
 
@@ -57,6 +90,7 @@ if(IDF_TARGET STREQUAL "esp32c6" AND NOT CONFIG_PRG32_PINS_CONFIGURED)
         "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
         "Or include a pin profile in SDKCONFIG_DEFAULTS:\n"
         "  -D SDKCONFIG_DEFAULTS=\"...;profiles/sdkconfig.pins.prototype1\"\n"
+        "Or select Custom in idf.py menuconfig.\n"
         "=================================================================\n"
     )
 endif()

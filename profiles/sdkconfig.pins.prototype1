@@ -1,4 +1,5 @@
 # PRG32 Hardware Pin Profile: Prototype 1 (First Prototype Breadboard)
+CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y
 CONFIG_PRG32_PINS_CONFIGURED=y
 CONFIG_PRG32_PIN_PROFILE_NAME="prototype1"
 

@@ -13,16 +13,61 @@ from prg32.utilities.env_variables import (
     DEFAULT_PIN_PROFILE,
 )
 
-def get_esp32c6_sdkconfig_defaults(args: argparse.Namespace) -> str:
-    if getattr(args, 'list_pin_profiles', False) or getattr(args, 'pin_profile', None) == "list":
-        profiles = list_pin_profiles()
-        print("Available PRG32 hardware pin profiles:")
-        for name, path in sorted(profiles.items()):
-            print(f"  - {name} ({path.name})")
-        raise SystemExit(0)
+def list_pins_esp32c6(args: argparse.Namespace | None = None) -> None:
+    profiles = list_pin_profiles()
+    print("Available PRG32 hardware pin profiles:")
+    for name, path in sorted(profiles.items()):
+        print(f"  - {name} ({path.name})")
 
+def get_sdkconfig_pin_profile() -> tuple[str, bool]:
+    """
+    Inspects an existing sdkconfig file (build-esp32c6/sdkconfig or root sdkconfig)
+    for a default pin profile selected via menuconfig.
+    Returns (profile_name, is_custom).
+    """
+    from pathlib import Path
+    for cand in [Path(ESP32C6_SDKCONFIG), ROOT_DIR / "sdkconfig"]:
+        if cand.is_file():
+            content = cand.read_text(encoding="utf-8", errors="ignore")
+            is_custom = False
+            profile_name = ""
+            for line in content.splitlines():
+                line = line.strip()
+                if line == "CONFIG_PRG32_PIN_PROFILE_CUSTOM=y":
+                    is_custom = True
+                elif line.startswith("CONFIG_PRG32_DEFAULT_PIN_PROFILE="):
+                    val = line.split("=", 1)[1].strip().strip('"')
+                    if val and val.lower() != "none":
+                        profile_name = val
+                elif line == "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" and not profile_name:
+                    profile_name = "prototype1"
+            if is_custom:
+                return ("custom", True)
+            if profile_name:
+                return (profile_name, False)
+    return ("", False)
+
+def get_esp32c6_sdkconfig_defaults(args: argparse.Namespace) -> str:
     defaults = ESP32C6_SDKCONFIG_DEFAULTS
     pin_profile = getattr(args, 'pin_profile', None) or DEFAULT_PIN_PROFILE
+    if not pin_profile:
+        cfg_profile, is_custom = get_sdkconfig_pin_profile()
+        if is_custom:
+            # Custom profile: pins are configured directly in sdkconfig by menuconfig.
+            pin_profile = None
+        elif cfg_profile:
+            pin_profile = cfg_profile
+        else:
+            die(
+                "No PRG32 hardware pin profile configured!\n"
+                "Pins are no longer defaulted in Kconfig.\n"
+                "Specify a pin profile when building, e.g.:\n"
+                "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
+                "See available pin setup possibilities with:\n"
+                "  python3 -m prg32 esp32c6 pins\n"
+                "Or configure a pin profile (or Custom Profile) in 'idf.py menuconfig'."
+            )
+
     if pin_profile:
         try:
             profile_path = resolve_pin_profile(pin_profile)
