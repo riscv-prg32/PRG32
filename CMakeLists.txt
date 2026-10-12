@@ -47,3 +47,16 @@ idf_build_set_property(
     "PRG32_FIRMWARE_VERSION=\"${PRG32_FIRMWARE_VERSION}\""
     APPEND
 )
+
+if(IDF_TARGET STREQUAL "esp32c6" AND NOT CONFIG_PRG32_PINS_CONFIGURED)
+    message(FATAL_ERROR
+        "\n=================================================================\n"
+        "ERROR: No PRG32 hardware pin profile configured!\n"
+        "Pins are no longer defaulted in Kconfig.\n"
+        "Specify a pin profile when building, e.g.:\n"
+        "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
+        "Or include a pin profile in SDKCONFIG_DEFAULTS:\n"
+        "  -D SDKCONFIG_DEFAULTS=\"...;profiles/sdkconfig.pins.prototype1\"\n"
+        "=================================================================\n"
+    )
+endif()

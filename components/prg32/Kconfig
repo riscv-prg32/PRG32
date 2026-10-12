@@ -235,61 +235,74 @@ endmenu
 
 menu "PRG32 Board Configuration"
 
+config PRG32_PINS_CONFIGURED
+    bool "PRG32 Pin Profile Configured"
+    default n
+    help
+        Indicates that a hardware pin profile has been selected and loaded.
+        Hardware builds without this option set will be rejected at build time.
+
+config PRG32_PIN_PROFILE_NAME
+    string "Hardware Pin Profile Name"
+    default ""
+    help
+        Name of the active hardware pin configuration profile (e.g. prototype1).
+
 config PRG32_PIN_LCD_MOSI
     int "LCD MOSI GPIO"
-    default 7
+    default -1
 
 config PRG32_PIN_LCD_MISO
     int "LCD MISO GPIO"
-    default 2
+    default -1
 
 config PRG32_PIN_LCD_SCLK
     int "LCD SCLK GPIO"
-    default 6
+    default -1
 
 config PRG32_PIN_LCD_CS
     int "LCD CS GPIO"
-    default 10
+    default -1
 
 config PRG32_PIN_LCD_DC
     int "LCD DC GPIO"
-    default 8
+    default -1
 
 config PRG32_PIN_LCD_RST
     int "LCD RST GPIO"
-    default 9
+    default -1
 
 config PRG32_PIN_LCD_BL
     int "LCD Backlight GPIO"
-    default 5
+    default -1
 
 config PRG32_PIN_BTN_UP
     int "Joystick UP GPIO"
-    default 3
+    default -1
 
 config PRG32_PIN_BTN_DOWN
     int "Joystick DOWN GPIO"
-    default 13
+    default -1
 
 config PRG32_PIN_BTN_LEFT
     int "Joystick LEFT GPIO"
-    default 18
+    default -1
 
 config PRG32_PIN_BTN_RIGHT
     int "Joystick RIGHT GPIO"
-    default 19
+    default -1
 
 config PRG32_PIN_BTN_START
     int "START Button GPIO"
-    default 20
+    default -1
 
 config PRG32_PIN_BTN_A
     int "A Button GPIO"
-    default 21
+    default -1
 
 config PRG32_PIN_BTN_B
     int "B Button GPIO"
-    default 22
+    default -1
 
 config PRG32_ENABLE_SEPARATE_SELECT_PIN
     bool "Enable separate SELECT button pin"
@@ -298,7 +311,7 @@ config PRG32_ENABLE_SEPARATE_SELECT_PIN
 config PRG32_PIN_BTN_SELECT
     int "SELECT Button GPIO"
     depends on PRG32_ENABLE_SEPARATE_SELECT_PIN
-    default 20
+    default -1
 
 config PRG32_PIN_SETUP
     int "Dedicated SETUP Button GPIO"
@@ -311,17 +324,17 @@ config PRG32_PIN_BUZZER
 config PRG32_AUDIO_I2S_BCLK_GPIO
     int "I2S BCLK GPIO"
     depends on PRG32_AUDIO_ENABLED
-    default 4
+    default -1
 
 config PRG32_AUDIO_I2S_LRCLK_GPIO
     int "I2S LRCLK/WS GPIO"
     depends on PRG32_AUDIO_ENABLED
-    default 11
+    default -1
 
 config PRG32_AUDIO_I2S_DATA_GPIO
     int "I2S DATA/DIN GPIO"
     depends on PRG32_AUDIO_ENABLED
-    default 23
+    default -1
 
 config PRG32_AUDIO_I2S_SD_GPIO
     int "I2S SD/shutdown GPIO"

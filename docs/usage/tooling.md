@@ -23,9 +23,9 @@ python3 -m prg32 <command> [subcommand] [options]
 All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6` group.
 
 ### Firmware Operations
-- `build`: build the ESP32C6 firmware. Use the `--skip-target` option to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build).
+- `build`: build the ESP32C6 firmware. Use `--pin-profile <name>` (or `--pins <name>`) to select the hardware pin configuration profile (default: `prototype1`, see [PRG32 Profiles](profiles.md#hardware-pin-profiles)). Use `--list-pin-profiles` to list available pin configurations. Use the `--skip-target` option to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build).
 - `flash`: flash the ESP32C6 image. Does not do anything when a cartridge is running!
-    - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports the `--skip-target` option.
+    - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports `--pin-profile`, `--list-pin-profiles`, and `--skip-target`.
 - `erase-flash`: erase flash of ESP32C6. It is sometimes useful to completely erase the flash for debugging purposes.
     - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)

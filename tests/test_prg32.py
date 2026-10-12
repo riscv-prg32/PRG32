@@ -442,5 +442,37 @@ class DoctorTests(unittest.TestCase):
         self.assertEqual(rc, 0)
 
 
+class PinProfileTests(unittest.TestCase):
+    def test_discover_prototype1_pin_profile(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        profiles = list_pin_profiles()
+        self.assertIn("prototype1", profiles)
+        path = resolve_pin_profile("prototype1")
+        self.assertTrue(path.exists())
+        self.assertTrue(path.name.endswith("prototype1"))
+
+    def test_unknown_pin_profile_raises_value_error(self) -> None:
+        from prg32.utilities.pin_profiles import resolve_pin_profile
+        with self.assertRaises(ValueError) as ctx:
+            resolve_pin_profile("non_existent_profile_xyz")
+        self.assertIn("Available pin profiles", str(ctx.exception))
+
+    def test_dynamic_profile_discovery_in_custom_dir(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            (tmp_path / "sdkconfig.pins.custom_board").write_text("CONFIG_PRG32_PINS_CONFIGURED=y\n", encoding="utf-8")
+            profiles = list_pin_profiles(tmp_path)
+            self.assertIn("custom_board", profiles)
+            resolved = resolve_pin_profile("custom_board", tmp_path)
+            self.assertEqual(resolved, tmp_path / "sdkconfig.pins.custom_board")
+
+    def test_get_esp32c6_sdkconfig_defaults_includes_pin_profile(self) -> None:
+        from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
+        args = argparse.Namespace(pin_profile="prototype1", debug=False, list_pin_profiles=False)
+        defaults = get_esp32c6_sdkconfig_defaults(args)
+        self.assertIn("sdkconfig.pins.prototype1", defaults)
+
+
 if __name__ == "__main__":
     unittest.main()

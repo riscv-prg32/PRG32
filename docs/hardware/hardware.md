@@ -129,7 +129,20 @@ See the [bill of materials](where_to_buy.md) for the resistor and footprint.
 
 ## Software Configuration
 
-These pins match the default `idf.py menuconfig` settings for the ESP32-C6 physical ILI9341 build.
+These pins correspond to the `prototype1` hardware pin profile (`profiles/sdkconfig.pins.prototype1`), representing the reference first prototype breadboard build.
+
+Hardware pin configurations are not defaulted in Kconfig; every physical build must specify an explicit pin profile (see [PRG32 Profiles](../usage/profiles.md#hardware-pin-profiles)). When building the firmware with the PRG32 CLI, select the profile using:
+
+```bash
+python3 -m prg32 esp32c6 build --pin-profile prototype1
+```
+
+If building directly with ESP-IDF, append the profile fragment to `SDKCONFIG_DEFAULTS`:
+
+```bash
+idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" build
+```
+
 
 The firmware enables the internal pull-up on every button input, so a pressed
 button connects its GPIO to GND. START and SELECT are names for the same

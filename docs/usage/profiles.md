@@ -63,3 +63,75 @@ python3 -m prg32 cartridge build game.S --out build/game.prg32 \
 For a QEMU firmware built with the classroom profile, `qemu upload` picks up
 32 KiB from `build-qemu/sdkconfig`; pass `--cart-ram-kib 32` when staging into
 a flash image with no `sdkconfig` next to it.
+
+## Hardware Pin Profiles
+
+PRG32 decouples GPIO pin assignments from Kconfig defaults. Instead of hardcoding pin numbers in `components/prg32/Kconfig`, every physical hardware configuration is defined in a profile fragment within `profiles/`.
+
+Builds attempting to compile without a pin profile are blocked at three levels:
+1. **CMake**: Halts with `message(FATAL_ERROR ...)` if `CONFIG_PRG32_PINS_CONFIGURED` is unset.
+2. **C Preprocessor**: Emits `#error` in `main/prg32_config.h` if compiled without a pin profile.
+3. **C Runtime**: Halts firmware execution in `prg32_init()` if pins are unconfigured.
+
+### Built-in Pin Profiles
+
+- **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype breadboard pinout using the ILI9341 SPI TFT display, 7-button directional controls, and MAX98357A I2S mono/stereo audio as documented in [PRG32 Hardware](../hardware/hardware.md).
+- **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
+
+### Selecting a Pin Profile
+
+Use the `--pin-profile` (or `--pins`) argument when building:
+
+```bash
+# Build with prototype 1 pins (default if omitted)
+python3 -m prg32 esp32c6 build --pin-profile prototype1
+
+# Build and flash directly
+python3 -m prg32 esp32c6 build-and-flash --pin-profile prototype1
+
+# List all available hardware pin profiles
+python3 -m prg32 esp32c6 build --list-pin-profiles
+```
+
+For direct `idf.py` builds, add the profile to `SDKCONFIG_DEFAULTS`:
+
+```bash
+idf.py -B build-esp32c6 \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" \
+  build
+```
+
+### Adding a New Pin Profile
+
+Adding a new pin layout (such as a custom PCB or alternative display harness) requires no Python code modifications:
+
+1. Create a new file in `profiles/` named `profiles/sdkconfig.pins.<name>` (e.g. `profiles/sdkconfig.pins.myboard`).
+2. Set `CONFIG_PRG32_PINS_CONFIGURED=y` and define the relevant pins:
+   ```ini
+   CONFIG_PRG32_PINS_CONFIGURED=y
+   CONFIG_PRG32_PIN_PROFILE_NAME="myboard"
+   CONFIG_PRG32_PIN_LCD_MOSI=7
+   CONFIG_PRG32_PIN_LCD_MISO=2
+   CONFIG_PRG32_PIN_LCD_SCLK=6
+   CONFIG_PRG32_PIN_LCD_CS=10
+   CONFIG_PRG32_PIN_LCD_DC=8
+   CONFIG_PRG32_PIN_LCD_RST=9
+   CONFIG_PRG32_PIN_LCD_BL=5
+   CONFIG_PRG32_PIN_BTN_UP=3
+   CONFIG_PRG32_PIN_BTN_DOWN=13
+   CONFIG_PRG32_PIN_BTN_LEFT=18
+   CONFIG_PRG32_PIN_BTN_RIGHT=19
+   CONFIG_PRG32_PIN_BTN_START=20
+   CONFIG_PRG32_PIN_BTN_A=21
+   CONFIG_PRG32_PIN_BTN_B=22
+   CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO=4
+   CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO=11
+   CONFIG_PRG32_AUDIO_I2S_DATA_GPIO=23
+   CONFIG_PRG32_AUDIO_I2S_SD_GPIO=-1
+   CONFIG_PRG32_PIN_BUZZER=-1
+   CONFIG_PRG32_PIN_RGB_LED=-1
+   ```
+3. Build with your profile immediately:
+   ```bash
+   python3 -m prg32 esp32c6 build --pin-profile myboard
+   ```

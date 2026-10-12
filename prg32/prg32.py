@@ -83,9 +83,15 @@ def main(argv: list[str]) -> int:
     )
     p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help=f"Hardware pin configuration profile to use (default: {DEFAULT_PIN_PROFILE})")
+    p.add_argument("--list-pin-profiles", action="store_true", help="List all available hardware pin profiles")
     p.set_defaults(func=build_esp32c6)
 
     p = esp32c6_sub.add_parser("flash", help="flash the ESP32C6 image. Does not do anything when a cartridge is running!")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help=f"Hardware pin configuration profile to use (default: {DEFAULT_PIN_PROFILE})")
     p.set_defaults(func=flash_esp32c6)
 
     p = esp32c6_sub.add_parser("build-and-flash", help="build and flash the ESP32C6. Does not do anything when a cartridge is running (?)")
@@ -94,6 +100,9 @@ def main(argv: list[str]) -> int:
     )
     p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help=f"Hardware pin configuration profile to use (default: {DEFAULT_PIN_PROFILE})")
+    p.add_argument("--list-pin-profiles", action="store_true", help="List all available hardware pin profiles")
     p.set_defaults(func=build_and_flash_esp32c6)
 
     p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")

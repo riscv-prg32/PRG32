@@ -13,6 +13,7 @@ When you save changes in `menuconfig`, they are stored in the `sdkconfig` file l
 - **`profiles/sdkconfig.defaults`**: Contains the permanent default configurations for the repository. These defaults act as a baseline whenever a new `sdkconfig` file is generated (for example, after a fresh Git clone, or if you delete your local `sdkconfig` and run a build). Your local `sdkconfig` will override the repository defaults.
     - If you want a change (e.g., changing the fallback default audio mode) to be applied universally to all new builds, you must manually copy the relevant setting from your local `sdkconfig` into `profiles/sdkconfig.defaults`.
 - **`profiles/sdkconfig.defaults.qemu`**: Contains the default configuration overrides specifically for QEMU emulator builds.
+- **`profiles/sdkconfig.pins.*`**: Hardware pin configuration profiles (e.g. `profiles/sdkconfig.pins.prototype1`). GPIO pins are decoupled from Kconfig and must be provided via an explicit pin profile (see [PRG32 Profiles](profiles.md#hardware-pin-profiles)).
 
 ## Runtime Configuration (NVS)
 
