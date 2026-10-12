@@ -235,7 +235,7 @@ int prg32_performance_summary(prg32_performance_summary_t *out) {
 
 static int writef(prg32_performance_json_writer_t writer,void *ctx,
                   const char *format,...) {
-  char b[384]; va_list a; va_start(a,format);
+  char b[1024]; va_list a; va_start(a,format);
   int n=vsnprintf(b,sizeof(b),format,a); va_end(a);
   return n<0||(size_t)n>=sizeof(b)||writer(b,ctx)!=0?-1:0;
 }

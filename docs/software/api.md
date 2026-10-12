@@ -265,7 +265,7 @@ Parameters:
 
 | Parameter | Required | Meaning |
 |---|---:|---|
-| `slot` | no | Cartridge slot name from `cart0` through `cart3`; defaults to `cart0` |
+| `slot` | no | Cartridge slot name from `cart0` through `cart7`; defaults to `cart0` |
 
 Example with the host tool:
 
@@ -337,6 +337,8 @@ Success response:
 Expected behavior:
 
 - the selected slot becomes the active cartridge;
+- when the setup menu is open, a successful remote selection closes it so the
+  resident main loop can initialize and execute the cartridge;
 - invalid or empty slots return `400` with the cartridge error message.
 
 ### Capture A Screenshot
