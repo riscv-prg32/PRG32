@@ -136,18 +136,12 @@ uint32_t prg32_controller_remote_active(void) {
 
 static uint32_t read_gpio_buttons(void) {
     uint32_t v = 0;
-    if (PRG32_PIN_BTN_LEFT >= 0 && !gpio_get_level(PRG32_PIN_BTN_LEFT)) {
-        v |= PRG32_BTN_LEFT;
-    }
-    if (PRG32_PIN_BTN_RIGHT >= 0 && !gpio_get_level(PRG32_PIN_BTN_RIGHT)) {
-        v |= PRG32_BTN_RIGHT;
-    }
-    if (PRG32_PIN_BTN_UP >= 0 && !gpio_get_level(PRG32_PIN_BTN_UP)) {
-        v |= PRG32_BTN_UP;
-    }
-    if (PRG32_PIN_BTN_DOWN >= 0 && !gpio_get_level(PRG32_PIN_BTN_DOWN)) {
-        v |= PRG32_BTN_DOWN;
-    }
+#if defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
+    v |= prg32_joystick_analog_read();
+#elif defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
+    v |= prg32_joystick_digital_read();
+#endif
+
     if (PRG32_PIN_BTN_A >= 0 && !gpio_get_level(PRG32_PIN_BTN_A)) {
         v |= PRG32_BTN_A;
     }

@@ -491,6 +491,9 @@ static int setup_audio_pin_conflicts(int gpio) {
          setup_pin_matches(gpio, PRG32_PIN_LCD_DC) ||
          setup_pin_matches(gpio, PRG32_PIN_LCD_RST) ||
          setup_pin_matches(gpio, PRG32_PIN_LCD_BL) ||
+         setup_pin_matches(gpio, PRG32_PIN_SDCARD_CS) ||
+         setup_pin_matches(gpio, PRG32_PIN_JOYSTICK_X) ||
+         setup_pin_matches(gpio, PRG32_PIN_JOYSTICK_Y) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_LEFT) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_RIGHT) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_UP) ||
@@ -1137,12 +1140,20 @@ static bool prg32_pins_validate(void) {
 #else
   if (PRG32_PIN_LCD_MOSI < 0 || PRG32_PIN_LCD_SCLK < 0 ||
       PRG32_PIN_LCD_CS < 0 || PRG32_PIN_LCD_DC < 0 ||
-      PRG32_PIN_BTN_UP < 0 || PRG32_PIN_BTN_DOWN < 0 ||
-      PRG32_PIN_BTN_LEFT < 0 || PRG32_PIN_BTN_RIGHT < 0 ||
       PRG32_PIN_BTN_A < 0 || PRG32_PIN_BTN_B < 0 ||
       PRG32_PIN_BTN_START < 0) {
     return false;
   }
+#if defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
+  if (PRG32_PIN_JOYSTICK_X < 0 || PRG32_PIN_JOYSTICK_Y < 0) {
+    return false;
+  }
+#elif defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
+  if (PRG32_PIN_BTN_UP < 0 || PRG32_PIN_BTN_DOWN < 0 ||
+      PRG32_PIN_BTN_LEFT < 0 || PRG32_PIN_BTN_RIGHT < 0) {
+    return false;
+  }
+#endif
   return true;
 #endif
 #endif

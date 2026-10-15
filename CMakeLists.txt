@@ -60,6 +60,8 @@ if(NOT SDKCONFIG_DEFAULTS MATCHES "sdkconfig\\.pins\\.")
                 set(PRG32_AUTOPROFILE "${CMAKE_MATCH_1}")
             elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" AND NOT PRG32_AUTOPROFILE)
                 set(PRG32_AUTOPROFILE "prototype1")
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE2=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "prototype2")
             endif()
         endforeach()
 

@@ -41,6 +41,8 @@ def get_sdkconfig_pin_profile() -> tuple[str, bool]:
                         profile_name = val
                 elif line == "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" and not profile_name:
                     profile_name = "prototype1"
+                elif line == "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE2=y" and not profile_name:
+                    profile_name = "prototype2"
             if is_custom:
                 return ("custom", True)
             if profile_name:

@@ -35,91 +35,27 @@ connector labels and the tables below define the electrical connections.
 - Reassign audio GPIOs if they conflict with the display or joystick wiring in
   a specific classroom kit.
 
-## Pinouts and Wiring
+## Pinouts, Wiring, and Profiles
+
+All physical GPIO pin assignments, wiring tables, breadboard power distribution, and assembly instructions are maintained under [`profiles/`](profiles/) as the single source of truth for hardware setups:
+
+- [**Prototype 1 Profile (`prototype1`)**](profiles/prototype1.md): Reference breadboard prototype featuring discrete 5-way digital navigation joystick switches, reference ILI9341 wiring (DC: GPIO8, RST: GPIO9), power bus distribution, and I2S audio.
+- [**Prototype 2 Profile (`prototype2`)**](profiles/prototype2.md): Second breadboard prototype featuring a 2-axis analog thumbstick (continuous ADC mode on GPIO0 and GPIO1), updated display harness (DC: GPIO15, RST: GPIO12), reserved SD card CS (GPIO9, see [MicroSD Card Guide](sdcard.md)), power bus distribution, and I2S audio.
+- [**Hardware Profiles Directory**](profiles/README.md): Complete comparison table, architecture mapping, and guide for switching hardware profiles.
+
+> [!IMPORTANT]
+> **Single Source of Truth**: Hardware pin setups, wiring schematics, and board profiles are exclusively defined and maintained in [`docs/hardware/profiles/`](profiles/) and [`profiles/sdkconfig.pins.*`](../../profiles/). Do not duplicate pinout tables or wiring schemes elsewhere in documentation.
 
 ### Base Hardware
 
 See the [bill of materials and country-specific purchasing links](where_to_buy.md)
-for the complete mono build, optional stereo parts and assembly supplies.
+for the complete mono build, optional stereo parts, and assembly supplies.
 
-### Configuration Pinouts
+## Build Steps & Assembly
 
-**Display**
-| ESP32-C6 | ILI9341 TFT / control |
-|---|---|
-| 3V3 | VCC |
-| GND | GND |
-| GPIO7 | MOSI |
-| GPIO2 | MISO / touch DO |
-| GPIO6 | SCLK |
-| GPIO10 | CS |
-| GPIO8 | DC |
-| GPIO9 | RST |
-| GPIO5 | BL / LED |
-
-**Joystick**
-| ESP32-C6 | Input |
-|---|---|
-| GPIO18 | P1 LEFT, switch to GND |
-| GPIO19 | P1 RIGHT, switch to GND |
-| GPIO3  | P1 UP, switch to GND |
-| GPIO0 | P1 DOWN, switch to GND |
-| GPIO20 | P1 START / SELECT, switch to GND |
-| GPIO21 | P1 A, switch to GND |
-| GPIO22 | P1 B, switch to GND |
-
-GPIO12 and GPIO13 remain unconnected in the prototype controls because the
-ESP32-C6 uses them for the native USB D-/D+ interface. Automatic runtime
-cartridge uploads require that pair. Older breadboards wired DOWN to GPIO13
-must move that switch wire to GPIO0. The breadboard figure, the electrical
-schematic and the Fritzing project show this assignment; the PCB view still
-needs its LCD RESET trace routed (see the
-[PCB layout status](pcb/README.md#layout-status)).
-
-**AUDIO: Mono configuration**
-| ESP32-C6 | MAX98357A (Mono) |
-|---|---|
-| 3V3 or 5V | VIN |
-| GND | GND |
-| GPIO4 | BCLK |
-| GPIO11 | LRC / WS |
-| GPIO23 | DIN |
-| not wired by default | SD / MODE optional |
-
-**AUDIO: Stereo configuration**
-| ESP32-C6 | Left MAX98357A (Stereo) | Right MAX98357A (Stereo) |
-|---|---|---|
-| 3V3 or 5V | VIN | VIN |
-| GND | GND | GND |
-| GPIO4 | BCLK | BCLK |
-| GPIO11 | LRC / WS | LRC / WS |
-| GPIO23 | DIN | DIN |
-| Same as VIN (> 1.4V) | SD	| - |
-| 0.77V to 1.4V |	-	| SD |
-
-## Build Step
-
-### Breadboard Power Distribution
-
-Use the buses exactly as shown in the breadboard figure. Do not interchange the
-3V3 and 5V rails.
-
-| Breadboard bus | Voltage | Connections |
-|---|---:|---|
-| Upper blue bus | GND | ESP32-C6 GND, ILI9341 GND, joystick/button grounds |
-| Upper red bus | 3V3 | ESP32-C6 3V3 and ILI9341 VCC |
-| Lower blue bus | GND | Both MAX98357A GND pins |
-| Lower red bus | 5V | ESP32-C6 5V and both MAX98357A VIN pins |
-
-For a reproducible classroom build:
-
-1. Disconnect USB and all other power sources.
-2. Place the ESP32-C6 horizontally across the center trench. Confirm that each
-   header row is in a different five-hole terminal-strip half.
-3. Wire the two ground buses and the column-61 ground bridge first. Install the black jumper at column 61 between the upper and lower blue buses so the display, controls, ESP32-C6, and amplifiers share one ground reference. If the breadboard has a midpoint break in either bus, add a jumper across each used split as well. The upper red 3V3 bus and lower red 5V bus must remain separate.
-4. Wire ESP32-C6 3V3 and the display only to the upper red bus.
-5. Wire ESP32-C6 5V and both MAX98357A VIN pins only to the lower red bus.
-6. Connect one 4-8 ohm speaker to the MAX98357A speaker `+` and `-` outputs.
+Detailed step-by-step breadboard assembly and power distribution guidelines for each build are documented in their respective profile guides:
+- [Prototype 1 Breadboard Assembly & Power Distribution](profiles/prototype1.md#breadboard-power-distribution--assembly)
+- [Prototype 2 Breadboard Assembly & Power Distribution](profiles/prototype2.md#breadboard-power-distribution--assembly)
 
 ### Stereo Configuration (Supplementary Info)
 
@@ -141,12 +77,15 @@ See the [bill of materials](where_to_buy.md) for the resistor and footprint.
 
 ## Software Configuration
 
-These pins correspond to the `prototype1` hardware pin profile (`profiles/sdkconfig.pins.prototype1`), representing the reference first prototype breadboard build.
+Physical hardware pin assignments are decoupled from Kconfig defaults and defined in profile files under `profiles/` (see [PRG32 Profiles](../usage/profiles.md#hardware-pin-profiles)).
 
-Hardware pin configurations default to "None" in Kconfig so that builds without a specified profile halt immediately at build time (see [PRG32 Profiles](../usage/profiles.md#hardware-pin-profiles)).
+Hardware pin configurations default to "None" in Kconfig so that builds without a specified profile halt immediately at build time.
 
 You can select a pin setup either interactively or via the CLI:
-- **Interactive Menuconfig**: Open `idf.py menuconfig`, navigate to `Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration` -> `Hardware Pin Profile`, and choose `prototype1 (First Prototype Breadboard)` to load `profiles/sdkconfig.pins.prototype1`, or select `Custom Profile` to configure GPIO numbers manually in `menuconfig`.
+- **Interactive Menuconfig**: Open `idf.py menuconfig`, navigate to `Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration` -> `Hardware Pin Profile`, and choose:
+  - `prototype1 (First Prototype Breadboard)` for [Prototype 1](profiles/prototype1.md)
+  - `prototype2 (Second Prototype Breadboard with Analog Joystick)` for [Prototype 2](profiles/prototype2.md)
+  - Or select `Custom Profile` to configure GPIO numbers manually in `menuconfig`.
 - **PRG32 CLI**:
   ```bash
   # See available pin setup possibilities
@@ -154,6 +93,7 @@ You can select a pin setup either interactively or via the CLI:
 
   # Build specifying the profile
   python3 -m prg32 esp32c6 build --pin-profile prototype1
+  python3 -m prg32 esp32c6 build --pin-profile prototype2
   ```
 - **Direct ESP-IDF Build**: Append the profile fragment to `SDKCONFIG_DEFAULTS`:
   ```bash

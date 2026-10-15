@@ -103,7 +103,8 @@ Builds attempting to compile physical firmware without a pin profile are blocked
 
 ### Built-in Pin Profiles
 
-- **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype PCB/breadboard pinout using the ILI9341 SPI TFT display, 7-button directional controls, and MAX98357A I2S mono/stereo audio as documented in [PRG32 Hardware](../hardware/hardware.md). Its fixed GPIO8 connection is shared by LCD D/C and the onboard RGB LED; the profile preserves that wiring and treats the LED as a boot indicator, not a general-purpose output.
+- **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype breadboard pinout using the ILI9341 SPI TFT display (DC: GPIO8, RST: GPIO9), 5-way digital navigation joystick (discrete GPIO switches), and MAX98357A I2S mono/stereo audio as documented in [Prototype 1](../hardware/profiles/prototype1.md).
+- **`prototype2` (`profiles/sdkconfig.pins.prototype2`)**: The second prototype breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (DC: GPIO15, RST: GPIO12), reserved SD card CS (GPIO9), and MAX98357A I2S audio as documented in [Prototype 2](../hardware/profiles/prototype2.md).
 - **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
 
 ### Selecting a Pin Profile
@@ -117,6 +118,7 @@ You can set a persistent pin configuration default in your `sdkconfig` via `menu
 3. Choose your pin profile from the dropdown:
    - **`None (no default - build halts)`**: The default setting. Pin configuration is omitted; any physical build will crash/halt at build time if unconfigured.
    - **`prototype1 (First Prototype Breadboard)`**: Designates the reference breadboard pin profile. Pin numbers are defined in `profiles/sdkconfig.pins.prototype1` and merged into the build, overriding the `-1` menuconfig defaults.
+   - **`prototype2 (Second Prototype Breadboard with Analog Joystick)`**: Designates the second breadboard pin profile with continuous ADC analog joystick and updated harness. Pin numbers are defined in `profiles/sdkconfig.pins.prototype2`.
    - **`Custom Profile (configure pins manually in menuconfig)`**: If and only if Custom profile is activated, the build uses the pin values set manually in `menuconfig` and saved in `sdkconfig`. No external profile file is appended.
 
 #### 2. Via PRG32 Tooling (`--pin-profile`)
@@ -129,15 +131,18 @@ python3 -m prg32 esp32c6 pins
 # Build with prototype 1 pins
 python3 -m prg32 esp32c6 build --pin-profile prototype1
 
+# Build with prototype 2 pins (analog joystick)
+python3 -m prg32 esp32c6 build --pin-profile prototype2
+
 # Build and flash directly
-python3 -m prg32 esp32c6 build-and-flash --pin-profile prototype1
+python3 -m prg32 esp32c6 build-and-flash --pin-profile prototype2
 ```
 
 For direct `idf.py` builds, add the profile to `SDKCONFIG_DEFAULTS`:
 
 ```bash
 idf.py -B build-esp32c6 \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype2" \
   build
 ```
 

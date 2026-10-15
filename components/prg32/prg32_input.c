@@ -37,23 +37,22 @@ static void pin_in(const char *name, int p) {
 }
 
 void prg32_input_init(void) {
-    printf("prg32_input_init START\n");
-    pin_in("LEFT", PRG32_PIN_BTN_LEFT);
-    pin_in("RIGHT", PRG32_PIN_BTN_RIGHT);
-    pin_in("UP", PRG32_PIN_BTN_UP);
-    pin_in("DOWN", PRG32_PIN_BTN_DOWN);
+    ESP_LOGI(TAG, "prg32_input_init START");
+#if defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
+    prg32_joystick_analog_init();
+#elif defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
+    prg32_joystick_digital_init();
+#endif
+
     pin_in("A", PRG32_PIN_BTN_A);
     pin_in("B", PRG32_PIN_BTN_B);
-    printf("prg32_input_init PIN_BTN_START\n");
     pin_in("START", PRG32_PIN_BTN_START);
-    printf("prg32_input_init PIN_BTN_SELECT\n");
     if (PRG32_PIN_BTN_SELECT != PRG32_PIN_BTN_START) {
         pin_in("SELECT", PRG32_PIN_BTN_SELECT);
     }
 
     pin_in("SETUP", PRG32_PIN_SETUP);
-    printf("prg32_input_init END\n");
-    //vTaskDelay(pdMS_TO_TICKS(1));
+    ESP_LOGI(TAG, "prg32_input_init END");
 }
 
 uint32_t prg32_input_read(void) {

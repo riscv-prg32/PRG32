@@ -582,6 +582,14 @@ class PinProfileTests(unittest.TestCase):
         self.assertTrue(path.exists())
         self.assertTrue(path.name.endswith("prototype1"))
 
+    def test_discover_prototype2_pin_profile(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        profiles = list_pin_profiles()
+        self.assertIn("prototype2", profiles)
+        path = resolve_pin_profile("prototype2")
+        self.assertTrue(path.exists())
+        self.assertTrue(path.name.endswith("prototype2"))
+
     def test_unknown_pin_profile_raises_value_error(self) -> None:
         from prg32.utilities.pin_profiles import resolve_pin_profile
         with self.assertRaises(ValueError) as ctx:
@@ -620,6 +628,7 @@ class PinProfileTests(unittest.TestCase):
             rc = prg32_main(["esp32c6", "pins"])
         self.assertEqual(rc, 0)
         self.assertIn("prototype1", buf.getvalue())
+        self.assertIn("prototype2", buf.getvalue())
 
     def test_cli_pins(self) -> None:
         buf = io.StringIO()
@@ -627,6 +636,7 @@ class PinProfileTests(unittest.TestCase):
             rc = prg32_main(["pins"])
         self.assertEqual(rc, 0)
         self.assertIn("prototype1", buf.getvalue())
+        self.assertIn("prototype2", buf.getvalue())
 
     def test_get_esp32c6_sdkconfig_defaults_from_sdkconfig_profile(self) -> None:
         from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
