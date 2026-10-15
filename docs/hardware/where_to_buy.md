@@ -8,7 +8,7 @@ This is the purchasing list for one physical ESP32-C6 PRG32 unit. Use the
 [hardware guide](hardware.md) for authoritative wiring, the
 [display notes](ili9341.md) for the ILI9341 backend, and the
 [audio guide](../tools/audio.md) for mono/stereo configuration. The
-[PCB reference](../pcb/README.md) defines mechanical placement and footprints.
+[PCB reference](pcb/README.md) defines mechanical placement and footprints.
 Supplier examples below are candidates for a breadboard build; they have not
 all been assembled and tested with PRG32 or verified to fit the reference PCB.
 
@@ -39,7 +39,7 @@ power source are assumed available. A soldering iron, solder and a multimeter
 are shared assembly tools rather than components of each unit.
 
 For a PCB build, replace the breadboard with the board fabricated from the
-[reference design](../pcb/README.md), and choose headers, buttons, speakers and
+[reference design](pcb/README.md), and choose headers, buttons, speakers and
 mounting hardware against its actual footprints. PCB fabrication and enclosure
 hardware require a quote for the chosen design; this list is not a claim that
 all linked modules are mechanically interchangeable.
@@ -165,6 +165,6 @@ Follow [the hardware agent instructions](AGENTS.md). Update quantities,
 compatibility notes and affected buying links as part of any hardware change.
 Record the review date and any links that could not be checked. Keep wiring in
 [hardware.md](hardware.md), audio behavior in [the audio guide](../tools/audio.md),
-and fabrication details in [the PCB reference](../pcb/README.md).
+and fabrication details in [the PCB reference](pcb/README.md).
 This document is maintained with repository changes; it is not a live stock or
 price monitor.

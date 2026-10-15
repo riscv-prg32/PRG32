@@ -11,7 +11,7 @@ or supplier information change. Review the purchasing list whenever editing
 hardware documentation; update affected entries in the same change.
 
 - Cross-check the bill of materials with [hardware.md](hardware.md),
-  [the PCB reference](../pcb/README.md), [audio documentation](../tools/audio.md),
+  [the PCB reference](pcb/README.md), [audio documentation](../tools/audio.md),
   and the canonical firmware configuration in
   [components/prg32/Kconfig](../../components/prg32/Kconfig) and
   [audio Kconfig](../../components/prg32_audio/Kconfig).

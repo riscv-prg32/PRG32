@@ -16,10 +16,15 @@ the breadboard view depicts the equivalent axial resistor. Through-hole pads
 remain visible from both PCB sides even when the module body is mounted on the
 indicated side.
 
+The PCB exposes the optional stereo circuit, while the shipped firmware
+profiles default to mono (`CONFIG_PRG32_AUDIO_MODE_MONO=y`). A one-amplifier
+assembly therefore matches the default firmware. A two-amplifier assembly must
+select `CONFIG_PRG32_AUDIO_MODE_STEREO=y` before the firmware is built.
+
 ## Reference Prototype Figures
 
 The following figures are exported from the schematic and breadboard views of
-`docs/pcb/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
+`docs/hardware/pcb/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
 the canonical GPIO assignments.
 
 ![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](/docs/hardware/images/prg32-electrical-schematic.svg)
@@ -28,7 +33,7 @@ the canonical GPIO assignments.
 
 ## Prototype parts
 
-See the [bill of materials and purchasing guide](../hardware/where_to_buy.md)
+See the [bill of materials and purchasing guide](../where_to_buy.md)
 for parts, quantities and supplier links. Check each selected module against
 the Fritzing footprints before ordering PCB components.
 
@@ -36,8 +41,10 @@ Desktop QEMU can emulate the PRG32 graphics viewport for early software tests,
 but it does not replace this hardware validation. Use the physical board for
 LCD wiring, GPIO buttons, I2S output, and Wi-Fi station testing.
 
-The resident firmware also starts the `PRG32` Wi-Fi AP for cartridge uploads.
-Keep the antenna area of the ESP32-C6 module clear in the enclosure.
+The shipped physical firmware profile selects Wi-Fi AP boot mode with SSID
+`PRG32`, and cartridge upload support is enabled by default. Keep the antenna
+area of the ESP32-C6 module clear in the enclosure. QEMU disables physical
+Wi-Fi transport in `main/prg32_config.h`.
 
 ## Multiplayer networking
 
@@ -68,7 +75,7 @@ Do not connect MAX98357A speaker outputs directly to headphones or line-level
 inputs. Use 4-8 ohm speakers.
 
 Joystick purchasing options are maintained in the
-[central buying guide](../hardware/where_to_buy.md).
+[central buying guide](../where_to_buy.md).
 Wire each joystick direction as a normally-open switch to ground; PRG32 enables
 internal pull-ups.
 
