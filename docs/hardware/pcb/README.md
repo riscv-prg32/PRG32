@@ -89,7 +89,7 @@ WebSocket server; the reference hardware keeps local input to one joystick.
 ## Reference wiring
 
 For the definitive pin connections, including the display, joystick, and
-MAX98357A audio, please see the [Pinouts and Wiring guide in `hardware.md`](/docs/hardware/hardware.md#pinouts-and-wiring).
+MAX98357A audio, please see the [Hardware Profiles Guide](/docs/hardware/profiles/README.md) and [Hardware Guide](/docs/hardware/README.md).
 
 Stereo uses two MAX98357A boards. Both share BCLK, LRC/WS, DIN, power, and
 ground. Configure one board for left-channel output and the other for

@@ -5,7 +5,7 @@ mode guidance and 390 kΩ resistor sourcing were checked **2026-09-13**;
 country search links were updated (including KY-023 analog joystick links), but stock and delivery were not verified.
 
 This is the purchasing list for one physical ESP32-C6 PRG32 unit. Use the
-[hardware guide](hardware.md) for authoritative wiring, the
+[hardware guide](README.md) for authoritative wiring, the
 [display notes](ili9341.md) for the ILI9341 backend, and the
 [audio guide](../tools/audio.md) for mono/stereo configuration. The
 [PCB reference](pcb/README.md) defines mechanical placement and footprints.
@@ -33,7 +33,7 @@ not additions to the mono column. The classroom baseline includes mono audio.
 | CONN | Optional speaker wire/connectors with matching pitch, polarity and mating halves; direct wires to the amplifier terminals are sufficient | 0–1 pair | 0–2 pairs |
 
 USB power must cover the board, display and audio load. Check the selected
-board's power limits and the [audio power guidance](hardware.md#safety-notes)
+board's power limits and the [audio power guidance](audio.md#safety-and-power-notes)
 before choosing an additional regulated supply. A computer and a suitable USB
 power source are assumed available. A soldering iron, solder and a multimeter
 are shared assembly tools rather than components of each unit.
@@ -46,7 +46,7 @@ all linked modules are mechanically interchangeable.
 
 ## Check before ordering
 
-- Compare the full development-board pinout with [PRG32 wiring](hardware.md#pinouts-and-wiring).
+- Compare the full development-board pinout with [PRG32 wiring](README.md#hardware-pin-profiles--software-selection).
   Small ESP32-C6 boards may omit required GPIOs. An ESP32-C3, ESP32-S3 or classic
   ESP32 board is not a replacement for the physical C6 configuration. See the
   [Espressif DevKitC-1 guide](https://documentation.espressif.com/esp-dev-kits/en/latest/esp32c6/esp32-c6-devkitc-1/user_guide.html).
@@ -56,9 +56,9 @@ all linked modules are mechanically interchangeable.
   [Adafruit display example](https://www.adafruit.com/product/1770) supports SPI,
   but its header layout must be mapped to the PRG32 signals.
 - A KY-023 / PS2 analog joystick with VRx/VRy outputs is supported natively by the
-  `prototype2` hardware profile via continuous ADC mode on GPIO0 (X) and GPIO1 (Y).
-  For the `prototype1` profile, use a 5-way digital navigation module providing
-  discrete active-low switch outputs. Center press is START/SELECT (GPIO20). Separate
+  [`prototype2`](profiles/prototype2.md) hardware profile via continuous ADC mode.
+  For the [`prototype1`](profiles/prototype1.md) profile, use a 5-way digital navigation module providing
+  discrete active-low switch outputs. Center press is START/SELECT. Separate
   A/B momentary buttons retain the reference layout; spare buttons on a navigation
   module can replace them only when wired to the corresponding inputs. No extra
   SETUP button is needed.
@@ -66,7 +66,7 @@ all linked modules are mechanically interchangeable.
   channel-selection network before buying mode resistors. The
   [Adafruit SD/MODE explanation](https://learn.adafruit.com/adafruit-max98357-i2s-class-d-mono-amp/pinouts)
   shows why a resistor value depends on supply voltage and existing resistors.
-  Follow [PRG32 audio wiring](hardware.md#audio-configuration) for speakers.
+  Follow [PRG32 audio wiring](audio.md#wiring--pinouts) for speakers.
 - Prefer pre-soldered headers for solderless classroom kits. Check connector
   types, pack quantities and breadboard clearance before ordering a class set.
   No separate Wi-Fi module, passive buzzer, microSD card or USB gamepad is
@@ -169,7 +169,7 @@ during this review; use the JOY searches or the documented alternative above.
 Follow [the hardware agent instructions](AGENTS.md). Update quantities,
 compatibility notes and affected buying links as part of any hardware change.
 Record the review date and any links that could not be checked. Keep wiring in
-[hardware.md](hardware.md), audio behavior in [the audio guide](../tools/audio.md),
-and fabrication details in [the PCB reference](pcb/README.md).
+[the hardware guide](README.md), audio behavior in [the audio guide](../tools/audio.md),
+and fabrication details in [the PCB reference](../pcb/README.md).
 This document is maintained with repository changes; it is not a live stock or
 price monitor.

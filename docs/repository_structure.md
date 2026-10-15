@@ -38,6 +38,13 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   `-- python_language_consistency.md  Rules for keeping the SDK and Construction Kit PRG32 Python compilers identical
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
+|   |   |-- README.md               Central hardware directory guide, breadboard layout, and architecture index
+|   |   |-- audio.md                MAX98357A I2S DAC/Amp wiring, mono/stereo mode selection, and speaker safety
+|   |   |-- joystick.md             Digital 5-way joystick, analog KY-023 continuous ADC thumbstick, buttons, and input API
+|   |   |-- rgb_led.md              WS2812 addressable onboard RGB LED driver and pin allocation
+|   |   |-- ili9341.md              ILI9341 2.8" SPI TFT display integration and backlight control
+|   |   |-- memory.md               ESP32-C6 memory layout (IRAM, DRAM, Flash, cartridge window) and profiling tools
+|   |   |-- external_controllers.md Local input architecture and Wi-Fi multiplayer frame exchange
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
 |   |   |-- images/                 Electrical schematic (Fritzing export) and breadboard prototype figures
 |   |   |-- profiles/               Detailed hardware pin profiles (prototype1, prototype2)

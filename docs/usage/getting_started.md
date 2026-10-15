@@ -35,7 +35,7 @@ alias get_idf=". $HOME/esp-idf/export.sh"
 alias prg="python -m prg32"
 ```
 ### Running PRG32 on the ESP32C6
-If you have the physical PRG32 hardware, after [configuring the hardware setup](/docs/hardware/hardware.md) you can build the project for the ESP32C6 and flash it to the SoC:
+If you have the physical PRG32 hardware, after [configuring the hardware setup](/docs/hardware/README.md) you can build the project for the ESP32C6 and flash it to the SoC:
 ```bash
 python -m prg32 esp32c6 build-and-flash
 ```
