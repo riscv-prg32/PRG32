@@ -1061,8 +1061,34 @@ static int setup_menu(void) {
   }
 }
 
+static bool prg32_pins_validate(void) {
+#if CONFIG_PRG32_DISPLAY_QEMU_RGB
+  return true;
+#else
+#if !defined(CONFIG_PRG32_PINS_CONFIGURED) || !CONFIG_PRG32_PINS_CONFIGURED
+  return false;
+#else
+  if (PRG32_PIN_LCD_MOSI < 0 || PRG32_PIN_LCD_SCLK < 0 ||
+      PRG32_PIN_LCD_CS < 0 || PRG32_PIN_LCD_DC < 0 ||
+      PRG32_PIN_BTN_UP < 0 || PRG32_PIN_BTN_DOWN < 0 ||
+      PRG32_PIN_BTN_LEFT < 0 || PRG32_PIN_BTN_RIGHT < 0 ||
+      PRG32_PIN_BTN_A < 0 || PRG32_PIN_BTN_B < 0 ||
+      PRG32_PIN_BTN_START < 0) {
+    return false;
+  }
+  return true;
+#endif
+#endif
+}
+
 void prg32_init(void) {
   printf("prg32_init()\n");
+  if (!prg32_pins_validate()) {
+    printf("FATAL: PRG32 hardware pins were not configured! Halting system.\n");
+    while (1) {
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+  }
   PRG32_MEM_CHECKPOINT("prg32_init_start");
   printf("prg32_init => prg32_display_init()\n");
   prg32_display_init();

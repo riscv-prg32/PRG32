@@ -57,6 +57,10 @@
 
 #else /* Physical ESP32-C6 build. */
 
+#if !defined(CONFIG_PRG32_PINS_CONFIGURED) || !CONFIG_PRG32_PINS_CONFIGURED
+#error "PRG32 pin configuration not defined! You must select a hardware pin profile in profiles/."
+#endif
+
 // Display ILI9341
 #define PRG32_PIN_LCD_MOSI CONFIG_PRG32_PIN_LCD_MOSI
 #define PRG32_PIN_LCD_MISO CONFIG_PRG32_PIN_LCD_MISO

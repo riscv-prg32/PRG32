@@ -442,5 +442,98 @@ class DoctorTests(unittest.TestCase):
         self.assertEqual(rc, 0)
 
 
+class PinProfileTests(unittest.TestCase):
+    def test_discover_prototype1_pin_profile(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        profiles = list_pin_profiles()
+        self.assertIn("prototype1", profiles)
+        path = resolve_pin_profile("prototype1")
+        self.assertTrue(path.exists())
+        self.assertTrue(path.name.endswith("prototype1"))
+
+    def test_unknown_pin_profile_raises_value_error(self) -> None:
+        from prg32.utilities.pin_profiles import resolve_pin_profile
+        with self.assertRaises(ValueError) as ctx:
+            resolve_pin_profile("non_existent_profile_xyz")
+        self.assertIn("Available pin profiles", str(ctx.exception))
+
+    def test_dynamic_profile_discovery_in_custom_dir(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            (tmp_path / "sdkconfig.pins.custom_board").write_text("CONFIG_PRG32_PINS_CONFIGURED=y\n", encoding="utf-8")
+            profiles = list_pin_profiles(tmp_path)
+            self.assertIn("custom_board", profiles)
+            resolved = resolve_pin_profile("custom_board", tmp_path)
+            self.assertEqual(resolved, tmp_path / "sdkconfig.pins.custom_board")
+
+    def test_get_esp32c6_sdkconfig_defaults_includes_pin_profile(self) -> None:
+        from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
+        args = argparse.Namespace(pin_profile="prototype1", debug=False)
+        defaults = get_esp32c6_sdkconfig_defaults(args)
+        self.assertIn("sdkconfig.pins.prototype1", defaults)
+
+    def test_get_esp32c6_sdkconfig_defaults_without_pin_profile_fails(self) -> None:
+        from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_sdk = Path(tmp) / "non_existent_sdkconfig"
+            with mock.patch("prg32.esp32c6.build_esp32c6.ESP32C6_SDKCONFIG", str(tmp_sdk)):
+                with mock.patch("prg32.esp32c6.build_esp32c6.ROOT_DIR", Path(tmp)):
+                    args = argparse.Namespace(pin_profile="", debug=False)
+                    with self.assertRaises(SystemExit):
+                        get_esp32c6_sdkconfig_defaults(args)
+
+    def test_cli_esp32c6_pins(self) -> None:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = prg32_main(["esp32c6", "pins"])
+        self.assertEqual(rc, 0)
+        self.assertIn("prototype1", buf.getvalue())
+
+    def test_cli_pins(self) -> None:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = prg32_main(["pins"])
+        self.assertEqual(rc, 0)
+        self.assertIn("prototype1", buf.getvalue())
+
+    def test_get_esp32c6_sdkconfig_defaults_from_sdkconfig_profile(self) -> None:
+        from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_sdk = Path(tmp) / "sdkconfig"
+            tmp_sdk.write_text("CONFIG_PRG32_DEFAULT_PIN_PROFILE=\"prototype1\"\n", encoding="utf-8")
+            with mock.patch("prg32.esp32c6.build_esp32c6.ESP32C6_SDKCONFIG", str(tmp_sdk)):
+                args = argparse.Namespace(pin_profile="", debug=False)
+                defaults = get_esp32c6_sdkconfig_defaults(args)
+                self.assertIn("sdkconfig.pins.prototype1", defaults)
+
+    def test_get_esp32c6_sdkconfig_defaults_custom_profile(self) -> None:
+        from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_sdk = Path(tmp) / "sdkconfig"
+            tmp_sdk.write_text("CONFIG_PRG32_PIN_PROFILE_CUSTOM=y\n", encoding="utf-8")
+            with mock.patch("prg32.esp32c6.build_esp32c6.ESP32C6_SDKCONFIG", str(tmp_sdk)):
+                args = argparse.Namespace(pin_profile="", debug=False)
+                defaults = get_esp32c6_sdkconfig_defaults(args)
+                self.assertNotIn("sdkconfig.pins.", defaults)
+    def test_cli_build_flags_and_order(self) -> None:
+        from prg32.prg32 import main
+        with mock.patch("prg32.prg32.build_esp32c6") as mock_build:
+            main(["esp32c6", "build", "-s", "-p", "prototype1", "-d", "-e"])
+            mock_build.assert_called_once()
+            args = mock_build.call_args[0][0]
+            self.assertTrue(args.skip_target)
+            self.assertEqual(args.pin_profile, "prototype1")
+            self.assertTrue(args.debug)
+            self.assertTrue(args.enable_heap_tracking)
+
+        with mock.patch("prg32.prg32.build_and_launch_qemu") as mock_qemu:
+            main(["qemu", "build-and-run", "-s", "-d"])
+            mock_qemu.assert_called_once()
+            args = mock_qemu.call_args[0][0]
+            self.assertTrue(args.skip_target)
+            self.assertTrue(args.debug)
+
+
 if __name__ == "__main__":
     unittest.main()

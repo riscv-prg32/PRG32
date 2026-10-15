@@ -18,14 +18,16 @@ python3 -m prg32 <command> [subcommand] [options]
 - `doctor`: Check local toolchain prerequisites
 - `runtime`: Print runtime linker information
 - `debug`: Control an optional PRG32-QT debugger over its device HTTP API
+- `pins`: List available pin setup possibilities
 
 ## ESP32C6 SoC Tasks (`esp32c6`)
 All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6` group.
 
 ### Firmware Operations
-- `build`: build the ESP32C6 firmware. Use the `--skip-target` option to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build).
+- `build`: build the ESP32C6 firmware. Use `-p <name>` / `--pin-profile <name>` (or `--pins <name>`) to select the hardware pin configuration profile (e.g. `prototype1`, see [PRG32 Profiles](profiles.md#hardware-pin-profiles)). You can see all available pin setup possibilities with `python3 -m prg32 esp32c6 pins`. If no pin profile is supplied and no Custom Profile is configured in `sdkconfig`, the build command will fail fast. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build). Use `-d` / `--debug` for debug profiles and `-e` / `--enable-heap-tracking` for heap task tracking.
 - `flash`: flash the ESP32C6 image. Does not do anything when a cartridge is running!
-    - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports the `--skip-target` option.
+    - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports `-s` / `--skip-target`, `-p` / `--pin-profile`, `-d` / `--debug`, and `-e` / `--enable-heap-tracking`.
+- `pins`: list available pin setup possibilities discovered in `profiles/` (e.g. `prototype1`).
 - `erase-flash`: erase flash of ESP32C6. It is sometimes useful to completely erase the flash for debugging purposes.
     - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
@@ -46,9 +48,9 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
   and [Performance Metrics](/docs/measurement/metrics_api.md) for fields.
 - `screenshot`: Get screenshot of ESP32C6 over HTTP.
 ## QEMU Emulator Tasks (`qemu`)
-- `build`: build QEMU and generate the flash image. Use the `--skip-target` option to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
+- `build`: build QEMU and generate the flash image. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment
-- `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports the `--skip-target` option.
+- `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports `-s` / `--skip-target`.
 - `upload`: upload a cartridge to QEMU. `--cart-ram-kib` sets the executable
   RAM limit; by default it is read from `build-qemu/sdkconfig`, else 64 KiB
   (see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).

@@ -3,16 +3,96 @@
 import subprocess
 import argparse
 from prg32.utilities.logging import *
-from prg32.utilities.env_variables import ESP32C6_BUILD_DIR, ESP32C6_SDKCONFIG, ESP32C6_SDKCONFIG_DEFAULTS, ESP32C6_ELF
+from prg32.utilities.pin_profiles import resolve_pin_profile, list_pin_profiles
+from prg32.utilities.env_variables import (
+    ESP32C6_BUILD_DIR,
+    ESP32C6_SDKCONFIG,
+    ESP32C6_SDKCONFIG_DEFAULTS,
+    ESP32C6_ELF,
+    ROOT_DIR,
+    DEFAULT_PIN_PROFILE,
+)
+
+def list_pins_esp32c6(args: argparse.Namespace | None = None) -> None:
+    profiles = list_pin_profiles()
+    print("Available PRG32 hardware pin profiles:")
+    for name, path in sorted(profiles.items()):
+        print(f"  - {name} ({path.name})")
+
+def get_sdkconfig_pin_profile() -> tuple[str, bool]:
+    """
+    Inspects an existing sdkconfig file (build-esp32c6/sdkconfig or root sdkconfig)
+    for a default pin profile selected via menuconfig.
+    Returns (profile_name, is_custom).
+    """
+    from pathlib import Path
+    for cand in [Path(ESP32C6_SDKCONFIG), ROOT_DIR / "sdkconfig"]:
+        if cand.is_file():
+            content = cand.read_text(encoding="utf-8", errors="ignore")
+            is_custom = False
+            profile_name = ""
+            for line in content.splitlines():
+                line = line.strip()
+                if line == "CONFIG_PRG32_PIN_PROFILE_CUSTOM=y":
+                    is_custom = True
+                elif line.startswith("CONFIG_PRG32_DEFAULT_PIN_PROFILE="):
+                    val = line.split("=", 1)[1].strip().strip('"')
+                    if val and val.lower() != "none":
+                        profile_name = val
+                elif line == "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" and not profile_name:
+                    profile_name = "prototype1"
+            if is_custom:
+                return ("custom", True)
+            if profile_name:
+                return (profile_name, False)
+    return ("", False)
+
+def get_esp32c6_sdkconfig_defaults(args: argparse.Namespace) -> str:
+    defaults = ESP32C6_SDKCONFIG_DEFAULTS
+    pin_profile = getattr(args, 'pin_profile', None) or DEFAULT_PIN_PROFILE
+    if not pin_profile:
+        cfg_profile, is_custom = get_sdkconfig_pin_profile()
+        if is_custom:
+            # Custom profile: pins are configured directly in sdkconfig by menuconfig.
+            pin_profile = None
+        elif cfg_profile:
+            pin_profile = cfg_profile
+        else:
+            die(
+                "No PRG32 hardware pin profile configured!\n"
+                "Pins are no longer defaulted in Kconfig.\n"
+                "Specify a pin profile when building, e.g.:\n"
+                "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
+                "See available pin setup possibilities with:\n"
+                "  python3 -m prg32 esp32c6 pins\n"
+                "Or configure a pin profile (or Custom Profile) in 'idf.py menuconfig'."
+            )
+
+    if pin_profile:
+        try:
+            profile_path = resolve_pin_profile(pin_profile)
+            try:
+                rel_path = profile_path.relative_to(ROOT_DIR)
+                defaults += f";{rel_path}"
+            except ValueError:
+                defaults += f";{profile_path}"
+        except ValueError as e:
+            die(str(e))
+
+    if getattr(args, 'debug', False):
+        defaults += ";profiles/sdkconfig.defaults.debug"
+    return defaults
 
 def set_target_esp32c6(args: argparse.Namespace):
+    defaults = get_esp32c6_sdkconfig_defaults(args)
     step("Configuring ESP32C6 target (esp32c6)...")
     import os, shutil
     if os.path.exists(ESP32C6_BUILD_DIR):
         shutil.rmtree(ESP32C6_BUILD_DIR, ignore_errors=True)
-    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "set-target", "esp32c6"])
+    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "set-target", "esp32c6"])
 
 def build_esp32c6(args: argparse.Namespace):
+    defaults = get_esp32c6_sdkconfig_defaults(args)
     if args.skip_target:
         log_info("Skipping setting target to ESP32C6...")
     else:
@@ -28,7 +108,8 @@ def build_esp32c6(args: argparse.Namespace):
             f.write(f"\nCONFIG_HEAP_TASK_TRACKING={'y' if enable_tracking else 'n'}\n")
 
     step("Building ESP32C6...")
-    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "build"])
+    defaults = get_esp32c6_sdkconfig_defaults(args)
+    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "build"])
     log_ok(f"Created {ESP32C6_BUILD_DIR} directory.")
 
     # Verify
@@ -38,7 +119,8 @@ def build_esp32c6(args: argparse.Namespace):
 
 def flash_esp32c6(args: argparse.Namespace):
     step("Flashing the ESP32C6 firmware and flash_image via USB")
-    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={ESP32C6_SDKCONFIG_DEFAULTS}", "flash", "monitor"])
+    defaults = get_esp32c6_sdkconfig_defaults(args)
+    subprocess.check_call(["idf.py", "-B", ESP32C6_BUILD_DIR, "-D", f"SDKCONFIG={ESP32C6_SDKCONFIG}", "-D", f"SDKCONFIG_DEFAULTS={defaults}", "flash", "monitor"])
 
 def build_and_flash_esp32c6(args: argparse.Namespace):
     build_esp32c6(args)

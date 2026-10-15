@@ -13,6 +13,20 @@ When you save changes in `menuconfig`, they are stored in the `sdkconfig` file l
 - **`profiles/sdkconfig.defaults`**: Contains the permanent default configurations for the repository. These defaults act as a baseline whenever a new `sdkconfig` file is generated (for example, after a fresh Git clone, or if you delete your local `sdkconfig` and run a build). Your local `sdkconfig` will override the repository defaults.
     - If you want a change (e.g., changing the fallback default audio mode) to be applied universally to all new builds, you must manually copy the relevant setting from your local `sdkconfig` into `profiles/sdkconfig.defaults`.
 - **`profiles/sdkconfig.defaults.qemu`**: Contains the default configuration overrides specifically for QEMU emulator builds.
+- **`profiles/sdkconfig.pins.*`**: Hardware pin configuration profiles (e.g. `profiles/sdkconfig.pins.prototype1`). GPIO pins are decoupled from hardcoded Kconfig defaults and must be provided via an explicit pin profile (see [PRG32 Profiles](profiles.md#hardware-pin-profiles)).
+
+### Hardware Pin Profile Selection in Menuconfig
+
+Under `Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration`:
+- **Hardware Pin Profile**: A dropdown choice menu that lets you choose the pin configuration:
+  - `None (no default - build halts)`: **(Default)** Leaves pin assignments unconfigured (`-1`). Building physical firmware without selecting a profile will crash/halt the build with a descriptive error.
+  - `prototype1 (First Prototype Breadboard)`: Designates the reference breadboard pin profile. The GPIO numbers are defined in `profiles/sdkconfig.pins.prototype1` and merged during the build (pin fields in menuconfig remain `-1` and are overridden by the profile).
+  - `Custom Profile (configure pins manually in menuconfig)`: If and only if Custom profile is activated, the build uses the GPIO pin numbers configured manually in `menuconfig` and saved in `sdkconfig`. No external profile file is appended.
+
+You can also view available pin profiles from the CLI using:
+```bash
+python3 -m prg32 esp32c6 pins
+```
 
 ## Runtime Configuration (NVS)
 

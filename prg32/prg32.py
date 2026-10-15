@@ -11,7 +11,7 @@ from prg32.utilities.tests_runner import run_tests
 
 from prg32.cartridge.build_cartridge import build_cartridge_cli
 
-from prg32.esp32c6.build_esp32c6 import build_esp32c6, flash_esp32c6, build_and_flash_esp32c6, reset_esp32c6, erase_flash_esp32c6
+from prg32.esp32c6.build_esp32c6 import build_esp32c6, flash_esp32c6, build_and_flash_esp32c6, reset_esp32c6, erase_flash_esp32c6, list_pins_esp32c6
 from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6, upload_and_run_esp32c6
 from prg32.esp32c6.prepare_firmware import prepare_firmware_esp32c6
 from prg32.esp32c6.flash_firmware import flash_firmware_esp32c6
@@ -78,21 +78,33 @@ def main(argv: list[str]) -> int:
 
 
     p = esp32c6_sub.add_parser("build", help="build the ESP32C6 firmware")
-    p.add_argument("--skip-target", action="store_true", 
+    p.add_argument("-s", "--skip-target", action="store_true", 
         help="Skip setting target to ESP32C6 (it takes more time to build and it is useless if you have set the target before)"
     )
-    p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-e", "--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.set_defaults(func=build_esp32c6)
 
     p = esp32c6_sub.add_parser("flash", help="flash the ESP32C6 image. Does not do anything when a cartridge is running!")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
     p.set_defaults(func=flash_esp32c6)
 
     p = esp32c6_sub.add_parser("build-and-flash", help="build and flash the ESP32C6. Does not do anything when a cartridge is running (?)")
-    p.add_argument("--skip-target", action="store_true", 
+    p.add_argument("-s", "--skip-target", action="store_true", 
         help="Skip setting target to ESP32C6 (it takes less time to build and it is useless if you have set the target before)"
     )
-    p.add_argument("--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-e", "--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.set_defaults(func=build_and_flash_esp32c6)
+
+    p = esp32c6_sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'prototype1')")
+    p.set_defaults(func=list_pins_esp32c6)
 
     p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
     p.set_defaults(func=erase_flash_esp32c6)
@@ -134,6 +146,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out-dir", default="publish/legacy-firmware", help="Path to the output directory")
     p.add_argument("--name", default="PRG32-legacy-esp32c6", help="Name of the output binary")
     p.add_argument("--skip-build", action="store_true", help="Skip the ESP-IDF build step")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=prepare_firmware_esp32c6)
 
     p = esp32c6_sub.add_parser("flash-firmware", help="flash a published single-file legacy PRG32 firmware image", usage="%(prog)s MANIFEST --port PORT [options]")
@@ -157,18 +170,20 @@ def main(argv: list[str]) -> int:
     qemu_sub = qemu_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
     
     p =  qemu_sub.add_parser("build", help="build QEMU and generate the flash image")
-    p.add_argument("--skip-target", action="store_true", 
+    p.add_argument("-s", "--skip-target", action="store_true", 
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=build_and_flash_qemu)
 
     p = qemu_sub.add_parser("run", help="run the QEMU emulator environment")
     p.set_defaults(func=launch_qemu)
     
     p =  qemu_sub.add_parser("build-and-run", help="build QEMU, generate flash image, and run the emulator")
-    p.add_argument("--skip-target", action="store_true", 
+    p.add_argument("-s", "--skip-target", action="store_true", 
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.set_defaults(func=build_and_launch_qemu)
 
     p = qemu_sub.add_parser("upload", 
@@ -366,6 +381,9 @@ def main(argv: list[str]) -> int:
     p.add_argument("--url", required=True, help="URL of the PRG32-QT host")
     p.add_argument("--speed", type=float, choices=SUPPORTED_SPEEDS, help="Playback multiplier for the speed command")
     p.set_defaults(func=debug_cli)
+
+    p = sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'prototype1')")
+    p.set_defaults(func=list_pins_esp32c6)
 
     args = parser.parse_args(argv)
     args.func(args)
