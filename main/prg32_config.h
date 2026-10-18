@@ -50,6 +50,10 @@
 #define PRG32_PIN_JOYSTICK_Y -1
 #define PRG32_JOYSTICK_ADC_LOW_THRESHOLD 1300
 #define PRG32_JOYSTICK_ADC_HIGH_THRESHOLD 2800
+#define PRG32_JOYSTICK_ADC_LEFT_THRESHOLD 1300
+#define PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD 2800
+#define PRG32_JOYSTICK_ADC_UP_THRESHOLD 1300
+#define PRG32_JOYSTICK_ADC_DOWN_THRESHOLD 2800
 
 #define PRG32_PIN_SETUP -1
 
@@ -65,7 +69,8 @@
 #else /* Physical ESP32-C6 build. */
 
 #if !defined(CONFIG_PRG32_PINS_CONFIGURED) || !CONFIG_PRG32_PINS_CONFIGURED
-#error "PRG32 pin configuration not defined! You must select a hardware pin profile in profiles/."
+#error                                                                         \
+    "PRG32 pin configuration not defined! You must select a hardware pin profile in profiles/."
 #endif
 
 // Display ILI9341
@@ -131,22 +136,44 @@
 #define PRG32_PIN_JOYSTICK_Y -1
 #endif
 
-#ifdef CONFIG_PRG32_JOYSTICK_ADC_LOW_THRESHOLD
-#define PRG32_JOYSTICK_ADC_LOW_THRESHOLD CONFIG_PRG32_JOYSTICK_ADC_LOW_THRESHOLD
+#ifdef CONFIG_PRG32_JOYSTICK_ADC_LEFT_THRESHOLD
+#define PRG32_JOYSTICK_ADC_LEFT_THRESHOLD                                      \
+  CONFIG_PRG32_JOYSTICK_ADC_LEFT_THRESHOLD
 #else
-#define PRG32_JOYSTICK_ADC_LOW_THRESHOLD 1300
+#define PRG32_JOYSTICK_ADC_LEFT_THRESHOLD 1300
 #endif
 
-#ifdef CONFIG_PRG32_JOYSTICK_ADC_HIGH_THRESHOLD
-#define PRG32_JOYSTICK_ADC_HIGH_THRESHOLD CONFIG_PRG32_JOYSTICK_ADC_HIGH_THRESHOLD
+#ifdef CONFIG_PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD
+#define PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD                                     \
+  CONFIG_PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD
 #else
-#define PRG32_JOYSTICK_ADC_HIGH_THRESHOLD 2800
+#define PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD 2800
 #endif
+
+#ifdef CONFIG_PRG32_JOYSTICK_ADC_UP_THRESHOLD
+#define PRG32_JOYSTICK_ADC_UP_THRESHOLD CONFIG_PRG32_JOYSTICK_ADC_UP_THRESHOLD
+#else
+#define PRG32_JOYSTICK_ADC_UP_THRESHOLD 1300
+#endif
+
+#ifdef CONFIG_PRG32_JOYSTICK_ADC_DOWN_THRESHOLD
+#define PRG32_JOYSTICK_ADC_DOWN_THRESHOLD                                      \
+  CONFIG_PRG32_JOYSTICK_ADC_DOWN_THRESHOLD
+#else
+#define PRG32_JOYSTICK_ADC_DOWN_THRESHOLD 2800
+#endif
+
+#define PRG32_JOYSTICK_ADC_LOW_THRESHOLD PRG32_JOYSTICK_ADC_LEFT_THRESHOLD
+#define PRG32_JOYSTICK_ADC_HIGH_THRESHOLD PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD
 #else
 #define PRG32_PIN_JOYSTICK_X -1
 #define PRG32_PIN_JOYSTICK_Y -1
 #define PRG32_JOYSTICK_ADC_LOW_THRESHOLD 1300
 #define PRG32_JOYSTICK_ADC_HIGH_THRESHOLD 2800
+#define PRG32_JOYSTICK_ADC_LEFT_THRESHOLD 1300
+#define PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD 2800
+#define PRG32_JOYSTICK_ADC_UP_THRESHOLD 1300
+#define PRG32_JOYSTICK_ADC_DOWN_THRESHOLD 2800
 #endif
 
 /* Enter setup by holding A+B during boot; no dedicated setup GPIO is wired. */
@@ -223,17 +250,19 @@
 #endif
 
 #define PRG32_WIFI_STA_ENABLE                                                  \
-  (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_STA)
-#define PRG32_WIFI_AP_ENABLE (PRG32_GAME_UPLOAD_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_AP)
+  (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE ||           \
+   CONFIG_PRG32_WIFI_BOOT_MODE_STA)
+#define PRG32_WIFI_AP_ENABLE                                                   \
+  (PRG32_GAME_UPLOAD_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_AP)
 
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #define PRG32_WIFI_ENABLE 0
 #else
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
 #endif
-/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup if enabled.
- * Setup also opens when no unambiguous cartridge can boot. Classroom images
- * may set this to 1 to force setup on every boot. */
+/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup if
+ * enabled. Setup also opens when no unambiguous cartridge can boot. Classroom
+ * images may set this to 1 to force setup on every boot. */
 #define PRG32_BOOT_SETUP_MODE CONFIG_PRG32_BOOT_SETUP_MODE
 #ifdef CONFIG_PRG32_ENABLE_BOOT_SETUP_COMBO
 #define PRG32_ENABLE_BOOT_SETUP_COMBO 1

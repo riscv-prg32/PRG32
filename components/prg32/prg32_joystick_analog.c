@@ -125,18 +125,37 @@ uint32_t prg32_joystick_analog_read(void) {
     }
 
     uint32_t mask = 0;
-    // Low reading on X triggers LEFT, high triggers RIGHT
-    if (s_last_raw_x < PRG32_JOYSTICK_ADC_LOW_THRESHOLD) {
-        mask |= PRG32_BTN_LEFT;
-    } else if (s_last_raw_x > PRG32_JOYSTICK_ADC_HIGH_THRESHOLD) {
-        mask |= PRG32_BTN_RIGHT;
+
+    // Horizontal axis (X): triggers LEFT or RIGHT
+    if (PRG32_JOYSTICK_ADC_LEFT_THRESHOLD <= PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD) {
+        if (s_last_raw_x < PRG32_JOYSTICK_ADC_LEFT_THRESHOLD) {
+            mask |= PRG32_BTN_LEFT;
+        } else if (s_last_raw_x > PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD) {
+            mask |= PRG32_BTN_RIGHT;
+        }
+    } else {
+        // Inverted X-axis orientation
+        if (s_last_raw_x > PRG32_JOYSTICK_ADC_LEFT_THRESHOLD) {
+            mask |= PRG32_BTN_LEFT;
+        } else if (s_last_raw_x < PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD) {
+            mask |= PRG32_BTN_RIGHT;
+        }
     }
 
-    // Low reading on Y triggers UP, high triggers DOWN
-    if (s_last_raw_y < PRG32_JOYSTICK_ADC_LOW_THRESHOLD) {
-        mask |= PRG32_BTN_UP;
-    } else if (s_last_raw_y > PRG32_JOYSTICK_ADC_HIGH_THRESHOLD) {
-        mask |= PRG32_BTN_DOWN;
+    // Vertical axis (Y): triggers UP or DOWN
+    if (PRG32_JOYSTICK_ADC_UP_THRESHOLD <= PRG32_JOYSTICK_ADC_DOWN_THRESHOLD) {
+        if (s_last_raw_y < PRG32_JOYSTICK_ADC_UP_THRESHOLD) {
+            mask |= PRG32_BTN_UP;
+        } else if (s_last_raw_y > PRG32_JOYSTICK_ADC_DOWN_THRESHOLD) {
+            mask |= PRG32_BTN_DOWN;
+        }
+    } else {
+        // Inverted Y-axis orientation
+        if (s_last_raw_y > PRG32_JOYSTICK_ADC_UP_THRESHOLD) {
+            mask |= PRG32_BTN_UP;
+        } else if (s_last_raw_y < PRG32_JOYSTICK_ADC_DOWN_THRESHOLD) {
+            mask |= PRG32_BTN_DOWN;
+        }
     }
 
     return mask;

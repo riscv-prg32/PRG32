@@ -375,19 +375,33 @@ config PRG32_PIN_JOYSTICK_Y
     help
         GPIO connected to joystick vertical (Y) axis potentiometer (e.g. GPIO1).
 
-config PRG32_JOYSTICK_ADC_LOW_THRESHOLD
-    int "Analog Joystick Low Threshold"
+config PRG32_JOYSTICK_ADC_LEFT_THRESHOLD
+    int "Analog Joystick Left Threshold (X-Axis)"
     depends on PRG32_JOYSTICK_ANALOG
     default 1300
     help
-        ADC raw reading below this value triggers LEFT / UP.
+        ADC raw reading below this value triggers LEFT (or above if inverted).
 
-config PRG32_JOYSTICK_ADC_HIGH_THRESHOLD
-    int "Analog Joystick High Threshold"
+config PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD
+    int "Analog Joystick Right Threshold (X-Axis)"
     depends on PRG32_JOYSTICK_ANALOG
     default 2800
     help
-        ADC raw reading above this value triggers RIGHT / DOWN.
+        ADC raw reading above this value triggers RIGHT (or below if inverted).
+
+config PRG32_JOYSTICK_ADC_UP_THRESHOLD
+    int "Analog Joystick Up Threshold (Y-Axis)"
+    depends on PRG32_JOYSTICK_ANALOG
+    default 1300
+    help
+        ADC raw reading below this value triggers UP (or above if inverted).
+
+config PRG32_JOYSTICK_ADC_DOWN_THRESHOLD
+    int "Analog Joystick Down Threshold (Y-Axis)"
+    depends on PRG32_JOYSTICK_ANALOG
+    default 2800
+    help
+        ADC raw reading above this value triggers DOWN (or below if inverted).
 
 config PRG32_PIN_BTN_UP
     int "Joystick UP GPIO"

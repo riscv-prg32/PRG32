@@ -76,10 +76,15 @@ Used in the upgraded breadboard design ([Prototype 2 Profile](profiles/prototype
 ### ADC Calibration & Thresholds
 - **Dynamic Range**: 12-bit ADC (`0` to `4095`).
 - **Resting Center**: ~`1650` (ideal midpoint is ~`2048`, but typical KY-023 units idle around 1600–1800).
-- **Deadband Hysteresis**:
-  - Deflection below `1000`: Triggers Left (VRX) or Up (VRY).
-  - Deflection above `2800`: Triggers Right (VRX) or Down (VRY).
-  - Deadband (`1000` to `2800`): Neutral center (no directional bit asserted).
+- **Deadband Hysteresis & Directional Bitmask Mapping**:
+  - **Horizontal (X-Axis)**:
+    - Raw reading below `CONFIG_PRG32_JOYSTICK_ADC_LEFT_THRESHOLD` (default `1300`): asserts `PRG32_BTN_LEFT`.
+    - Raw reading above `CONFIG_PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD` (default `2800`): asserts `PRG32_BTN_RIGHT`.
+  - **Vertical (Y-Axis)**:
+    - Raw reading below `CONFIG_PRG32_JOYSTICK_ADC_UP_THRESHOLD` (default `1300`): asserts `PRG32_BTN_UP`.
+    - Raw reading above `CONFIG_PRG32_JOYSTICK_ADC_DOWN_THRESHOLD` (default `2800`): asserts `PRG32_BTN_DOWN`.
+  - **Neutral Deadband**: Readings between low and high thresholds register as neutral (no directional bits set).
+  - **Diagonals**: Simultaneous deflection in both axes asserts both directional bits (e.g. `PRG32_BTN_UP | PRG32_BTN_RIGHT`). Axis inversion is also automatically detected if low and high thresholds are swapped.
 
 ---
 
