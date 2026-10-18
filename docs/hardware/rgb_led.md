@@ -48,8 +48,8 @@ Because the onboard LED occupies GPIO8 on the DevKit, hardware pin profiles must
   - `CONFIG_PRG32_PIN_RGB_LED` defaults to `-1` (disabled) in `profiles/sdkconfig.pins.prototype1`.
   - The resident setup audio menu automatically suppresses the RGB LED visualizer option when the pin is disabled.
 
-- **Unconflicted Harness in `prototype2` (Display DC on GPIO15)**:
-  In the [`prototype2`](profiles/prototype2.md) profile, the ILI9341 display harness was redesigned to use GPIO15 for `DC` and GPIO12 for `RST`. This completely frees GPIO8 from display obligations. While `prototype2` defaults `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds, developers running `prototype2` on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
+- **Unconflicted Harness in `prototype2` (Display DC on GPIO10, Audio LRCLK on GPIO15)**:
+  In the [`prototype2`](profiles/prototype2.md) profile, the ILI9341 display harness uses GPIO3 for `CS`, GPIO10 for `DC`, and GPIO11 for `RST` (with GPIO15 assigned to I2S LRCLK). This completely frees GPIO8 from display obligations. While `prototype2` defaults `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds, developers running `prototype2` on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
 
 - **Custom Boards & External NeoPixels**:
   When building custom hardware or attaching external WS2812 addressable LED strips, any unused general-purpose GPIO can be assigned to the driver in Kconfig or profile fragment files.

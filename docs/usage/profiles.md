@@ -104,7 +104,7 @@ Builds attempting to compile physical firmware without a pin profile are blocked
 ### Built-in Pin Profiles
 
 - **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype breadboard pinout using the ILI9341 SPI TFT display (DC: GPIO8, RST: GPIO9), 5-way digital navigation joystick (discrete GPIO switches), and MAX98357A I2S mono/stereo audio as documented in [Prototype 1](../hardware/profiles/prototype1.md).
-- **`prototype2` (`profiles/sdkconfig.pins.prototype2`)**: The second prototype breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (DC: GPIO15, RST: GPIO12), reserved SD card CS (GPIO9), and MAX98357A I2S audio as documented in [Prototype 2](../hardware/profiles/prototype2.md).
+- **`prototype2` (`profiles/sdkconfig.pins.prototype2`)**: The second prototype breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (CS: GPIO3, DC: GPIO10, RST: GPIO11), reserved SD card CS (GPIO9), and MAX98357A I2S audio (LRCLK: GPIO15) as documented in [Prototype 2](../hardware/profiles/prototype2.md).
 - **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
 
 ### Selecting a Pin Profile

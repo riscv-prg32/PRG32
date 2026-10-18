@@ -9,7 +9,7 @@ This directory contains detailed wiring diagrams, schematics, and pinout tables 
 | Profile Name | Description | Display Pinout | Controller / Input | Audio |
 |---|---|---|---|---|
 | [`prototype1`](prototype1.md) | First breadboard prototype | ILI9341 SPI (DC: GPIO8, RST: GPIO9) | 5-way digital navigation joystick (discrete GPIO switches on GPIO3, 13, 18, 19, 20) + buttons A (21), B (22) | MAX98357A I2S (BCLK: 4, LRCLK: 11, DIN: 23) |
-| [`prototype2`](prototype2.md) | Second breadboard prototype with analog joystick | ILI9341 SPI (DC: GPIO15, RST: GPIO12, SD CS: GPIO9) | 2-axis analog thumbstick (ADC1 continuous mode on GPIO0, GPIO1) + buttons A (18), B (19), START/SELECT (20) | MAX98357A I2S (BCLK: 4, LRCLK: 11, DIN: 23) |
+| [`prototype2`](prototype2.md) | Second breadboard prototype with analog joystick | ILI9341 SPI (CS: GPIO3, DC: GPIO10, RST: GPIO11, SD CS: GPIO9) | 2-axis analog thumbstick (ADC1 continuous mode on GPIO0, GPIO1) + buttons A (18), B (19), START/SELECT (20) | MAX98357A I2S (BCLK: 4, LRCLK: 15, DIN: 23) |
 
 ## Selecting a Profile
 

@@ -5,11 +5,11 @@ This document specifies the pinout and wiring for the **`prototype2`** hardware 
 ## Overview
 
 - **Architecture Target**: ESP32-C6
-- **Display**: ILI9341 2.8" SPI TFT (320x240) with DC on GPIO15 and RST on GPIO12
+- **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO3, DC on GPIO10, and RST on GPIO11
 - **SD Card CS**: GPIO9 (reserved for SPI SD Card; software implementation planned)
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
 - **Action Buttons**: Separate pushbuttons for A, B, and START/SELECT
-- **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo)
+- **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
 - **Configuration Profile**: `profiles/sdkconfig.pins.prototype2`
 
 ## Pinout and Wiring
@@ -20,12 +20,12 @@ This document specifies the pinout and wiring for the **`prototype2`** hardware 
 |---|---|---|---|
 | 3V3 | VCC | 3.3V Logic Supply | |
 | GND | GND | Ground | |
-| GPIO7 | MOSI | SPI Master Out Slave In | Shared with SD Card MOSI |
-| GPIO2 | MISO / DO | SPI Master In Slave Out | Shared with SD Card MISO |
-| GPIO6 | SCLK | SPI Serial Clock | Shared with SD Card SCLK |
-| GPIO10 | CS | Display Chip Select | Active-low |
-| GPIO15 | DC | Data / Command Select | Changed from GPIO8 in Prototype 1 |
-| GPIO12 | RST | Hardware Reset | Changed from GPIO9 in Prototype 1 |
+| GPIO7 | MOSI | SPI Master Out Slave In | Fast SPI (SPI2 IOMUX), shared with SD Card MOSI |
+| GPIO2 | MISO / DO | SPI Master In Slave Out | Fast SPI (SPI2 IOMUX), shared with SD Card MISO |
+| GPIO6 | SCLK | SPI Serial Clock | Fast SPI (SPI2 IOMUX), shared with SD Card SCLK |
+| GPIO3 | CS | Display Chip Select | Active-low |
+| GPIO10 | DC | Data / Command Select | |
+| GPIO11 | RST | Hardware Reset | |
 | GPIO5 | BL / LED | Backlight control | Active-high |
 | GPIO9 | SD CARD CS | SD Card Chip Select | Reserved pin; see [SD Card Notes](../sdcard.md) |
 
@@ -35,18 +35,21 @@ The analog joystick connects two potentiometers (X and Y axes) between 3.3V and 
 
 | ESP32-C6 GPIO | ADC Channel | Input Signal | Description |
 |---|---|---|---|
-| GPIO0 | ADC1_CH0 | P1 X AXIS | Horizontal axis (0 to 3.3V). Left < 1300, Right > 2800 |
-| GPIO1 | ADC1_CH1 | P1 Y AXIS | Vertical axis (0 to 3.3V). Up < 1300, Down > 2800 |
+| GPIO0 | ADC1_CH0 | P1 X AXIS | Horizontal axis (0 to 3.3V). Left < 1300 (`LEFT_THRESHOLD`), Right > 2800 (`RIGHT_THRESHOLD`) |
+| GPIO1 | ADC1_CH1 | P1 Y AXIS | Vertical axis (0 to 3.3V). Up < 1300 (`UP_THRESHOLD`), Down > 2800 (`DOWN_THRESHOLD`) |
 | GPIO20 | - | P1 START / SELECT | Joystick thumbstick switch or button to GND |
 | GPIO18 | - | P1 A | Action button A, momentary switch to GND |
 | GPIO19 | - | P1 B | Action button B, momentary switch to GND |
 
 > [!NOTE]
-> The firmware reads ADC1 channels continuously in DMA mode (`adc_continuous`). The raw 12-bit samples (0–4095, center ~2048) are mapped to standard PRG32 directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`) with a center deadzone `[1300, 2800]`. Diagonals (e.g., UP + RIGHT) are fully supported.
+> The firmware reads ADC1 channels continuously in DMA mode (`adc_continuous`). The raw 12-bit samples (0–4095, center ~2048) are converted into standard PRG32 directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`) using dedicated, configurable thresholds for both axes:
+> - **Horizontal (X)**: `s_last_raw_x < LEFT_THRESHOLD` sets `PRG32_BTN_LEFT`; `s_last_raw_x > RIGHT_THRESHOLD` sets `PRG32_BTN_RIGHT`.
+> - **Vertical (Y)**: `s_last_raw_y < UP_THRESHOLD` sets `PRG32_BTN_UP`; `s_last_raw_y > DOWN_THRESHOLD` sets `PRG32_BTN_DOWN`.
+> - Diagonals (e.g., UP + RIGHT) are fully supported with simultaneous bit assertions. Axis inversion is also automatically detected if a low threshold exceeds a high threshold.
 
 ### Audio (I2S MAX98357A)
 
-The audio configuration remains identical to Prototype 1.
+The audio configuration uses MAX98357A I2S DAC/Amp with LRCLK/WS on GPIO15.
 
 #### Mono Configuration
 | ESP32-C6 GPIO | MAX98357A Signal | Description |
@@ -54,7 +57,7 @@ The audio configuration remains identical to Prototype 1.
 | 3V3 or 5V | VIN | Power supply |
 | GND | GND | Ground |
 | GPIO4 | BCLK | I2S Bit Clock |
-| GPIO11 | LRC / WS | I2S Word Select / Left-Right Clock |
+| GPIO15 | LRC / WS | I2S Word Select / Left-Right Clock |
 | GPIO23 | DIN | I2S Serial Data |
 | Not wired (`-1`) | SD / MODE | Optional shutdown / mode |
 
@@ -64,7 +67,7 @@ The audio configuration remains identical to Prototype 1.
 | 3V3 or 5V | VIN | VIN | Power supply |
 | GND | GND | GND | Common ground |
 | GPIO4 | BCLK | BCLK | Shared I2S Bit Clock |
-| GPIO11 | LRC / WS | LRC / WS | Shared I2S Word Select |
+| GPIO15 | LRC / WS | LRC / WS | Shared I2S Word Select |
 | GPIO23 | DIN | DIN | Shared I2S Data |
 | Same as VIN (> 1.4V) | SD / MODE | - | Left channel select |
 | 0.77V to 1.4V (390 kΩ to VIN) | - | SD / MODE | Right channel select |
