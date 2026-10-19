@@ -86,7 +86,7 @@ python3 -m prg32 esp32c6 build --pin-profile prototype1
 python3 -m prg32 esp32c6 build --pin-profile prototype2
 
 # Build and flash directly to your board
-python3 -m prg32 esp32c6 build-and-flash --pin-profile prototype2
+python3 -m prg32 esp32c6 build --pin-profile prototype2 && python3 -m prg32 esp32c6 flash
 ```
 
 You can also choose the profile interactively in `idf.py menuconfig`:

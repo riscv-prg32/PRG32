@@ -210,7 +210,7 @@ After the static analysis, the tool makes an HTTP request to the running ESP32-C
 **Task Tracking:**
 By default, the tool shows total free and allocated heap space. If you want to see exactly which FreeRTOS tasks (e.g., `main`, `wifi`, `httpd`) are hoarding memory, you can enable Heap Task Tracking:
 1. If you have not built the project before, run `python3 -m prg32 esp32c6 build`.
-2. Run `python3 -m prg32 esp32c6 build-and-flash -e` (or `--enable-heap-tracking`).
+2. Run `python3 -m prg32 esp32c6 build -e` (or `--enable-heap-tracking`) and then `python3 -m prg32 esp32c6 flash` (or `python3 -m prg32 esp32c6 build -e && python3 -m prg32 esp32c6 flash`).
 
 When task tracking is compiled into the firmware, the memory command will automatically detect it and print a detailed table of memory consumption per task! Note that allocations made before the FreeRTOS scheduler starts (or by tasks that have been deleted) will be grouped under `System / Startup`.
 

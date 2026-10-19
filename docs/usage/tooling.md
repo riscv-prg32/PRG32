@@ -25,12 +25,11 @@ python3 -m prg32 <command> [subcommand] [options]
 All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6` group.
 
 ### Firmware Operations
-- `build`: build the ESP32C6 firmware. Use `-p <name>` / `--pin-profile <name>` (or `--pins <name>`) to select the hardware pin configuration profile (e.g. `prototype1`, see [PRG32 Profiles](profiles.md#hardware-pin-profiles)). You can see all available pin setup possibilities with `python3 -m prg32 esp32c6 pins`. If no pin profile is supplied and no Custom Profile is configured in `sdkconfig`, the build command will fail fast. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build). Use `-d` / `--debug` for debug profiles and `-e` / `--enable-heap-tracking` for heap task tracking.
+- `build`: build the ESP32C6 firmware. Cleans `./sdkconfig` and `build-esp32c6/sdkconfig` before configuring to guarantee local default configurations (`profiles/sdkconfig.defaults.local`) are always applied. Use `-k` / `--keep-sdkconfig` (or `--no-erase-sdkconfig`) to disable erasing `sdkconfig` files and preserve existing manual menuconfig changes. Use `-p <name>` / `--pin-profile <name>` (or `--pins <name>`) to select the hardware pin configuration profile (e.g. `prototype1`, see [PRG32 Profiles](profiles.md#hardware-pin-profiles)). You can see all available pin setup possibilities with `python3 -m prg32 esp32c6 pins`. If no pin profile is supplied and no Custom Profile is configured in `sdkconfig`, the build command will fail fast. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build). Use `-d` / `--debug` for debug profiles and `-e` / `--enable-heap-tracking` for heap task tracking.
 - `flash`: flash the ESP32C6 image. Does not do anything when a cartridge is running!
-    - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports `-s` / `--skip-target`, `-p` / `--pin-profile`, `-d` / `--debug`, and `-e` / `--enable-heap-tracking`.
 - `pins`: list available pin setup possibilities discovered in `profiles/` (e.g. `prototype1`).
 - `erase-flash`: erase flash of ESP32C6. It is sometimes useful to completely erase the flash for debugging purposes.
-    - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
+    - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience. Erases `./sdkconfig` and `build-esp32c6/sdkconfig` (disable with `-k` / `--keep-sdkconfig` / `--no-erase-sdkconfig`).
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
 ### Upload & Run Cartridges
 - `upload`: upload over HTTP with `--url`, or use the automatic running-device
@@ -41,11 +40,11 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
   protocol; see [Web-to-USB cartridge deployment](../software/web_usb_deployment.md).
 - `run`: run a stored slot over HTTP or the device protocol. `--debug` requests
   instruction debugging on PRG32-Qt; physical firmware reports it unsupported.
-    - `upload-and-run`: combination of `upload` and `run` for convenience.
+
 ### Firmware Tools
 These scripts are used to prepare and flashing single-file firmwares. They are useful to run legacy firmware for debugging purposes or to share modified versions of the firmware.
 
-- `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing
+- `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing. Use `-k` / `--keep-sdkconfig` / `--no-erase-sdkconfig` to disable erasing sdkconfig files.
 - `flash-firmware`: flash a published single-file legacy PRG32 firmware image
 ### Utilities
 - `performance`: download the latest in-RAM Performance Test JSON over HTTP or
@@ -66,9 +65,8 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
   set the timing, and `--release` ends a long press early. See
   [Key messages](../software/usb_protocol.md#key-messages).
 ## QEMU Emulator Tasks (`qemu`)
-- `build`: build QEMU and generate the flash image. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
+- `build`: build QEMU and generate the flash image. Cleans `./sdkconfig` and `build-qemu/sdkconfig` before configuring to guarantee local default configurations (`profiles/sdkconfig.defaults.local`) are always applied. Use `-k` / `--keep-sdkconfig` (or `--no-erase-sdkconfig`) to disable erasing `sdkconfig` files and preserve existing manual menuconfig changes. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment
-- `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports `-s` / `--skip-target`.
 - `upload`: upload a cartridge to QEMU. `--cart-ram-kib` sets the executable
   RAM limit; by default it is read from `build-qemu/sdkconfig`, else 128 KiB
   (see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).

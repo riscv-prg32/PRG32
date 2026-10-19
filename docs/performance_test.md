@@ -202,8 +202,11 @@ PRG32_DEVICE_URL=http://192.168.4.1
 ### Step 4: upload and launch the cartridge
 
 ```bash
-python3 -m prg32 esp32c6 upload-and-run \
+python3 -m prg32 esp32c6 upload \
   cartridges/performancetest/dist/performancetest-esp32c6.prg32 \
+  --url "$PRG32_DEVICE_URL" \
+  --slot cart0 && \
+python3 -m prg32 esp32c6 run \
   --url "$PRG32_DEVICE_URL" \
   --slot cart0
 ```

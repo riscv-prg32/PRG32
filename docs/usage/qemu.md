@@ -37,7 +37,7 @@ There are several ways to run the QEMU emulator, depending on your preferred wor
 The unified Python tooling is the easiest way to build and launch QEMU on any platform:
 
 ```bash
-python3 -m prg32 qemu build-and-run
+python3 -m prg32 qemu build && python3 -m prg32 qemu run
 ```
 
 ### Option B: VS Code Tasks
@@ -68,7 +68,7 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```bash
    python3 -m prg32 qemu run
    ```
-   *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
+   *(Note: You can also run `python3 -m prg32 qemu build && python3 -m prg32 qemu run` to build and run sequentially).*
 
 While QEMU is running, UART 0 is available at `127.0.0.1:5555`. The SDK can
 therefore upload without restarting or rewriting the flash image:

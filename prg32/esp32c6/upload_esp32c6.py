@@ -139,8 +139,3 @@ def run_esp32c6(args: argparse.Namespace) -> None:
         raise SystemExit(f"Selection failed: HTTP {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
         raise SystemExit(f"Selection failed: {exc}") from exc
-    
-def upload_and_run_esp32c6(args: argparse.Namespace):
-    upload_esp32c6(args)
-    run_esp32c6(args)
-    log_ok("Finished upload and run on ESP32C6")

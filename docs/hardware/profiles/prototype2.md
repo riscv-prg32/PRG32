@@ -101,7 +101,7 @@ To compile physical firmware using this profile:
 python3 -m prg32 esp32c6 build --pin-profile prototype2
 
 # Flash directly
-python3 -m prg32 esp32c6 build-and-flash --pin-profile prototype2
+python3 -m prg32 esp32c6 build --pin-profile prototype2 && python3 -m prg32 esp32c6 flash
 
 # Direct ESP-IDF build
 idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype2" build

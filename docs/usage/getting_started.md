@@ -37,7 +37,7 @@ alias prg="python -m prg32"
 ### Running PRG32 on the ESP32C6
 If you have the physical PRG32 hardware, after [configuring the hardware setup](/docs/hardware/README.md) you can build the project for the ESP32C6 and flash it to the SoC:
 ```bash
-python -m prg32 esp32c6 build-and-flash
+python -m prg32 esp32c6 build && python -m prg32 esp32c6 flash
 ```
 ### Running PRG32 on QEMU
 If you don't have the physical hardware you can still use the PRG32 framework emulated on QEMU:

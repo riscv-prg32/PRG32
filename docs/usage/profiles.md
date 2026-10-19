@@ -135,7 +135,7 @@ python3 -m prg32 esp32c6 build --pin-profile prototype1
 python3 -m prg32 esp32c6 build --pin-profile prototype2
 
 # Build and flash directly
-python3 -m prg32 esp32c6 build-and-flash --pin-profile prototype2
+python3 -m prg32 esp32c6 build --pin-profile prototype2 && python3 -m prg32 esp32c6 flash
 ```
 
 For direct `idf.py` builds, add the profile to `SDKCONFIG_DEFAULTS`:

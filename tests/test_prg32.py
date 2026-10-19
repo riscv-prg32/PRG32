@@ -668,12 +668,73 @@ class PinProfileTests(unittest.TestCase):
             self.assertTrue(args.debug)
             self.assertTrue(args.enable_heap_tracking)
 
-        with mock.patch("prg32.prg32.build_and_launch_qemu") as mock_qemu:
-            main(["qemu", "build-and-run", "-s", "-d"])
+        with mock.patch("prg32.prg32.build_and_flash_qemu") as mock_qemu:
+            main(["qemu", "build", "-s", "-d", "-k"])
             mock_qemu.assert_called_once()
             args = mock_qemu.call_args[0][0]
             self.assertTrue(args.skip_target)
             self.assertTrue(args.debug)
+            self.assertTrue(args.no_erase_sdkconfig)
+
+        with mock.patch("prg32.prg32.build_esp32c6") as mock_build:
+            main(["esp32c6", "build", "--keep-sdkconfig"])
+            mock_build.assert_called_once()
+            args = mock_build.call_args[0][0]
+            self.assertTrue(args.no_erase_sdkconfig)
+
+        with mock.patch("prg32.prg32.reset_esp32c6") as mock_reset:
+            main(["esp32c6", "reset", "--no-erase-sdkconfig"])
+            mock_reset.assert_called_once()
+            args = mock_reset.call_args[0][0]
+            self.assertTrue(args.no_erase_sdkconfig)
+
+        with mock.patch("prg32.prg32.prepare_firmware_esp32c6") as mock_prep:
+            main(["esp32c6", "prepare-firmware", "-k"])
+            mock_prep.assert_called_once()
+            args = mock_prep.call_args[0][0]
+            self.assertTrue(args.no_erase_sdkconfig)
+
+    def test_erase_sdkconfigs(self) -> None:
+        from prg32.utilities.local_config import erase_sdkconfigs
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            (tmp_root / "build-esp32c6").mkdir()
+            (tmp_root / "build-qemu").mkdir()
+
+            root_sdk = tmp_root / "sdkconfig"
+            c6_sdk = tmp_root / "build-esp32c6" / "sdkconfig"
+            qemu_sdk = tmp_root / "build-qemu" / "sdkconfig"
+
+            with mock.patch("prg32.utilities.local_config.ROOT_DIR", tmp_root):
+                root_sdk.write_text("test")
+                c6_sdk.write_text("test")
+                qemu_sdk.write_text("test")
+
+                erase_sdkconfigs("esp32c6")
+                self.assertFalse(root_sdk.exists())
+                self.assertFalse(c6_sdk.exists())
+                self.assertTrue(qemu_sdk.exists())
+
+                root_sdk.write_text("test")
+                erase_sdkconfigs("qemu")
+                self.assertFalse(root_sdk.exists())
+                self.assertFalse(qemu_sdk.exists())
+
+    def test_keep_sdkconfig_disables_erasure(self) -> None:
+        from prg32.qemu.build_qemu import build_qemu
+        import argparse
+        with mock.patch("prg32.qemu.build_qemu.erase_sdkconfigs") as mock_erase:
+            with mock.patch("prg32.qemu.build_qemu.set_target_qemu"):
+                with mock.patch("prg32.qemu.build_qemu.apply_local_config_to_sdkconfig"):
+                    with mock.patch("subprocess.check_call"):
+                        with mock.patch("pathlib.Path.exists", return_value=True):
+                            args = argparse.Namespace(skip_target=False, debug=False, no_erase_sdkconfig=True)
+                            build_qemu(args)
+                            mock_erase.assert_not_called()
+
+                            args_normal = argparse.Namespace(skip_target=False, debug=False, no_erase_sdkconfig=False)
+                            build_qemu(args_normal)
+                            mock_erase.assert_called_once_with("qemu")
 
 
 if __name__ == "__main__":
