@@ -6,6 +6,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#if !CONFIG_PRG32_DISPLAY_QEMU_RGB && defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
+
 static const char *TAG = "prg32_joystick_digital";
 
 static void digital_pin_init(const char *name, int p) {
@@ -33,18 +35,15 @@ static void digital_pin_init(const char *name, int p) {
 }
 
 void prg32_joystick_digital_init(void) {
-#if !CONFIG_PRG32_DISPLAY_QEMU_RGB && defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
     ESP_LOGI(TAG, "Initializing digital joystick directional pins");
     digital_pin_init("LEFT", PRG32_PIN_BTN_LEFT);
     digital_pin_init("RIGHT", PRG32_PIN_BTN_RIGHT);
     digital_pin_init("UP", PRG32_PIN_BTN_UP);
     digital_pin_init("DOWN", PRG32_PIN_BTN_DOWN);
-#endif
 }
 
 uint32_t prg32_joystick_digital_read(void) {
     uint32_t v = 0;
-#if !CONFIG_PRG32_DISPLAY_QEMU_RGB && defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
     if (PRG32_PIN_BTN_LEFT >= 0 && !gpio_get_level(PRG32_PIN_BTN_LEFT)) {
         v |= PRG32_BTN_LEFT;
     }
@@ -57,6 +56,16 @@ uint32_t prg32_joystick_digital_read(void) {
     if (PRG32_PIN_BTN_DOWN >= 0 && !gpio_get_level(PRG32_PIN_BTN_DOWN)) {
         v |= PRG32_BTN_DOWN;
     }
-#endif
     return v;
 }
+
+#else
+
+void prg32_joystick_digital_init(void) {
+}
+
+uint32_t prg32_joystick_digital_read(void) {
+    return 0;
+}
+
+#endif

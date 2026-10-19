@@ -4,9 +4,9 @@
 #include "esp_log.h"
 #include <string.h>
 
-static const char *TAG = "prg32_joystick_analog";
-
 #if !CONFIG_PRG32_DISPLAY_QEMU_RGB && defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
+
+static const char *TAG = "prg32_joystick_analog";
 
 #include "esp_adc/adc_continuous.h"
 #include "hal/adc_types.h"

@@ -1215,8 +1215,10 @@ void prg32_init(void) {
   PRG32_MEM_CHECKPOINT("prg32_cart");
   printf("prg32_init => prg32_band_load_config()\n");
   prg32_band_load_config();
+#if PRG32_ENABLE_BOOT_SETUP_COMBO
   printf("prg32_init => prg32_input_read_menu()\n");
   uint32_t boot_input = prg32_input_read_menu();
+#endif
   printf("prg32_init => prg32_cart_stored_count()\n");
   int stored_count = prg32_cart_stored_count();
   printf("prg32_init: stored cartridges=%d\n", stored_count);
