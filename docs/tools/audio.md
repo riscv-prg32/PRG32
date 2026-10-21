@@ -163,8 +163,9 @@ Stereo:
 
 ## Audio API
 
-> [!WARNING]
-> **Cartridge Best Practices:** Please don't use the legacy PWM buzzer functions since the buzzer is not used. Just use `prg32_audio_note` whenever necessary, the `_on` and `_off` functions if you need to leave a note sustaining, the sample functions if you actually need to play a PCM sample, and the track functions if there is a tracker sequence.
+Use `prg32_audio_note` for single notes, the `_on` and `_off` functions to leave a
+note sustaining, the sample functions to play a PCM sample, and the track functions for
+a tracker sequence. (The buzzer calls were retired in cartridge ABI 1.7.)
 
 Core calls:
 
@@ -183,9 +184,8 @@ Core calls:
 
 Pitch uses `1024` as the natural sample speed. Volumes use `0..255`.
 
-**I2S vs PWM Audio API Differences:**
-- **I2S Engine (`prg32_audio_note`)**: Uses standard MIDI **notes** (e.g. 60 for Middle C) and true audio synthesis. It automatically reads your configured wave samples and pitches them perfectly to the musical note.
-- **PWM Buzzer (`prg32_buzzer_tone`)**: Buzzers cannot play complex samples, they only pulse a pin ON/OFF. Thus, they require raw **frequencies** (e.g. 262 Hz for Middle C) and a **duty cycle** parameter. The duty cycle acts as the buzzer's volume control by reducing the ON/OFF percentage, thereby limiting electrical power.
+**Notes, not frequencies:** `prg32_audio_note` takes standard MIDI **notes** (60 is middle C,
+69 is A4 = 440 Hz) and plays them with the instrument's waveform or sample and envelope.
 
 ## Volume Scaling
 

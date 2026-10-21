@@ -46,10 +46,12 @@ tetris_graphics_init:
     call prg32_console_clear
     la a0, tetris_graphics_title
     call prg32_console_write
-    li a0, 220
-    li a1, 40
-    li a2, 512
-    call prg32_buzzer_tone
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 57                     /* MIDI note A3, nearest to 220 Hz */
+    li a3, 200                    /* volume */
+    li a4, 40
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
 
     lw ra, 12(sp)
     addi sp, sp, 16
@@ -114,10 +116,12 @@ tetris_graphics_update:
     lw t5, 0(t4)
     addi t5, t5, 1
     sw t5, 0(t4)
-    li a0, 440
-    li a1, 50
-    li a2, 512
-    call prg32_buzzer_tone
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 69                     /* MIDI note A4, nearest to 440 Hz */
+    li a3, 200                    /* volume */
+    li a4, 50
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
     j .Ltetris_graphics_done
 .Ltetris_graphics_store_y:
     sw t2, 0(t1)

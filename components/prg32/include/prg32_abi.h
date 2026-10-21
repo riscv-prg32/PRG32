@@ -28,3 +28,7 @@ typedef struct prg32_abi_table {
 } prg32_abi_table_t;
 
 extern const prg32_abi_table_t prg32_abi_table;
+
+/* Retired ABI slots (prg32_abi.json "retired") point here: an old cartridge's call
+ * returns 0 and does nothing. Never reinterpreted as another call. */
+int prg32_abi_retired_silent(void);

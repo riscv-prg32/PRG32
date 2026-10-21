@@ -10,7 +10,7 @@
 void prg32_display_init(void);
 void prg32_display_log_memory(const char *checkpoint);
 void prg32_input_init(void);
-void prg32_buzzer_init(void);
+#include "prg32_buzzer.h"
 void prg32_abi_exports_keep(void);
 
 #ifdef CONFIG_HEAP_TASK_TRACKING

@@ -141,14 +141,14 @@ void frogger_c_update(void) {
         if (prg32_sprite_hitbox(frog_x + 4, frog_y + 4, 16, 16,
                                 cars[i].x, cars[i].y, 48, 18)) {
             state = -1;
-            prg32_buzzer_tone(120, 80, 512);
+            prg32_audio_note(0, 0, 47, 200, 80); /* B2, nearest note to 120 Hz */
         }
     }
 
     if (frog_y <= 24) {
         state = 1;
         score++;
-        prg32_buzzer_tone(880, 80, 512);
+        prg32_audio_note(0, 0, 81, 200, 80); /* A5, nearest note to 880 Hz */
     }
 }
 

@@ -297,7 +297,6 @@ typedef struct {
 } prg32_wifi_config_t;
 
 typedef struct {
-  /* One blocking legacy note: frequency in Hz followed by duration in ms. */
   char *buffer;
   size_t capacity;
   size_t length;
@@ -308,11 +307,6 @@ typedef struct {
   uint8_t cancelled;
   uint32_t last_input;
 } prg32_keyboard_t;
-
-typedef struct {
-  uint16_t frequency_hz;
-  uint16_t duration_ms;
-} prg32_note_t;
 
 /** @name Runtime and input
  * `prg32_init()` is firmware-owned; cartridges normally implement their own
@@ -343,17 +337,9 @@ uint32_t prg32_diag_frame_count(void);
  * the call. The resident runtime owns audio initialization and master volume;
  * portable cartridges do not initialize hardware directly.
  * @{ */
-/*
- * Low-level PWM tone generation for the physical buzzer.
- * - 'hz': frequency in Hertz.
- * - 'ms': duration in milliseconds.
- * - 'duty': duty cycle (PWM ON/OFF percentage), used to control the volume
- *           of the buzzer by limiting electrical power.
- */
-void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty);
-void prg32_buzzer_play_notes(const prg32_note_t *notes, size_t count);
-void prg32_buzzer_sample_u8(const uint8_t *samples, size_t count,
-                            uint32_t sample_rate);
+/* The buzzer calls (prg32_buzzer_tone, _play_notes, _sample_u8) were retired in
+ * ABI 1.7: use prg32_audio_note, prg32_audio_notes or prg32_audio_play_sample.
+ * Cartridges built for 1.6 that call them still load and run silently. */
 void prg32_audio_note_off(uint8_t channel);
 void prg32_audio_note(uint8_t channel, uint8_t instrument, uint8_t note,
                       uint8_t volume, uint32_t duration_ms);

@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "prg32.h"
+#include "prg32_buzzer.h"
 #include "prg32_config.h"
 
 #ifdef __ELF__
@@ -44,38 +45,6 @@ void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty) {
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
   vTaskDelay(pdMS_TO_TICKS(ms));
-  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
-  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-}
-
-void prg32_buzzer_play_notes(const prg32_note_t *notes, size_t count) {
-  if (PRG32_PIN_BUZZER < 0 || !notes) {
-    return;
-  }
-  for (size_t i = 0; i < count; ++i) {
-    if (notes[i].frequency_hz == 0) {
-      vTaskDelay(pdMS_TO_TICKS(notes[i].duration_ms));
-    } else {
-      prg32_buzzer_tone(notes[i].frequency_hz, notes[i].duration_ms, 512);
-    }
-  }
-}
-
-void prg32_buzzer_sample_u8(const uint8_t *samples, size_t count,
-                            uint32_t sample_rate) {
-  if (PRG32_PIN_BUZZER < 0 || !samples || count == 0 || sample_rate == 0) {
-    return;
-  }
-  uint32_t delay_us = 1000000u / sample_rate;
-  if (delay_us == 0) {
-    delay_us = 1;
-  }
-  ledc_set_freq(LEDC_LOW_SPEED_MODE, LEDC_TIMER_0, sample_rate);
-  for (size_t i = 0; i < count; ++i) {
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, samples[i] * 4u);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-    esp_rom_delay_us(delay_us);
-  }
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 }

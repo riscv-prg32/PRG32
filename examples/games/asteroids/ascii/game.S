@@ -30,10 +30,12 @@ asteroids_ascii_init:
     call prg32_console_write      /* Print title. */
     la a0, asteroids_ascii_msg    /* Put help string address into a0. */
     call prg32_console_write      /* Print help. */
-    li a0, 660                    /* a0 = beep frequency in Hz. */
-    li a1, 40                     /* a1 = duration in milliseconds. */
-    li a2, 512
-    call prg32_buzzer_tone         /* Short startup sound. */
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 76                     /* MIDI note E5, nearest to 660 Hz */
+    li a3, 200                    /* volume */
+    li a4, 40                     /* a1 = duration in milliseconds. */
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
     lw ra, 12(sp)                 /* Restore return address. */
     addi sp, sp, 16               /* Release stack frame. */
     ret                           /* Return to C game loop. */
@@ -83,10 +85,12 @@ asteroids_ascii_update:
     beqz t3, 9f                   /* Skip bonus if A is not pressed. */
     addi t2, t2, 15               /* Add score bonus for fire/action. */
     sw t2, 0(t1)                  /* Store score before blocking beep. */
-    li a0, 880                    /* Fire beep frequency. */
-    li a1, 15                     /* Fire beep duration. */
-    li a2, 512
-    call prg32_buzzer_tone         /* Play short action sound. */
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 81                     /* MIDI note A5, nearest to 880 Hz */
+    li a3, 200                    /* volume */
+    li a4, 15                     /* Fire beep duration. */
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
     j .Lasteroids_ascii_update_done /* Score is already stored. */
 9:  sw t2, 0(t1)                  /* Store regular frame score. */
 

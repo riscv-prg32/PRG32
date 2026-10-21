@@ -65,7 +65,7 @@ void prg32_bounce_c_update(void) {
     if (!started) {
         if (pressed & PRG32_BTN_START) {
             started = 1;
-            prg32_buzzer_tone(660, 60, 512);
+            prg32_audio_note(0, 0, 76, 200, 60); /* E5, nearest note to 660 Hz */
         }
         return;
     }
