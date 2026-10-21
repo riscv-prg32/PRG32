@@ -62,10 +62,12 @@ prg32_bounce_graphics_update:
     beqz t2, .Lprg32_bounce_graphics_done
     li t1, 1
     sw t1, 0(t0)
-    li a0, 660
-    li a1, 60
-    li a2, 512
-    call prg32_buzzer_tone
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 76                     /* MIDI note E5, nearest to 660 Hz */
+    li a3, 200                    /* volume */
+    li a4, 60
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
     j .Lprg32_bounce_graphics_done
 .Lprg32_bounce_graphics_move:
     la t0, prg32_bounce_graphics_x

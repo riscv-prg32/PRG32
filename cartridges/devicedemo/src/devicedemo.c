@@ -206,20 +206,20 @@ static void page_synth(uint32_t now, uint32_t input) {
 }
 static void page_audio_legacy(uint32_t now, uint32_t input) {
   (void)now;
-  header("AUDIO COMPATIBILITY",
-         "legacy beep/tone/note APIs coexist with the mixer");
-  text(8, 50, "A: 440 Hz beep    UP: duty-cycle tone", PRG32_COLOR_WHITE);
-  text(8, 68, "DOWN: MIDI note   RIGHT: short note sequence",
+  header("AUDIO NOTES",
+         "single notes and short sequences on the 8-voice mixer");
+  text(8, 50, "A: A4 note        UP: E5, loud", PRG32_COLOR_WHITE);
+  text(8, 68, "DOWN: C5 note     RIGHT: short note sequence",
        PRG32_COLOR_WHITE);
   if (g_pressed & PRG32_BTN_A)
-    prg32_buzzer_tone(440, 120, 512);
+    prg32_audio_note(0, 0, 69, 200, 120); /* A4 (440 Hz) */
   if (g_pressed & PRG32_BTN_UP)
-    prg32_buzzer_tone(660, 150, 16000);
+    prg32_audio_note(0, 0, 76, 255, 150); /* E5 (659 Hz), full volume */
   if (g_pressed & PRG32_BTN_DOWN)
-    prg32_buzzer_tone(523, 180, 512);
+    prg32_audio_note(0, 0, 72, 200, 180); /* C5 (523 Hz) */
   if (g_pressed & PRG32_BTN_RIGHT) {
-    static const prg32_note_t n[] = {{523, 70}, {659, 70}, {784, 100}};
-    prg32_buzzer_play_notes(n, 3);
+    static const prg32_midi_note_t n[] = {{72, 70}, {76, 70}, {79, 100}};
+    prg32_audio_notes(0, 0, 200, n, 3); /* C5 E5 G5 */
   }
   text(8, 110, "Sound pages also drive the optional RGB LED VU path.", C_LIME);
   value_bar(8, 140, 280, (int)((g_frame * 7) % 256), 255, C_ORANGE);

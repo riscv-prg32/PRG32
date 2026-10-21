@@ -1,6 +1,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "prg32.h"
+#include "prg32_buzzer.h"
 #include "prg32_config.h"
 #include "sdkconfig.h"
 #include <stddef.h>

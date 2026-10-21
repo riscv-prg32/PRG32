@@ -63,7 +63,7 @@ def runtime_from_elf(path: Path, tool_prefix: str) -> dict:
     size_nm = parse_nm_sizes(
         run([tool_prefix + "nm", "-S", "-g", "--defined-only", str(path)])
     )
-    missing = [name for name in IMPORT_NAMES if name not in nm]
+    missing = [name for name in IMPORT_NAMES if name is not None and name not in nm]
     if missing:
         raise SystemExit("firmware ELF is missing imports: " + ", ".join(missing))
     ram_size = size_nm.get("prg32_cart_exec")
@@ -77,7 +77,7 @@ def runtime_from_elf(path: Path, tool_prefix: str) -> dict:
     return {
         "cart_load_addr": nm["prg32_cart_exec"],
         "cart_ram_size": ram_size,
-        "imports": {name: nm[name] for name in IMPORT_NAMES},
+        "imports": {name: nm[name] for name in IMPORT_NAMES if name is not None},
     }
 
 def fetch_runtime(url: str) -> dict:

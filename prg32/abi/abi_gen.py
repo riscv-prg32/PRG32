@@ -42,7 +42,7 @@ def abi_hash(abi: dict) -> int:
         "major": abi["major"],
         "minor": abi["minor"],
         "functions": [
-            {
+            {"retired": True} if is_retired(fn) else {
                 "name": fn["name"],
                 "return": fn.get("return", "void"),
                 "args": fn.get("args", []),
@@ -57,6 +57,17 @@ def abi_hash(abi: dict) -> int:
 
 def enum_name(name: str) -> str:
     return "PRG32_ABI_FN_" + name.upper()
+
+
+def is_retired(fn: dict) -> bool:
+    """A retired entry keeps its index (later entries never move) but is no longer an API:
+    its slot points at prg32_abi_retired_silent and it has no import name, so new source
+    calling it does not link, and cartridges built before it was retired run silently."""
+    return bool(fn.get("retired"))
+
+
+def slot_enum(index: int, fn: dict) -> str:
+    return f"PRG32_ABI_FN_RETIRED_{index}" if is_retired(fn) else enum_name(fn["name"])
 
 
 def generated_files(abi: dict) -> dict[Path, str]:
@@ -74,7 +85,7 @@ def generated_files(abi: dict) -> dict[Path, str]:
         "enum {",
     ]
     for index, fn in enumerate(functions):
-        enum_lines.append(f"    {enum_name(fn['name'])} = {index},")
+        enum_lines.append(f"    {slot_enum(index, fn)} = {index},")
     enum_lines.append(f"    PRG32_ABI_FN_COUNT = {len(functions)}")
     enum_lines.append("};")
     enum_lines.append("")
@@ -121,8 +132,9 @@ def generated_files(abi: dict) -> dict[Path, str]:
         "                         PRG32_FEATURE_SPRITES,",
         "    .functions = {",
     ]
-    for fn in functions:
-        table.append(f"        [{enum_name(fn['name'])}] = (const void *){fn['name']},")
+    for index, fn in enumerate(functions):
+        target = "prg32_abi_retired_silent" if is_retired(fn) else fn["name"]
+        table.append(f"        [{slot_enum(index, fn)}] = (const void *){target},")
     table.extend(["    },", "};", ""])
 
     py = [
@@ -135,8 +147,14 @@ def generated_files(abi: dict) -> dict[Path, str]:
         "IMPORT_NAMES = [",
     ]
     for fn in functions:
-        py.append(f"    {fn['name']!r},")
+        py.append(f"    {None if is_retired(fn) else fn['name']!r},")
     py.extend(["]", ""])
+    py.append("# Retired slots (index: the name it had), never importable again.")
+    py.append("RETIRED_IMPORTS = {")
+    for index, fn in enumerate(functions):
+        if is_retired(fn):
+            py.append(f"    {index}: {fn['name']!r},")
+    py.extend(["}", ""])
     py.append("FEATURE_BITS = {")
     for key, macro in FEATURE_BITS.items():
         py.append(f"    {key!r}: {macro.replace('PRG32_FEATURE_', '1 << ') if False else feature_value(key)},")

@@ -1,6 +1,6 @@
 # PRG32 Audio API Reference & Polyphony Guide
 
-The PRG32 platform provides two distinct sets of audio APIs: the **Advanced I2S Mixer API** (for high-quality, asynchronous polyphony and trackers) and the **Legacy Buzzer API** (for simple, blocking sound generation on older hardware).
+The PRG32 platform's cartridge audio API is the **I2S Mixer API**: 8 voices, high-quality asynchronous polyphony and trackers. The older buzzer calls were retired in cartridge ABI 1.7 (section 2).
 
 This document explains every available audio function, how they overlap, and how to manage polyphony effectively.
 
@@ -54,18 +54,17 @@ To use the advanced API, you must have instruments registered. The engine provid
 
 ---
 
-## 2. Legacy / Buzzer API (Synchronous)
+## 2. Retired buzzer calls
 
-> [!WARNING]
-> **Blocking Behavior:** These legacy APIs are **strictly blocking**. When you call them, your game's CPU thread will sleep (`vTaskDelay`) until the sound finishes playing! They are prefixed with `prg32_buzzer_` and are designed to drive the passive PWM hardware directly.
+The `prg32_buzzer_tone`, `prg32_buzzer_play_notes` and `prg32_buzzer_sample_u8` calls were
+retired in cartridge ABI 1.7. New source cannot call them (they no longer link). Cartridges
+built for 1.6 that call them still load, and the calls do nothing. Use instead:
 
-*   `void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty);`
-    *   **Description:** Plays a tone directly on the hardware buzzer with a specific frequency (Hz) and PWM duty cycle. Blocks execution.
-    *   **Note:** If the hardware buzzer is disabled (`PRG32_PIN_BUZZER < 0`), this gracefully routes a fallback square wave to the advanced I2S mixer (temporarily hijacking Channel 0 and Instrument 31) to emulate the buzzer.
-*   `void prg32_buzzer_play_notes(const prg32_note_t *notes, size_t count);`
-    *   **Description:** Plays a sequential array of raw frequency/duration pairs on the buzzer. Blocks execution.
-*   `void prg32_buzzer_sample_u8(const uint8_t *samples, size_t count, uint32_t sample_rate);`
-    *   **Description:** A highly legacy function that uses CPU microsecond delays (`esp_rom_delay_us`) to manually bit-bang 8-bit PCM audio directly to the PWM buzzer for low-quality digital audio.
+| Retired | Use |
+|---|---|
+| `prg32_buzzer_tone(hz, ms, duty)` | `prg32_audio_note(voice, instrument, note, volume, ms)` (MIDI note; 69 = A4 = 440 Hz) |
+| `prg32_buzzer_play_notes(notes, count)` | `prg32_audio_notes(voice, instrument, volume, notes, count)` with `prg32_midi_note_t` |
+| `prg32_buzzer_sample_u8(samples, count, rate)` | a sample in the cartridge's audio block and `prg32_audio_play_sample` |
 
 ---
 
@@ -99,4 +98,4 @@ Because the automated Tracker Engine and your manual C code share the same physi
 Partition your voices explicitly.
 1. When composing your `.json` tracker music, restrict it to using channels `0` through `5`.
 2. When triggering sound effects from your game code, ensure you only call `prg32_audio_note_on` or `prg32_audio_play_sample` targeting channels `6` and `7`.
-3. Avoid the Legacy Buzzer APIs entirely in modern cartridges unless you are building a simple, single-threaded application that doesn't need to run game logic while sound is playing.
+3. Use the blocking `prg32_audio_notes` only where the game may wait for the notes to finish.

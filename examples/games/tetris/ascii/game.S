@@ -52,10 +52,12 @@ tetris_ascii_init:
     call prg32_console_write
     la a0, tetris_ascii_help
     call prg32_console_write
-    li a0, 180
-    li a1, 40
-    li a2, 512
-    call prg32_buzzer_tone
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 54                     /* MIDI note F#3, nearest to 180 Hz */
+    li a3, 200                    /* volume */
+    li a4, 40
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
 
     lw ra, 12(sp)
     addi sp, sp, 16
@@ -120,10 +122,12 @@ tetris_ascii_update:
     lw t5, 0(t4)
     addi t5, t5, 1
     sw t5, 0(t4)
-    li a0, 330
-    li a1, 40
-    li a2, 512
-    call prg32_buzzer_tone
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 64                     /* MIDI note E4, nearest to 330 Hz */
+    li a3, 200                    /* volume */
+    li a4, 40
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
     j .Ltetris_ascii_done
 .Ltetris_ascii_store_y:
     sw t2, 0(t1)

@@ -1,8 +1,12 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 6,
-  "compatible_hashes": ["0x006427c2", "0x6be6e8d0"],
+  "minor": 7,
+  "compatible_hashes": [
+    "0x006427c2",
+    "0x6be6e8d0",
+    "0x260f6136"
+  ],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -41,10 +45,15 @@
     },
     {
       "name": "prg32_buzzer_tone",
+      "retired": {
+        "since": "1.7",
+        "behaviour": "silent",
+        "use": "prg32_audio_note"
+      },
       "return": "void",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Retired PRG32 buzzer call: the slot is kept so later entries never move; cartridges built for 1.6 that call it run silently. New source cannot use it."
     },
     {
       "name": "prg32_audio_note",
@@ -55,17 +64,27 @@
     },
     {
       "name": "prg32_buzzer_play_notes",
+      "retired": {
+        "since": "1.7",
+        "behaviour": "silent",
+        "use": "prg32_audio_notes"
+      },
       "return": "void",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Retired PRG32 buzzer call: the slot is kept so later entries never move; cartridges built for 1.6 that call it run silently. New source cannot use it."
     },
     {
       "name": "prg32_buzzer_sample_u8",
+      "retired": {
+        "since": "1.7",
+        "behaviour": "silent",
+        "use": "prg32_audio_play_sample"
+      },
       "return": "void",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Retired PRG32 buzzer call: the slot is kept so later entries never move; cartridges built for 1.6 that call it run silently. New source cannot use it."
     },
     {
       "name": "prg32_audio_init",
@@ -882,21 +901,28 @@
     {
       "name": "prg32_perf_begin",
       "return": "int",
-      "args": ["const prg32_perf_suite_desc_t *"],
+      "args": [
+        "const prg32_perf_suite_desc_t *"
+      ],
       "feature": "metrics",
       "notes": "Begin a versioned pluggable measurement suite."
     },
     {
       "name": "prg32_perf_case_begin",
       "return": "int",
-      "args": ["const prg32_perf_case_desc_t *", "uint32_t"],
+      "args": [
+        "const prg32_perf_case_desc_t *",
+        "uint32_t"
+      ],
       "feature": "metrics",
       "notes": "Begin a named case and allocate its temporary percentile workspace."
     },
     {
       "name": "prg32_perf_record",
       "return": "int",
-      "args": ["const prg32_perf_sample_t *"],
+      "args": [
+        "const prg32_perf_sample_t *"
+      ],
       "feature": "metrics",
       "notes": "Record one caller-measured frame in the active case."
     },
@@ -924,56 +950,80 @@
     {
       "name": "prg32_perf_get_state",
       "return": "int",
-      "args": ["prg32_perf_state_t *"],
+      "args": [
+        "prg32_perf_state_t *"
+      ],
       "feature": "metrics",
       "notes": "Copy versioned lifecycle and heap state."
     },
     {
       "name": "prg32_perf_get_summary",
       "return": "int",
-      "args": ["prg32_performance_summary_t *"],
+      "args": [
+        "prg32_performance_summary_t *"
+      ],
       "feature": "metrics",
       "notes": "Copy the compact completed-run summary."
     },
     {
       "name": "prg32_palette_set",
       "return": "void",
-      "args": ["uint8_t", "uint16_t"],
+      "args": [
+        "uint8_t",
+        "uint16_t"
+      ],
       "feature": "graphics",
       "notes": "Set one system-palette entry from a native RGB565 value."
     },
     {
       "name": "prg32_palette_get",
       "return": "uint16_t",
-      "args": ["uint8_t"],
+      "args": [
+        "uint8_t"
+      ],
       "feature": "graphics",
       "notes": "Read one system-palette entry as native RGB565."
     },
     {
       "name": "prg32_gfx_pixel_indexed",
       "return": "void",
-      "args": ["int", "int", "uint8_t"],
+      "args": [
+        "int",
+        "int",
+        "uint8_t"
+      ],
       "feature": "graphics",
       "notes": "Draw one system-palette index."
     },
     {
       "name": "prg32_gfx_rect_indexed",
       "return": "void",
-      "args": ["int", "int", "int", "int", "uint8_t"],
+      "args": [
+        "int",
+        "int",
+        "int",
+        "int",
+        "uint8_t"
+      ],
       "feature": "graphics",
       "notes": "Fill a clipped rectangle with one system-palette index."
     },
     {
       "name": "prg32_gfx_clear_indexed",
       "return": "void",
-      "args": ["uint8_t"],
+      "args": [
+        "uint8_t"
+      ],
       "feature": "graphics",
       "notes": "Clear the game viewport to one system-palette index."
     },
     {
       "name": "prg32_random_number",
       "return": "uint32_t",
-      "args": ["uint32_t", "uint32_t"],
+      "args": [
+        "uint32_t",
+        "uint32_t"
+      ],
       "feature": "core",
       "notes": "Return a uniformly distributed integer between min and max inclusive; return min when max is less than or equal to min."
     }

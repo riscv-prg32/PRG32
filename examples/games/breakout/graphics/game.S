@@ -31,10 +31,12 @@ breakout_graphics_init:
     call prg32_console_write      /* Print title through framework console. */
     la a0, breakout_graphics_msg      /* Load second message pointer into a0. */
     call prg32_console_write      /* Print explanatory message. */
-    li a0, 120                    /* Choose a short beep frequency/duration argument. */
-    li a1, 30                     /* 30 milliseconds: audible but not annoying. */
-    li a2, 512
-    call prg32_buzzer_tone         /* Call C PWM audio helper. */
+    li a0, 0                      /* voice 0 */
+    li a1, 0                      /* instrument 0 */
+    li a2, 47                     /* MIDI note B2, nearest to 120 Hz */
+    li a3, 200                    /* volume */
+    li a4, 30                     /* 30 milliseconds: audible but not annoying. */
+    call prg32_audio_note         /* one note on the 8-voice audio engine */
     lw ra, 12(sp)                 /* Restore return address. */
     addi sp, sp, 16               /* Destroy stack frame. */
     ret                           /* Return to the C game loop. */

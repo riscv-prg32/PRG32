@@ -1,4 +1,5 @@
 #include "prg32.h"
+#include "prg32_abi.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -9,17 +10,17 @@
  */
 typedef void (*prg32_any_fn_t)(void);
 
+int prg32_abi_retired_silent(void) { return 0; }
+
 static const prg32_any_fn_t g_prg32_cart_abi_exports[] = {
+    (prg32_any_fn_t)prg32_abi_retired_silent,
     (prg32_any_fn_t)prg32_ticks_ms,
     (prg32_any_fn_t)prg32_input_read,
     (prg32_any_fn_t)prg32_input_read_player,
     (prg32_any_fn_t)prg32_input_read_menu,
     (prg32_any_fn_t)prg32_input_wait_released,
     (prg32_any_fn_t)prg32_controller_read,
-    (prg32_any_fn_t)prg32_buzzer_tone,
     (prg32_any_fn_t)prg32_audio_note,
-    (prg32_any_fn_t)prg32_buzzer_play_notes,
-    (prg32_any_fn_t)prg32_buzzer_sample_u8,
     (prg32_any_fn_t)prg32_rgb_led_init,
     (prg32_any_fn_t)prg32_rgb_led_available,
     (prg32_any_fn_t)prg32_rgb_led_set,

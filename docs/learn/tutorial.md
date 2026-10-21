@@ -105,16 +105,19 @@ Checkpoint:
 
 ## 6. Add Sound
 
-Use `prg32_buzzer_tone(hz, ms, 512)`:
+Use `prg32_audio_note(voice, instrument, note, volume, ms)`; MIDI note 69 is A4 (440 Hz):
 
 ```asm
-li a0, 440
-li a1, 60
-call prg32_buzzer_tone
+li a0, 0
+li a1, 0
+li a2, 69
+li a3, 200
+li a4, 60
+call prg32_audio_note
 ```
 
-For a first game, play a short beep only on an event such as collision, scoring,
-or pressing A. Avoid playing a beep every frame.
+For a first game, play a short note only on an event such as collision, scoring,
+or pressing A. Avoid playing a note every frame.
 
 ## 7. Add Scores
 

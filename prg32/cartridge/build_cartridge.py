@@ -95,6 +95,8 @@ def write_portable_stubs(path: Path,
         ".option norelax",
     ]
     for index, name in enumerate(IMPORT_NAMES):
+        if name is None:
+            continue   # a retired slot: no symbol, so new source cannot call it
         offset = 20 + index * 4
         lines.extend([
             f".globl {name}",

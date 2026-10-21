@@ -146,7 +146,7 @@ void wing_commander_c_update(void) {
 
     if ((input & (PRG32_BTN_A | PRG32_BTN_B)) && laser_timer == 0) {
         laser_timer = 6;
-        prg32_buzzer_tone(880, 25, 512);
+        prg32_audio_note(0, 0, 81, 200, 25); /* A5, nearest note to 880 Hz */
         for (int i = 0; i < 4; ++i) {
             if (enemies[i].alive &&
                 cross_x >= enemies[i].x - 8 &&
@@ -155,7 +155,7 @@ void wing_commander_c_update(void) {
                 cross_y <= enemies[i].y + 28) {
                 score += 10;
                 enemies[i].alive = 0;
-                prg32_buzzer_tone(1320, 35, 512);
+                prg32_audio_note(0, 0, 88, 200, 35); /* E6, nearest note to 1320 Hz */
             }
         }
     }

@@ -7,30 +7,32 @@ feel stuck.
 
 ## Steps
 
-1. Call `prg32_buzzer_tone` during initialization.
-2. Add a second beep when a collision occurs.
-3. Use a short duration first:
+1. Call `prg32_audio_note` during initialization.
+2. Add a second note when a collision occurs.
+3. Use a short duration first (voice 0, instrument 0, MIDI note 81 = A5, volume 200, 20 ms):
 
 ```asm
-li a0, 880
-li a1, 20
-call prg32_buzzer_tone
+li a0, 0
+li a1, 0
+li a2, 81
+li a3, 200
+li a4, 20
+call prg32_audio_note
 ```
 
-4. Try `200 ms` and observe how it changes responsiveness.
-5. Move the beep so it triggers only once per collision.
+4. Try `200 ms` and observe that the game keeps moving: the note plays on its own voice.
+5. Move the note so it triggers only once per collision.
 6. In C, try `prg32_audio_note(0, PRG32_DEFAULT_INSTRUMENT_ID, 69, 255, 80)` for an A4 note.
 7. Use `tools/prg32_audio_convert.py` to prepare a short WAV effect.
 
 ## Checkpoint
 
 The game should make a sound on collision and continue moving smoothly. Advanced
-students can compare `prg32_buzzer_tone`, `prg32_buzzer_play_notes`, and
-`prg32_buzzer_sample_u8`.
+students can compare `prg32_audio_note`, the blocking `prg32_audio_notes`, and
+`prg32_audio_play_sample`.
 
 QEMU can verify that the code path reaches the audio calls, but final sound
-behavior must be checked on hardware with the passive buzzer or MAX98357A audio
-board.
+behavior must be checked on hardware with the MAX98357A audio board.
 
 ## Extension: I2S Audio
 

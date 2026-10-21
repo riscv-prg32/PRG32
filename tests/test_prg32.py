@@ -120,15 +120,55 @@ not-a-symbol
             ("platformer_c_init", "platformer_c_update", "platformer_c_draw"),
         )
 
+def before_retirement(abi: dict) -> dict:
+    """The ABI as it was before entries were retired (their slot as an ordinary function)."""
+    functions = []
+    for fn in abi["functions"]:
+        fn = dict(fn)
+        fn.pop("retired", None)
+        functions.append(fn)
+    return {**abi, "functions": functions}
+
+
 class PortableHeaderTests(unittest.TestCase):
     def test_compatible_hashes_describe_unchanged_abi_prefixes(self) -> None:
-        abi = json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text())
+        abi = before_retirement(json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text()))
         for hash_value, count in ((0x006427C2, 133), (0x6BE6E8D0, 138)):
             prior = {**abi, "minor": 5, "functions": abi["functions"][:count]}
             self.assertEqual(abi_hash(prior), hash_value)
+        # 1.6: the same 139 slots before the buzzer calls were retired.
+        self.assertEqual(abi_hash({**abi, "minor": 6}), 0x260F6136)
+
+    def test_retired_buzzer_slots_keep_their_index_and_lose_their_name(self) -> None:
+        abi = json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text())
+        retired = {index: fn["name"] for index, fn in enumerate(abi["functions"]) if fn.get("retired")}
+        self.assertEqual(retired, {5: "prg32_buzzer_tone", 7: "prg32_buzzer_play_notes", 8: "prg32_buzzer_sample_u8"})
+        self.assertEqual((abi["major"], abi["minor"]), (1, 7))
+        for index in retired:
+            self.assertIsNone(IMPORT_NAMES[index])
+        self.assertEqual(IMPORT_NAMES[6], "prg32_audio_note")
+        self.assertEqual(len(IMPORT_NAMES), 139)
+        self.assertFalse(any(name and "buzzer" in name for name in IMPORT_NAMES))
+        table = (ROOT / "components/prg32/prg32_abi_table.c").read_text()
+        for index in retired:
+            self.assertIn(f"[PRG32_ABI_FN_RETIRED_{index}] = (const void *)prg32_abi_retired_silent,", table)
+        self.assertNotIn("buzzer", table)
+
+    def test_no_public_header_or_portable_stub_offers_the_buzzer(self) -> None:
+        for header in sorted((ROOT / "components/prg32/include").glob("*.h")):
+            text = header.read_text()
+            self.assertNotRegex(text, r"\bprg32_buzzer_\w+\s*\(", header.name)
+            self.assertNotIn("prg32_note_t", text, header.name)
+        with tempfile.TemporaryDirectory() as tmp:
+            stubs = Path(tmp) / "stubs.S"
+            build_cartridge.write_portable_stubs(stubs, "g_init", "g_update", "g_draw")
+            text = stubs.read_text()
+        self.assertNotIn("buzzer", text)
+        # Every other entry keeps its offset: prg32_audio_note (index 6) is at 20 + 6 * 4.
+        self.assertIn("prg32_audio_note:\n    la t0, __prg32_abi\n    lw t0, 0(t0)\n    lw t1, 44(t0)", text)
 
     def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
-        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0])
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0, 0x260F6136])
         payload = b"\0\0\0\0"
         for old_hash in (0xEC21EFE2, 0x5626CB8A):
             header = env_variables.CART_HEADER_V2.pack(
