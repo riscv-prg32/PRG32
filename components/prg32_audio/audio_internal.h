@@ -93,6 +93,8 @@ void prg32_audio_lock(void);
 void prg32_audio_unlock(void);
 void prg32_audio_tracker_step(uint32_t elapsed_ms);
 void prg32_audio_voices_step(uint32_t elapsed_ms);
+/* Wait between prg32_audio_notes notes (audio.c: rendered under the audio frame clock). */
+void prg32_audio_wait_ms(uint32_t ms);
 void prg32_audio_synth_start(prg32_audio_voice_t *voice,
                              const prg32_instrument_desc_t *instrument,
                              uint8_t note, uint32_t sample_rate);

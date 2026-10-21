@@ -11,6 +11,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "prg32.h"
+#include "prg32_audio_frame_clock.h"
 #include "prg32_config.h"
 #include "sdkconfig.h"
 
@@ -205,6 +206,7 @@ void app_main(void) {
         prg32_console_clear();
         prg32_stop_metrics_run();
         prg32_display_log_memory("immediately before cartridge init");
+        prg32_audio_cartridge_start();
         prg32_cart_call_init();
         prg32_start_metrics_for_loaded_cart();
       }
@@ -241,8 +243,10 @@ void app_main(void) {
         prg32_gfx_unlock();
       }
       prg32_diag_increment_frame();
+      prg32_audio_cartridge_frame(PRG32_FRAME_MS);
       prg32_wait_for_frame_target(&next_frame_ms);
     } else {
+      prg32_audio_cartridge_stop();
       prg32_stop_metrics_run();
       uint32_t now_ms = prg32_ticks_ms();
       if (now_ms - last_idle_log_ms >= PRG32_IDLE_HEARTBEAT_MS) {
