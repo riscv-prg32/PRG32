@@ -544,6 +544,12 @@ The legacy teaching helpers still use PWM to drive a passive buzzer:
 - `prg32_buzzer_sample_u8(samples, count, rate)`: play unsigned 8-bit samples via buzzer
   through PWM.
 
+In QEMU, `prg32_buzzer_tone()` and `prg32_buzzer_play_notes()` are simulated
+through audio mixer channel 0. Frequency is rounded to the nearest MIDI note
+and the 10-bit duty value is scaled to mixer volume; the calls remain blocking.
+The low-level `prg32_buzzer_sample_u8()` helper still requires physical PWM;
+use the sample playback ABI for portable PCM audio.
+
 The I2S audio runtime lives in the `prg32_audio` component and targets
 MAX98357A DAC/amplifier boards:
 

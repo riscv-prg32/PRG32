@@ -112,12 +112,19 @@ def main(argv: list[str]) -> int:
     p = esp32c6_sub.add_parser("reset", help=f"erase flash and re-flash {ESP32C6_IMAGE} to ESP32C6 over USB")
     p.set_defaults(func=reset_esp32c6)
 
-    p = esp32c6_sub.add_parser("upload", 
-        help="upload a cartridge to the ESP32C6 SoC over HTTP", 
+    p = esp32c6_sub.add_parser("upload",
+        help="upload a cartridge to the ESP32C6 over HTTP or USB serial",
         usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
-    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    transport = p.add_mutually_exclusive_group(required=True)
+    transport.add_argument("--url", help="Device URL for HTTP upload (for example, http://192.168.4.1)")
+    transport.add_argument("--port", help="USB serial port for direct cartridge flashing (for example, /dev/cu.usbmodem101)")
+    p.add_argument("--baud", default="460800", help="USB flashing baud rate")
+    p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Path to the partition table CSV used for USB upload")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload into")
+    p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
+        help="Executable cartridge RAM of the device firmware in KiB "
+             "(default: build-esp32c6/sdkconfig, else the standard profile)")
     p.set_defaults(func=upload_esp32c6)
 
     p = esp32c6_sub.add_parser("run", help="run a previously loaded cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s [options]")

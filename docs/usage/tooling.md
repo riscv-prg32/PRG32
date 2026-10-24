@@ -32,7 +32,9 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
     - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
 ### Upload & Run Cartridges
-- `upload`: upload a cartridge to the ESP32C6 SoC over HTTP,
+- `upload`: upload a cartridge over HTTP with `--url`, or directly to a flash
+  slot through USB serial with `--port`. USB upload accepts `--baud`, `--slot`,
+  `--partitions`, and `--cart-ram-kib`; reset the board afterward.
 - `run`: instruct the ESP32C6 over HTTP to run a previously loaded cartridge on a selected slot. Does not work when a cartridge is running (?).
     - `upload-and-run`: combination of `upload` and `run` for convenience.
 ### Firmware Tools

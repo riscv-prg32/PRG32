@@ -344,7 +344,8 @@ uint32_t prg32_diag_frame_count(void);
  * portable cartridges do not initialize hardware directly.
  * @{ */
 /*
- * Low-level PWM tone generation for the physical buzzer.
+ * Low-level PWM tone generation for the physical buzzer. QEMU approximates
+ * the requested frequency with the nearest MIDI note through its audio mixer.
  * - 'hz': frequency in Hertz.
  * - 'ms': duration in milliseconds.
  * - 'duty': duty cycle (PWM ON/OFF percentage), used to control the volume

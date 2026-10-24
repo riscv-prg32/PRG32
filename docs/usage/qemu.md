@@ -89,7 +89,11 @@ Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a c
 
 ## Input and Controls
 
-QEMU disables physical GPIO buttons and the buzzer, enabling a small UART-console keyboard mapper for player 1 input instead. 
+QEMU disables physical GPIO buttons and enables a small UART-console keyboard
+mapper for player 1 input. Legacy `prg32_buzzer_tone()` calls remain audible:
+the runtime maps the frequency to the nearest MIDI note, derives mixer volume
+from PWM duty, and sends PCM through the UART audio path.
+`prg32_buzzer_play_notes()` applies the same fallback to each tone.
 
 > [!IMPORTANT]
 > Because input is read from the UART console, you must ensure your **terminal window** running QEMU is the active window to use the keyboard, *not* the graphical QEMU screen itself.

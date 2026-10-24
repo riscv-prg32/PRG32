@@ -104,6 +104,20 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --url http://192.1
 
 The firmware stores the cartridge in `cart0` by default and starts running it from the main loop. You can upload to another slot with `--slot cart1`.
 
+When Wi-Fi is unavailable, put the ESP32-C6 into its serial bootloader and
+write the cartridge directly through USB:
+
+```bash
+python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
+  --port /dev/cu.usbmodem101 --slot cart0
+```
+
+Use the serial port name for your host (`COM5` is a typical Windows example).
+USB upload validates the portable ABI and RAM requirement, reads the slot from
+`profiles/partitions_prg32.csv`, and replaces the complete partition. Reset
+the board afterward. Pass `--cart-ram-kib` when the connected firmware uses a
+profile different from `build-esp32c6/sdkconfig`.
+
 ### 3. Upload to Emulator (QEMU)
 QEMU does not emulate the classroom Wi-Fi upload path. Instead, you stage it directly into the emulator flash image:
 

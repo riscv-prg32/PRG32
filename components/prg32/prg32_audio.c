@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "prg32.h"
 #include "prg32_config.h"
+#include <math.h>
 
 #ifdef __ELF__
 #define PRG32_FLASH_RODATA __attribute__((section(".rodata")))
@@ -31,6 +32,25 @@ void prg32_buzzer_init(void) {
 }
 
 void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty) {
+#if CONFIG_PRG32_DISPLAY_QEMU_RGB
+  if (!hz || !ms || !prg32_audio_is_ready()) {
+    return;
+  }
+  if (duty > 1023) {
+    duty = 1023;
+  }
+  int note = (int)lroundf(69.0f + 12.0f * log2f((float)hz / 440.0f));
+  if (note < 0) {
+    note = 0;
+  } else if (note > 127) {
+    note = 127;
+  }
+  uint8_t volume = (uint8_t)((duty * 255u + 511u) / 1023u);
+  prg32_audio_note(0, PRG32_DEFAULT_INSTRUMENT_ID, (uint8_t)note, volume, ms);
+  vTaskDelay(pdMS_TO_TICKS(ms));
+  prg32_audio_note_off(0);
+  return;
+#else
   if (PRG32_PIN_BUZZER < 0) {
     return;
   }
@@ -46,12 +66,18 @@ void prg32_buzzer_tone(uint32_t hz, uint32_t ms, uint16_t duty) {
   vTaskDelay(pdMS_TO_TICKS(ms));
   ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+#endif
 }
 
 void prg32_buzzer_play_notes(const prg32_note_t *notes, size_t count) {
-  if (PRG32_PIN_BUZZER < 0 || !notes) {
+  if (!notes) {
     return;
   }
+#if !CONFIG_PRG32_DISPLAY_QEMU_RGB
+  if (PRG32_PIN_BUZZER < 0) {
+    return;
+  }
+#endif
   for (size_t i = 0; i < count; ++i) {
     if (notes[i].frequency_hz == 0) {
       vTaskDelay(pdMS_TO_TICKS(notes[i].duration_ms));

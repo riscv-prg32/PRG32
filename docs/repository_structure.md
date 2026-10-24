@@ -50,7 +50,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- prg32/                          Python module containing the core CLI tooling
 |   |-- abi/                        Cartridge ABI generator and JSON specification
 |   |-- cartridge/                  Cartridge packaging scripts
-|   |-- esp32c6/                    Hardware flashing, upload, and verification commands
+|   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, and verification commands
 |   |-- qemu/                       Emulator launch, staging, and automated smoke testing
 |   |-- store/                      CartridgeStore integration (publishing, formatting, metadata)
 |   `-- utilities/                  Common utility functions for logging, environment checks, and partitions
