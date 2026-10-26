@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "prg32.h"
+#include "prg32_led_internal.h"
 #include "prg32_config.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -1089,6 +1090,7 @@ void prg32_init(void) {
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
   }
+  prg32_shared_rgb_led_boot_flash(PRG32_PIN_SHARED_RGB_LED);
   PRG32_MEM_CHECKPOINT("prg32_init_start");
   printf("prg32_init => prg32_display_init()\n");
   prg32_display_init();

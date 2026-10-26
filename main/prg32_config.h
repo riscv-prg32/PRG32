@@ -50,6 +50,7 @@
 #define PRG32_PIN_BUZZER -1
 
 #define PRG32_PIN_RGB_LED -1
+#define PRG32_PIN_SHARED_RGB_LED -1
 
 #define PRG32_GAME_UPLOAD_ENABLE 0
 
@@ -97,6 +98,7 @@
  * disables it because GPIO8 is reserved for the ILI9341 D/C signal.
  */
 #define PRG32_PIN_RGB_LED CONFIG_PRG32_PIN_RGB_LED
+#define PRG32_PIN_SHARED_RGB_LED CONFIG_PRG32_PIN_SHARED_RGB_LED
 
 /*
  * Uploadable game cartridges.

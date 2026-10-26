@@ -1,7 +1,10 @@
 #include "prg32.h"
 #include "prg32_config.h"
+#include "prg32_led_internal.h"
+#include "driver/gpio.h"
 #include "driver/rmt_tx.h"
 #include "esp_err.h"
+#include "esp_rom_sys.h"
 #include "freertos/FreeRTOS.h"
 #include <stdint.h>
 
@@ -54,15 +57,16 @@ static void led_release(void) {
     g_led_gpio = -1;
 }
 
-int prg32_rgb_led_init(int gpio) {
+static int led_init(int gpio, int allow_shared_pin) {
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
     (void)gpio;
+    (void)allow_shared_pin;
     return -1;
 #else
     if (gpio < 0) {
         gpio = PRG32_PIN_RGB_LED;
     }
-    if (pin_conflicts(gpio)) {
+    if (!allow_shared_pin && pin_conflicts(gpio)) {
         return -1;
     }
     if (g_led_ready && g_led_gpio == gpio) {
@@ -111,6 +115,10 @@ int prg32_rgb_led_init(int gpio) {
 #endif
 }
 
+int prg32_rgb_led_init(int gpio) {
+    return led_init(gpio, 0);
+}
+
 int prg32_rgb_led_available(void) {
     return g_led_ready;
 }
@@ -130,11 +138,45 @@ void prg32_rgb_led_set(uint8_t red, uint8_t green, uint8_t blue) {
                      sizeof(grb),
                      &tx_config) == ESP_OK) {
         rmt_tx_wait_all_done(g_led_channel, pdMS_TO_TICKS(10));
+        /* WS2812-compatible LEDs latch a frame only after a low reset gap. */
+        esp_rom_delay_us(80);
     }
 }
 
 void prg32_rgb_led_off(void) {
     prg32_rgb_led_set(0, 0, 0);
+}
+
+void prg32_shared_rgb_led_off(int gpio) {
+#if !CONFIG_PRG32_DISPLAY_QEMU_RGB
+    if (gpio < 0 || led_init(gpio, 1) != 0) {
+        return;
+    }
+    prg32_rgb_led_off();
+    led_release();
+    /* Return the shared signal to the LCD after the WS2812 latch gap. */
+    gpio_set_direction(gpio, GPIO_MODE_OUTPUT);
+    gpio_set_level(gpio, 1);
+#else
+    (void)gpio;
+#endif
+}
+
+void prg32_shared_rgb_led_boot_flash(int gpio) {
+#if !CONFIG_PRG32_DISPLAY_QEMU_RGB
+    if (gpio < 0 || led_init(gpio, 1) != 0) {
+        return;
+    }
+    for (int flash = 0; flash < 3; ++flash) {
+        prg32_rgb_led_set(0, 24, 48);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        prg32_rgb_led_off();
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    led_release();
+#else
+    (void)gpio;
+#endif
 }
 
 void prg32_rgb_led_vu(uint8_t level) {
