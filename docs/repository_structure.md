@@ -21,6 +21,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, eight-slot cartridge loader)
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
+|   |   |-- prg32_led_internal.h    Firmware-only shared RGB/LCD boot-indicator helpers
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, and performance protocol
 |   |   |-- prg32_random.c          Uniform bounded random-number API
