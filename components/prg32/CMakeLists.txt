@@ -7,6 +7,7 @@ set(PRG32_PRIV_REQUIRES
     esp_http_client
     esp_event
     esp_netif
+    esp_driver_uart
     nvs_flash
     json
     spi_flash
@@ -18,7 +19,7 @@ if(IDF_TARGET STREQUAL "esp32c3")
 endif()
 
 if(IDF_TARGET STREQUAL "esp32c6")
-    list(APPEND PRG32_PRIV_REQUIRES esp_websocket_client mdns)
+    list(APPEND PRG32_PRIV_REQUIRES esp_websocket_client mdns esp_driver_usb_serial_jtag)
 endif()
 
 if(CONFIG_PRG32_DISPLAY_QEMU_RGB)
@@ -58,6 +59,7 @@ idf_component_register(
         "prg32_store.c"
         "prg32_system.c"
         "prg32_tile.c"
+        "prg32_usb_protocol.c"
         "prg32_wifi.c"
     INCLUDE_DIRS "include"
     REQUIRES prg32_audio

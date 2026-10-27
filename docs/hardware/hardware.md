@@ -63,10 +63,15 @@ for the complete mono build, optional stereo parts and assembly supplies.
 | GPIO18 | P1 LEFT, switch to GND |
 | GPIO19 | P1 RIGHT, switch to GND |
 | GPIO3  | P1 UP, switch to GND |
-| GPIO13 | P1 DOWN, switch to GND |
+| GPIO0 | P1 DOWN, switch to GND |
 | GPIO20 | P1 START / SELECT, switch to GND |
 | GPIO21 | P1 A, switch to GND |
 | GPIO22 | P1 B, switch to GND |
+
+GPIO12 and GPIO13 remain unconnected in the prototype controls because the
+ESP32-C6 uses them for the native USB D-/D+ interface. Automatic runtime
+cartridge uploads require that pair. Older breadboards wired DOWN to GPIO13
+must move that switch wire to GPIO0.
 
 **AUDIO: Mono configuration**
 | ESP32-C6 | MAX98357A (Mono) |

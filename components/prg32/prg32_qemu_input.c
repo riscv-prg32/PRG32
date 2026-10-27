@@ -186,22 +186,16 @@ static void qemu_process_key(uint8_t byte, uint32_t now_ms) {
     }
 }
 
+void prg32_qemu_input_feed(uint8_t byte) {
+    qemu_process_key(byte, prg32_ticks_ms());
+}
+
 uint32_t prg32_qemu_input_read(void) {
     uint32_t now_ms = prg32_ticks_ms();
     qemu_clear_escape(now_ms);
 
     if (!qemu_uart_init()) {
         return qemu_keys_active(now_ms);
-    }
-
-    uint8_t bytes[16];
-    int n = uart_read_bytes((uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM,
-                            bytes,
-                            sizeof(bytes),
-                            0);
-    for (int i = 0; i < n; ++i) {
-        now_ms = prg32_ticks_ms();
-        qemu_process_key(bytes[i], now_ms);
     }
 
     now_ms = prg32_ticks_ms();
@@ -213,6 +207,10 @@ uint32_t prg32_qemu_input_read(void) {
 
 uint32_t prg32_qemu_input_read(void) {
     return 0;
+}
+
+void prg32_qemu_input_feed(uint8_t byte) {
+    (void)byte;
 }
 
 #endif

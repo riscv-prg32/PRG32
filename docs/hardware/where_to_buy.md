@@ -3,6 +3,8 @@
 Hardware and supplier reference reviewed: **2026-09-02**. The MAX98357A
 mode guidance and 390 kΩ resistor sourcing were checked **2026-09-13**;
 country search links were updated, but stock and delivery were not verified.
+Native-USB development requirements were reviewed **2026-10-27**: retain a
+USB data cable and keep ESP32-C6 GPIO12/GPIO13 available for D-/D+.
 
 This is the purchasing list for one physical ESP32-C6 PRG32 unit. Use the
 [hardware guide](hardware.md) for authoritative wiring, the

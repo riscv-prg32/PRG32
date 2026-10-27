@@ -104,8 +104,8 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --url http://192.1
 
 The firmware stores the cartridge in `cart0` by default and starts running it from the main loop. You can upload to another slot with `--slot cart1`.
 
-When Wi-Fi is unavailable, put the ESP32-C6 into its serial bootloader and
-write the cartridge directly through USB:
+When Wi-Fi is unavailable, upload through the running firmware's automatically
+detected USB protocol:
 
 ```bash
 python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
@@ -113,13 +113,14 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
 ```
 
 Use the serial port name for your host (`COM5` is a typical Windows example).
-USB upload validates the portable ABI and RAM requirement, reads the slot from
-`profiles/partitions_prg32.csv`, and replaces the complete partition. Reset
-the board afterward. Pass `--cart-ram-kib` when the connected firmware uses a
-profile different from `build-esp32c6/sdkconfig`.
+USB upload validates the portable ABI and RAM requirement, opens the device's
+progress screen, streams into the selected slot, and reports success or
+failure. No reset, bootloader entry, upload mode, or network is required. Add
+`--command run`, `--command performance`, or (on PRG32-Qt) `--command debug`.
+The complete wire contract is in the [device protocol](usb_protocol.md).
 
 ### 3. Upload to Emulator (QEMU)
-QEMU does not emulate the classroom Wi-Fi upload path. Instead, you stage it directly into the emulator flash image:
+For a stopped QEMU instance, stage directly into its flash image:
 
 ```bash
 python3 -m prg32 qemu upload build-esp32c6/asteroids.prg32
@@ -128,6 +129,13 @@ python3 -m prg32 qemu upload build-esp32c6/asteroids.prg32
 Then start QEMU:
 ```bash
 python3 -m qemu run
+```
+
+For a running QEMU instance, use the same live protocol as hardware:
+
+```bash
+python3 -m prg32 esp32c6 upload game.prg32 \
+  --port socket://127.0.0.1:5555 --command run
 ```
 
 ## Binary Format

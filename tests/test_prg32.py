@@ -310,13 +310,16 @@ class QemuUploadTests(unittest.TestCase):
 
 
 class Esp32c6UsbUploadTests(unittest.TestCase):
-    @mock.patch("prg32.esp32c6.upload_esp32c6.run")
-    def test_usb_upload_writes_a_padded_partition_image(self, run) -> None:
-        flashed = {}
-        def capture_slot_image(command):
-            flashed["command"] = command
-            flashed["data"] = Path(command[-1]).read_bytes()
-        run.side_effect = capture_slot_image
+    @mock.patch("prg32.esp32c6.upload_esp32c6.upload_cartridge")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.ProtocolClient")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.open_stream")
+    def test_usb_upload_uses_runtime_protocol(self, open_stream, client_type, upload) -> None:
+        client = client_type.return_value
+        client.request_json.return_value = {
+            "ok": True,
+            "runtime": {"cart_ram_size": 65536},
+        }
+        upload.return_value = {"ok": True, "name": "usb"}
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             cart = tmp_path / "game.prg32"
@@ -343,15 +346,17 @@ class Esp32c6UsbUploadTests(unittest.TestCase):
             args = argparse.Namespace(
                 cartridge=str(cart), port="/dev/test", url=None,
                 baud="115200", partitions=str(partitions), slot="cart2",
-                cart_ram_kib=64,
+                cart_ram_kib=64, timeout=10.0, chunk_size=1024,
+                command="run",
             )
 
             upload_esp32c6.upload_esp32c6(args)
 
-            command = flashed["command"]
-            self.assertEqual(command[-2], "0x250000")
-            self.assertEqual(flashed["data"][:len(data)], data)
-            self.assertEqual(len(flashed["data"]), 128)
+            open_stream.assert_called_once_with("/dev/test", 115200, 10.0)
+            upload.assert_called_once_with(
+                client, str(cart), data, "cart2", command="run", chunk_size=1024
+            )
+            client.close.assert_called_once()
 
     def test_upload_cli_requires_exactly_one_transport(self) -> None:
         with self.assertRaises(SystemExit):

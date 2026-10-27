@@ -32,8 +32,10 @@ def launch_qemu(args: argparse.Namespace):
         "user,model=open_eth",
         "-display",
         "sdl",
+        "-monitor",
+        "stdio",
         "-serial",
-        "mon:stdio",
+        "tcp:127.0.0.1:5555,server=on,wait=off,nodelay=on",
         "-serial",
         "tcp::4321,server,wait,nodelay",
     ]

@@ -16,7 +16,8 @@ dependencies = [
     "zeroconf",
     "pillow",
     "mido",
-    "pytest"
+    "pytest",
+    "pyserial"
 ]
 
 [project.scripts]

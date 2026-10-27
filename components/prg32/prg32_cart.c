@@ -459,6 +459,17 @@ int prg32_cart_is_loaded(void) {
     return g_loaded ? 1 : 0;
 }
 
+void prg32_cart_unload(void) {
+    if (lock_cart() != 0) {
+        return;
+    }
+    g_loaded = false;
+    g_stored = false;
+    g_generation++;
+    unlock_cart();
+    prg32_audio_stop_all();
+}
+
 int prg32_cart_load_stored(void) {
     const esp_partition_t *part = cart_partition();
     if (!part) {

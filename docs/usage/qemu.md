@@ -67,14 +67,22 @@ QEMU uses the same `.prg32` game packages as the physical board.
    ```
    *(Note: You can also use `python3 -m prg32 qemu build-and-run` for convenience).*
 
+While QEMU is running, UART 0 is available at `127.0.0.1:5555`. The SDK can
+therefore upload without restarting or rewriting the flash image:
+
+```bash
+python3 -m prg32 esp32c6 upload build-qemu/asteroids.prg32 \
+  --port socket://127.0.0.1:5555 --command run
+```
+
 By changing the boot mode to 0 with the `PRG32_BOOT_SETUP_MODE=0` configuration in KConfig, the first staged cartridge starts after the splash screen. Hold A+B during boot to open setup; if no cartridge is staged, setup opens automatically.
 
 The reference performance cartridge follows this workflow with additional
 measurement controls and interpretation rules. See
 [Performance Test Guide](../performance_test.md#4-run-the-reference-test-in-qemu).
 QEMU does not expose a cartridge-visible Wi-Fi address, so the completion
-screen shows an explicit `<board-ip>` placeholder; use physical ESP32-C6
-hardware when the JSON result must be retrieved over HTTP.
+screen shows an explicit `<board-ip>` placeholder. Retrieve the same JSON
+without HTTP through `esp32c6 performance --port socket://127.0.0.1:5555`.
 
 ## QEMU Audio (UART Redirection)
 
@@ -89,14 +97,16 @@ Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a c
 
 ## Input and Controls
 
-QEMU disables physical GPIO buttons and enables a small UART-console keyboard
+QEMU disables physical GPIO buttons and enables a small UART keyboard
 mapper for player 1 input. Legacy `prg32_buzzer_tone()` calls remain audible:
 the runtime maps the frequency to the nearest MIDI note, derives mixer volume
 from PWM duty, and sends PCM through the UART audio path.
 `prg32_buzzer_play_notes()` applies the same fallback to each tone.
 
 > [!IMPORTANT]
-> Because input is read from the UART console, you must ensure your **terminal window** running QEMU is the active window to use the keyboard, *not* the graphical QEMU screen itself.
+> UART 0 is a TCP endpoint on port 5555 so the framed protocol and keyboard
+> input share one self-synchronizing stream. Test automation may send the key
+> bytes documented below through that endpoint when no SDK request is active.
 
 | PRG32 Input | QEMU Key(s) |
 | --- | --- |

@@ -118,17 +118,27 @@ def main(argv: list[str]) -> int:
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
     transport = p.add_mutually_exclusive_group(required=True)
     transport.add_argument("--url", help="Device URL for HTTP upload (for example, http://192.168.4.1)")
-    transport.add_argument("--port", help="USB serial port for direct cartridge flashing (for example, /dev/cu.usbmodem101)")
-    p.add_argument("--baud", default="460800", help="USB flashing baud rate")
-    p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Path to the partition table CSV used for USB upload")
+    transport.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator")
+    p.add_argument("--baud", default="115200", help="USB runtime protocol baud rate")
+    p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout in seconds")
+    p.add_argument("--chunk-size", type=int, default=1024, choices=range(256, 4097), metavar="BYTES",
+        help="Upload chunk size from 256 through 4096 bytes")
+    p.add_argument("--partitions", default=str(DEFAULT_PARTITION_TABLE), help="Partition table used to validate the selected slot")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload into")
+    p.add_argument("--command", choices=["store", "run", "debug", "performance"], default="store",
+        help="Action requested after a successful upload")
     p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
         help="Executable cartridge RAM of the device firmware in KiB "
              "(default: build-esp32c6/sdkconfig, else the standard profile)")
     p.set_defaults(func=upload_esp32c6)
 
-    p = esp32c6_sub.add_parser("run", help="run a previously loaded cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s [options]")
-    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    p = esp32c6_sub.add_parser("run", help="run a stored cartridge over HTTP, USB, QEMU, or PRG32-Qt", usage="%(prog)s [options]")
+    transport = p.add_mutually_exclusive_group(required=True)
+    transport.add_argument("--url", help="Device HTTP URL")
+    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT")
+    p.add_argument("--baud", default="115200", help="Device protocol baud rate")
+    p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
+    p.add_argument("--debug", action="store_true", help="Request debugger execution when supported")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to run")
     p.set_defaults(func=run_esp32c6)
 
@@ -138,8 +148,12 @@ def main(argv: list[str]) -> int:
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload and run into")
     p.set_defaults(func=upload_and_run_esp32c6)
 
-    p = esp32c6_sub.add_parser("performance", help="Get ESP32C6 performance data over HTTP. Must be used in Performance Test")
-    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    p = esp32c6_sub.add_parser("performance", help="Get performance data over HTTP or the device protocol")
+    transport = p.add_mutually_exclusive_group(required=True)
+    transport.add_argument("--url", help="Device HTTP URL")
+    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT")
+    p.add_argument("--baud", default="115200", help="Device protocol baud rate")
+    p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
     p.add_argument("--out", default="prg32_performance.json", help="Path to save the performance data")
     p.set_defaults(func=get_performance_esp32c6)
 

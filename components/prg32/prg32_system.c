@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+static volatile bool g_setup_requested;
+
 void prg32_display_init(void);
 void prg32_display_log_memory(const char *checkpoint);
 void prg32_input_init(void);
@@ -980,6 +982,11 @@ static int setup_menu(void) {
     printf("setup_menu => prg32_input_read_menu()\n");
     uint32_t last = prg32_input_read_menu();
     while (1) {
+      if (prg32_usb_protocol_busy()) {
+        vTaskDelay(pdMS_TO_TICKS(20));
+        last = 0;
+        continue;
+      }
       if (prg32_cart_is_loaded()) {
         printf("setup_menu => cartridge loaded asynchronously\n");
         return 0;
@@ -1061,6 +1068,22 @@ static int setup_menu(void) {
   }
 }
 
+void prg32_setup_request(void) { g_setup_requested = true; }
+
+int prg32_setup_take_request(void) {
+  if (!g_setup_requested) {
+    return 0;
+  }
+  g_setup_requested = false;
+  return 1;
+}
+
+void prg32_setup_run(void) {
+  prg32_gfx_set_fullscreen(1);
+  setup_menu();
+  prg32_gfx_set_fullscreen(0);
+}
+
 static bool prg32_pins_validate(void) {
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
   return true;
@@ -1131,6 +1154,8 @@ void prg32_init(void) {
   prg32_abi_exports_keep();
   printf("prg32_init => prg32_cart_init()\n");
   prg32_cart_init();
+  printf("prg32_init => prg32_usb_protocol_start()\n");
+  prg32_usb_protocol_start();
   PRG32_MEM_CHECKPOINT("prg32_cart");
   printf("prg32_init => prg32_band_load_config()\n");
   prg32_band_load_config();

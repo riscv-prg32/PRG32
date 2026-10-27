@@ -22,6 +22,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, eight-slot cartridge loader)
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
+|   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, and performance protocol
 |   |   |-- prg32_random.c          Uniform bounded random-number API
 |   |   `-- Kconfig                 Firmware configuration options (menuconfig)
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing
@@ -36,6 +37,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- performance_test.md         Canonical performance-test execution, interpretation, and extension guide
 |   |-- measurement/                Scientific methodology, metrics schema, ABI, and validation records
 |   |-- software/                   Firmware manuals, C framework details, and ABI definitions (Note: the framework manual is for cartridge users, not framework developers)
+|   |   `-- usb_protocol.md         Versioned offline device-protocol wire format and SDK workflow
 |   |-- tools/                      Guides for Python tooling and conversion utilities
 |   `-- usage/                      Getting started, tooling, QEMU, and troubleshooting guides
 |-- examples/
@@ -52,6 +54,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- cartridge/                  Cartridge packaging scripts
 |   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, and verification commands
 |   |-- qemu/                       Emulator launch, staging, and automated smoke testing
+|   |-- usb_protocol.py             Shared framed device-protocol client and stream decoder
 |   |-- store/                      CartridgeStore integration (publishing, formatting, metadata)
 |   `-- utilities/                  Common utility functions for logging, environment checks, and partitions
 |-- profiles/                       Default configuration files, pin profiles, and partition tables

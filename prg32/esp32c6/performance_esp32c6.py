@@ -3,17 +3,28 @@ import urllib.request
 import argparse
 import os
 import datetime
+from prg32.usb_protocol import ProtocolClient, get_performance, open_stream
 from prg32.utilities.logging import *
 
 def get_performance_esp32c6(args: argparse.Namespace) -> None:
-    endpoint = args.url.rstrip("/") + "/api/performance.json"
-    request = urllib.request.Request(endpoint, method="GET")
-    
     out_path = args.out
     if os.path.isdir(out_path):
         dt = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         out_path = os.path.join(out_path, f"performance_{dt}.json")
 
+    if getattr(args, "port", None):
+        client = ProtocolClient(open_stream(args.port, int(args.baud), float(args.timeout)), float(args.timeout))
+        try:
+            data = get_performance(client)
+        finally:
+            client.close()
+        with open(out_path, "wb") as file:
+            file.write(data)
+        log_ok(f"Performance data saved to {out_path}")
+        return
+
+    endpoint = args.url.rstrip("/") + "/api/performance.json"
+    request = urllib.request.Request(endpoint, method="GET")
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             data = response.read()

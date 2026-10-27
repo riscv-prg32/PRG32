@@ -9,8 +9,6 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 import argparse
-import sys
-import tempfile
 from prg32.utilities.logging import *
 from prg32.utilities.env_variables import *
 from prg32.utilities.partition_handler import read_partition_slot
@@ -19,14 +17,14 @@ from prg32.utilities.runtime_handler import (
     validate_cartridge_contract,
     ensure_cart_max_size,
     resolve_cart_ram_size,
-    run,
 )
+from prg32.usb_protocol import DEBUG, RUN, ProtocolClient, open_stream, upload_cartridge
 
 
 def upload_esp32c6_usb(args: argparse.Namespace, data: bytes) -> None:
-    """Validate and flash one cartridge partition over USB serial."""
+    """Validate and upload one cartridge through the running PRG32 firmware."""
     partitions = Path(args.partitions)
-    cart_offset, cart_size = read_partition_slot(partitions, args.slot)
+    _cart_offset, cart_size = read_partition_slot(partitions, args.slot)
     if len(data) > cart_size:
         raise SystemExit(
             f"cartridge is larger than {args.slot} "
@@ -44,29 +42,25 @@ def upload_esp32c6_usb(args: argparse.Namespace, data: bytes) -> None:
         context="USB upload",
     )
 
-    # Flash the complete partition so bytes from a previously larger package,
-    # including an old metadata trailer, cannot remain after the new image.
-    with tempfile.NamedTemporaryFile(suffix=".bin") as slot_image:
-        slot_image.write(data)
-        slot_image.write(b"\xff" * (cart_size - len(data)))
-        slot_image.flush()
-        run([
-            sys.executable,
-            "-m",
-            "esptool",
-            "--chip",
-            "esp32c6",
-            "--port",
-            args.port,
-            "--baud",
-            args.baud,
-            "write_flash",
-            f"0x{cart_offset:x}",
-            slot_image.name,
-        ])
+    stream = open_stream(args.port, int(args.baud), float(args.timeout))
+    client = ProtocolClient(stream, timeout=float(args.timeout))
+    try:
+        hello = client.request_json(1, {})
+        runtime = hello.get("runtime", {})
+        validate_cartridge_contract(data, runtime=runtime, context="USB upload")
+        result = upload_cartridge(
+            client,
+            args.cartridge,
+            data,
+            args.slot,
+            command=getattr(args, "command", "store"),
+            chunk_size=args.chunk_size,
+        )
+    finally:
+        client.close()
     log_ok(
         f"'{args.cartridge}' uploaded over USB to {args.slot} "
-        f"at 0x{cart_offset:06x}"
+        f"({result.get('name', 'cartridge')})"
     )
 
 def upload_esp32c6(args: argparse.Namespace) -> None:
@@ -96,6 +90,14 @@ def upload_esp32c6(args: argparse.Namespace) -> None:
         raise SystemExit(f"upload failed: {exc}") from exc
 
 def run_esp32c6(args: argparse.Namespace) -> None:
+    if getattr(args, "port", None):
+        client = ProtocolClient(open_stream(args.port, int(args.baud), float(args.timeout)), float(args.timeout))
+        try:
+            client.request_json(DEBUG if getattr(args, "debug", False) else RUN, {"slot": args.slot})
+        finally:
+            client.close()
+        log_ok(f"Running {args.slot} through the PRG32 device protocol")
+        return
     # Construct the endpoint (e.g., http://192.168.4.1/api/games/select?slot=cart0)
     endpoint = args.url.rstrip("/") + "/api/games/select?slot=" + args.slot
     
