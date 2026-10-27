@@ -183,12 +183,15 @@ prg32_rgb_led_init(gpio);
 prg32_rgb_led_set(red, green, blue);
 ```
 
-The physical firmware sets `PRG32_PIN_RGB_LED` to `-1` because GPIO8 is used by
-the reference display harness for LCD D/C. The setup audio menu therefore does
-not offer the RGB LED spectrum-style VU meter in this configuration. A custom
-harness may assign the LED to a different unused GPIO after checking every
-display, input, and audio signal for conflicts. QEMU builds also set the RGB LED
-pin to `-1` and do not initialize physical LED hardware.
+The fixed `prototype1` PCB connects both LCD D/C and the DevKitC onboard RGB
+LED data input to GPIO8. The firmware therefore keeps the normal cartridge LED
+API disabled (`PRG32_PIN_RGB_LED=-1`), flashes the shared LED cyan three times
+during early boot, and sends an off frame after LCD updates. Because the two
+devices are electrically tied together, active LCD D/C traffic can still be
+interpreted by the WS2812 as brief green or white flashes. Software cannot make
+the LED independently controllable on this PCB; do not change the canonical
+LCD pin merely to hide those flashes. A future PCB revision should give LCD D/C
+and RGB separate GPIOs. QEMU does not initialize physical LED hardware.
 
 ### Audio Configuration
 

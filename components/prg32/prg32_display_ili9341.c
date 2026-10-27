@@ -1,4 +1,5 @@
 #include "prg32.h"
+#include "prg32_led_internal.h"
 #include "prg32_config.h"
 #include <string.h>
 #include "driver/gpio.h"
@@ -1152,6 +1153,7 @@ void prg32_gfx_present(void) {
         y += rows;
     }
     dirty_reset();
+    prg32_shared_rgb_led_off(PRG32_PIN_SHARED_RGB_LED);
     prg32_band_note_frame(prg32_ticks_ms());
     prg32_gfx_unlock();
 }
