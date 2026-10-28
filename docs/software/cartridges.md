@@ -114,10 +114,13 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
 
 Use the serial port name for your host (`COM5` is a typical Windows example).
 USB upload validates the portable ABI and RAM requirement, opens the device's
-progress screen, streams into the selected slot, and reports success or
-failure. No reset, bootloader entry, upload mode, or network is required. Add
+progress screen, streams into the selected slot, prints progress every 10%,
+and reports success or failure. A 24 KiB cartridge takes about two seconds.
+No reset, bootloader entry, upload mode, or network is required. Add
 `--command run`, `--command performance`, or (on PRG32-Qt) `--command debug`.
-The complete wire contract is in the [device protocol](usb_protocol.md).
+The complete wire contract is in the [device protocol](usb_protocol.md); web
+applications use the same protocol through
+[Web-to-USB cartridge deployment](web_usb_deployment.md).
 
 ### 3. Upload to Emulator (QEMU)
 For a stopped QEMU instance, stage directly into its flash image:

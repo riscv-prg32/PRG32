@@ -32,6 +32,9 @@ The possible answers should include:
 - QEMU.
 - Both.
 
+If the user's request already says to build or test on QEMU and/or the
+attached ESP32-C6, that is the answer to both questions; do not ask again.
+
 ## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:
 
@@ -39,6 +42,13 @@ When modifying code, you are bound by these rules:
 - **Documentation Parity:** Every code change MUST be accompanied by an update to the relevant `/docs` file or a new markdown file. 
 - **DRY Docs:** Do not duplicate information. If a concept exists, link to the existing file rather than rewriting it.
 - **Contributors:** Read `CONTRIBUTORS.md` for metadata formatting when updating docs.
+- **Device protocol and pins:** Changes to the USB/UART device protocol, its
+  host clients, or any GPIO assignment follow
+  [device protocol and hardware consistency](docs/agents/device_protocol_consistency.md).
+  Never toggle DTR/RTS one at a time when opening a board's serial port: it
+  restarts the ESP32-C6.
+- **Attached hardware:** Testing on a connected board overwrites cartridge
+  slots. Report which slots a test wrote or erased.
 
 ## [PHASE 4: VALIDATION]
 Before reporting task completion, you MUST run the following checks. 
@@ -70,13 +80,22 @@ If the user explicitly asked for you to do the builds after the edits, you shoul
 
 If you are working on ESP32c6, Build the physical firmware:
 ```bash
-python3 -m prg32 esp32c6 build
+python3 -m prg32 esp32c6 build -p prototype1
 ```
+
+`python3 -m prg32 esp32c6 flash` ends in an interactive monitor that needs a
+terminal. From a non-interactive agent shell, flash with
+`idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" -p <port> flash`.
+Flashing the application does not erase cartridge slots.
 
 If you are working on QEMU, Build the QEMU firmware:
 ```bash
 python3 -m prg32 qemu build
 ```
+
+QEMU's virtual display blocks the firmware unless a display backend runs, so
+launch it with `-display sdl` (as `python3 -m prg32 qemu run` does), not
+`-display none`. The device protocol is then on `socket://127.0.0.1:5555`.
 
 ## [PHASE 5: DOCUMENTATION EDITING]
 After being done with editing, you should modify all relevant documentation in docs/ and the [repository structure](docs/repository_structure.md).

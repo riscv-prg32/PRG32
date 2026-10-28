@@ -696,11 +696,20 @@ int prg32_cart_stream_begin(uint8_t slot, size_t image_size) {
         set_errorf("cartridge is larger than %s partition", slot_name(slot));
         return -1;
     }
+    /* Erase only the sectors the image will occupy plus one guard sector.
+     * read_stored_header() probes for a metadata trailer at the image end, so
+     * that position must read as erased flash rather than an older cartridge.
+     * Erasing a whole 128 KiB slot for a small game took several seconds. */
+    size_t sector = part->erase_size ? part->erase_size : 4096u;
+    size_t erase_size = ((image_size + sector - 1u) / sector + 1u) * sector;
+    if (erase_size > part->size) {
+        erase_size = part->size;
+    }
     if (lock_cart() != 0) {
         set_error("failed to lock cartridge storage");
         return -1;
     }
-    esp_err_t err = esp_partition_erase_range(part, 0, part->size);
+    esp_err_t err = esp_partition_erase_range(part, 0, erase_size);
     unlock_cart();
     if (err != ESP_OK) {
         set_errorf("failed to erase cartridge slot: %s", esp_err_to_name(err));

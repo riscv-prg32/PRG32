@@ -71,7 +71,10 @@ for the complete mono build, optional stereo parts and assembly supplies.
 GPIO12 and GPIO13 remain unconnected in the prototype controls because the
 ESP32-C6 uses them for the native USB D-/D+ interface. Automatic runtime
 cartridge uploads require that pair. Older breadboards wired DOWN to GPIO13
-must move that switch wire to GPIO0.
+must move that switch wire to GPIO0. The breadboard figure, the electrical
+schematic and the Fritzing project show this assignment; the PCB view still
+needs its LCD RESET trace routed (see the
+[PCB layout status](pcb/README.md#layout-status)).
 
 **AUDIO: Mono configuration**
 | ESP32-C6 | MAX98357A (Mono) |

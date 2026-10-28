@@ -18,7 +18,7 @@ from prg32.utilities.runtime_handler import (
     ensure_cart_max_size,
     resolve_cart_ram_size,
 )
-from prg32.usb_protocol import DEBUG, RUN, ProtocolClient, open_stream, upload_cartridge
+from prg32.usb_protocol import DEBUG, RUN, ProtocolClient, hello, open_stream, upload_cartridge
 
 
 def upload_esp32c6_usb(args: argparse.Namespace, data: bytes) -> None:
@@ -42,25 +42,48 @@ def upload_esp32c6_usb(args: argparse.Namespace, data: bytes) -> None:
         context="USB upload",
     )
 
+    command = getattr(args, "command", "store")
     stream = open_stream(args.port, int(args.baud), float(args.timeout))
     client = ProtocolClient(stream, timeout=float(args.timeout))
     try:
-        hello = client.request_json(1, {})
-        runtime = hello.get("runtime", {})
+        device = hello(client)
+        log_info(
+            f"Device: {device.get('protocol', 'unknown protocol')}, "
+            f"firmware {device.get('firmware', 'unknown')}, "
+            f"target {device.get('target', 'unknown')}"
+        )
+        # Refuse unsupported operations before the device erases the slot.
+        if command == "debug" and not device.get("debug_supported", False):
+            raise SystemExit(
+                "this device cannot instruction-debug cartridges; use PRG32-Qt, "
+                "or debug native ESP32-C6 code with `cartridge debug`"
+            )
+        runtime = device.get("runtime", {})
         validate_cartridge_contract(data, runtime=runtime, context="USB upload")
+        chunk_size = min(int(args.chunk_size), int(device.get("max_chunk", args.chunk_size)))
+        shown = [-1]
+
+        def report(received: int, total: int) -> None:
+            percent = received * 100 // total
+            if percent // 10 != shown[0] // 10 or received == total:
+                shown[0] = percent
+                log_info(f"Uploaded {received}/{total} bytes ({percent}%)")
+
         result = upload_cartridge(
             client,
             args.cartridge,
             data,
             args.slot,
-            command=getattr(args, "command", "store"),
-            chunk_size=args.chunk_size,
+            command=command,
+            chunk_size=chunk_size,
+            progress=report,
         )
     finally:
         client.close()
+    state = "running" if result.get("running") else "stored"
     log_ok(
         f"'{args.cartridge}' uploaded over USB to {args.slot} "
-        f"({result.get('name', 'cartridge')})"
+        f"({result.get('name', 'cartridge')}, {state})"
     )
 
 def upload_esp32c6(args: argparse.Namespace) -> None:

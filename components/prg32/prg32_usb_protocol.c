@@ -20,6 +20,20 @@
 #define PROTOCOL_MAX_PAYLOAD (16u * 1024u)
 #define PROTOCOL_CHUNK_MAX 4096u
 #define PROTOCOL_TASK_STACK 8192u
+/* A frame that stops arriving for this long is abandoned so the decoder can
+ * search for the next magic instead of consuming unrelated bytes. */
+#define PROTOCOL_BYTE_TIMEOUT_MS 1000u
+/* An upload that receives no frame for this long is cancelled, its partly
+ * written slot is erased, and the device returns to setup. */
+#define PROTOCOL_UPLOAD_IDLE_MS 10000u
+#define PROTOCOL_RESULT_HOLD_MS 1200u
+/* A full-screen present takes about 150 ms on the ILI9341, so progress is
+ * redrawn at most this often while chunks keep arriving. */
+#define PROTOCOL_PROGRESS_REDRAW_MS 200u
+
+/* Header flag bit 0: final chunk on responses, restart on PERFORMANCE_GET. */
+#define PROTOCOL_FLAG_FINAL 0x0001u
+#define PROTOCOL_FLAG_RESTART 0x0001u
 
 enum {
   MESSAGE_HELLO = 0x01,
@@ -50,6 +64,8 @@ typedef struct {
   size_t received_size;
   uint32_t expected_crc32;
   uint32_t running_crc32;
+  uint32_t last_frame_ms;
+  uint32_t last_draw_ms;
   char name[33];
   char command[16];
 } upload_state_t;
@@ -57,11 +73,13 @@ typedef struct {
 static const char *TAG = "prg32_usb";
 static const uint8_t PROTOCOL_MAGIC[8] = {'P', 'R', 'G', '3', '2', 'I', 'O', 0};
 static upload_state_t g_upload;
+/* Read by the main loop and setup menu while the protocol task writes it. */
+static volatile bool g_upload_busy;
 static bool g_transport_ready;
 static char *g_performance_json;
 static size_t g_performance_offset;
 
-bool prg32_usb_protocol_busy(void) { return g_upload.active; }
+bool prg32_usb_protocol_busy(void) { return g_upload_busy; }
 
 #if !CONFIG_IDF_TARGET_ESP32C6
 void prg32_qemu_input_feed(uint8_t byte);
@@ -95,13 +113,15 @@ static int transport_write(const void *data, size_t size) {
 #endif
 }
 
+/* Read exactly size bytes of one frame. A silent gap longer than
+ * PROTOCOL_BYTE_TIMEOUT_MS abandons the frame. */
 static bool read_exact(void *data, size_t size) {
   uint8_t *output = data;
   size_t received = 0;
   while (received < size) {
     int count = transport_read(output + received, size - received,
-                               pdMS_TO_TICKS(1000));
-    if (count < 0) {
+                               pdMS_TO_TICKS(PROTOCOL_BYTE_TIMEOUT_MS));
+    if (count <= 0) {
       return false;
     }
     received += (size_t)count;
@@ -153,7 +173,8 @@ static void send_status(uint32_t request_id, bool ok, const char *message) {
   char *json = cJSON_PrintUnformatted(root);
   cJSON_Delete(root);
   if (json) {
-    send_frame(MESSAGE_STATUS, 1, request_id, json, strlen(json));
+    send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, json,
+               strlen(json));
     cJSON_free(json);
   }
 }
@@ -166,16 +187,25 @@ static int slot_from_name(const char *name) {
   return name[4] - '0';
 }
 
+static bool command_is_known(const char *command) {
+  return strcmp(command, "store") == 0 || strcmp(command, "run") == 0 ||
+         strcmp(command, "debug") == 0 ||
+         strcmp(command, "performance") == 0;
+}
+
+static unsigned upload_percent(void) {
+  if (g_upload.expected_size == 0) {
+    return 0;
+  }
+  unsigned percent =
+      (unsigned)(g_upload.received_size * 100u / g_upload.expected_size);
+  return percent > 100 ? 100 : percent;
+}
+
 static void draw_upload_screen(const char *status, uint16_t color) {
   char slot_line[48];
   char progress_line[48];
-  unsigned progress = g_upload.expected_size
-                          ? (unsigned)(g_upload.received_size * 100u /
-                                       g_upload.expected_size)
-                          : 0;
-  if (progress > 100) {
-    progress = 100;
-  }
+  unsigned progress = upload_percent();
   snprintf(slot_line, sizeof(slot_line), "TARGET: cart%u", g_upload.slot);
   snprintf(progress_line, sizeof(progress_line), "%u%%  %lu / %lu bytes",
            progress, (unsigned long)g_upload.received_size,
@@ -196,6 +226,30 @@ static void draw_upload_screen(const char *status, uint16_t color) {
   prg32_gfx_text8(8, 174, status ? status : "UPLOADING...", color, 0);
   prg32_gfx_present();
   prg32_gfx_unlock();
+  g_upload.last_draw_ms = prg32_ticks_ms();
+}
+
+/* Leave the upload screen and hand control back to the main loop. */
+static void upload_release(bool open_setup) {
+  g_upload.active = false;
+  g_upload_busy = false;
+  if (open_setup) {
+    prg32_setup_request();
+  }
+}
+
+/* Show a failure, erase the incomplete slot so setup never lists a partial
+ * image, and return to setup. Used for every failure after the erase began. */
+static void upload_fail(uint32_t request_id, const char *screen_text,
+                        const char *error) {
+  draw_upload_screen(screen_text, PRG32_COLOR_RED);
+  if (request_id != 0) {
+    send_status(request_id, false, error);
+  }
+  ESP_LOGW(TAG, "upload to cart%u failed: %s", g_upload.slot, error);
+  prg32_cart_erase_slot(g_upload.slot);
+  vTaskDelay(pdMS_TO_TICKS(PROTOCOL_RESULT_HOLD_MS));
+  upload_release(true);
 }
 
 static const char *json_string(cJSON *root, const char *name) {
@@ -218,11 +272,17 @@ static void handle_hello(uint32_t request_id) {
   snprintf(json, sizeof(json),
            "{\"ok\":true,\"protocol\":\"prg32-io-1.0\","
            "\"capabilities\":[\"upload\",\"run\",\"performance\"],"
-           "\"debug_supported\":false,\"runtime\":{"
-           "\"cart_ram_size\":%lu,\"cart_max_size\":65536,"
-           "\"cart_abi_major\":%u}}",
-           (unsigned long)prg32_cart_ram_size(), PRG32_CART_ABI_MAJOR);
-  send_frame(MESSAGE_STATUS, 1, request_id, json, strlen(json));
+           "\"debug_supported\":false,\"firmware\":\"%s\",\"target\":\"%s\","
+           "\"slots\":%u,\"max_chunk\":%u,\"max_payload\":%u,"
+           "\"runtime\":{\"cart_ram_size\":%lu,\"cart_max_size\":%lu,"
+           "\"cart_abi_major\":%u,\"cart_abi_minor\":%u}}",
+           PRG32_FIRMWARE_VERSION, CONFIG_IDF_TARGET, PRG32_CART_SLOT_COUNT,
+           PROTOCOL_CHUNK_MAX, PROTOCOL_MAX_PAYLOAD,
+           (unsigned long)prg32_cart_ram_size(),
+           (unsigned long)PRG32_CART_MAX_SIZE, PRG32_CART_ABI_MAJOR,
+           PRG32_CART_ABI_MINOR);
+  send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, json,
+             strlen(json));
 }
 
 static void handle_upload_begin(uint32_t request_id, const uint8_t *payload,
@@ -234,11 +294,23 @@ static void handle_upload_begin(uint32_t request_id, const uint8_t *payload,
   const char *slot_name = root ? json_string(root, "slot") : NULL;
   const char *command = root ? json_string(root, "command") : NULL;
   int slot = slot_from_name(slot_name);
+  if (!command) {
+    command = "store";
+  }
   if (!root || !name || !json_u32(root, "size", &image_size) ||
       !json_u32(root, "crc32", &image_crc32) || slot < 0 ||
-      image_size == 0 || image_size > PRG32_CART_MAX_SIZE) {
+      image_size == 0 || image_size > PRG32_CART_MAX_SIZE ||
+      !command_is_known(command)) {
     cJSON_Delete(root);
     send_status(request_id, false, "invalid upload metadata");
+    return;
+  }
+  /* Refuse before erasing anything: instruction debugging belongs to
+   * PRG32-Qt, and hardware debugging uses USB Serial/JTAG with OpenOCD. */
+  if (strcmp(command, "debug") == 0) {
+    cJSON_Delete(root);
+    send_status(request_id, false,
+                "debug execution is available in PRG32-Qt only");
     return;
   }
 
@@ -247,26 +319,37 @@ static void handle_upload_begin(uint32_t request_id, const uint8_t *payload,
   g_upload.slot = (uint8_t)slot;
   g_upload.expected_size = image_size;
   g_upload.expected_crc32 = image_crc32;
+  g_upload.last_frame_ms = prg32_ticks_ms();
   snprintf(g_upload.name, sizeof(g_upload.name), "%.32s", name);
-  snprintf(g_upload.command, sizeof(g_upload.command), "%.15s",
-           command ? command : "store");
+  snprintf(g_upload.command, sizeof(g_upload.command), "%.15s", command);
   cJSON_Delete(root);
 
+  /* Pause the main loop and setup menu before the running cartridge is
+   * unloaded; prg32_cart_unload() waits for an update/draw call to finish. */
+  g_upload_busy = true;
   prg32_cart_unload();
+  draw_upload_screen("ERASING SLOT...", PRG32_COLOR_YELLOW);
   if (prg32_cart_stream_begin(g_upload.slot, g_upload.expected_size) != 0) {
-    g_upload.active = false;
     draw_upload_screen(prg32_cart_last_error(), PRG32_COLOR_RED);
     send_status(request_id, false, prg32_cart_last_error());
+    vTaskDelay(pdMS_TO_TICKS(PROTOCOL_RESULT_HOLD_MS));
+    upload_release(true);
     return;
   }
   draw_upload_screen("UPLOADING...", PRG32_COLOR_CYAN);
+  g_upload.last_frame_ms = prg32_ticks_ms();
   send_status(request_id, true, "upload accepted");
 }
 
 static void handle_upload_data(uint32_t request_id, const uint8_t *payload,
                                size_t payload_size) {
-  if (!g_upload.active || payload_size < sizeof(uint32_t) ||
-      payload_size - sizeof(uint32_t) > PROTOCOL_CHUNK_MAX) {
+  if (!g_upload.active) {
+    send_status(request_id, false, "no upload in progress");
+    return;
+  }
+  if (payload_size < sizeof(uint32_t) ||
+      payload_size - sizeof(uint32_t) > PROTOCOL_CHUNK_MAX ||
+      payload_size == sizeof(uint32_t)) {
     send_status(request_id, false, "invalid upload chunk");
     return;
   }
@@ -274,70 +357,72 @@ static void handle_upload_data(uint32_t request_id, const uint8_t *payload,
   memcpy(&offset, payload, sizeof(offset));
   const uint8_t *data = payload + sizeof(offset);
   size_t data_size = payload_size - sizeof(offset);
+  char response[128];
+  if ((size_t)offset + data_size == g_upload.received_size) {
+    /* A host that lost the previous reply resends the same chunk. It is
+     * already in flash and covered by the final CRC, so acknowledge it. */
+    snprintf(response, sizeof(response),
+             "{\"ok\":true,\"received\":%lu,\"total\":%lu}",
+             (unsigned long)g_upload.received_size,
+             (unsigned long)g_upload.expected_size);
+    send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, response,
+               strlen(response));
+    return;
+  }
   if (offset != g_upload.received_size ||
       data_size > g_upload.expected_size - g_upload.received_size) {
     send_status(request_id, false, "out-of-order upload chunk");
     return;
   }
   if (prg32_cart_stream_write(g_upload.slot, offset, data, data_size) != 0) {
-    draw_upload_screen(prg32_cart_last_error(), PRG32_COLOR_RED);
-    send_status(request_id, false, prg32_cart_last_error());
+    upload_fail(request_id, "FLASH WRITE FAILED", prg32_cart_last_error());
     return;
   }
   g_upload.running_crc32 =
       crc32_update(g_upload.running_crc32, data, data_size);
   g_upload.received_size += data_size;
-  draw_upload_screen("UPLOADING...", PRG32_COLOR_CYAN);
-  char response[128];
+  if (g_upload.received_size == g_upload.expected_size ||
+      prg32_ticks_ms() - g_upload.last_draw_ms >= PROTOCOL_PROGRESS_REDRAW_MS) {
+    draw_upload_screen("UPLOADING...", PRG32_COLOR_CYAN);
+  }
   snprintf(response, sizeof(response),
            "{\"ok\":true,\"received\":%lu,\"total\":%lu}",
            (unsigned long)g_upload.received_size,
            (unsigned long)g_upload.expected_size);
-  send_frame(MESSAGE_STATUS, 1, request_id, response, strlen(response));
+  send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, response,
+             strlen(response));
 }
 
 static void finish_upload(uint32_t request_id) {
-  if (!g_upload.active || g_upload.received_size != g_upload.expected_size ||
+  if (!g_upload.active) {
+    send_status(request_id, false, "no upload in progress");
+    return;
+  }
+  if (g_upload.received_size != g_upload.expected_size ||
       g_upload.running_crc32 != g_upload.expected_crc32) {
-    draw_upload_screen("UPLOAD FAILED", PRG32_COLOR_RED);
-    send_status(request_id, false, "upload length or checksum mismatch");
-    vTaskDelay(pdMS_TO_TICKS(1200));
-    g_upload.active = false;
-    prg32_setup_request();
+    upload_fail(request_id, "UPLOAD FAILED",
+                "upload length or checksum mismatch");
     return;
   }
   if (prg32_cart_stream_end(g_upload.slot, g_upload.expected_size) != 0) {
-    draw_upload_screen("UPLOAD FAILED", PRG32_COLOR_RED);
-    send_status(request_id, false, prg32_cart_last_error());
-    vTaskDelay(pdMS_TO_TICKS(1200));
-    g_upload.active = false;
-    prg32_setup_request();
+    upload_fail(request_id, "INVALID CARTRIDGE", prg32_cart_last_error());
     return;
   }
 
   bool should_run = strcmp(g_upload.command, "run") == 0 ||
                     strcmp(g_upload.command, "performance") == 0;
-  if (strcmp(g_upload.command, "debug") == 0) {
-    draw_upload_screen("DEBUG UNSUPPORTED", PRG32_COLOR_RED);
-    send_status(request_id, false,
-                "debug execution is available in PRG32-Qt only");
-    vTaskDelay(pdMS_TO_TICKS(1200));
-    g_upload.active = false;
-    prg32_setup_request();
-    return;
-  }
   if (should_run && prg32_cart_select_slot(g_upload.slot) != 0) {
+    /* The image is stored and verified; only starting it failed. Keep it so
+     * the student can inspect it from setup. */
     draw_upload_screen("RUN FAILED", PRG32_COLOR_RED);
     send_status(request_id, false, prg32_cart_last_error());
-    vTaskDelay(pdMS_TO_TICKS(1200));
-    g_upload.active = false;
-    prg32_setup_request();
+    vTaskDelay(pdMS_TO_TICKS(PROTOCOL_RESULT_HOLD_MS));
+    upload_release(true);
     return;
   }
 
   draw_upload_screen("UPLOAD SUCCESSFUL", PRG32_COLOR_GREEN);
-  vTaskDelay(pdMS_TO_TICKS(1200));
-  g_upload.active = false;
+  vTaskDelay(pdMS_TO_TICKS(PROTOCOL_RESULT_HOLD_MS));
   cJSON *response = cJSON_CreateObject();
   if (response) {
     char slot_name[8];
@@ -345,16 +430,26 @@ static void finish_upload(uint32_t request_id) {
     cJSON_AddBoolToObject(response, "ok", true);
     cJSON_AddStringToObject(response, "name", g_upload.name);
     cJSON_AddStringToObject(response, "slot", slot_name);
+    cJSON_AddNumberToObject(response, "size", (double)g_upload.expected_size);
     cJSON_AddBoolToObject(response, "running", should_run);
     char *json = cJSON_PrintUnformatted(response);
     cJSON_Delete(response);
     if (json) {
-      send_frame(MESSAGE_STATUS, 1, request_id, json, strlen(json));
+      send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, json,
+                 strlen(json));
       cJSON_free(json);
     }
   }
-  if (!should_run) {
-    prg32_setup_request();
+  ESP_LOGI(TAG, "upload to cart%u complete (%s)", g_upload.slot,
+           g_upload.command);
+  upload_release(!should_run);
+}
+
+/* Called whenever no complete frame arrived: cancel an abandoned upload. */
+static void check_upload_timeout(void) {
+  if (g_upload.active &&
+      prg32_ticks_ms() - g_upload.last_frame_ms > PROTOCOL_UPLOAD_IDLE_MS) {
+    upload_fail(0, "UPLOAD TIMED OUT", "host stopped sending");
   }
 }
 
@@ -363,6 +458,10 @@ static void handle_run(uint32_t request_id, const uint8_t *payload,
   if (debug) {
     send_status(request_id, false,
                 "debug execution is available in PRG32-Qt only");
+    return;
+  }
+  if (g_upload.active) {
+    send_status(request_id, false, "upload in progress");
     return;
   }
   cJSON *root = cJSON_ParseWithLength((const char *)payload, payload_size);
@@ -376,7 +475,13 @@ static void handle_run(uint32_t request_id, const uint8_t *payload,
   send_status(request_id, true, "cartridge selected");
 }
 
-static void handle_performance_get(uint32_t request_id) {
+static void handle_performance_get(uint32_t request_id, uint16_t flags) {
+  /* A restart request discards a transfer that an earlier host abandoned. */
+  if ((flags & PROTOCOL_FLAG_RESTART) && g_performance_json) {
+    prg32_performance_json_free(g_performance_json);
+    g_performance_json = NULL;
+    g_performance_offset = 0;
+  }
   if (!g_performance_json) {
     g_performance_json = prg32_performance_json_alloc();
     g_performance_offset = 0;
@@ -389,8 +494,8 @@ static void handle_performance_get(uint32_t request_id) {
   size_t remaining = total - g_performance_offset;
   size_t chunk = remaining < PROTOCOL_MAX_PAYLOAD ? remaining
                                                   : PROTOCOL_MAX_PAYLOAD;
-  uint16_t flags = chunk == remaining ? 1 : 0;
-  send_frame(MESSAGE_RESULT_DATA, flags, request_id,
+  uint16_t response_flags = chunk == remaining ? PROTOCOL_FLAG_FINAL : 0;
+  send_frame(MESSAGE_RESULT_DATA, response_flags, request_id,
              g_performance_json + g_performance_offset, chunk);
   g_performance_offset += chunk;
   if (g_performance_offset == total) {
@@ -422,7 +527,7 @@ static void dispatch_frame(const protocol_header_t *header,
     handle_run(header->request_id, payload, header->payload_size, true);
     break;
   case MESSAGE_PERFORMANCE_GET:
-    handle_performance_get(header->request_id);
+    handle_performance_get(header->request_id, header->flags);
     break;
   default:
     send_status(header->request_id, false, "unsupported protocol message");
@@ -430,11 +535,30 @@ static void dispatch_frame(const protocol_header_t *header,
   }
 }
 
+/* Bytes that are not part of a frame are QEMU keyboard input. On hardware
+ * the USB console carries no input, so they are discarded. */
+static void forward_console_bytes(const uint8_t *bytes, size_t count) {
+#if !CONFIG_IDF_TARGET_ESP32C6
+  for (size_t index = 0; index < count; ++index) {
+    prg32_qemu_input_feed(bytes[index]);
+  }
+#else
+  (void)bytes;
+  (void)count;
+#endif
+}
+
+/* Return true after the eight magic bytes, or false after one idle second so
+ * the task can check the upload timeout. */
 static bool find_magic(void) {
   size_t matched = 0;
   while (true) {
     uint8_t byte = 0;
-    if (!read_exact(&byte, 1)) {
+    int count = transport_read(&byte, 1,
+                               pdMS_TO_TICKS(PROTOCOL_BYTE_TIMEOUT_MS));
+    if (count <= 0) {
+      /* A partial match followed by silence was ordinary input. */
+      forward_console_bytes(PROTOCOL_MAGIC, matched);
       return false;
     }
     if (byte == PROTOCOL_MAGIC[matched]) {
@@ -442,11 +566,16 @@ static bool find_magic(void) {
       if (matched == sizeof(PROTOCOL_MAGIC)) {
         return true;
       }
+      continue;
+    }
+    /* No proper prefix of the magic is also its suffix, so a mismatch can
+     * only restart the match at this byte. */
+    forward_console_bytes(PROTOCOL_MAGIC, matched);
+    if (byte == PROTOCOL_MAGIC[0]) {
+      matched = 1;
     } else {
-#if !CONFIG_IDF_TARGET_ESP32C6
-      prg32_qemu_input_feed(byte);
-#endif
-      matched = byte == PROTOCOL_MAGIC[0] ? 1 : 0;
+      matched = 0;
+      forward_console_bytes(&byte, 1);
     }
   }
 }
@@ -455,6 +584,7 @@ static void protocol_task(void *unused) {
   (void)unused;
   while (true) {
     if (!find_magic()) {
+      check_upload_timeout();
       continue;
     }
     protocol_header_t header;
@@ -463,19 +593,32 @@ static void protocol_task(void *unused) {
                     sizeof(header) - sizeof(header.magic)) ||
         header.version != PROTOCOL_VERSION ||
         header.payload_size > PROTOCOL_MAX_PAYLOAD) {
+      check_upload_timeout();
       continue;
     }
     uint8_t *payload = NULL;
     if (header.payload_size > 0) {
       payload = malloc(header.payload_size);
-      if (!payload || !read_exact(payload, header.payload_size)) {
+      if (!payload) {
+        send_status(header.request_id, false, "device out of memory");
+        continue;
+      }
+      if (!read_exact(payload, header.payload_size)) {
         free(payload);
+        check_upload_timeout();
         continue;
       }
     }
     if (crc32_update(0, payload, header.payload_size) ==
         header.payload_crc32) {
+      if (g_upload.active) {
+        g_upload.last_frame_ms = prg32_ticks_ms();
+      }
       dispatch_frame(&header, payload);
+    } else {
+      /* Answer instead of staying silent so the host can report the fault
+       * immediately rather than after its response timeout. */
+      send_status(header.request_id, false, "payload checksum mismatch");
     }
     free(payload);
   }

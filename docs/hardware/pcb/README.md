@@ -21,11 +21,45 @@ profiles default to mono (`CONFIG_PRG32_AUDIO_MODE_MONO=y`). A one-amplifier
 assembly therefore matches the default firmware. A two-amplifier assembly must
 select `CONFIG_PRG32_AUDIO_MODE_STEREO=y` before the firmware is built.
 
+## Layout Status
+
+Reviewed **2026-10-28** against the canonical `prototype1` pins in
+[`profiles/sdkconfig.pins.prototype1`](../../../profiles/sdkconfig.pins.prototype1).
+
+| Net | ESP32-C6 pin | Schematic | PCB copper |
+|---|---|---|---|
+| LCD D/C | GPIO8 | connected | routed on the top layer |
+| P1 DOWN | GPIO0 | connected | routed (top and bottom layers, four vias) |
+| LCD RESET | GPIO9 | connected | **not routed**: shown as a ratsnest line |
+| — | GPIO12, GPIO13 | unconnected | unconnected (native USB D-/D+) |
+
+Before this review the project file drew LCD RESET, LCD D/C and DOWN on
+GPIO9, GPIO8 and GPIO13 in the schematic while its connection records and PCB
+copper used GPIO0, GPIO1 and GPIO13. The schematic, its connection records,
+and the breadboard figure now agree with the firmware. The D/C and DOWN traces
+were routed with 24 mil width and checked for at least 10 mil clearance (the
+Fritzing default keepout) against all other copper on both layers.
+
+Two layout tasks remain before this board can be fabricated:
+
+1. **Route LCD RESET to GPIO9.** The LCD header pin is enclosed on both
+   layers by the display and ESP32-C6 headers and the traces between them, and
+   GPIO9 sits on the far ESP32-C6 header. Fritzing's autorouter or a manual
+   re-route of neighbouring nets is needed.
+2. **Separate the right MAX98357A from the LCD header.** One plated pad of the
+   right MAX98357A footprint overlaps LCD header pins 4 (RESET) and 5 (D/C).
+   This overlap predates the pin review and would short those signals; move
+   the module before routing RESET.
+
+Run Fritzing's **Routing → Design Rules Check** after both changes.
+
 ## Reference Prototype Figures
 
-The following figures are exported from the schematic and breadboard views of
-`docs/hardware/pcb/PRG32-PCB-0-1.fzz`. They describe the same electrical nets and use
-the canonical GPIO assignments.
+The electrical schematic is exported from the schematic view of
+`docs/hardware/pcb/PRG32-PCB-0-1.fzz` (Fritzing `-svg` batch export). The
+[breadboard figure](../hardware.md) comes from a separate breadboard sketch
+that is not stored in the repository, so it is maintained by editing its SVG
+wires directly. Both use the canonical GPIO assignments.
 
 ![PRG32 electrical schematic showing the ESP32-C6, ILI9341 display, joystick, A and B buttons, stereo MAX98357A amplifiers, and speakers](/docs/hardware/images/prg32-electrical-schematic.svg)
 

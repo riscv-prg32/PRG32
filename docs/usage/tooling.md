@@ -36,7 +36,8 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
   protocol with `--port`. The latter supports native USB and
   `socket://HOST:PORT` emulator endpoints, requires no reset or upload mode,
   and accepts `--command store|run|debug|performance`. See the
-  [device protocol](../software/usb_protocol.md).
+  [device protocol](../software/usb_protocol.md). Browsers use the same
+  protocol; see [Web-to-USB cartridge deployment](../software/web_usb_deployment.md).
 - `run`: run a stored slot over HTTP or the device protocol. `--debug` requests
   instruction debugging on PRG32-Qt; physical firmware reports it unsupported.
     - `upload-and-run`: combination of `upload` and `run` for convenience.

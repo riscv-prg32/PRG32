@@ -354,9 +354,37 @@ class Esp32c6UsbUploadTests(unittest.TestCase):
 
             open_stream.assert_called_once_with("/dev/test", 115200, 10.0)
             upload.assert_called_once_with(
-                client, str(cart), data, "cart2", command="run", chunk_size=1024
+                client, str(cart), data, "cart2", command="run", chunk_size=1024,
+                progress=mock.ANY,
             )
             client.close.assert_called_once()
+
+    @mock.patch("prg32.esp32c6.upload_esp32c6.upload_cartridge")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.ProtocolClient")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.open_stream")
+    def test_usb_debug_is_refused_before_upload_when_unsupported(self, open_stream, client_type, upload) -> None:
+        client = client_type.return_value
+        client.request_json.return_value = {
+            "ok": True,
+            "debug_supported": False,
+            "runtime": {"cart_ram_size": 65536},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            partitions = tmp_path / "partitions.csv"
+            partitions.write_text("cart2, data, 0x42, 0x250000, 128K,\n", encoding="utf-8")
+            args = argparse.Namespace(
+                cartridge="game.prg32", port="/dev/test", url=None,
+                baud="115200", partitions=str(partitions), slot="cart2",
+                cart_ram_kib=64, timeout=10.0, chunk_size=1024,
+                command="debug",
+            )
+            with mock.patch(
+                "prg32.esp32c6.upload_esp32c6.validate_cartridge_contract"
+            ), self.assertRaises(SystemExit):
+                upload_esp32c6.upload_esp32c6_usb(args, b"PRG2" + b"\0" * 100)
+        upload.assert_not_called()
+        client.close.assert_called_once()
 
     def test_upload_cli_requires_exactly_one_transport(self) -> None:
         with self.assertRaises(SystemExit):

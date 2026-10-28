@@ -6,6 +6,13 @@ PRG32 is an open-source educational runtime for teaching RISC-V assembly and C p
 
 PRG32 provides an entire retro-gaming environment to run native RV32IMAC machine code on the Espressif ESP32-C6, a commercially available microcontroller. The platform includes embedded firmware, a .prg32 cartridge format and toolchain, a QEMU-based desktop emulator and can be used in combination with the Cartridge Store, a server providing app-store-style distribution, multiplayer relay, score tracking, and frame-level metrics collection.
 
+Cartridges reach a running console without Wi-Fi or a bootloader reset: the
+resident firmware recognizes the framed `prg32-io-1.0` protocol on the board's
+native USB port, shows upload progress, verifies the cartridge, and can start
+it. The same protocol serves the SDK command line, QEMU, PRG32-QT, and web
+applications such as the PRG32-Construction-Kit through the browser's Web
+Serial API.
+
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
 ### Hardware
@@ -13,7 +20,7 @@ PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hard
 The platform is designed around the **Espressif ESP32-C6** microcontroller and uses accessible, low-cost components for easy classroom assembly. The standard hardware setup includes:
 - **Display**: A 2.8" SPI ILI9341 TFT display. PRG32 uses the classic retro-game resolution of 320x200 with a 256-entry RGB565 palette.
 - **Audio**: One or two MAX98357A I2S amplifiers for mono or stereo sound.
-- **Input**: A simple digital joystick and action buttons wired directly to GPIO pins.
+- **Input**: A simple digital joystick and action buttons wired directly to GPIO pins. GPIO12 and GPIO13 stay free for the native USB connector used for offline cartridge uploads.
 
 Please refer to the [Hardware & Pinouts](docs/hardware/hardware.md) guide for further information about breadboard wiring diagrams, PCB references and the full bill of materials.
 
@@ -188,6 +195,8 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep us
 - [Getting Started With PRG32](docs/usage/getting_started.md): End-to-end setup and manual.
 - [QEMU Virtual Screen](docs/usage/qemu.md): Desktop testing and troubleshooting.
 - [Cartridges](docs/software/cartridges.md): The `.prg32` build/upload workflow.
+- [Offline USB Device Protocol](docs/software/usb_protocol.md): Upload, run, and performance retrieval over native USB or QEMU without Wi-Fi.
+- [Web-to-USB Deployment](docs/software/web_usb_deployment.md): Browser deployment contract for the PRG32-Construction-Kit and CartridgeStore.
 - [Cartridge CI/CD](docs/software/cartridges.md#continuous-integration-and-delivery-artifacts): Automated Bach, Blackjack, DeviceDemo, and Poing packages with downloadable previews.
 - [Hardware & Pinouts](docs/hardware/hardware.md): Board, display, and input architecture.
 

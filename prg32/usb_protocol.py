@@ -14,7 +14,7 @@ import time
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO, Iterator
+from typing import Callable
 
 MAGIC = b"PRG32IO\x00"
 VERSION = 1
@@ -30,6 +30,13 @@ DEBUG = 0x06
 PERFORMANCE_GET = 0x07
 STATUS = 0x80
 RESULT_DATA = 0x81
+
+# Header flag bit 0 marks the final response chunk.  On PERFORMANCE_GET
+# requests the same bit asks the firmware to restart the result stream.
+FLAG_FINAL = 0x0001
+FLAG_RESTART = 0x0001
+MAX_CHUNK = 4096
+COMMANDS = ("store", "run", "debug", "performance")
 
 
 @dataclass(frozen=True)
@@ -119,16 +126,18 @@ def open_stream(port: str, baud: int, timeout: float):
         import serial
     except ImportError as exc:
         raise SystemExit("USB runtime upload requires pyserial; install the PRG32 package dependencies") from exc
-    # Set modem-control lines before opening.  ESP development boards commonly
-    # wire DTR/RTS to reset and boot straps; pyserial's defaults can otherwise
-    # reset a running device into its ROM downloader merely by opening the port.
+    # Leave DTR and RTS in the state the operating system asserts at open and
+    # never change them.  The ESP32-C6 USB Serial/JTAG (and the usual
+    # auto-reset circuit on USB-UART boards) resets the chip when RTS is
+    # asserted while DTR is not.  Requesting dtr=False/rts=False makes pyserial
+    # clear DTR first, passing through exactly that state, so every connection
+    # restarted the firmware.  Both lines asserted, and the simultaneous release
+    # at close, leave the running firmware untouched (verified on prototype1).
     stream = serial.Serial()
     stream.port = port
     stream.baudrate = baud
     stream.timeout = 0.2
     stream.write_timeout = timeout
-    stream.dtr = False
-    stream.rts = False
     stream.open()
     return stream
 
@@ -143,14 +152,31 @@ class ProtocolClient:
     def close(self) -> None:
         self.stream.close()
 
-    def request(self, message_type: int, payload: bytes = b"", *, timeout: float | None = None) -> Frame:
+    def _read_available(self) -> bytes:
+        """Return bytes as soon as any arrive.
+
+        pyserial's ``read(n)`` waits for n bytes or the 0.2 s port timeout, so
+        reading a fixed 4096 bytes added that timeout to every reply.
+        """
+        waiting = getattr(self.stream, "in_waiting", None)
+        if waiting is None:
+            return self.stream.read(4096)
+        return self.stream.read(waiting or 1)
+
+    def request(
+        self,
+        message_type: int,
+        payload: bytes = b"",
+        *,
+        timeout: float | None = None,
+        flags: int = 0,
+    ) -> Frame:
         self.request_id += 1
         request_id = self.request_id
-        self.stream.write(encode_frame(Frame(message_type, request_id, payload)))
+        self.stream.write(encode_frame(Frame(message_type, request_id, payload, flags)))
         deadline = time.monotonic() + (self.timeout if timeout is None else timeout)
         while time.monotonic() < deadline:
-            data = self.stream.read(4096)
-            for frame in self.decoder.feed(data):
+            for frame in self.decoder.feed(self._read_available()):
                 if frame.request_id == request_id:
                     return frame
         raise SystemExit(f"PRG32 device did not answer protocol request {request_id}")
@@ -194,6 +220,11 @@ def cartridge_name(data: bytes, fallback: str) -> str:
     return Path(fallback).stem
 
 
+def hello(client: ProtocolClient) -> dict:
+    """Return the device capabilities and runtime contract."""
+    return client.request_json(HELLO, {})
+
+
 def upload_cartridge(
     client: ProtocolClient,
     cartridge: str,
@@ -201,8 +232,18 @@ def upload_cartridge(
     slot: str,
     command: str = "store",
     chunk_size: int = 1024,
+    progress: Callable[[int, int], None] | None = None,
 ) -> dict:
-    """Upload a cartridge and optionally request run/debug/performance execution."""
+    """Upload a cartridge and optionally request run/debug/performance execution.
+
+    ``progress`` is called with ``(received, total)`` after every chunk the
+    device acknowledged.  A chunk whose reply is lost is sent once more; the
+    firmware acknowledges an identical resend without writing it twice.
+    """
+    if command not in COMMANDS:
+        raise SystemExit(f"unknown upload command {command!r}")
+    if not 1 <= chunk_size <= MAX_CHUNK:
+        raise SystemExit(f"chunk size must be 1..{MAX_CHUNK} bytes")
     begin = {
         "name": cartridge_name(data, cartridge),
         "slot": slot,
@@ -210,22 +251,36 @@ def upload_cartridge(
         "crc32": zlib.crc32(data) & 0xFFFFFFFF,
         "command": command,
     }
+    # Erasing a 128 KiB slot takes about a second on ESP32-C6 flash.
     client.request_json(UPLOAD_BEGIN, begin, timeout=15.0)
     for offset in range(0, len(data), chunk_size):
         chunk = data[offset:offset + chunk_size]
         payload = struct.pack("<I", offset) + chunk
-        client.require_status(client.request(UPLOAD_DATA, payload, timeout=15.0))
+        try:
+            frame = client.request(UPLOAD_DATA, payload, timeout=min(5.0, client.timeout))
+        except SystemExit:
+            frame = client.request(UPLOAD_DATA, payload, timeout=10.0)
+        status = client.require_status(frame)
+        if progress is not None:
+            progress(int(status.get("received", offset + len(chunk))), len(data))
     return client.request_json(UPLOAD_END, {"size": len(data)}, timeout=30.0)
 
 
 def get_performance(client: ProtocolClient) -> bytes:
-    """Retrieve the most recent performance JSON as ordered response chunks."""
-    first = client.request(PERFORMANCE_GET, timeout=10.0)
-    if first.message_type == STATUS:
-        status = json.loads(first.payload.decode("utf-8"))
-        raise SystemExit(status.get("error", "performance results unavailable"))
-    output = bytearray(first.payload)
-    while not (first.flags & 1):
-        first = client.request(PERFORMANCE_GET, timeout=10.0)
-        output.extend(first.payload)
-    return bytes(output)
+    """Retrieve the most recent performance JSON as ordered response chunks.
+
+    The first request sets the restart flag so a transfer abandoned by an
+    earlier host does not leave the firmware in the middle of the document.
+    """
+    frame = client.request(PERFORMANCE_GET, timeout=10.0, flags=FLAG_RESTART)
+    output = bytearray()
+    while True:
+        if frame.message_type == STATUS:
+            client.require_status(frame)
+            raise SystemExit("device returned a status instead of performance data")
+        if frame.message_type != RESULT_DATA:
+            raise SystemExit("device returned an unexpected performance response")
+        output.extend(frame.payload)
+        if frame.flags & FLAG_FINAL:
+            return bytes(output)
+        frame = client.request(PERFORMANCE_GET, timeout=10.0)

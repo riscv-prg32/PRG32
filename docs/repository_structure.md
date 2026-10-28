@@ -23,22 +23,25 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only shared RGB/LCD boot-indicator helpers
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
-|   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, and performance protocol
+|   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, and performance protocol with upload timeout and failed-slot erase
 |   |   |-- prg32_random.c          Uniform bounded random-number API
 |   |   `-- Kconfig                 Firmware configuration options (menuconfig)
 |   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
+|   |   `-- device_protocol_consistency.md  Rules for keeping firmware, SDK, web clients, and hardware docs aligned
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
-|   |   |-- pcb/                    Fritzing PCB reference design and fabrication notes
+|   |   |-- images/                 Electrical schematic (Fritzing export) and breadboard prototype figures
+|   |   |-- pcb/                    Fritzing PCB reference design, layout status, and fabrication notes
 |   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material
 |   |-- performance_test.md         Canonical performance-test execution, interpretation, and extension guide
 |   |-- measurement/                Scientific methodology, metrics schema, ABI, and validation records
 |   |-- software/                   Firmware manuals, C framework details, and ABI definitions (Note: the framework manual is for cartridge users, not framework developers)
-|   |   `-- usb_protocol.md         Versioned offline device-protocol wire format and SDK workflow
+|   |   |-- usb_protocol.md         Versioned offline device-protocol wire format, transport rules, and SDK workflow
+|   |   `-- web_usb_deployment.md   Web Serial deployment contract for the Construction-Kit and CartridgeStore
 |   |-- tools/                      Guides for Python tooling and conversion utilities
 |   `-- usage/                      Getting started, tooling, QEMU, and troubleshooting guides
 |-- examples/
