@@ -11,7 +11,7 @@ them together.
 | Firmware receiver | `components/prg32/prg32_usb_protocol.c` |
 | Python SDK client | `prg32/usb_protocol.py`, `prg32/esp32c6/upload_esp32c6.py` |
 | PRG32-Qt listener | `src/qt/IoProtocolServer.cpp` in the PRG32-QT repository |
-| Browser client | `static/js/prg32_usb_protocol.js` in PRG32-Construction-Kit; CartridgeStore follows [web_usb_deployment.md](../software/web_usb_deployment.md) |
+| Browser client | `static/js/prg32_usb_protocol.js`, identical in PRG32-Construction-Kit and CartridgeStore ([web_usb_deployment.md](../software/web_usb_deployment.md)) |
 
 Rules:
 
@@ -30,7 +30,7 @@ Rules:
   `run`, a corrupt frame, an abandoned upload, and reconnection on QEMU
   (`socket://127.0.0.1:5555`) and on ESP32-C6, and record the result.
 - Companion repositories are not edited from this repository. Record
-  required follow-ups in [web_usb_deployment.md](../software/web_usb_deployment.md#status-reviewed-2026-10-28)
+  required follow-ups in [web_usb_deployment.md](../software/web_usb_deployment.md#status-reviewed-2026-10-29)
   and tell the user.
 
 ## Pin assignment
