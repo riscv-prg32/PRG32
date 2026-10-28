@@ -28,8 +28,13 @@ when the repositories are checked out side by side. On 2026-10-29 that module
 ran on the physical ESP32-C6 prototype through the Construction-Kit's
 `tools/usb_device_check.mjs`: a Kit-style `store` and a Store-served `run`
 both passed 8/8 in about 1.7 s. The two pages are tested in Chromium with a
-pretend device; a person-picked Web Serial session on the physical console
-has not been recorded.
+pretend device. The same day both pages ran in desktop Chrome on macOS with a
+person picking the port in Chrome's chooser: the Store game page installed
+DeviceDemo into `cart5` with **run**, then the Construction-Kit Deploy page
+deployed its DeviceDemo build to `cart5` with **run**. Both reported the
+cartridge running and the console did not restart. Chrome closes the chooser at
+once when the button is pressed by browser automation, so this check needs a
+person.
 
 ## How it works
 
