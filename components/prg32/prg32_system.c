@@ -984,9 +984,16 @@ static int setup_menu(void) {
     uint32_t last = prg32_input_read_menu();
     while (1) {
       if (prg32_usb_protocol_busy()) {
-        vTaskDelay(pdMS_TO_TICKS(20));
-        last = 0;
-        continue;
+        while (prg32_usb_protocol_busy()) {
+          vTaskDelay(pdMS_TO_TICKS(20));
+        }
+        /* Setup is already open, so the upload's return-to-setup request is
+         * satisfied here. Rebuild the menu because slots may have changed. */
+        prg32_setup_take_request();
+        if (prg32_cart_is_loaded()) {
+          return 0;
+        }
+        break;
       }
       if (prg32_cart_is_loaded()) {
         printf("setup_menu => cartridge loaded asynchronously\n");
