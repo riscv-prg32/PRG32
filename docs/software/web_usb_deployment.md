@@ -15,12 +15,21 @@ cartridge bytes come from, and what is checked before sending them, differs.
 The wire format is defined once in [usb_protocol.md](usb_protocol.md); this
 page does not repeat it.
 
-## Status (reviewed 2026-10-28)
+## Status (reviewed 2026-10-29)
 
 | Application | State |
 |---|---|
-| PRG32-Construction-Kit | Implemented in `static/js/prg32_usb_protocol.js` and `static/js/usb_deploy.js` (Deploy page, **USB device**). Follow-ups listed in [Construction-Kit integration](#construction-kit-integration). |
-| CartridgeStore | Not implemented yet. [CartridgeStore integration](#cartridgestore-integration) is the specification. |
+| PRG32-Construction-Kit | Implemented: Deploy page, **USB device** (`static/js/usb_deploy.js`). |
+| CartridgeStore | Implemented: game page, **Install on a PRG32 over USB** (`static/js/usb_install.js`). |
+
+Both load the same client, `static/js/prg32_usb_protocol.js` (client version
+`2026-10-29`), byte for byte; each repository's tests compare the two copies
+when the repositories are checked out side by side. On 2026-10-29 that module
+ran on the physical ESP32-C6 prototype through the Construction-Kit's
+`tools/usb_device_check.mjs`: a Kit-style `store` and a Store-served `run`
+both passed 8/8 in about 1.7 s. The two pages are tested in Chromium with a
+pretend device; a person-picked Web Serial session on the physical console
+has not been recorded.
 
 ## How it works
 
@@ -66,10 +75,11 @@ const port = await navigator.serial.requestPort({ filters: [ESPRESSIF_USB_JTAG] 
 
 ## The browser client
 
-The reference client is the Construction-Kit's
-`static/js/prg32_usb_protocol.js` (an ES module with no dependencies). A new
-application should reuse it rather than re-implement framing. Its required
-behavior, which mirrors the Python SDK in
+The client is `static/js/prg32_usb_protocol.js`, an ES module with no
+dependencies kept identical in both web applications. A new application
+should copy it rather than re-implement framing. Besides `ProtocolSession` it
+exports `choosePort`, `cartridgeInfo`, `cartridgeProblems` and
+`describeSerialError`. Its required behavior, which mirrors the Python SDK in
 [`prg32/usb_protocol.py`](../../prg32/usb_protocol.py):
 
 1. **Open without touching the modem lines.** Call
@@ -98,28 +108,29 @@ behavior, which mirrors the Python SDK in
 8. **Always release** the reader and writer locks and close the port in a
    `finally` block, so a failed deployment does not leave the port busy.
 
-Minimal deployment function built on that module:
+Minimal deployment function built on that module (call it from a click
+handler):
 
 ```js
-import { MESSAGE, ProtocolSession } from './prg32_usb_protocol.js';
+import { ProtocolSession, cartridgeInfo, cartridgeProblems, choosePort } from './prg32_usb_protocol.js';
 
-export async function deployCartridge(port, bytes, { name, slot, command }, onProgress) {
-  const session = new ProtocolSession(port);
-  await session.open();                       // no setSignals(): see above
+export async function deployCartridge(bytes, { slot, command }, onProgress) {
+  const session = new ProtocolSession(await choosePort());   // user gesture: first await
+  await session.open();                                      // no setSignals(): see above
   try {
-    const hello = await session.hello();
-    if (hello.protocol !== 'prg32-io-1.0') throw new Error('Unsupported PRG32 firmware.');
-    if (command === 'debug' && !hello.debug_supported) {
-      throw new Error('This console cannot instruction-debug; use PRG32-QT.');
-    }
-    const limit = hello.runtime && hello.runtime.cart_max_size;
-    if (limit && bytes.length > limit) throw new Error(`The cartridge exceeds ${limit} bytes.`);
-    return await session.upload(bytes, { name, slot, command }, onProgress);
+    const info = cartridgeInfo(bytes);
+    const problems = cartridgeProblems(info, await session.hello(), command);
+    if (problems.length) throw new Error(problems.join(' ') + ' Nothing was written.');
+    return await session.upload(bytes, { name: info.name, slot, command }, onProgress);
   } finally {
     await session.close();
   }
 }
 ```
+
+The module keeps at most one `reader.read()` outstanding, so bytes that arrive
+after a timeout reach the next request, and `close()` cancels the reader
+before releasing it so the port is never left locked.
 
 ### Errors to present
 
@@ -140,16 +151,16 @@ The Deploy page already follows this contract: it downloads the artifact from
 `/api/artifacts/<id>/download`, checks the `PRG2` magic, the 128 KiB slot
 limit and the SHA-256 recorded at build time, accepts only `esp32c6`
 artifacts, asks the student to confirm the slot, and shows the device's
-progress. Keep it aligned with this page when either side changes:
+progress. Before UPLOAD_BEGIN it checks the console's ABI, maximum size and
+`debug_supported` with `cartridgeProblems`, so a refusal never erases a slot.
+It also offers **Retrieve performance results**.
 
-- add `{ filters: [{ usbVendorId: 0x303a, usbProductId: 0x1001 }] }` to
-  `requestPort`;
-- use `hello.max_chunk` (fall back to 1024) instead of the fixed 1024-byte
-  chunk, and resend a chunk once when its reply times out;
-- set flag bit 0 on the first `PERFORMANCE_GET` (`encodeFrame(type, id,
-  payload, 1)`) so an interrupted earlier retrieval cannot return the tail of
-  an old document;
-- keep the no-`setSignals` rule documented in `docs/deploy.md`.
+| Piece | File |
+|---|---|
+| Page controller | `static/js/usb_deploy.js` |
+| Behaviour tests (Node, pretend device) | `tests/js/usb_protocol.test.mjs`, run by `tests/test_usb_protocol_js.py` |
+| Real-browser tests (Chromium) | `tests/test_usb_deploy_browser.py` |
+| Physical-console check | `node tools/usb_device_check.mjs PORT CARTRIDGE [slot] [store\|run]` |
 
 The Construction-Kit's [deploy guide](https://github.com/riscv-prg32/PRG32-Construction-Kit/blob/development/docs/deploy.md)
 is the student-facing description; this page is the shared technical contract.
@@ -164,7 +175,9 @@ The CartridgeStore already exposes everything the browser needs:
 | The bytes | `GET /api/games/<id>/download?architecture=esp32c6&version=<v>` |
 | Cartridge contract | `game.metadata` (ABI) and the `PRG2` header in the bytes |
 
-Specification for an **Install on PRG32 (USB)** action on `templates/game.html`:
+The **Install on a PRG32 over USB** panel on `templates/game.html`
+(`static/js/usb_install.js`) implements this specification; its user guide
+is the Store's `docs/usb_install.md`:
 
 1. Show the action only when `'serial' in navigator`, `window.isSecureContext`
    and `game.variants.esp32c6` exist; otherwise explain which condition is
@@ -179,8 +192,8 @@ Specification for an **Install on PRG32 (USB)** action on `templates/game.html`:
 4. Deploy with the client above and show `received / total` progress.
 5. Count the installation through the normal download endpoint (it already
    calls `record_download`); add no new tracking.
-6. Vendor `prg32_usb_protocol.js` into `static/` (copy it from the
-   Construction-Kit with its version noted). Load no CDN code.
+6. Serve `static/js/prg32_usb_protocol.js`, the identical copy of the
+   Construction-Kit client. Load no CDN code.
 7. Exclude the download URL from the service worker cache so a stale cartridge
    is never installed.
 
@@ -192,9 +205,13 @@ over Wi-Fi with HTTP and writes the slot with the same stream functions.
 - **Host unit tests.** The SDK's protocol tests in
   [`tests/test_usb_protocol.py`](../../tests/test_usb_protocol.py) use an
   in-memory fake device for progress, resend, refusal and performance restart.
-  A web client should have equivalent tests with a mocked `SerialPort`.
+  The web client has the same tests under Node with
+  `tests/js/fake_prg32_serial.js`, a pretend PRG32 behind Web Serial that both
+  web applications also inject into Chromium for their page tests.
 - **Hardware.** Browsers cannot open QEMU's TCP serial port, so a browser
-  deployment must be checked on an ESP32-C6. Before release, deploy DeviceDemo
+  deployment must be checked on an ESP32-C6. The Construction-Kit's
+  `tools/usb_device_check.mjs` runs the browser module itself on a real port
+  under Node, because a browser needs a person to pick the port. Before release, deploy DeviceDemo
   with `store` and `run`, unplug the cable once during a transfer (the console
   must show UPLOAD TIMED OUT within 10 s and return to setup), and confirm that
   merely connecting does not restart a running cartridge.
