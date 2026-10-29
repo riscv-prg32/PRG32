@@ -63,10 +63,18 @@ for the complete mono build, optional stereo parts and assembly supplies.
 | GPIO18 | P1 LEFT, switch to GND |
 | GPIO19 | P1 RIGHT, switch to GND |
 | GPIO3  | P1 UP, switch to GND |
-| GPIO13 | P1 DOWN, switch to GND |
+| GPIO0 | P1 DOWN, switch to GND |
 | GPIO20 | P1 START / SELECT, switch to GND |
 | GPIO21 | P1 A, switch to GND |
 | GPIO22 | P1 B, switch to GND |
+
+GPIO12 and GPIO13 remain unconnected in the prototype controls because the
+ESP32-C6 uses them for the native USB D-/D+ interface. Automatic runtime
+cartridge uploads require that pair. Older breadboards wired DOWN to GPIO13
+must move that switch wire to GPIO0. The breadboard figure, the electrical
+schematic and the Fritzing project show this assignment; the PCB view still
+needs its LCD RESET trace routed (see the
+[PCB layout status](pcb/README.md#layout-status)).
 
 **AUDIO: Mono configuration**
 | ESP32-C6 | MAX98357A (Mono) |
@@ -178,12 +186,15 @@ prg32_rgb_led_init(gpio);
 prg32_rgb_led_set(red, green, blue);
 ```
 
-The physical firmware sets `PRG32_PIN_RGB_LED` to `-1` because GPIO8 is used by
-the reference display harness for LCD D/C. The setup audio menu therefore does
-not offer the RGB LED spectrum-style VU meter in this configuration. A custom
-harness may assign the LED to a different unused GPIO after checking every
-display, input, and audio signal for conflicts. QEMU builds also set the RGB LED
-pin to `-1` and do not initialize physical LED hardware.
+The fixed `prototype1` PCB connects both LCD D/C and the DevKitC onboard RGB
+LED data input to GPIO8. The firmware therefore keeps the normal cartridge LED
+API disabled (`PRG32_PIN_RGB_LED=-1`), flashes the shared LED cyan three times
+during early boot, and sends an off frame after LCD updates. Because the two
+devices are electrically tied together, active LCD D/C traffic can still be
+interpreted by the WS2812 as brief green or white flashes. Software cannot make
+the LED independently controllable on this PCB; do not change the canonical
+LCD pin merely to hide those flashes. A future PCB revision should give LCD D/C
+and RGB separate GPIOs. QEMU does not initialize physical LED hardware.
 
 ### Audio Configuration
 

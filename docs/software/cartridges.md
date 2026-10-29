@@ -95,6 +95,20 @@ python3 -m prg32 cartridge build \
 The builder rejects firmware-specific absolute-import builds (`--firmware-elf`, `--runtime-url`, and `--legacy-absolute-imports`). Existing cartridges of that kind remain loadable only with matching resident firmware.
 See [the ABI guide](abi.md) for compatibility.
 
+A cartridge can also be written in PRG32 Python. `python3 -m prg32 python
+build` translates `game.py` into C (or assembly with `--asm`), writes it beside
+the cartridge, and builds it with this same builder:
+
+```bash
+python3 -m prg32 python build \
+  examples/games/pong/python/game.py \
+  --entry-prefix pong_python \
+  --name pong-python \
+  --out build-esp32c6/pong-python.prg32
+```
+
+See [PRG32 Python](python_language.md) for the language and its options.
+
 ### 2. Upload to Board (ESP32-C6)
 Upload it to the physical board over Wi-Fi:
 
@@ -104,8 +118,26 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --url http://192.1
 
 The firmware stores the cartridge in `cart0` by default and starts running it from the main loop. You can upload to another slot with `--slot cart1`.
 
+When Wi-Fi is unavailable, upload through the running firmware's automatically
+detected USB protocol:
+
+```bash
+python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
+  --port /dev/cu.usbmodem101 --slot cart0
+```
+
+Use the serial port name for your host (`COM5` is a typical Windows example).
+USB upload validates the portable ABI and RAM requirement, opens the device's
+progress screen, streams into the selected slot, prints progress every 10%,
+and reports success or failure. A 24 KiB cartridge takes about two seconds.
+No reset, bootloader entry, upload mode, or network is required. Add
+`--command run`, `--command performance`, or (on PRG32-Qt) `--command debug`.
+The complete wire contract is in the [device protocol](usb_protocol.md); web
+applications use the same protocol through
+[Web-to-USB cartridge deployment](web_usb_deployment.md).
+
 ### 3. Upload to Emulator (QEMU)
-QEMU does not emulate the classroom Wi-Fi upload path. Instead, you stage it directly into the emulator flash image:
+For a stopped QEMU instance, stage directly into its flash image:
 
 ```bash
 python3 -m prg32 qemu upload build-esp32c6/asteroids.prg32
@@ -114,6 +146,13 @@ python3 -m prg32 qemu upload build-esp32c6/asteroids.prg32
 Then start QEMU:
 ```bash
 python3 -m qemu run
+```
+
+For a running QEMU instance, use the same live protocol as hardware:
+
+```bash
+python3 -m prg32 esp32c6 upload game.prg32 \
+  --port socket://127.0.0.1:5555 --command run
 ```
 
 ## Binary Format

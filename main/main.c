@@ -196,6 +196,16 @@ void app_main(void) {
   uint32_t last_idle_log_ms = 0;
   uint32_t next_frame_ms = prg32_ticks_ms();
   while (1) {
+    if (prg32_usb_protocol_busy()) {
+      vTaskDelay(pdMS_TO_TICKS(20));
+      next_frame_ms = prg32_ticks_ms();
+      continue;
+    }
+    if (prg32_setup_take_request()) {
+      prg32_setup_run();
+      cart_generation = 0;
+      next_frame_ms = prg32_ticks_ms();
+    }
     uint32_t input_snapshot = prg32_controller_read();
 
     if (prg32_cart_is_loaded()) {

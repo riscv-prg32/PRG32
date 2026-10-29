@@ -79,7 +79,7 @@ Builds attempting to compile physical firmware without a pin profile are blocked
 
 ### Built-in Pin Profiles
 
-- **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype breadboard pinout using the ILI9341 SPI TFT display, 7-button directional controls, and MAX98357A I2S mono/stereo audio as documented in [PRG32 Hardware](../hardware/hardware.md).
+- **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype PCB/breadboard pinout using the ILI9341 SPI TFT display, 7-button directional controls, and MAX98357A I2S mono/stereo audio as documented in [PRG32 Hardware](../hardware/hardware.md). Its fixed GPIO8 connection is shared by LCD D/C and the onboard RGB LED; the profile preserves that wiring and treats the LED as a boot indicator, not a general-purpose output.
 - **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
 
 ### Selecting a Pin Profile
@@ -134,7 +134,7 @@ Adding a new pin layout (such as a custom PCB or alternative display harness) re
    CONFIG_PRG32_PIN_LCD_RST=9
    CONFIG_PRG32_PIN_LCD_BL=5
    CONFIG_PRG32_PIN_BTN_UP=3
-   CONFIG_PRG32_PIN_BTN_DOWN=13
+   CONFIG_PRG32_PIN_BTN_DOWN=0
    CONFIG_PRG32_PIN_BTN_LEFT=18
    CONFIG_PRG32_PIN_BTN_RIGHT=19
    CONFIG_PRG32_PIN_BTN_START=20

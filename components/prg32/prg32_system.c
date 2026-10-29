@@ -2,10 +2,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "prg32.h"
+#include "prg32_led_internal.h"
 #include "prg32_config.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+
+static volatile bool g_setup_requested;
 
 void prg32_display_init(void);
 void prg32_display_log_memory(const char *checkpoint);
@@ -980,6 +983,18 @@ static int setup_menu(void) {
     printf("setup_menu => prg32_input_read_menu()\n");
     uint32_t last = prg32_input_read_menu();
     while (1) {
+      if (prg32_usb_protocol_busy()) {
+        while (prg32_usb_protocol_busy()) {
+          vTaskDelay(pdMS_TO_TICKS(20));
+        }
+        /* Setup is already open, so the upload's return-to-setup request is
+         * satisfied here. Rebuild the menu because slots may have changed. */
+        prg32_setup_take_request();
+        if (prg32_cart_is_loaded()) {
+          return 0;
+        }
+        break;
+      }
       if (prg32_cart_is_loaded()) {
         printf("setup_menu => cartridge loaded asynchronously\n");
         return 0;
@@ -1061,6 +1076,22 @@ static int setup_menu(void) {
   }
 }
 
+void prg32_setup_request(void) { g_setup_requested = true; }
+
+int prg32_setup_take_request(void) {
+  if (!g_setup_requested) {
+    return 0;
+  }
+  g_setup_requested = false;
+  return 1;
+}
+
+void prg32_setup_run(void) {
+  prg32_gfx_set_fullscreen(1);
+  setup_menu();
+  prg32_gfx_set_fullscreen(0);
+}
+
 static bool prg32_pins_validate(void) {
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
   return true;
@@ -1089,6 +1120,7 @@ void prg32_init(void) {
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
   }
+  prg32_shared_rgb_led_boot_flash(PRG32_PIN_SHARED_RGB_LED);
   PRG32_MEM_CHECKPOINT("prg32_init_start");
   printf("prg32_init => prg32_display_init()\n");
   prg32_display_init();
@@ -1131,6 +1163,8 @@ void prg32_init(void) {
   prg32_abi_exports_keep();
   printf("prg32_init => prg32_cart_init()\n");
   prg32_cart_init();
+  printf("prg32_init => prg32_usb_protocol_start()\n");
+  prg32_usb_protocol_start();
   PRG32_MEM_CHECKPOINT("prg32_cart");
   printf("prg32_init => prg32_band_load_config()\n");
   prg32_band_load_config();

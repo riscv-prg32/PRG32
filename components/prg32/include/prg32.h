@@ -344,7 +344,8 @@ uint32_t prg32_diag_frame_count(void);
  * portable cartridges do not initialize hardware directly.
  * @{ */
 /*
- * Low-level PWM tone generation for the physical buzzer.
+ * Low-level PWM tone generation for the physical buzzer. QEMU approximates
+ * the requested frequency with the nearest MIDI note through its audio mixer.
  * - 'hz': frequency in Hertz.
  * - 'ms': duration in milliseconds.
  * - 'duty': duty cycle (PWM ON/OFF percentage), used to control the volume
@@ -431,6 +432,7 @@ uintptr_t prg32_cart_load_addr(void);
 size_t prg32_cart_ram_size(void);
 uint32_t prg32_cart_generation(void);
 int prg32_cart_is_loaded(void);
+void prg32_cart_unload(void);
 int prg32_cart_load_stored(void);
 int prg32_cart_install(const void *image, size_t image_size, int persist);
 int prg32_cart_install_slot(uint8_t slot, const void *image, size_t image_size,
@@ -454,6 +456,16 @@ int prg32_cart_call_init(void);
 int prg32_cart_call_update(void);
 int prg32_cart_call_draw(void);
 const char *prg32_cart_last_error(void);
+/** @} */
+
+/** @name Resident setup and host transport
+ * These functions are firmware services and are not exported through the
+ * portable cartridge ABI table. */
+void prg32_setup_request(void);
+int prg32_setup_take_request(void);
+void prg32_setup_run(void);
+void prg32_usb_protocol_start(void);
+bool prg32_usb_protocol_busy(void);
 /** @} */
 
 /** @name Text console

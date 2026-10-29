@@ -10,13 +10,14 @@ readme = "README.md"
 authors = [
   { name = "PRG32 Contributors" }
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "pyaudio",
     "zeroconf",
     "pillow",
     "mido",
-    "pytest"
+    "pytest",
+    "pyserial"
 ]
 
 [project.scripts]

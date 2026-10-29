@@ -13,6 +13,7 @@ python3 -m prg32 <command> [subcommand] [options]
 - `esp32c6`: ESP32C6 SoC tasks
 - `qemu`: QEMU emulator tasks
 - `cartridge`: Cartridge tasks (build, summary, etc.)
+- `python`: PRG32 Python tasks (new, check, to-c, to-asm, build)
 - `abi`: ABI tooling tasks
 - `store`: CartridgeStore and metadata tasks
 - `doctor`: Check local toolchain prerequisites
@@ -32,8 +33,14 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
     - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
 ### Upload & Run Cartridges
-- `upload`: upload a cartridge to the ESP32C6 SoC over HTTP,
-- `run`: instruct the ESP32C6 over HTTP to run a previously loaded cartridge on a selected slot. Does not work when a cartridge is running (?).
+- `upload`: upload over HTTP with `--url`, or use the automatic running-device
+  protocol with `--port`. The latter supports native USB and
+  `socket://HOST:PORT` emulator endpoints, requires no reset or upload mode,
+  and accepts `--command store|run|debug|performance`. See the
+  [device protocol](../software/usb_protocol.md). Browsers use the same
+  protocol; see [Web-to-USB cartridge deployment](../software/web_usb_deployment.md).
+- `run`: run a stored slot over HTTP or the device protocol. `--debug` requests
+  instruction debugging on PRG32-Qt; physical firmware reports it unsupported.
     - `upload-and-run`: combination of `upload` and `run` for convenience.
 ### Firmware Tools
 These scripts are used to prepare and flashing single-file firmwares. They are useful to run legacy firmware for debugging purposes or to share modified versions of the firmware.
@@ -41,7 +48,8 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing
 - `flash-firmware`: flash a published single-file legacy PRG32 firmware image
 ### Utilities
-- `performance`: download the latest in-RAM Performance Test JSON over HTTP.
+- `performance`: download the latest in-RAM Performance Test JSON over HTTP or
+  through `--port`, so measurements remain available without a network.
   Results contain paired RGB565/indexed measurements; preserve `color_mode`
   when filtering or exporting case summaries. See
   [Performance Test Guide](/docs/performance_test.md) for the complete workflow
@@ -79,6 +87,21 @@ For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qe
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 
 For detailed instructions and examples on building cartridges, see [docs/cartridges.md](/docs/software/cartridges.md).
+
+## PRG32 Python Tasks (`python`)
+Write cartridges in PRG32 Python, the typed Python subset shared with the
+PRG32-Construction-Kit. The SDK reads `game.py` as text (it never runs it),
+translates it into commented C or RISC-V assembly, and builds that with the
+`cartridge build` code path.
+
+- `new`: write the starter `game.py`.
+- `check`: list problems with their line and column (`--json` for tools).
+- `to-c` / `to-asm`: write the generated C or assembly.
+- `build`: write the generated source beside the cartridge and build a portable
+  `.prg32` (`--asm` builds from the assembly).
+
+`python3 -m prg32 p` is ambiguous (`pins`, `python`); type at least `py`. See
+[PRG32 Python](../software/python_language.md#commands) for every option.
 
 ## ABI Tooling Tasks (`abi`)
 The `abi` command manages the `prg32_abi.json` definition and the generated code stubs (`prg32_abi_index.h`, `prg32_abi_hash.h`, etc.).

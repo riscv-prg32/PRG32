@@ -20,6 +20,7 @@ Here are common issues and solutions when working with the PRG32 framework.
   python3 -m prg32 esp32c6 build-and-flash
   ```
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*
+- **The prototype1 onboard RGB LED flashes green or white while the display updates**: This is expected on the fixed PCB. GPIO8 is shared by LCD D/C and the DevKitC WS2812 data input, so display traffic can resemble LED data. Firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire. Do not move the canonical LCD pin in the `prototype1` profile.
 
 ## QEMU Emulator Issues
 
@@ -41,3 +42,22 @@ Here are common issues and solutions when working with the PRG32 framework.
   and inspect the serial line `prg32_init: cartridge autoload failed`. A
   Store-ready package should load without copying its metadata or artwork into
   temporary RAM; an out-of-memory error here indicates an older firmware build.
+- **A cartridge written directly to `cart0` over browser USB opens setup**: ROM
+  flashing replaces the slot bytes but cannot update the firmware's saved
+  default-slot setting. When more than one valid slot exists and no default is
+  saved, choose `cart0` in setup and use the default-cartridge command. With
+  only one valid cartridge installed, firmware autoloads it.
+- **The console restarts whenever a USB tool connects**: the tool changes DTR
+  and RTS one after the other, which the ESP32-C6 USB Serial/JTAG treats as a
+  reset request. The PRG32 SDK leaves both lines as the operating system sets
+  them; other tools must do the same or change both lines in one call. See
+  [modem-control lines](../software/usb_protocol.md#modem-control-lines).
+- **The USB upload screen stays visible after the host stopped**: firmware
+  cancels an upload that receives no frame for 10 seconds, shows
+  `UPLOAD TIMED OUT`, erases the incomplete slot and returns to setup. If the
+  screen persists longer, the firmware predates the October 2026 protocol
+  revision; flash the current firmware once with the ROM flasher.
+- **`PRG32 device did not answer protocol request 1`**: another program holds
+  the serial port (close monitors), the cable is charge-only, or the board runs
+  firmware without the device protocol. Native USB uploads use the ESP32-C6
+  connector labelled USB, not the UART bridge connector.

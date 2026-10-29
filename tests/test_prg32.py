@@ -13,6 +13,7 @@ from prg32.utilities import partition_handler, runtime_handler, env_variables
 from prg32.cartridge import build_cartridge
 from prg32.store import metadata as store_metadata
 from prg32.qemu import upload_qemu
+from prg32.esp32c6 import upload_esp32c6
 from prg32.utilities.environment_check import doctor
 from prg32.abi.abi_generated import (
     ABI_HASH,
@@ -306,6 +307,93 @@ class QemuUploadTests(unittest.TestCase):
             self.assertEqual(data[0x10:0x14], b"PRG2")
             erased = data[0x10 + len(header) + len(payload):0x10 + 128]
             self.assertEqual(erased, b"\xff" * len(erased))
+
+
+class Esp32c6UsbUploadTests(unittest.TestCase):
+    @mock.patch("prg32.esp32c6.upload_esp32c6.upload_cartridge")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.ProtocolClient")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.open_stream")
+    def test_usb_upload_uses_runtime_protocol(self, open_stream, client_type, upload) -> None:
+        client = client_type.return_value
+        client.request_json.return_value = {
+            "ok": True,
+            "runtime": {"cart_ram_size": 65536},
+        }
+        upload.return_value = {"ok": True, "name": "usb"}
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            cart = tmp_path / "game.prg32"
+            partitions = tmp_path / "partitions.csv"
+            payload = b"\0\0\0\0"
+            header = env_variables.CART_HEADER_V2.pack(
+                env_variables.CART_MAGIC,
+                env_variables.CART_ABI_MAJOR,
+                env_variables.CART_ABI_MINOR,
+                env_variables.CART_HEADER_V2.size,
+                env_variables.PRG32_CART_FLAG_ABI_TABLE,
+                env_variables.FALLBACK_CART_LOAD_ADDR,
+                len(payload), len(payload), 0, 0, 0, 0,
+                b"usb" + b"\0" * 29,
+                ABI_HASH, 0, 0, 0, 0, 0,
+                env_variables.PRG32_IMPORT_MODEL_ABI_TABLE,
+            )
+            data = header + payload
+            cart.write_bytes(data)
+            partitions.write_text(
+                "cart2, data, 0x42, 0x250000, 128,\n",
+                encoding="utf-8",
+            )
+            args = argparse.Namespace(
+                cartridge=str(cart), port="/dev/test", url=None,
+                baud="115200", partitions=str(partitions), slot="cart2",
+                cart_ram_kib=64, timeout=10.0, chunk_size=1024,
+                command="run",
+            )
+
+            upload_esp32c6.upload_esp32c6(args)
+
+            open_stream.assert_called_once_with("/dev/test", 115200, 10.0)
+            upload.assert_called_once_with(
+                client, str(cart), data, "cart2", command="run", chunk_size=1024,
+                progress=mock.ANY,
+            )
+            client.close.assert_called_once()
+
+    @mock.patch("prg32.esp32c6.upload_esp32c6.upload_cartridge")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.ProtocolClient")
+    @mock.patch("prg32.esp32c6.upload_esp32c6.open_stream")
+    def test_usb_debug_is_refused_before_upload_when_unsupported(self, open_stream, client_type, upload) -> None:
+        client = client_type.return_value
+        client.request_json.return_value = {
+            "ok": True,
+            "debug_supported": False,
+            "runtime": {"cart_ram_size": 65536},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            partitions = tmp_path / "partitions.csv"
+            partitions.write_text("cart2, data, 0x42, 0x250000, 128K,\n", encoding="utf-8")
+            args = argparse.Namespace(
+                cartridge="game.prg32", port="/dev/test", url=None,
+                baud="115200", partitions=str(partitions), slot="cart2",
+                cart_ram_kib=64, timeout=10.0, chunk_size=1024,
+                command="debug",
+            )
+            with mock.patch(
+                "prg32.esp32c6.upload_esp32c6.validate_cartridge_contract"
+            ), self.assertRaises(SystemExit):
+                upload_esp32c6.upload_esp32c6_usb(args, b"PRG2" + b"\0" * 100)
+        upload.assert_not_called()
+        client.close.assert_called_once()
+
+    def test_upload_cli_requires_exactly_one_transport(self) -> None:
+        with self.assertRaises(SystemExit):
+            prg32_main(["esp32c6", "upload", "game.prg32"])
+        with self.assertRaises(SystemExit):
+            prg32_main([
+                "esp32c6", "upload", "game.prg32",
+                "--url", "http://device", "--port", "/dev/test",
+            ])
 
 
 def portable_header(mem_size: int, code_size: int = 4) -> bytes:

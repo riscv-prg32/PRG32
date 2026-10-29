@@ -74,8 +74,10 @@ def run_qemu():
         "user,model=open_eth",
         "-display",
         "sdl",
+        "-monitor",
+        "stdio",
         "-serial",
-        "mon:stdio",
+        "tcp:127.0.0.1:5555,server=on,wait=off,nodelay=on",
     ]
     os.execvp(cmd[0], cmd)
 
