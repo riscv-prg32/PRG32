@@ -30,6 +30,11 @@ examples/games/<game>/
 | `frogger` | `frogger_ascii` | `frogger_graphics` | `frogger_c` |
 | `prg32_bounce` | `prg32_bounce_ascii` | `prg32_bounce_graphics` | `prg32_bounce_c` |
 
+Pong also has a PRG32 Python version, `pong/python/game.py`, with the
+`pong_python` prefix. It is built with `python3 -m prg32 python build`, which
+writes the generated C beside the cartridge; see
+[PRG32 Python](../../docs/software/python_language.md).
+
 Use the prefix to find the three exported symbols:
 
 ```text

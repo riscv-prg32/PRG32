@@ -110,6 +110,18 @@ jobs:
               --out "/tmp/prg32-${game}-graphics.prg32"
           done
 
+      - name: Test and build the PRG32 Python example
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          python3 -m unittest discover -s tests -p "test_prg32_python.py"
+          python3 -m prg32 python build examples/games/pong/python/game.py \
+            --entry-prefix pong_python --name pong-python \
+            --out /tmp/prg32-pong-python.prg32
+          python3 -m prg32 python build examples/games/pong/python/game.py --asm \
+            --entry-prefix pong_python --name pong-python \
+            --out /tmp/prg32-pong-python-asm.prg32
+
       - name: Validate cartridge screenshots and audiovisual previews
         run: |
           python3 tools/validate_cartridge_media.py cartridges/bachdemo/assets/screenshot.png cartridges/bachdemo/assets/preview.mp4

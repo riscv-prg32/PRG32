@@ -43,6 +43,11 @@ examples/games/<name>/
 
 Use these for Computing Architecture and C Programming classes.
 
+Pong also has a PRG32 Python version, `examples/games/pong/python/game.py`,
+written statement by statement like `pong/c/game.c`. Build it with
+`python3 -m prg32 python build`; see the
+[Python game tutorial](tutorial_python_game.md).
+
 The platformer, raycaster, wing commander, and frogger C examples are the fuller
 playable companions to the DeviceDemo cartridge pages. The assembly versions
 remain compact so students can trace registers, stack frames, and ABI calls

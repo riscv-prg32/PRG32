@@ -32,6 +32,7 @@ from prg32.store.config_cli import store_set_url, store_clear_url
 from prg32.debug import SUPPORTED_SPEEDS, debug_cli
 from prg32.abi.abi_gen import abi_gen_cmd, abi_check_cmd
 from prg32.wifi.wifi_cli import wifi_set, wifi_clear
+from prg32.python.cli import add_python_commands
 
 class AbbrevDict(dict):
     def __contains__(self, key):
@@ -264,6 +265,11 @@ def main(argv: list[str]) -> int:
     p = cartridge_sub.add_parser("summary", help="print the PRG32 cartridge summary (ABI, feature bits, etc.)", usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
     p.set_defaults(func=inspect_metadata)
+
+    # ==========================================
+    # 'python' Subcommand Menu (PRG32 Python)
+    # ==========================================
+    add_python_commands(sub, AbbrevSubParsersAction)
 
     # ==========================================
     # 'abi' Subcommand Menu
