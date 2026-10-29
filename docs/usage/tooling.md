@@ -13,6 +13,7 @@ python3 -m prg32 <command> [subcommand] [options]
 - `esp32c6`: ESP32C6 SoC tasks
 - `qemu`: QEMU emulator tasks
 - `cartridge`: Cartridge tasks (build, summary, etc.)
+- `python`: PRG32 Python tasks (new, check, to-c, to-asm, build)
 - `abi`: ABI tooling tasks
 - `store`: CartridgeStore and metadata tasks
 - `doctor`: Check local toolchain prerequisites
@@ -86,6 +87,21 @@ For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qe
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 
 For detailed instructions and examples on building cartridges, see [docs/cartridges.md](/docs/software/cartridges.md).
+
+## PRG32 Python Tasks (`python`)
+Write cartridges in PRG32 Python, the typed Python subset shared with the
+PRG32-Construction-Kit. The SDK reads `game.py` as text (it never runs it),
+translates it into commented C or RISC-V assembly, and builds that with the
+`cartridge build` code path.
+
+- `new`: write the starter `game.py`.
+- `check`: list problems with their line and column (`--json` for tools).
+- `to-c` / `to-asm`: write the generated C or assembly.
+- `build`: write the generated source beside the cartridge and build a portable
+  `.prg32` (`--asm` builds from the assembly).
+
+`python3 -m prg32 p` is ambiguous (`pins`, `python`); type at least `py`. See
+[PRG32 Python](../software/python_language.md#commands) for every option.
 
 ## ABI Tooling Tasks (`abi`)
 The `abi` command manages the `prg32_abi.json` definition and the generated code stubs (`prg32_abi_index.h`, `prg32_abi_hash.h`, etc.).

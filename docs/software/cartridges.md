@@ -95,6 +95,20 @@ python3 -m prg32 cartridge build \
 The builder rejects firmware-specific absolute-import builds (`--firmware-elf`, `--runtime-url`, and `--legacy-absolute-imports`). Existing cartridges of that kind remain loadable only with matching resident firmware.
 See [the ABI guide](abi.md) for compatibility.
 
+A cartridge can also be written in PRG32 Python. `python3 -m prg32 python
+build` translates `game.py` into C (or assembly with `--asm`), writes it beside
+the cartridge, and builds it with this same builder:
+
+```bash
+python3 -m prg32 python build \
+  examples/games/pong/python/game.py \
+  --entry-prefix pong_python \
+  --name pong-python \
+  --out build-esp32c6/pong-python.prg32
+```
+
+See [PRG32 Python](python_language.md) for the language and its options.
+
 ### 2. Upload to Board (ESP32-C6)
 Upload it to the physical board over Wi-Fi:
 

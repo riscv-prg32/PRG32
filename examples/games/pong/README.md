@@ -6,6 +6,10 @@ This directory contains RISC-V assembly and C versions of the game:
 - `graphics/game.S`: uses the 320x200 graphics API tuned for ILI9341.
 - `c/game.c`: uses the same PRG32 API from C and keeps the upper paddle moving
   with a simple fallback AI.
+- `python/game.py`: the C version in PRG32 Python, statement by statement.
+  Build it with `python3 -m prg32 python build python/game.py --entry-prefix
+  pong_python --name pong-python --out pong-python.prg32`; see
+  [PRG32 Python](../../../docs/software/python_language.md).
 
 Build one version by adding the corresponding source file to
 `main/CMakeLists.txt`, or package it as a `.prg32` cartridge with

@@ -214,6 +214,7 @@ For any errors, before opening a Github Issue, please consult [Troubleshooting](
 - `docs/tutorial.md`: first assembly game tutorial.
 - `docs/tutorial_graphic_game.md`: graphics assembly tutorial.
 - `docs/tutorial_c_game.md`: C cartridge tutorial.
+- [`docs/learn/tutorial_python_game.md`](../learn/tutorial_python_game.md): PRG32 Python cartridge tutorial.
 - `docs/api.md`: board HTTP API and Cartridge Store API reference.
 - `docs/framework_manual.md`: PRG32 runtime API and ABI details.
 - `docs/assets.md`: image, sprite, tile, GIF, and audio asset conversion.

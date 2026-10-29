@@ -43,6 +43,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 - [Cartridge Format](software/cartridges.md)
 - [Cartridge Metadata](cartridge_store/cartridge_store.md)
 - [Colophon ABI](software/colophon_abi.md)
+- [PRG32 Python Language](software/python_language.md)
 
 ## Learn
 *Tutorials, guides, and teaching materials.*
@@ -51,6 +52,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 - [PRG32 Tutorial](learn/tutorial.md)
 - [ASCII Game Tutorial](learn/tutorial_ascii_game.md)
 - [C Game Tutorial](learn/tutorial_c_game.md)
+- [Python Game Tutorial](learn/tutorial_python_game.md)
 - [Graphic Game Tutorial](learn/tutorial_graphic_game.md)
 - [Teaching with PRG32](learn/teaching_with_prg32.md)
 - [Examples](learn/examples.md)

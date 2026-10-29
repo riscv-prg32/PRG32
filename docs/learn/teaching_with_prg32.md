@@ -5,6 +5,10 @@ PRG32 can serve two related courses with the same firmware, examples, and tools:
 - Computing Architecture / RISC-V assembly
 - Introductory or intermediate C programming
 
+A third, optional entry point is PRG32 Python, for students who already know
+some Python. It is translated into C and assembly, so it leads into both
+tracks instead of replacing them.
+
 The key teaching idea is that both tracks call the same PRG32 runtime API. The
 difference is the language used to express game logic.
 
@@ -77,6 +81,35 @@ Recommended sequence:
 Assessment idea: ask students to add a new tile flag to the platformer and
 explain how `prg32_platform_actor_t` changes every frame.
 
+## Python Programming Track
+
+Use PRG32 Python when the learning goal is:
+
+- programming with typed variables, functions and control flow in a language
+  students already know
+- understanding why an embedded target changes the rules (32-bit wrap-around,
+  `//` rounding toward zero, no unbounded loops, no floating point)
+- reading compiler output: the same game as Python, generated C and generated
+  RISC-V assembly
+
+Recommended sequence:
+
+1. Read [the Python game tutorial](tutorial_python_game.md).
+2. Build `examples/games/pong/python/game.py` and compare it with
+   `examples/games/pong/c/game.c`.
+3. Generate `game.c` and `game.S` from a student game with
+   `python3 -m prg32 python to-c` and `to-asm`, and trace one statement through
+   both.
+4. Continue with the C track, starting from the generated C.
+
+The language rules and commands are in
+[PRG32 Python](../software/python_language.md). Students who use the
+PRG32-Construction-Kit IDE write the same `game.py`.
+
+Assessment idea: give students a Python statement such as `x = -7 // 2` and ask
+them to find the instructions that compute it in the generated assembly and to
+explain why the result is `-3`.
+
 ## Trainer Workflow
 
 For assembly lessons:
@@ -101,7 +134,17 @@ python3 -m prg32 cartridge build \
   --out build-esp32c6/platformer-c.prg32
 ```
 
-Upload either cartridge with:
+For Python lessons:
+
+```bash
+python3 -m prg32 python build \
+  examples/games/pong/python/game.py \
+  --entry-prefix pong_python \
+  --name pong-python \
+  --out build-esp32c6/pong-python.prg32
+```
+
+Upload any of these cartridges with:
 
 ```bash
 python3 -m prg32 esp32c6 upload build-esp32c6/platformer-c.prg32 --url http://192.168.4.1
