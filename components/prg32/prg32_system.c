@@ -9,6 +9,9 @@
 #include <stdio.h>
 
 static volatile bool g_setup_requested;
+/* True while setup_menu() owns the screen. The on-screen keyboard and Wi-Fi
+ * setup are also called by cartridges, where a loaded cartridge is normal. */
+static bool g_setup_open;
 
 void prg32_display_init(void);
 void prg32_display_log_memory(const char *checkpoint);
@@ -219,6 +222,9 @@ static cart_action_result_t cartridge_context_menu(uint8_t slot) {
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return CART_ACTION_NONE;
+    }
     uint32_t input = prg32_input_read_menu();
     if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
       choice--;
@@ -295,6 +301,9 @@ static int cartridge_picker(const char *title, bool force_choice) {
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return -1;
+    }
     uint32_t input = prg32_input_read_menu();
     if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
       choice--;
@@ -369,6 +378,9 @@ static int default_cartridge_picker(void) {
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return -1;
+    }
     uint32_t input = prg32_input_read_menu();
     if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
       choice--;
@@ -668,6 +680,9 @@ static void audio_menu(void) {
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return;
+    }
     uint32_t input = prg32_input_read_menu();
     if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
       choice--;
@@ -788,6 +803,9 @@ static void developer_menu(void) {
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return;
+    }
     uint32_t input = prg32_input_read_menu();
     if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
       choice--;
@@ -860,6 +878,9 @@ static void about_menu(void) {
   snprintf(version_line, sizeof(version_line), "FIRMWARE %s",
            PRG32_FIRMWARE_VERSION);
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return;
+    }
     uint32_t input = prg32_input_read_menu();
     if (((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) ||
         ((input & MENU_CANCEL) && !(last & MENU_CANCEL))) {
@@ -899,6 +920,9 @@ static void settings_menu(void) {
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return;
+    }
     uint32_t input = prg32_input_read_menu();
     if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
       choice--;
@@ -1076,6 +1100,19 @@ static int setup_menu(void) {
   }
 }
 
+static void run_setup_menu(void) {
+  g_setup_open = true;
+  setup_menu();
+  g_setup_open = false;
+}
+
+/* Only setup_menu() itself handles an upload or a loaded cartridge. Every
+ * setup screen that waits for input leaves when this is true, which brings
+ * control back to it from any depth. */
+bool prg32_setup_interrupted(void) {
+  return g_setup_open && (prg32_usb_protocol_busy() || prg32_cart_is_loaded());
+}
+
 void prg32_setup_request(void) { g_setup_requested = true; }
 
 int prg32_setup_take_request(void) {
@@ -1088,7 +1125,7 @@ int prg32_setup_take_request(void) {
 
 void prg32_setup_run(void) {
   prg32_gfx_set_fullscreen(1);
-  setup_menu();
+  run_setup_menu();
   prg32_gfx_set_fullscreen(0);
 }
 
@@ -1198,7 +1235,7 @@ void prg32_init(void) {
     prg32_scores_api_start();
     PRG32_MEM_CHECKPOINT("wifi/scores/api");
     printf("prg32_init => setup_menu()\n");
-    setup_menu();
+    run_setup_menu();
     PRG32_MEM_CHECKPOINT("setup_menu");
   }
 

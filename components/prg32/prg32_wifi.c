@@ -298,7 +298,10 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
                  event ? (unsigned)event->reason : 0,
                  active_status);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        esp_wifi_connect();
+        /* A scan may have started during the wait; connecting would end it. */
+        if (sta_autoconnect) {
+            esp_wifi_connect();
+        }
     }
     if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)data;
@@ -560,6 +563,14 @@ static int start_mode_locked(const prg32_wifi_config_t *config) {
     return 0;
 }
 
+/* Bring back the mode saved in NVS after a scan stopped the radio. */
+static void start_saved_mode_locked(void) {
+    prg32_wifi_config_t config;
+    default_config(&config);
+    load_config(&config);
+    start_mode_locked(&config);
+}
+
 int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
     wifi_lock_take();
     int rc = start_mode_locked(config);
@@ -636,6 +647,9 @@ static int choose_mode(prg32_wifi_config_t *config) {
                               MENU_ACCEPT |
                               MENU_CANCEL);
     while (1) {
+        if (prg32_setup_interrupted()) {
+            return -1;
+        }
         uint32_t input = prg32_input_read_menu();
         if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
             choice--;
@@ -737,6 +751,9 @@ static int scan_networks_locked(wifi_ap_record_t **records_out,
         return 0;
     }
     *records_out = NULL;
+    /* Before the stop: stopping a connected station raises a disconnect event,
+     * and the reconnect it would start ends the scan with nothing found. */
+    sta_autoconnect = false;
     if (wifi_started) {
         esp_err_t stop_err = esp_wifi_stop();
         if (stop_err != ESP_OK) {
@@ -745,10 +762,11 @@ static int scan_networks_locked(wifi_ap_record_t **records_out,
         }
         wifi_started = false;
         active_mode = PRG32_WIFI_MODE_OFF;
+        copy_cstr(active_ip, sizeof(active_ip), "-");
+        copy_cstr(active_status, sizeof(active_status), "OFF");
         vTaskDelay(pdMS_TO_TICKS(150));
     }
 
-    sta_autoconnect = false;
     esp_err_t err = esp_wifi_set_mode(WIFI_MODE_STA);
     if (err != ESP_OK) {
         copy_cstr(status, status_size, esp_err_to_name(err));
@@ -958,7 +976,8 @@ static int confirm_sta_credentials(const prg32_wifi_config_t *config) {
         prg32_gfx_text8(8, 204, "B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
-        while ((prg32_input_read_menu() & MENU_CANCEL) == 0) {
+        while ((prg32_input_read_menu() & MENU_CANCEL) == 0 &&
+               !prg32_setup_interrupted()) {
             vTaskDelay(pdMS_TO_TICKS(80));
         }
         prg32_input_wait_released(PRG32_BTN_B);
@@ -966,6 +985,9 @@ static int confirm_sta_credentials(const prg32_wifi_config_t *config) {
     }
     prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
     while (1) {
+        if (prg32_setup_interrupted()) {
+            return -1;
+        }
         uint32_t input = prg32_input_read_menu();
         if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
             prg32_input_wait_released(MENU_ACCEPT);
@@ -1031,7 +1053,8 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
         prg32_gfx_text8(8, 96, "B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
         while (1) {
-            if (prg32_input_read_menu() & PRG32_BTN_B) {
+            if ((prg32_input_read_menu() & PRG32_BTN_B) ||
+                prg32_setup_interrupted()) {
                 return -1;
             }
             vTaskDelay(pdMS_TO_TICKS(80));
@@ -1045,6 +1068,10 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
                               MENU_ACCEPT |
                               MENU_CANCEL);
     while (1) {
+        if (prg32_setup_interrupted()) {
+            heap_caps_free(records);
+            return -1;
+        }
         uint32_t input = prg32_input_read_menu();
         if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
             choice--;
@@ -1128,7 +1155,8 @@ static void show_wifi_message(const char *title, const char *line,
     prg32_gfx_text8(8, 204, "B BACK", PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
-    while ((prg32_input_read_menu() & MENU_CANCEL) == 0) {
+    while ((prg32_input_read_menu() & MENU_CANCEL) == 0 &&
+           !prg32_setup_interrupted()) {
         vTaskDelay(pdMS_TO_TICKS(80));
     }
     prg32_input_wait_released(MENU_CANCEL);
@@ -1149,6 +1177,9 @@ static void forget_network_menu(void) {
     prg32_input_wait_released(PRG32_BTN_UP | PRG32_BTN_DOWN | MENU_ACCEPT |
                               MENU_CANCEL);
     while (1) {
+        if (prg32_setup_interrupted()) {
+            return;
+        }
         uint32_t input = prg32_input_read_menu();
         if (!confirming) {
             if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
@@ -1220,7 +1251,18 @@ int prg32_wifi_setup_run(void) {
         config = stored;
     }
 
+    bool scan_stopped_radio = false;
     while (1) {
+        /* The player left the network screens without connecting. The check
+         * of wifi_started leaves alone a mode that WIFI_SET started meanwhile. */
+        if (scan_stopped_radio) {
+            scan_stopped_radio = false;
+            wifi_lock_take();
+            if (!wifi_started) {
+                start_saved_mode_locked();
+            }
+            wifi_lock_give();
+        }
         int mode = choose_mode(&config);
         if (mode < 0) {
             prg32_gfx_set_fullscreen(was_fullscreen);
@@ -1247,6 +1289,7 @@ int prg32_wifi_setup_run(void) {
             }
         } else {
             config.mode = PRG32_WIFI_MODE_STA;
+            scan_stopped_radio = wifi_started;
             if (choose_ssid(config.ssid, sizeof(config.ssid)) != 0) {
                 continue;
             }
@@ -1292,7 +1335,8 @@ int prg32_wifi_setup_run(void) {
             prg32_gfx_present();
             if (rc != 0 ||
                 strcmp(active_status, "CONNECTED") == 0 ||
-                (prg32_input_read_menu() & PRG32_BTN_B)) {
+                (prg32_input_read_menu() & PRG32_BTN_B) ||
+                prg32_setup_interrupted()) {
                 break;
             }
             if (prg32_ticks_ms() - start > 30000) {
@@ -1374,10 +1418,7 @@ int prg32_wifi_scan_networks(prg32_wifi_network_t *out, int max, char *status,
         bool was_started = wifi_started;
         count = scan_networks_locked(&records, status, status_size);
         if (was_started) {
-            prg32_wifi_config_t config;
-            default_config(&config);
-            load_config(&config);
-            start_mode_locked(&config);
+            start_saved_mode_locked();
         }
     }
     wifi_lock_give();

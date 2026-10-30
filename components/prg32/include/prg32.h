@@ -330,6 +330,15 @@ uint32_t prg32_input_read_menu(void);
 void prg32_input_wait_released(uint32_t mask);
 uint32_t prg32_controller_read(void);
 const char *prg32_controller_name(uint32_t bit);
+/* Remote keys sent through the device protocol KEY message. They join the
+ * physical buttons in prg32_controller_read(). Firmware only, not cartridge
+ * ABI. Adding a button: see docs/agents/device_protocol_consistency.md. */
+#define PRG32_REMOTE_KEY_COUNT 7
+const char *prg32_controller_remote_name(int index);
+uint32_t prg32_controller_remote_bit(const char *name);
+void prg32_controller_remote_press(uint32_t mask, uint32_t hold_ms);
+void prg32_controller_remote_release(uint32_t mask);
+uint32_t prg32_controller_remote_active(void);
 void prg32_diag_set_input_state(uint32_t input_state);
 void prg32_diag_increment_frame(void);
 uint32_t prg32_diag_input_state(void);
@@ -494,6 +503,7 @@ const char *prg32_cart_last_error(void);
  * portable cartridge ABI table. */
 void prg32_setup_request(void);
 int prg32_setup_take_request(void);
+bool prg32_setup_interrupted(void);
 void prg32_setup_run(void);
 void prg32_usb_protocol_start(void);
 bool prg32_usb_protocol_busy(void);

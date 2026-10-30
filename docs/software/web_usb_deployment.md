@@ -36,6 +36,14 @@ cartridge running and the console did not restart. Chrome closes the chooser at
 once when the button is pressed by browser automation, so this check needs a
 person.
 
+Firmware from 2026-10-30 onward also adds the KEY message behind a `keys` HELLO
+capability ([Key messages](usb_protocol.md#key-messages)). The web client needs
+no change; a virtual controller in the Construction-Kit or CartridgeStore would
+be an optional follow-up. PRG32-Qt must keep `keys` out of its HELLO
+capabilities until `src/qt/IoProtocolServer.cpp` implements the message; today
+it answers `unsupported message type`, and the SDK reports that it has no key
+commands.
+
 Firmware from 2026-10-30 onward adds the WIFI_SCAN, WIFI_SET, and WIFI_FORGET
 messages behind a `wifi` HELLO capability
 ([Wi-Fi messages](usb_protocol.md#wi-fi-messages)). The web client needs no

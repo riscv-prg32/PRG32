@@ -139,6 +139,14 @@ class WifiFirmwareSourceTests(unittest.TestCase):
         self.assertIn("known_remove(index);", forget)
         self.assertIn("esp_wifi_restore();", forget)
 
+    def test_a_scan_from_a_connected_station_is_not_ended_by_a_reconnect(self) -> None:
+        source = (ROOT / "components/prg32/prg32_wifi.c").read_text(encoding="utf-8")
+        scan = source[source.index("static int scan_networks_locked("):]
+        self.assertLess(scan.index("sta_autoconnect = false;"), scan.index("esp_wifi_stop()"))
+        event = source[source.index("static void wifi_event("):]
+        wait = event.index("vTaskDelay(pdMS_TO_TICKS(1000));")
+        self.assertLess(event.index("if (sta_autoconnect)", wait), event.index("esp_wifi_connect();", wait))
+
     def test_network_management_is_not_in_the_cartridge_abi(self) -> None:
         abi = (ROOT / "prg32/abi/prg32_abi.json").read_text(encoding="utf-8")
         for name in ("prg32_wifi_scan_networks", "prg32_wifi_known_networks",

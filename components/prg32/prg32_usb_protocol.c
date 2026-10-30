@@ -61,6 +61,12 @@
 #define PROTOCOL_HAS_WIFI 0
 #endif
 
+/* KEY: a press lasts this long unless the request sets hold_ms. A full-screen
+ * present takes about 150 ms, so the default outlasts one slow frame. The
+ * maximum releases a key whose host disappeared without sending a release. */
+#define PROTOCOL_KEY_HOLD_DEFAULT_MS 200u
+#define PROTOCOL_KEY_HOLD_MAX_MS 60000u
+
 /* Header flag bit 0: final chunk on responses, restart on PERFORMANCE_GET. */
 #define PROTOCOL_FLAG_FINAL 0x0001u
 #define PROTOCOL_FLAG_RESTART 0x0001u
@@ -76,6 +82,7 @@ enum {
   MESSAGE_WIFI_SCAN = 0x08,
   MESSAGE_WIFI_SET = 0x09,
   MESSAGE_WIFI_FORGET = 0x0A,
+  MESSAGE_KEY = 0x0B,
   MESSAGE_STATUS = 0x80,
   MESSAGE_RESULT_DATA = 0x81,
 };
@@ -301,17 +308,24 @@ static bool json_u32(cJSON *root, const char *name, uint32_t *value) {
 }
 
 static void handle_hello(uint32_t request_id) {
-  char json[512];
+  char json[640];
+  char keys[96] = "";
+  for (int i = 0; i < PRG32_REMOTE_KEY_COUNT; ++i) {
+    size_t used = strlen(keys);
+    snprintf(keys + used, sizeof(keys) - used, "%s\"%s\"", i ? "," : "",
+             prg32_controller_remote_name(i));
+  }
   snprintf(json, sizeof(json),
            "{\"ok\":true,\"protocol\":\"prg32-io-1.0\","
-           "\"capabilities\":[\"upload\",\"run\",\"performance\""
-           PROTOCOL_WIFI_CAPABILITY "],"
+           "\"capabilities\":[\"upload\",\"run\",\"performance\",\"keys\""
+           PROTOCOL_WIFI_CAPABILITY "],\"keys\":[%s],"
            "\"debug_supported\":false,\"firmware\":\"%s\",\"target\":\"%s\","
            "\"slots\":%u,\"max_chunk\":%u,\"max_payload\":%u,"
            "\"runtime\":{\"cart_ram_size\":%lu,\"cart_max_size\":%lu,"
            "\"cart_abi_major\":%u,\"cart_abi_minor\":%u,"
            "\"heap_free\":%lu,\"heap_largest\":%lu}}",
-           PRG32_FIRMWARE_VERSION, CONFIG_IDF_TARGET, PRG32_CART_SLOT_COUNT,
+           keys, PRG32_FIRMWARE_VERSION, CONFIG_IDF_TARGET,
+           PRG32_CART_SLOT_COUNT,
            PROTOCOL_CHUNK_MAX, PROTOCOL_MAX_PAYLOAD,
            (unsigned long)prg32_cart_ram_size(),
            (unsigned long)PRG32_CART_MAX_SIZE, PRG32_CART_ABI_MAJOR,
@@ -365,6 +379,8 @@ static void handle_upload_begin(uint32_t request_id, const uint8_t *payload,
    * unloaded; prg32_cart_unload() waits for an update/draw call to finish. */
   g_upload_busy = true;
   prg32_cart_unload();
+  /* A held remote key must not reach whatever runs after the upload. */
+  prg32_controller_remote_release(UINT32_MAX);
   draw_upload_screen("ERASING SLOT...", PRG32_COLOR_YELLOW);
   if (prg32_cart_stream_begin(g_upload.slot, g_upload.expected_size) != 0) {
     draw_upload_screen(prg32_cart_last_error(), PRG32_COLOR_RED);
@@ -504,6 +520,8 @@ static void handle_run(uint32_t request_id, const uint8_t *payload,
   cJSON *root = cJSON_ParseWithLength((const char *)payload, payload_size);
   int slot = root ? slot_from_name(json_string(root, "slot")) : -1;
   cJSON_Delete(root);
+  /* A held remote key must not reach the newly selected cartridge. */
+  prg32_controller_remote_release(UINT32_MAX);
   if (slot < 0 || prg32_cart_select_slot((uint8_t)slot) != 0) {
     send_status(request_id, false,
                 slot < 0 ? "invalid cartridge slot" : prg32_cart_last_error());
@@ -696,6 +714,101 @@ static void handle_wifi_forget(uint32_t request_id, const uint8_t *payload,
   cJSON_Delete(root);
 }
 
+/* Add every remote key that is currently down, by name, to a reply. */
+static void add_active_keys(cJSON *root) {
+  uint32_t active = prg32_controller_remote_active();
+  cJSON *list = cJSON_AddArrayToObject(root, "active");
+  for (int i = 0; list && i < PRG32_REMOTE_KEY_COUNT; ++i) {
+    const char *name = prg32_controller_remote_name(i);
+    if (active & prg32_controller_remote_bit(name)) {
+      cJSON_AddItemToArray(list, cJSON_CreateString(name));
+    }
+  }
+}
+
+/* Convert the "keys" array to a button mask. An unknown name refuses the
+ * whole request, so a typing mistake never presses half a chord. */
+static bool key_mask_from_json(cJSON *keys, uint32_t *mask, char *reason,
+                               size_t reason_size) {
+  *mask = 0;
+  cJSON *key = NULL;
+  cJSON_ArrayForEach(key, keys) {
+    uint32_t bit = cJSON_IsString(key)
+                       ? prg32_controller_remote_bit(key->valuestring)
+                       : 0;
+    if (bit == 0) {
+      snprintf(reason, reason_size, "unknown key %.16s",
+               cJSON_IsString(key) ? key->valuestring : "(not a string)");
+      return false;
+    }
+    *mask |= bit;
+  }
+  return true;
+}
+
+static void handle_key(uint32_t request_id, const uint8_t *payload,
+                       size_t payload_size) {
+  /* The main loop is paused during an upload, so nothing would read the key. */
+  if (g_upload.active) {
+    send_status(request_id, false, "upload in progress");
+    return;
+  }
+  cJSON *request = cJSON_ParseWithLength((const char *)payload, payload_size);
+  const char *action = request ? json_string(request, "action") : NULL;
+  cJSON *keys = request ? cJSON_GetObjectItemCaseSensitive(request, "keys") : NULL;
+  bool release = action && strcmp(action, "release") == 0;
+  const char *error = NULL;
+  char reason[32];
+  uint32_t mask = 0;
+  uint32_t hold_ms = PROTOCOL_KEY_HOLD_DEFAULT_MS;
+
+  if (!request) {
+    error = "invalid key request";
+  } else if (action && !release && strcmp(action, "press") != 0) {
+    error = "invalid key action";
+  } else if (keys && !cJSON_IsArray(keys)) {
+    error = "keys must be an array";
+  } else if (keys && !key_mask_from_json(keys, &mask, reason, sizeof(reason))) {
+    error = reason;
+  } else if (!release && mask == 0) {
+    error = "missing keys";
+  } else if (cJSON_GetObjectItemCaseSensitive(request, "hold_ms") &&
+             (!json_u32(request, "hold_ms", &hold_ms) || hold_ms == 0 ||
+              hold_ms > PROTOCOL_KEY_HOLD_MAX_MS)) {
+    error = "invalid hold_ms";
+  }
+  if (error) {
+    send_status(request_id, false, error);
+    cJSON_Delete(request);
+    return;
+  }
+  cJSON_Delete(request);
+
+  if (release) {
+    /* A release that names no key releases all of them. */
+    prg32_controller_remote_release(mask ? mask : UINT32_MAX);
+  } else {
+    prg32_controller_remote_press(mask, hold_ms);
+  }
+
+  cJSON *root = cJSON_CreateObject();
+  if (!root) {
+    send_status(request_id, true, "key accepted");
+    return;
+  }
+  cJSON_AddBoolToObject(root, "ok", true);
+  add_active_keys(root);
+  char *json = cJSON_PrintUnformatted(root);
+  cJSON_Delete(root);
+  if (json) {
+    send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, json,
+               strlen(json));
+    cJSON_free(json);
+  } else {
+    send_status(request_id, true, "key accepted");
+  }
+}
+
 static void dispatch_frame(const protocol_header_t *header,
                            const uint8_t *payload) {
   switch (header->type) {
@@ -736,6 +849,9 @@ static void dispatch_frame(const protocol_header_t *header,
     } else {
       handle_wifi_forget(header->request_id, payload, header->payload_size);
     }
+    break;
+  case MESSAGE_KEY:
+    handle_key(header->request_id, payload, header->payload_size);
     break;
   default:
     send_status(header->request_id, false, "unsupported protocol message");

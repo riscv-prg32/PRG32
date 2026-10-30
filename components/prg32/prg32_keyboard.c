@@ -437,6 +437,9 @@ int prg32_text_input(char *buffer, size_t capacity, const char *title) {
                               MENU_CANCEL);
 
     while (!keyboard.done) {
+        if (prg32_setup_interrupted()) {
+            return -1;
+        }
         uint32_t input = prg32_input_read_menu();
         prg32_keyboard_update(&keyboard, input);
         prg32_gfx_clear(PRG32_COLOR_BLACK);

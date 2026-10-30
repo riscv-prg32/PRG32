@@ -47,6 +47,10 @@ When modifying code, you are bound by these rules:
   [device protocol and hardware consistency](docs/agents/device_protocol_consistency.md).
   Never toggle DTR/RTS one at a time when opening a board's serial port: it
   restarts the ESP32-C6.
+- **Controller keys:** The device protocol KEY message and `prg32 esp32c6 key`
+  cover UP, DOWN, LEFT, RIGHT, START, A, and B. Any button added later must be
+  added to them in the same change, following
+  [adding a controller key](docs/agents/device_protocol_consistency.md#adding-a-controller-key).
 - **Attached hardware:** Testing on a connected board overwrites cartridge
   slots. Report which slots a test wrote or erased.
 

@@ -19,6 +19,7 @@ from prg32.esp32c6.memory_esp32c6 import memory_esp32c6
 from prg32.esp32c6.screenshot_esp32c6 import screenshot_esp32c6
 from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
 from prg32.esp32c6.wifi_esp32c6 import wifi_scan_esp32c6, wifi_set_esp32c6, wifi_forget_esp32c6
+from prg32.esp32c6.key_esp32c6 import key_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
@@ -31,6 +32,7 @@ from prg32.store.utils import ARCHITECTURE_PROFILES
 from prg32.store.config_cli import store_set_url, store_clear_url
 
 from prg32.debug import SUPPORTED_SPEEDS, debug_cli
+from prg32.usb_protocol import KEY_HOLD_DEFAULT_MS, KEY_HOLD_MAX_MS
 from prg32.abi.abi_gen import abi_gen_cmd, abi_check_cmd
 from prg32.wifi.wifi_cli import wifi_set, wifi_clear
 from prg32.python.cli import add_python_commands
@@ -181,6 +183,27 @@ def main(argv: list[str]) -> int:
     p.add_argument("--ssid", required=True, help="Stored network name to forget")
     p.set_defaults(func=wifi_forget_esp32c6)
 
+    # Key commands through the device protocol, shared by both targets.
+    def add_key_command(parser, default_port):
+        parser.add_argument("keys", nargs="*", metavar="KEY",
+                            help="Key to press: LEFT, RIGHT, UP, DOWN, A, B, START (or SELECT). "
+                                 "Several arguments are pressed in turn; A+B presses keys together")
+        if default_port:
+            parser.add_argument("--port", default=default_port, help="Device protocol endpoint of the running emulator")
+        else:
+            parser.add_argument("--port", required=True, help="Running-device USB serial port, or socket://HOST:PORT for an emulator")
+        parser.add_argument("--baud", default="115200", help="Device protocol baud rate")
+        parser.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
+        parser.add_argument("--hold-ms", type=int, default=KEY_HOLD_DEFAULT_MS,
+                            help=f"How long each step stays down, 1 to {KEY_HOLD_MAX_MS} ms")
+        parser.add_argument("--gap-ms", type=int, default=100, help="Pause between two steps")
+        parser.add_argument("--release", action="store_true",
+                            help="Release the named keys early, or all keys when none is named")
+        parser.set_defaults(func=key_esp32c6)
+
+    p = esp32c6_sub.add_parser("key", help="press controller keys on a running board over the device protocol")
+    add_key_command(p, None)
+
     p = esp32c6_sub.add_parser("screenshot", help="Get screenshot of ESP32C6 over HTTP")
     p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
     p.add_argument("--out", default="screenshot.bmp", help="Path to save the screenshot")
@@ -244,6 +267,9 @@ def main(argv: list[str]) -> int:
              "(default: CONFIG_PRG32_CART_RAM_KIB from the sdkconfig next to --flash, "
              f"else {DEFAULT_CART_RAM_KIB}; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
     p.set_defaults(func=upload_qemu)
+
+    p = qemu_sub.add_parser("key", help="press controller keys on the running emulator over the device protocol")
+    add_key_command(p, "socket://127.0.0.1:5555")
 
 
 

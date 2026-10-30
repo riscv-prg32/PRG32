@@ -60,6 +60,11 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
   over `--port`. `wifi-set` reads the password from a hidden prompt or
   `--password-stdin`, never from the command line. See
   [Stored Networks](network.md#stored-networks).
+- `key`: press controller keys on a running board over `--port`, for testing a
+  cartridge or the setup menu without touching the buttons. `key UP UP A` presses
+  three keys in turn, `key A+B` presses two together, `--hold-ms` and `--gap-ms`
+  set the timing, and `--release` ends a long press early. See
+  [Key messages](../software/usb_protocol.md#key-messages).
 ## QEMU Emulator Tasks (`qemu`)
 - `build`: build QEMU and generate the flash image. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment
@@ -67,6 +72,8 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `upload`: upload a cartridge to QEMU. `--cart-ram-kib` sets the executable
   RAM limit; by default it is read from `build-qemu/sdkconfig`, else 64 KiB
   (see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).
+- `key`: press controller keys on the running emulator, like `esp32c6 key`;
+  `--port` defaults to `socket://127.0.0.1:5555`.
 
 Two interactive helpers wrap `cartridge build` and QEMU staging for the
 graphics versions of the example games in `examples/games/`:
