@@ -43,7 +43,7 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
 - `ports`: list the connected ESP32-C6 boards and, separately, the other serial
   ports, which cannot receive cartridges.
 
-`upload`, `run`, `key`, and the `wifi-*` commands find the board themselves when
+`upload`, `run`, `performance`, `key`, and the `wifi-*` commands find the board themselves when
 neither `--url` nor `--port` is given: they use the only serial port that reports
 the ESP32-C6 native USB ID (`303A:1001`), on Windows, Linux, and macOS alike.
 With no board connected they explain the usual causes; with several boards they

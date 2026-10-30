@@ -148,8 +148,12 @@ def main(argv: list[str]) -> int:
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to run")
     p.set_defaults(func=run_esp32c6)
 
-    p = esp32c6_sub.add_parser("performance", help="Get ESP32C6 performance data over HTTP. Must be used in Performance Test")
-    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    p = esp32c6_sub.add_parser("performance", help="Get performance data over HTTP or the device protocol. Must be used in Performance Test")
+    transport = p.add_mutually_exclusive_group()
+    transport.add_argument("--url", help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT (default: the only connected ESP32-C6)")
+    p.add_argument("--baud", default="115200", help="Device protocol baud rate")
+    p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
     p.add_argument("--out", default="prg32_performance.json", help="Path to save the performance data")
     p.set_defaults(func=get_performance_esp32c6)
 

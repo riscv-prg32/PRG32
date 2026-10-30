@@ -16,7 +16,7 @@ Here are common issues and solutions when working with the PRG32 framework.
 
 - **Serial port not detected**: If the serial port is not detected, pass it explicitly. Add `-p COMx` on Windows, `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS when using raw `idf.py` commands. `python3 -m prg32 esp32c6 ports` names the port of a board connected through its connector labelled USB.
 - **`no ESP32-C6 found on a native USB port`**: `upload`, `run`, `key`, and the
-  `wifi-*` commands look for the board by its native USB ID when `--port` is
+  `wifi-*` commands, and `performance`, look for the board by its native USB ID when `--port` is
   left out ([tooling](tooling.md#upload--run-cartridges)). Check, in order:
   1. the cable is in the connector labelled USB, not UART; the UART bridge
      appears in `esp32c6 ports` under "Other serial ports" and cannot receive

@@ -239,6 +239,15 @@ python3 -m prg32 esp32c6 performance \
   --out data/prg32_performance_run01.json
 ```
 
+Without Wi-Fi, retrieve it through the board's connector labelled USB; the SDK
+finds the board, or takes `--port` when several are connected (see
+[tooling](usage/tooling.md#upload--run-cartridges)):
+
+```bash
+python3 -m prg32 esp32c6 performance \
+  --out data/prg32_performance_run01.json
+```
+
 The equivalent HTTP request is:
 
 ```bash

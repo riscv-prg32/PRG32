@@ -19,7 +19,16 @@ Fritzing project in the repository has since moved to the `breadboard1` pins
 > starts, so USB uploads through the
 > [device protocol](../../software/usb_protocol.md) and the USB console fail on
 > the DevKitC-1 **USB** port. Use the **UART** (USB-to-UART bridge) port for
-> flashing, monitoring, and cartridge uploads.
+> flashing and monitoring.
+>
+> The device protocol runs only on the native USB port, so a `pcb1` board
+> cannot receive cartridges over any USB cable, and USB-only commands (`key`,
+> `wifi-scan`, `wifi-set`, `wifi-forget`) do not work. Upload cartridges over
+> Wi-Fi with `python3 -m prg32 esp32c6 upload game.prg32 --url http://<board>`
+> (see [cartridges](../../software/cartridges.md#2-upload-to-board-esp32-c6)),
+> or download them from a CartridgeStore in the setup menu. Rebuilding the
+> hardware with DOWN on GPIO0, as in [`breadboard1`](breadboard1.md), restores
+> USB uploads.
 
 ## Overview
 
@@ -219,7 +228,8 @@ python3 -m prg32 esp32c6 build --pin-profile pcb1
 idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.pcb1" build
 ```
 
-Flash through the DevKitC-1 **UART** port (see the warning at the top).
+Flash through the DevKitC-1 **UART** port, and upload cartridges over Wi-Fi
+(see the warning at the top).
 
 In `idf.py menuconfig` choose `Component config` -> `PRG32 Framework` ->
 `PRG32 Board Configuration` -> `Hardware Pin Profile` ->

@@ -89,6 +89,7 @@ class FindPortTests(unittest.TestCase):
 
         with mock.patch.object(argparse.ArgumentParser, "parse_args", parse_without_running):
             for argv in (["esp32c6", "upload", "game.prg32"], ["esp32c6", "run"],
+                         ["esp32c6", "performance"],
                          ["esp32c6", "key", "A"], ["esp32c6", "wifi-scan"],
                          ["esp32c6", "wifi-forget", "--ssid", "LabNet"]):
                 with self.subTest(argv=argv):
