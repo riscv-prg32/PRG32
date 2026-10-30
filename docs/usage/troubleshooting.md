@@ -14,7 +14,28 @@ Here are common issues and solutions when working with the PRG32 framework.
 
 ## Hardware and Flashing Issues
 
-- **Serial port not detected**: If the serial port is not detected, pass it explicitly. Add `-p COMx` on Windows, `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS when using raw `idf.py` commands.
+- **Serial port not detected**: If the serial port is not detected, pass it explicitly. Add `-p COMx` on Windows, `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS when using raw `idf.py` commands. `python3 -m prg32 esp32c6 ports` names the port of a board connected through its connector labelled USB.
+- **`no ESP32-C6 found on a native USB port`**: `upload`, `run`, `key`, and the
+  `wifi-*` commands look for the board by its native USB ID when `--port` is
+  left out ([tooling](tooling.md#upload--run-cartridges)). Check, in order:
+  1. the cable is in the connector labelled USB, not UART; the UART bridge
+     appears in `esp32c6 ports` under "Other serial ports" and cannot receive
+     cartridges;
+  2. the cable carries data: if `esp32c6 ports` lists nothing new when the
+     board is plugged in, try another cable;
+  3. no serial monitor or other program holds the port;
+  4. the firmware does not use the `pcb1` profile, which takes GPIO13 (USB D+)
+     for P1 DOWN;
+  5. on Linux, `groups` lists `dialout` (or `uucp` on Arch-based systems); see
+     the Linux notes in the [README](../../README.md#install--setup);
+  6. on Windows, the board appears in Device Manager under *Ports (COM & LPT)*
+     as *USB Serial Device*. Windows 10 and 11 need no driver for it; under
+     *Other devices* or with a warning sign, reconnect the cable or try another
+     USB socket.
+- **`ESP32-C6 boards are connected; choose one with --port`**: the SDK never
+  guesses between boards, because an upload overwrites a cartridge slot. Pass
+  one of the listed ports with `--port`. Unplug a board to see which name
+  disappears from `python3 -m prg32 esp32c6 ports`.
 - **Physical board flashes fail, crash, or show a black display**: You likely compiled the firmware for QEMU (`ESP32-C3`) instead of the physical board (`ESP32-C6`). Rebuild and flash the physical board using the Python tooling:
   ```bash
   python3 -m prg32 esp32c6 build && python3 -m prg32 esp32c6 flash

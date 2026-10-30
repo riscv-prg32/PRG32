@@ -389,9 +389,8 @@ class Esp32c6UsbUploadTests(unittest.TestCase):
         upload.assert_not_called()
         client.close.assert_called_once()
 
-    def test_upload_cli_requires_exactly_one_transport(self) -> None:
-        with self.assertRaises(SystemExit):
-            prg32_main(["esp32c6", "upload", "game.prg32"])
+    def test_upload_cli_accepts_at_most_one_transport(self) -> None:
+        # Without --url or --port the board is found by USB ID (test_find_port).
         with self.assertRaises(SystemExit):
             prg32_main([
                 "esp32c6", "upload", "game.prg32",

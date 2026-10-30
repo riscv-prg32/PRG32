@@ -161,5 +161,18 @@ def doctor(args: argparse.Namespace) -> None:
         failures += 1
         log_error(f"partitions file missing: {partitions_path}")
 
+    # A board is only needed for uploads, so its absence is not a failure.
+    from prg32.esp32c6.find_port import describe_port, find_esp32c6_ports
+    try:
+        boards = find_esp32c6_ports()
+    except SystemExit as exc:
+        log_info(str(exc))
+    else:
+        if boards:
+            for board in boards:
+                log_ok(f"ESP32-C6 connected on {describe_port(board)}")
+        else:
+            log_info("no ESP32-C6 connected on a native USB port (needed only for uploads)")
+
     if failures:
         raise SystemExit(1)

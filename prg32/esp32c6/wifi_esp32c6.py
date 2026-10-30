@@ -18,11 +18,13 @@ from prg32.usb_protocol import (
     wifi_scan,
     wifi_set,
 )
+from prg32.esp32c6.find_port import resolve_port
 from prg32.utilities.logging import *
 
 
 def _connect(args: argparse.Namespace) -> ProtocolClient:
-    client = ProtocolClient(open_stream(args.port, int(args.baud), float(args.timeout)), float(args.timeout))
+    port = resolve_port(args.port)
+    client = ProtocolClient(open_stream(port, int(args.baud), float(args.timeout)), float(args.timeout))
     try:
         require_wifi(client)
     except SystemExit:

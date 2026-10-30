@@ -32,14 +32,25 @@ All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6
     - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience. Erases `./sdkconfig` and `build-esp32c6/sdkconfig` (disable with `-k` / `--keep-sdkconfig` / `--no-erase-sdkconfig`).
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
 ### Upload & Run Cartridges
-- `upload`: upload over HTTP with `--url`, or use the automatic running-device
-  protocol with `--port`. The latter supports native USB and
-  `socket://HOST:PORT` emulator endpoints, requires no reset or upload mode,
-  and accepts `--command store|run|debug|performance`. See the
+- `upload`: upload over HTTP with `--url`, or otherwise through the running-device
+  protocol. The protocol supports native USB and `socket://HOST:PORT` emulator
+  endpoints, requires no reset or upload mode, and accepts
+  `--command store|run|debug|performance`. See the
   [device protocol](../software/usb_protocol.md). Browsers use the same
   protocol; see [Web-to-USB cartridge deployment](../software/web_usb_deployment.md).
 - `run`: run a stored slot over HTTP or the device protocol. `--debug` requests
   instruction debugging on PRG32-Qt; physical firmware reports it unsupported.
+- `ports`: list the connected ESP32-C6 boards and, separately, the other serial
+  ports, which cannot receive cartridges.
+
+`upload`, `run`, `key`, and the `wifi-*` commands find the board themselves when
+neither `--url` nor `--port` is given: they use the only serial port that reports
+the ESP32-C6 native USB ID (`303A:1001`), on Windows, Linux, and macOS alike.
+With no board connected they explain the usual causes; with several boards they
+list them and stop, so a lab bench with many boards needs `--port`. An explicit
+`--port` is always used as given. The ID identifies the connector labelled USB;
+the UART bridge connector is never chosen because the protocol does not run
+there.
 
 ### Firmware Tools
 These scripts are used to prepare and flashing single-file firmwares. They are useful to run legacy firmware for debugging purposes or to share modified versions of the firmware.
@@ -130,7 +141,8 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 - `pack-bundle`: pack a flat CartridgeStore zip bundle
 - `publish-bundle`: publish a CartridgeStore zip bundle
 ## Diagnostic Tasks
-- `doctor`: check local toolchain prerequisites
+- `doctor`: check local toolchain prerequisites, and report any ESP32-C6
+  connected on a native USB port (informational; a missing board is not a failure)
 - `runtime`: print runtime linker information
 - `debug`: query state or send `enable`, `disable`, `pause`, `step`, `resume`,
   and playback `speed` commands to PRG32-QT. See the

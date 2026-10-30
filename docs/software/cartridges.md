@@ -121,15 +121,18 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --url http://192.1
 
 The firmware stores the cartridge in `cart0` by default and starts running it from the main loop. You can upload to another slot with `--slot cart1`.
 
-When Wi-Fi is unavailable, upload through the running firmware's automatically
-detected USB protocol:
+When Wi-Fi is unavailable, connect the board's connector labelled USB and
+upload through the running firmware's automatically detected USB protocol:
 
 ```bash
-python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
-  --port /dev/cu.usbmodem101 --slot cart0
+python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --slot cart0
 ```
 
-Use the serial port name for your host (`COM5` is a typical Windows example).
+Without `--url` or `--port`, the SDK finds the board by its native USB ID and
+prints the port it chose. With several boards connected, pass the port name for
+your host, for example `--port COM5` (Windows), `--port /dev/ttyACM0` (Linux),
+or `--port /dev/cu.usbmodem101` (macOS); `python3 -m prg32 esp32c6 ports` lists
+them ([tooling](../usage/tooling.md#upload--run-cartridges)).
 USB upload validates the portable ABI and RAM requirement, opens the device's
 progress screen, streams into the selected slot, prints progress every 10%,
 and reports success or failure. A 24 KiB cartridge takes about two seconds.

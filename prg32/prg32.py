@@ -20,6 +20,7 @@ from prg32.esp32c6.screenshot_esp32c6 import screenshot_esp32c6
 from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
 from prg32.esp32c6.wifi_esp32c6 import wifi_scan_esp32c6, wifi_set_esp32c6, wifi_forget_esp32c6
 from prg32.esp32c6.key_esp32c6 import key_esp32c6
+from prg32.esp32c6.find_port import list_ports_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
@@ -102,6 +103,9 @@ def main(argv: list[str]) -> int:
     p = esp32c6_sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'breadboard1')")
     p.set_defaults(func=list_pins_esp32c6)
 
+    p = esp32c6_sub.add_parser("ports", help="list connected ESP32-C6 boards and the other serial ports")
+    p.set_defaults(func=list_ports_esp32c6)
+
     p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
     p.set_defaults(func=erase_flash_esp32c6)
 
@@ -117,9 +121,10 @@ def main(argv: list[str]) -> int:
         help="upload a cartridge to the ESP32C6 over HTTP or USB serial",
         usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
-    transport = p.add_mutually_exclusive_group(required=True)
+    transport = p.add_mutually_exclusive_group()
     transport.add_argument("--url", help="Device URL for HTTP upload (for example, http://192.168.4.1)")
-    transport.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator")
+    transport.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator "
+        "(default: the only connected ESP32-C6)")
     p.add_argument("--baud", default="115200", help="USB runtime protocol baud rate")
     p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout in seconds")
     p.add_argument("--chunk-size", type=int, default=1024, choices=range(256, 4097), metavar="BYTES",
@@ -134,9 +139,9 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=upload_esp32c6)
 
     p = esp32c6_sub.add_parser("run", help="run a stored cartridge over HTTP, USB, QEMU, or PRG32-Qt", usage="%(prog)s [options]")
-    transport = p.add_mutually_exclusive_group(required=True)
+    transport = p.add_mutually_exclusive_group()
     transport.add_argument("--url", help="Device HTTP URL")
-    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT")
+    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT (default: the only connected ESP32-C6)")
     p.add_argument("--baud", default="115200", help="Device protocol baud rate")
     p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
     p.add_argument("--debug", action="store_true", help="Request debugger execution when supported")
@@ -150,7 +155,7 @@ def main(argv: list[str]) -> int:
 
     # Wi-Fi networks stored on a running board (device protocol only).
     def add_wifi_transport(parser):
-        parser.add_argument("--port", required=True, help="Running-device USB serial port")
+        parser.add_argument("--port", help="Running-device USB serial port (default: the only connected ESP32-C6)")
         parser.add_argument("--baud", default="115200", help="Device protocol baud rate")
         parser.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
 
@@ -178,7 +183,8 @@ def main(argv: list[str]) -> int:
         if default_port:
             parser.add_argument("--port", default=default_port, help="Device protocol endpoint of the running emulator")
         else:
-            parser.add_argument("--port", required=True, help="Running-device USB serial port, or socket://HOST:PORT for an emulator")
+            parser.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator "
+                                "(default: the only connected ESP32-C6)")
         parser.add_argument("--baud", default="115200", help="Device protocol baud rate")
         parser.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
         parser.add_argument("--hold-ms", type=int, default=KEY_HOLD_DEFAULT_MS,

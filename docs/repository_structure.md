@@ -74,6 +74,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- abi/                        Cartridge ABI generator and JSON specification
 |   |-- cartridge/                  Cartridge packaging scripts
 |   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, verification, and USB Wi-Fi network and key commands
+|   |   `-- find_port.py            Finds a connected ESP32-C6 native USB port by USB ID, so device-protocol commands need no `--port`
 |   |-- python/                     PRG32 Python compiler shared with PRG32-Construction-Kit (game.py -> game IR -> C/assembly) and the `python` command
 |   |-- qemu/                       Emulator launch, staging, key commands, and automated smoke testing
 |   |-- usb_protocol.py             Shared framed device-protocol client and stream decoder
@@ -83,7 +84,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (64 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 128 KiB profile, and local overrides (.local))
 |   `-- sdkconfig.pins.*            Hardware pin configuration profiles (breadboard1, breadboard2, pcb1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations

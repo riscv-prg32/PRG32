@@ -41,7 +41,9 @@ python3 -m prg32 esp32c6 flash-firmware \
   --port /dev/cu.usbmodem5ABA0099241
 ```
 
-If you are unsure which port your ESP32-C6 is connected to, you can list the available serial ports depending on your operating system:
+If the cable is in the board connector labelled USB, `python3 -m prg32 esp32c6 ports`
+names the board's port on every operating system. Otherwise, list the available
+serial ports depending on your operating system:
 
 **macOS:**
 ```bash

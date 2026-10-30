@@ -279,7 +279,14 @@ hardware interface with OpenOCD, GDB, and the symbol ELF produced by
 
 ## SDK examples
 
+On ESP32-C6, `--port` can be left out when one board is connected: the SDK
+selects the only serial port with the Espressif USB Serial/JTAG ID
+`303A:1001`, the same ID the browser clients filter on. Listing ports does not
+open them, so detection cannot reset the board. See
+[tooling](../usage/tooling.md#upload--run-cartridges).
+
 ```bash
+python3 -m prg32 esp32c6 upload game.prg32 --slot cart0 --command run
 python3 -m prg32 esp32c6 upload game.prg32 \
   --port /dev/cu.usbmodem101 --slot cart0 --command run
 python3 -m prg32 esp32c6 upload game.prg32 \
