@@ -57,13 +57,18 @@ DEFAULT_CART_SLOT = "cart0"
 # Executable cartridge RAM window, mirroring Kconfig PRG32_CART_RAM_KIB.
 # The default firmware profile (sdkconfig.defaults and sdkconfig.defaults.qemu)
 # is CONFIG_PRG32_CART_RAM_EXTENDED, a 64 KiB window. Host tools use this value
-# when no runtime information is available; pass --cart-ram-kib 32 to target
-# the classroom profile.
+# when no runtime information is available; pass --cart-ram-kib 128 or 32 to
+# target the large or classroom profile.
 DEFAULT_CART_RAM_KIB = 64
 CLASSROOM_CART_RAM_KIB = 32
 MIN_CART_RAM_KIB = 16
 MAX_CART_RAM_KIB = 128
 FALLBACK_CART_RAM_SIZE = DEFAULT_CART_RAM_KIB * 1024
+# Stored-package limit, mirroring the Kconfig PRG32_CART_MAX_KIB default of the
+# default profile (64 KiB; the 128 KiB large profile raises it to the size of
+# every cartridge partition in profiles/partitions_prg32.csv).
+DEFAULT_CART_MAX_KIB = 64
+FALLBACK_CART_MAX_SIZE = DEFAULT_CART_MAX_KIB * 1024
 FALLBACK_CART_LOAD_ADDR = 0x40800000
 FLASH_SIZE = 4 * 1024 * 1024
 

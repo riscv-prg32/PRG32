@@ -73,6 +73,13 @@ static bool g_loaded;
 static bool g_stored;
 static char g_error[96] = "no cartridge loaded";
 
+/* A stored cartridge is read through a flash memory mapping instead of a heap
+ * copy. The mapping stays open while the cartridge is loaded because the
+ * AUDIO block's samples and tracker events are played directly from it. */
+static esp_partition_mmap_handle_t g_image_map;
+static bool g_image_mapped;
+static uint8_t g_image_map_slot;
+
 static esp_err_t cart_nvs_init(void) {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
@@ -154,6 +161,20 @@ static const esp_partition_t *cart_partition_by_slot(uint8_t slot) {
 
 static const esp_partition_t *cart_partition(void) {
     return cart_partition_by_slot(g_current_slot);
+}
+
+/* Called with the cartridge lock held before a slot is erased or rewritten.
+ * The audio assets of a cartridge loaded from that slot point into its flash
+ * mapping, so they are cleared before the flash under them changes. */
+static void release_image_map_for_slot(uint8_t slot) {
+    if (!g_image_mapped || g_image_map_slot != slot) {
+        return;
+    }
+    prg32_audio_stop_all();
+    prg32_audio_clear_assets();
+    g_audio_size = 0;
+    esp_partition_munmap(g_image_map);
+    g_image_mapped = false;
 }
 
 static int read_metadata_trailer_size(const esp_partition_t *part,
@@ -494,29 +515,38 @@ int prg32_cart_load_stored(void) {
         set_error("invalid stored cartridge length");
         return -1;
     }
-    uint8_t *image = heap_caps_malloc(load_size, MALLOC_CAP_8BIT);
-    if (!image) {
-        set_error("out of memory reading cartridge");
-        return -1;
-    }
-    esp_err_t err = esp_partition_read(part, 0, image, load_size);
+    /* Map the image instead of copying it to the heap: the code/data payload
+     * is copied once, from flash straight into prg32_cart_exec, so loading a
+     * cartridge as large as the execution window needs no extra heap. */
+    const void *image = NULL;
+    esp_partition_mmap_handle_t map;
+    esp_err_t err = esp_partition_mmap(part, 0, load_size,
+                                       ESP_PARTITION_MMAP_DATA, &image, &map);
     if (err != ESP_OK) {
-        heap_caps_free(image);
-        set_error("failed to read stored cartridge");
+        set_errorf("failed to map stored cartridge: %s", esp_err_to_name(err));
         return -1;
     }
 
     if (lock_cart() != 0) {
-        heap_caps_free(image);
+        esp_partition_munmap(map);
         set_error("failed to lock cartridge runtime");
         return -1;
     }
     int rc = load_image_locked(image, load_size);
     if (rc == 0) {
         g_stored = true;
+        /* The new cartridge's audio now references the new mapping only. */
+        if (g_image_mapped) {
+            esp_partition_munmap(g_image_map);
+        }
+        g_image_map = map;
+        g_image_map_slot = g_current_slot;
+        g_image_mapped = true;
+    } else {
+        /* Audio that is still playing may reference the previous mapping. */
+        esp_partition_munmap(map);
     }
     unlock_cart();
-    heap_caps_free(image);
     return rc;
 }
 
@@ -530,6 +560,11 @@ int prg32_cart_install(const void *image, size_t image_size, int persist) {
         return -1;
     }
     int rc = load_image_locked(image, image_size);
+    if (rc == 0 && g_image_mapped) {
+        /* The installed cartridge's audio references the caller's image. */
+        esp_partition_munmap(g_image_map);
+        g_image_mapped = false;
+    }
     unlock_cart();
     if (rc != 0) {
         return rc;
@@ -615,6 +650,7 @@ int prg32_cart_store_slot(uint8_t slot, const void *image, size_t image_size) {
         set_error("failed to lock cartridge storage");
         return -1;
     }
+    release_image_map_for_slot(slot);
     ESP_LOGI(TAG,
              "cart store: erase %s size=%lu",
              slot_name(slot),
@@ -659,6 +695,7 @@ int prg32_cart_erase_slot(uint8_t slot) {
         set_error("failed to lock cartridge storage");
         return -1;
     }
+    release_image_map_for_slot(slot);
     esp_err_t err = esp_partition_erase_range(part, 0, part->size);
     if (err == ESP_OK && g_current_slot == slot) {
         g_stored = false;
@@ -709,6 +746,7 @@ int prg32_cart_stream_begin(uint8_t slot, size_t image_size) {
         set_error("failed to lock cartridge storage");
         return -1;
     }
+    release_image_map_for_slot(slot);
     esp_err_t err = esp_partition_erase_range(part, 0, erase_size);
     unlock_cart();
     if (err != ESP_OK) {
@@ -746,9 +784,30 @@ int prg32_cart_stream_write(uint8_t slot, size_t offset, const void *data, size_
 int prg32_cart_stream_end(uint8_t slot, size_t image_size) {
     prg32_cart_header_t stored_header;
     size_t stored_size = 0;
-    if (read_stored_header(slot, &stored_header, &stored_size, NULL) != 0 ||
+    uint32_t audio_size = 0;
+    if (read_stored_header(slot, &stored_header, &stored_size, &audio_size) != 0 ||
         stored_size != image_size) {
         set_error("failed to verify streamed cartridge");
+        return -1;
+    }
+    /* A streamed image was never whole in RAM, so run the full header, size,
+     * and payload CRC validation on its flash mapping. */
+    size_t load_size = (size_t)stored_header.header_size +
+                       stored_header.code_size + audio_size;
+    const void *image = NULL;
+    esp_partition_mmap_handle_t map;
+    if (esp_partition_mmap(cart_partition_by_slot(slot), 0, load_size,
+                           ESP_PARTITION_MMAP_DATA, &image, &map) != ESP_OK) {
+        set_error("failed to map streamed cartridge");
+        return -1;
+    }
+    const uint8_t *payload = NULL;
+    const uint8_t *audio_block = NULL;
+    size_t mapped_audio_size = 0;
+    int rc = validate_header((const prg32_cart_header_t *)image, load_size,
+                             &payload, &audio_block, &mapped_audio_size);
+    esp_partition_munmap(map);
+    if (rc != 0) {
         return -1;
     }
     set_error("ok");

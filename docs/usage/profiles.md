@@ -13,27 +13,29 @@ PRG32 uses different SDK configuration profiles to adjust how the resident firmw
   idf.py -B build-qemu -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" set-target esp32c3
   ```
 
+How the firmware keeps as much heap free as possible next to the window is
+described in [Maximizing free heap](../hardware/memory.md#maximizing-free-heap).
+
 ## Optional Profiles
 
-### 128 KiB ESP32-C6 Profile (`sdkconfig.defaults.esp32c6_128k`)
+### 128 KiB Profile (`sdkconfig.defaults.esp32c6_128k`)
 
-The optional physical-board profile reserves 128 KiB of executable cartridge
-RAM and uses the ILI9341 low-memory renderer: the persistent framebuffer is
-the 320x200 game viewport, while the two 20-pixel status bands are generated
-during LCD transfer. This keeps the game coordinate system unchanged. Full
-320x240 framebuffer drawing is therefore not available in this profile.
+The optional profile reserves 128 KiB of executable cartridge RAM and raises
+the stored package limit to 128 KiB, the size of a cartridge partition. It
+costs 64 KiB of free heap compared with the default profile and also fits
+QEMU builds.
 
 ```bash
 idf.py -B build-esp32c6-128k \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.esp32c6_128k" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.esp32c6_128k;profiles/sdkconfig.pins.prototype1" \
   set-target esp32c6
 idf.py -B build-esp32c6-128k build
 ```
 
 Then build large cartridges with `--cart-ram-kib 128` (see below). Board
-uploads check the limit against the firmware's `/api/runtime` response. The
-setup resource screen reports `CART RAM` so the active profile can be checked
-on the board.
+uploads check the limit against the firmware's `/api/runtime` or HELLO
+response. The setup resource screen reports `CART RAM` so the active profile
+can be checked on the board.
 
 ## Matching Host Tools to the Profile
 
@@ -50,7 +52,8 @@ its window, so they choose the limit as follows:
 
 `--cart-ram-kib` accepts 16 to 128, the same range as the Kconfig custom
 profile. The value in `prg32/utilities/env_variables.py`
-(`DEFAULT_CART_RAM_KIB`) must match the Kconfig `PRG32_CART_RAM_KIB` default.
+(`DEFAULT_CART_RAM_KIB`) must match the Kconfig `PRG32_CART_RAM_KIB` default,
+and `DEFAULT_CART_MAX_KIB` must match the `PRG32_CART_MAX_KIB` default.
 
 To keep a cartridge within the classroom profile, build it with the
 32 KiB limit:

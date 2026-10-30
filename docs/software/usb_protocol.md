@@ -23,6 +23,16 @@ Implementations:
 - PRG32-Qt: `socket://127.0.0.1:8081`; the listener is deliberately loopback
   only because the protocol has no authentication.
 
+The firmware console shares the line with protocol frames on ESP32-C6 and
+QEMU, so hosts must search for the frame magic and ignore text between frames.
+The firmware never lets console text land inside a frame: it routes the
+console through the same driver as the protocol
+(`usb_serial_jtag_vfs_use_driver()` or `uart_vfs_dev_use_driver()`) and writes
+each reply frame, header and payload, in one driver call. A reply frame is at
+most 1,024 bytes, the size of the ESP32-C6 transmit ring, so RESULT_DATA
+carries at most 768 bytes of performance JSON per frame; hosts request chunks
+until the final flag, as before.
+
 ### Modem-control lines
 
 The ESP32-C6 USB Serial/JTAG peripheral resets the chip when the host asserts
@@ -82,6 +92,9 @@ frame.
 | `0x05` | RUN | JSON containing `slot` |
 | `0x06` | DEBUG | JSON containing `slot`; PRG32-Qt only |
 | `0x07` | PERFORMANCE_GET | empty; returns result data |
+| `0x08` | WIFI_SCAN | empty; returns nearby and stored networks ([Wi-Fi](#wi-fi-messages)) |
+| `0x09` | WIFI_SET | JSON with `ssid` and `password`; stores and joins a network |
+| `0x0A` | WIFI_FORGET | JSON with `ssid`; erases a stored network |
 | `0x80` | STATUS | response JSON |
 | `0x81` | RESULT_DATA | performance JSON; flag bit 0 marks the final chunk |
 
@@ -93,13 +106,19 @@ frame.
  "firmware":"5202077","target":"esp32c6","slots":8,
  "max_chunk":4096,"max_payload":16384,
  "runtime":{"cart_ram_size":65536,"cart_max_size":65536,
-            "cart_abi_major":1,"cart_abi_minor":1}}
+            "cart_abi_major":1,"cart_abi_minor":1,
+            "heap_free":197800,"heap_largest":172032}}
 ```
 
 `firmware`, `target`, `slots`, `max_chunk`, `max_payload` and
 `runtime.cart_abi_minor` were added in October 2026. Hosts must treat missing
 fields as unknown and fall back to 1024-byte chunks. `target` is the IDF target
-(`esp32c3` for the QEMU build).
+(`esp32c3` for the QEMU build). `capabilities` contains `"wifi"` only when the
+firmware was built with Wi-Fi (not on QEMU); hosts must check it before
+sending a [Wi-Fi message](#wi-fi-messages). `runtime.heap_free` and
+`runtime.heap_largest` (free 8-bit heap and its largest block, in bytes, at
+the time of the reply) were added on 2026-10-29 for memory measurements; see
+[Maximizing free heap](../hardware/memory.md#maximizing-free-heap).
 
 ### Upload sequence
 
@@ -116,11 +135,47 @@ UPLOAD_BEGIN metadata contains `name`, `slot` (`cart0` to `cart7`), `size`,
    running CRC. A chunk that repeats the previous one exactly (a host resending
    after a lost reply) is acknowledged without being written twice; any other
    offset is rejected as out of order;
-4. on UPLOAD_END checks length and CRC, validates the stored cartridge, and
+4. on UPLOAD_END checks length and CRC, validates the stored cartridge
+   (header, sizes, ABI, and payload CRC, read through a flash mapping), and
    for `run`/`performance` selects it.
 
 Every STATUS reply to UPLOAD_DATA reports `received` and `total` bytes.
 UPLOAD_END returns `name`, `slot`, `size`, and `running`.
+
+### Wi-Fi messages
+
+Added on 2026-10-30. All three reply with STATUS JSON and are refused with
+`upload in progress` during an upload, and with
+`Wi-Fi is not available in this build` on firmware without Wi-Fi. The firmware
+side is described in [stored networks](../usage/network.md#stored-networks).
+
+**WIFI_SCAN** scans for about 3 to 5 seconds. A connected board scans without
+dropping its connection; otherwise the radio restarts for the scan and the
+saved mode comes back afterwards.
+
+```json
+{"ok":true,
+ "networks":[{"ssid":"LabNet","rssi":-51,"channel":9,"auth":"WPA2","known":true}],
+ "known":["LabNet"],"connected":"LabNet","ip":"192.168.1.20","truncated":false}
+```
+
+`networks` holds one entry per SSID (its strongest access point), strongest
+first, hidden networks left out, at most 16. Weaker entries are removed until
+the reply fits one 1,024-byte frame, and `truncated` is then `true`. `known`
+lists the stored network names, newest first; passwords are never sent.
+
+**WIFI_SET** `{"ssid":"LabNet","password":"..."}` stores the network and joins
+it. The SSID is 1 to 31 characters; the password is empty (open network) or 8
+to 63 characters. The firmware waits up to 20 s for an address. On success it
+replies with `connected`, `ip`, and `known`, and the network becomes the first
+stored one. On failure it restarts the previous Wi-Fi configuration and replies
+`{"ok":false,"error":"<reason>"}`, for example `NO AP FOUND`, `AUTH FAILED`,
+or `connect timeout`; nothing is stored. Hosts should allow 60 s for the reply.
+
+**WIFI_FORGET** `{"ssid":"LabNet"}` erases the network and its password and
+replies with `known`, `connected`, and `ip`; an SSID that is not stored is
+answered with `network is not stored`. Forgetting the network in use switches
+to the next stored network, or to access-point mode when none is left.
 
 ## Device behavior
 
@@ -170,6 +225,58 @@ development uses the running-device protocol and does not require network
 connectivity.
 
 ## Validation record
+
+### 2026-10-30: Wi-Fi messages
+
+WIFI_SCAN, WIFI_SET, and WIFI_FORGET were added, and HELLO advertises the
+`wifi` capability. Exercised on the ESP32-C6 prototype on
+`/dev/cu.usbmodem101` with `python3 -m prg32 esp32c6 wifi-scan`, `wifi-set`,
+and `wifi-forget`:
+
+- scan while connected listed the visible networks with the stored one marked,
+  without dropping the connection;
+- joining a network that does not exist replied `NO AP FOUND` and the board
+  returned to its previous network;
+- forgetting an unknown SSID was refused; forgetting the network in use
+  switched the board to access-point mode and left no stored network;
+- setting the network again joined it, and after a reset the board rejoined it
+  on the first attempt;
+- uploads, a corrupted payload, a bad frame, and `run` behaved as before.
+
+On QEMU HELLO omits `wifi` and the three messages reply
+`Wi-Fi is not available in this build`. The four-network limit and switching
+to another stored network at boot were not exercised on hardware: only one
+joinable network was available.
+
+### 2026-10-29: heap reduction, payload validation, and whole frames
+
+The receiver now runs the full cartridge validation, including the payload
+CRC stored in the header, on the flash-mapped image at UPLOAD_END; HELLO
+reports `heap_free` and `heap_largest`; the ESP32-C6 transmit ring shrank to
+1,024 bytes; and reply frames are written whole, with the console routed
+through the protocol driver. Before this change a completed PerformanceTest
+result could not be read on the ESP32-C6: console log lines, written straight
+to the USB Serial/JTAG FIFO, were inserted inside the 5,133-byte RESULT_DATA
+frame and broke its CRC. The prototype's setup menu logs an RMT flush timeout
+about every 140 ms, which made this frequent.
+
+Firmware built from this revision for ESP32-C6 (`prototype1`) and QEMU was
+exercised with HELLO, `store`, `run`, and `performance` uploads, an image
+with a correct transport CRC but a corrupted payload, an oversize image, a
+frame with a bad CRC, repeated `RUN` switches, and reconnection.
+
+- ESP32-C6 prototype on `/dev/cu.usbmodem101` and Espressif QEMU on
+  `socket://127.0.0.1:5555`: the corrupted payload was rejected with
+  `cartridge payload CRC mismatch` and the slot was left erased; the oversize
+  image was refused before erasing; the bad frame did not disturb the
+  following HELLO; every other request succeeded.
+- The completed PerformanceTest result (5,129 bytes on ESP32-C6, 5,062 bytes on
+  QEMU) was read intact six times in a row on the board while the setup menu
+  kept logging, and console logs still reached the USB port.
+- All 32 cartridges published on the CartridgeStore were run on both targets;
+  see [Store compatibility check](../cartridge_store/cartridge_store.md#store-compatibility-check-2026-10-29).
+- The tests wrote `cart6` and `cart7`; both slots were backed up with
+  `esptool read_flash` beforehand and restored afterwards.
 
 ### 2026-10-28: robustness and throughput revision
 

@@ -18,6 +18,7 @@ from prg32.esp32c6.flash_firmware import flash_firmware_esp32c6
 from prg32.esp32c6.memory_esp32c6 import memory_esp32c6
 from prg32.esp32c6.screenshot_esp32c6 import screenshot_esp32c6
 from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
+from prg32.esp32c6.wifi_esp32c6 import wifi_scan_esp32c6, wifi_set_esp32c6, wifi_forget_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
@@ -157,6 +158,28 @@ def main(argv: list[str]) -> int:
     p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
     p.add_argument("--out", default="prg32_performance.json", help="Path to save the performance data")
     p.set_defaults(func=get_performance_esp32c6)
+
+    # Wi-Fi networks stored on a running board (device protocol only).
+    def add_wifi_transport(parser):
+        parser.add_argument("--port", required=True, help="Running-device USB serial port")
+        parser.add_argument("--baud", default="115200", help="Device protocol baud rate")
+        parser.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
+
+    p = esp32c6_sub.add_parser("wifi-scan", help="list the Wi-Fi networks the board can see and the ones it stores")
+    add_wifi_transport(p)
+    p.set_defaults(func=wifi_scan_esp32c6)
+
+    p = esp32c6_sub.add_parser("wifi-set", help="store a Wi-Fi network on the board and join it")
+    add_wifi_transport(p)
+    p.add_argument("--ssid", required=True, help="Network name (1 to 31 characters)")
+    p.add_argument("--password-stdin", action="store_true",
+                   help="Read the password from standard input instead of a hidden prompt")
+    p.set_defaults(func=wifi_set_esp32c6)
+
+    p = esp32c6_sub.add_parser("wifi-forget", help="erase a stored Wi-Fi network and its password from the board")
+    add_wifi_transport(p)
+    p.add_argument("--ssid", required=True, help="Stored network name to forget")
+    p.set_defaults(func=wifi_forget_esp32c6)
 
     p = esp32c6_sub.add_parser("screenshot", help="Get screenshot of ESP32C6 over HTTP")
     p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")

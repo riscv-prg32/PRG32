@@ -12,12 +12,59 @@ PRG32 supports three Wi-Fi runtime modes:
 
 ## Setup Menu Configuration
 
-The **Wi-Fi setup screen** lets the user choose between access-point mode or infrastructure mode. You can access the setup menu by holding the **A** and **B** buttons simultaneously during boot.
+The **Wi-Fi setup screen** lets the user choose access-point mode, infrastructure mode, or **FORGET NETWORK**. You can access the setup menu by holding the **A** and **B** buttons simultaneously during boot.
 
-- **Infrastructure mode** scans for nearby SSIDs, lists them on screen, and uses UP/DOWN plus SELECT or B to select. A cancels back.
+- **Infrastructure mode** scans for nearby SSIDs, lists them on screen, and uses UP/DOWN plus SELECT or B to select. A cancels back. The password of a stored network is filled in already.
+- **FORGET NETWORK** lists the stored networks, newest first; choose one with UP/DOWN and SELECT/A, then confirm with SELECT/A (B cancels).
 - The setup UI also shows the active Wi-Fi mode and IP address; AP mode shows the AP SSID, while infrastructure mode shows the selected/connected SSID.
 
 The chosen network settings are stored persistently in non-volatile storage (NVS) under the `prg32wifi` namespace.
+
+## Stored Networks
+
+The console remembers the last four infrastructure networks it connected to,
+with their passwords, newest first (NVS key `known` in the `prg32wifi`
+namespace). A network is added only after it has really connected and given
+the console an address; joining it again moves it to the front, and a fifth
+network replaces the oldest one.
+
+At boot the console scans for its saved network. When that network is out of
+range, it joins the most recently connected stored network that is in range,
+so a console moved between home and the lab connects without the setup menu.
+
+Forgetting a network erases it from the list and, when it is the network in
+use, switches to the next stored network, or to access-point mode when none
+is left. The ESP-IDF Wi-Fi driver keeps its own copy of the last credentials
+and a cache of recent access points, so forgetting also resets the driver's
+settings; the next connection may then need one extra attempt.
+
+Erased NVS entries are only marked as erased: their bytes stay in flash until
+NVS reuses the page, so a raw dump of the flash (for example with
+`esptool read_flash`) can still show a forgotten password for a while.
+Settings are not encrypted on the prototype; use NVS encryption where that
+matters.
+
+Stored networks can also be managed from a computer over USB with the
+[device protocol](../software/usb_protocol.md#wi-fi-messages):
+
+```bash
+python3 -m prg32 esp32c6 wifi-scan --port /dev/cu.usbmodem101
+```
+
+```bash
+python3 -m prg32 esp32c6 wifi-set --port /dev/cu.usbmodem101 --ssid LabNet
+```
+
+```bash
+python3 -m prg32 esp32c6 wifi-forget --port /dev/cu.usbmodem101 --ssid LabNet
+```
+
+`wifi-set` asks for the password at a hidden prompt; add `--password-stdin`
+to read it from standard input in scripts. The password is never accepted as
+a command-line argument, so it does not end up in shell history. Never put
+network names or passwords in source files, `sdkconfig`, or committed
+configuration. SSIDs are 1 to 31 characters and passwords empty or 8 to 63
+characters.
 
 ## Technical Details
 

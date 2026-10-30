@@ -28,6 +28,9 @@ UPLOAD_END = 0x04
 RUN = 0x05
 DEBUG = 0x06
 PERFORMANCE_GET = 0x07
+WIFI_SCAN = 0x08
+WIFI_SET = 0x09
+WIFI_FORGET = 0x0A
 STATUS = 0x80
 RESULT_DATA = 0x81
 
@@ -284,3 +287,30 @@ def get_performance(client: ProtocolClient) -> bytes:
         if frame.flags & FLAG_FINAL:
             return bytes(output)
         frame = client.request(PERFORMANCE_GET, timeout=10.0)
+
+
+def require_wifi(client: ProtocolClient) -> dict:
+    """Return HELLO, or stop when the firmware has no Wi-Fi messages."""
+    info = hello(client)
+    if "wifi" not in info.get("capabilities", []):
+        raise SystemExit(
+            "this PRG32 firmware does not offer Wi-Fi over the device protocol "
+            "(QEMU builds and firmware older than October 2026 do not)"
+        )
+    return info
+
+
+def wifi_scan(client: ProtocolClient) -> dict:
+    """Scan nearby networks; the reply also lists the stored network names."""
+    return client.request_json(WIFI_SCAN, {}, timeout=30.0)
+
+
+def wifi_set(client: ProtocolClient, ssid: str, password: str) -> dict:
+    """Store and join a network. The firmware waits up to 20 s for an address
+    and restores its previous Wi-Fi configuration if joining fails."""
+    return client.request_json(WIFI_SET, {"ssid": ssid, "password": password}, timeout=60.0)
+
+
+def wifi_forget(client: ProtocolClient, ssid: str) -> dict:
+    """Erase a stored network and its password from the device."""
+    return client.request_json(WIFI_FORGET, {"ssid": ssid}, timeout=30.0)

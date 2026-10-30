@@ -3,3 +3,22 @@ CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
 # CONFIG_ESP_CONSOLE_SECONDARY_NONE is not set
 CONFIG_PRG32_DISPLAY_ILI9341=y
+# Free internal SRAM for the 128 KiB cartridge window: run the Wi-Fi driver's
+# throughput paths from flash instead of IRAM, and keep fewer pre-allocated
+# receive buffers. Classroom traffic (uploads, scores, Store) does not need
+# peak Wi-Fi throughput.
+# CONFIG_ESP_WIFI_IRAM_OPT is not set
+# CONFIG_ESP_WIFI_EXTRA_IRAM_OPT is not set
+# CONFIG_ESP_WIFI_RX_IRAM_OPT is not set
+# CONFIG_ESP_WIFI_SLP_IRAM_OPT is not set
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+# Ring-buffer task-context functions run from flash; their ISR variants stay
+# in IRAM for the USB Serial/JTAG and UART drivers.
+CONFIG_RINGBUF_PLACE_FUNCTIONS_INTO_FLASH=y
+# The ILI9341 driver uses polling SPI transactions only, so the SPI master
+# interrupt handler and HAL do not need to stay in IRAM.
+# FreeRTOS functions stay in IRAM: moving them to flash enlarges the newlib
+# lock code placed before prg32_cart_exec and shifts the cartridge window away
+# from 0x408023a0, the address legacy Store cartridges are linked against.
+# CONFIG_SPI_MASTER_ISR_IN_IRAM is not set
+# CONFIG_HAL_SPI_MASTER_FUNC_IN_IRAM is not set
