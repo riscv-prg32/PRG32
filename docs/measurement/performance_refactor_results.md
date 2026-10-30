@@ -69,3 +69,12 @@ result survived a later cartridge switch. After three abandoned runs the last
 run had the same free heap before and after (213,512 B), so the aborted runs
 left no allocation behind. This also closes the post-abort checkpoint above for
 QEMU.
+
+On the ESP32-C6 `prototype1` board (firmware `9ebc603`, 64 KiB window), the same
+test passed for leaving by `RUN` and by upload; the empty-slot case was not run
+because all eight slots were full. `GET /api/performance.json` and
+`PERFORMANCE_GET` returned the same completed run: 600 frames, 12.13 FPS, mean
+frame time 82,436 microseconds, free heap 185,832 B before and 185,856 B after.
+Firmware without the fix (`2ef2ac1`, 128 KiB window) kept answering
+`{"ok":false,"running":true}` after a switch and showed
+`PERFORMANCE TEST DID NOT START` with the rebuilt cartridge.
