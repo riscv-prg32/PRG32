@@ -47,6 +47,10 @@ Because the onboard LED occupies GPIO8 on the DevKit, hardware pin profiles must
   To prevent hardware contention:
   - `CONFIG_PRG32_PIN_RGB_LED` defaults to `-1` (disabled) in `profiles/sdkconfig.pins.breadboard1`.
   - The resident setup audio menu automatically suppresses the RGB LED visualizer option when the pin is disabled.
+  - `CONFIG_PRG32_PIN_SHARED_RGB_LED=8` tells the firmware where the shared LED is, so it can still give a boot indication (see [Shared Boot Indication](#shared-boot-indication)).
+
+- **Same conflict in `pcb1`**:
+  The soldered [`pcb1`](profiles/pcb1.md) board also puts LCD D/C on GPIO8, so it uses the same settings as `breadboard1`: `CONFIG_PRG32_PIN_RGB_LED=-1` and `CONFIG_PRG32_PIN_SHARED_RGB_LED=8`.
 
 - **Unconflicted Harness in `breadboard2` (Display DC on GPIO10, Audio LRCLK on GPIO15)**:
   In the [`breadboard2`](profiles/breadboard2.md) profile, the ILI9341 display harness uses GPIO9 for `CS` and GPIO10 for `DC`, with `RST` wired to the ESP32-C6 EN pin (and GPIO15 assigned to I2S LRCLK). This completely frees GPIO8 from display obligations. While `breadboard2` defaults `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds, developers running `breadboard2` on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
@@ -56,6 +60,22 @@ Because the onboard LED occupies GPIO8 on the DevKit, hardware pin profiles must
 
 - **QEMU Emulator**:
   In desktop QEMU builds (`profiles/sdkconfig.defaults.qemu`), physical RGB LED pins are set to `-1` and no physical LED hardware is initialized.
+
+### Shared Boot Indication
+
+Two settings describe the onboard LED:
+
+| Setting | Meaning |
+|---|---|
+| `CONFIG_PRG32_PIN_RGB_LED` | LED owned by the public API and the audio visualizer. The driver refuses any pin used by the display, input, or buzzer. |
+| `CONFIG_PRG32_PIN_SHARED_RGB_LED` | LED whose data input is electrically tied to LCD D/C. Only the firmware drives it, and only between display transfers. |
+
+Set the shared pin only when the LED and LCD D/C are on one wire, and keep `CONFIG_PRG32_PIN_RGB_LED=-1` for that pin. When it is set, the firmware-internal helpers in `components/prg32/prg32_led_internal.h`:
+
+1. flash the LED cyan three times early in `prg32_init()`, before the display is initialized (`prg32_shared_rgb_led_boot_flash()`);
+2. send an off frame at the end of every `prg32_gfx_present()`, wait for the WS2812 latch gap, and drive the line high again for the display (`prg32_shared_rgb_led_off()`).
+
+The display keeps toggling D/C during transfers, which the WS2812 can read as data, so brief green or white flashes are still expected. Software cannot make both devices independently controllable on one wire; a board that needs a usable LED must give it its own GPIO, as [`breadboard2`](profiles/breadboard2.md) does.
 
 ---
 

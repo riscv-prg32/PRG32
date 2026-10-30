@@ -12,6 +12,7 @@ This document specifies the pinout and wiring for the **`breadboard1`** hardware
 - **Display**: ILI9341 2.8" SPI TFT (320x240)
 - **Input Type**: Digital 5-way navigation joystick (discrete GPIO switches with pull-ups)
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo)
+- **RGB LED**: DevKitC-1 onboard WS2812 shared with LCD D/C on GPIO8, boot indication only (`CONFIG_PRG32_PIN_SHARED_RGB_LED=8`, `CONFIG_PRG32_PIN_RGB_LED=-1`)
 - **Configuration Profile**: `profiles/sdkconfig.pins.breadboard1`
 
 ## Pinout and Wiring
@@ -48,7 +49,7 @@ The firmware enables internal pull-ups on every input. Direction and button pres
 
 | ESP32-C6 GPIO | Signal | Description |
 |---|---|---|
-| GPIO8 | Shared RGB LED (`CONFIG_PRG32_PIN_SHARED_RGB_LED=8`) | The DevKitC-1 WS2812 data input shares GPIO8 with LCD D/C; the firmware uses it only for the boot indication (see [RGB LED](../rgb_led.md)) |
+| GPIO8 | Shared RGB LED (`CONFIG_PRG32_PIN_SHARED_RGB_LED=8`) | The DevKitC-1 WS2812 data input shares GPIO8 with LCD D/C; the firmware uses it only for the boot flash and the off frame after each display update (see [Shared Boot Indication](../rgb_led.md#shared-boot-indication)) |
 | Not wired (`-1`) | `CONFIG_PRG32_PIN_RGB_LED` | No dedicated RGB LED visualizer pin |
 
 ### Audio (I2S MAX98357A)

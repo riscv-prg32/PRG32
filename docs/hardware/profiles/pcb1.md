@@ -29,7 +29,7 @@ Fritzing project in the repository has since moved to the `breadboard1` pins
 - **Input Type**: Digital 5-way navigation joystick (discrete GPIO switches with pull-ups), DOWN on GPIO13
 - **Action Buttons**: Separate pushbuttons for A and B; the joystick center press is START/SELECT
 - **Audio**: MAX98357A I2S DAC / amplifier with LRC/WS on GPIO11; the board has positions for stereo, the firmware defaults to mono
-- **RGB LED**: Not used (`CONFIG_PRG32_PIN_RGB_LED=-1`, no shared boot indication)
+- **RGB LED**: DevKitC-1 onboard WS2812 shared with LCD D/C on GPIO8, boot indication only (`CONFIG_PRG32_PIN_SHARED_RGB_LED=8`, `CONFIG_PRG32_PIN_RGB_LED=-1`)
 - **Configuration Profile**: `profiles/sdkconfig.pins.pcb1`
 
 ## Board Layout
@@ -119,13 +119,13 @@ connect an output to ground, headphones, or a line input.
 
 | ESP32-C6 GPIO | Setting | Description |
 |---|---|---|
-| GPIO8 | (hardwired on the DevKitC-1) | The onboard WS2812 data input shares GPIO8 with LCD D/C |
+| GPIO8 | Shared RGB LED (`CONFIG_PRG32_PIN_SHARED_RGB_LED=8`) | The DevKitC-1 WS2812 data input shares GPIO8 with LCD D/C; the firmware uses it only for the boot flash and the off frame after each display update |
 | Not wired (`-1`) | `CONFIG_PRG32_PIN_RGB_LED` | RGB LED driver and visualizer disabled |
-| Not set (`-1`) | `CONFIG_PRG32_PIN_SHARED_RGB_LED` | No boot indication on the shared pin |
 
 Because display traffic on GPIO8 also reaches the WS2812, the onboard LED can
-flicker while the screen updates. This is expected and harmless. See
-[RGB LED](../rgb_led.md) for the shared-pin behavior.
+still flicker while the screen updates. This is expected and harmless. See
+[Shared Boot Indication](../rgb_led.md#shared-boot-indication) for what the
+two LED settings do.
 
 ### GPIO Usage Summary
 
@@ -203,11 +203,11 @@ CONFIG_PRG32_AUDIO_I2S_SD_GPIO=-1
 
 CONFIG_PRG32_PIN_BUZZER=-1
 CONFIG_PRG32_PIN_RGB_LED=-1
+CONFIG_PRG32_PIN_SHARED_RGB_LED=8
 ```
 
-Options the file does not set keep their Kconfig defaults: the digital
-joystick (`CONFIG_PRG32_JOYSTICK_DIGITAL=y`) and no shared RGB LED
-(`CONFIG_PRG32_PIN_SHARED_RGB_LED=-1`).
+Options the file does not set keep their Kconfig defaults, such as the digital
+joystick (`CONFIG_PRG32_JOYSTICK_DIGITAL=y`).
 
 ## Software & Build Selection
 
@@ -230,7 +230,8 @@ In `idf.py menuconfig` choose `Component config` -> `PRG32 Framework` ->
 `pcb1` keeps the first breadboard pinout as it was when the board was drawn.
 The [`breadboard1`](breadboard1.md) profile later moved P1 DOWN from GPIO13 to
 GPIO0 to free the native USB pair (commit `b089e1e`) and added the shared RGB
-LED boot indication on GPIO8 (commit `c327403`). Use `pcb1` only for hardware
+LED boot indication on GPIO8 (commit `c327403`). `pcb1` later adopted the same
+shared RGB LED setting, which changes no wiring. Use `pcb1` only for hardware
 wired with DOWN on GPIO13; new breadboard builds use `breadboard1`.
 
 ## Related Documentation

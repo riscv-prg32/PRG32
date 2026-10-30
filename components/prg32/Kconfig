@@ -496,10 +496,13 @@ config PRG32_PIN_SHARED_RGB_LED
     int "Boot-only RGB LED GPIO shared with LCD D/C"
     default -1
     help
-        Set this only for fixed hardware such as breadboard1 where the onboard
-        addressable LED and LCD D/C are electrically tied to one GPIO. The
-        firmware flashes it at boot and sends an off frame after LCD updates.
-        LCD traffic can still cause brief incidental colors on shared hardware.
+        Set this only when the onboard addressable LED and LCD D/C are
+        electrically tied to one GPIO, as in the breadboard1 and pcb1 profiles
+        where the ESP32-C6-DevKitC-1 WS2812 and LCD D/C both use GPIO8. The
+        firmware
+        flashes it at boot and sends an off frame after LCD updates. LCD
+        traffic can still cause brief incidental colors on shared hardware.
+        Keep PRG32_PIN_RGB_LED at -1 for the same pin.
 
 config PRG32_QEMU_UART_1_TX
     int "QEMU UART 1 TX (Python Listener)"

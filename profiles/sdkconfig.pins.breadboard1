@@ -33,5 +33,7 @@ CONFIG_PRG32_AUDIO_I2S_SD_GPIO=-1
 # Optional Peripherals
 CONFIG_PRG32_PIN_BUZZER=-1
 CONFIG_PRG32_PIN_RGB_LED=-1
-# The fixed PCB also connects its onboard WS2812 data input to LCD D/C.
+# The ESP32-C6-DevKitC-1 hardwires its onboard WS2812 data input to GPIO8,
+# which this profile also uses for LCD D/C. The LED stays out of the public
+# RGB LED API and is used only for the boot flash and the post-frame off latch.
 CONFIG_PRG32_PIN_SHARED_RGB_LED=8

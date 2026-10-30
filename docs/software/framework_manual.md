@@ -638,7 +638,9 @@ PRG32 exposes a small addressable RGB LED API:
 The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
 boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
 to `-1` in `idf.py menuconfig`. Set it only when the LED pin is free on the
-chosen board wiring.
+chosen board wiring. On `breadboard1` and `pcb1` the firmware itself uses the shared LED
+for a boot flash; cartridges cannot drive it (see
+[Shared Boot Indication](../hardware/rgb_led.md#shared-boot-indication)).
 
 ## Development Guide
 

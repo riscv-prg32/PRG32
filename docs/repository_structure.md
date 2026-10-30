@@ -24,7 +24,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_controller.c      Joins GPIO, QEMU keyboard, diagnostic, and remote input; the table of remote key names lives here
 |   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return)
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
-|   |   |-- prg32_led_internal.h    Firmware-only shared RGB/LCD boot-indicator helpers
+|   |   |-- prg32_led_internal.h    Firmware-only helpers for an RGB LED sharing LCD D/C (`PRG32_PIN_SHARED_RGB_LED`): boot flash and post-frame off latch
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
 |   |   |-- prg32_system.c          Boot sequence and setup menus, and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, performance, Wi-Fi, and key-command protocol with upload timeout, failed-slot erase, HELLO heap reporting, and whole-frame writes that console logs cannot split
@@ -82,7 +82,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- profiles/                       Default configuration files, pin profiles, and partition tables
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (64 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 128 KiB profile, and local overrides (.local))
-|   `-- sdkconfig.pins.*            Hardware pin configuration profiles (e.g. prototype1)
+|   `-- sdkconfig.pins.*            Hardware pin configuration profiles (breadboard1, breadboard2, pcb1)
 |-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation

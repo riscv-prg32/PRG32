@@ -9,6 +9,7 @@ This document specifies the pinout and wiring for the **`breadboard2`** hardware
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
 - **Action Buttons**: Separate pushbuttons for A, B, C, D, and START/SELECT (C on GPIO11, D on GPIO3)
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
+- **RGB LED**: Off by default (`CONFIG_PRG32_PIN_RGB_LED=-1`); GPIO8 is free, so the DevKitC-1 onboard WS2812 can be enabled
 - **Configuration Profile**: `profiles/sdkconfig.pins.breadboard2`
 
 ## Pinout and Wiring
@@ -108,6 +109,14 @@ The audio configuration uses MAX98357A I2S DAC/Amp with LRCLK/WS on GPIO15.
 | GPIO23 | DIN | DIN | Shared I2S Data |
 | Same as VIN (> 1.4V) | SD / MODE | - | Left channel select |
 | 0.77V to 1.4V (390 kΩ to VIN) | - | SD / MODE | Right channel select |
+
+### Onboard RGB LED
+
+| ESP32-C6 GPIO | Setting | Description |
+|---|---|---|
+| GPIO8 | (hardwired on the DevKitC-1) | Onboard WS2812 data input; no other signal uses GPIO8 in this profile |
+| Not wired (`-1`) | `CONFIG_PRG32_PIN_RGB_LED` | Set to `8` to enable the LED API and the audio visualizer |
+| Not set (`-1`) | `CONFIG_PRG32_PIN_SHARED_RGB_LED` | Not needed: the LED does not share a pin with the display (see [Shared Boot Indication](../rgb_led.md#shared-boot-indication)) |
 
 ## Breadboard Power Distribution & Assembly
 
