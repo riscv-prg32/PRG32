@@ -74,7 +74,7 @@ PRG32 completely decouples physical GPIO numbers from Kconfig defaults. All pin 
 
 - **`breadboard1`**: First breadboard using the digital 5-way navigation joystick, reference display harness, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard1.md`](profiles/breadboard1.md).
 - **`pcb1`**: Soldered PCB with the digital 5-way joystick (P1 DOWN on GPIO13, the native USB D+ line), display, and I2S audio. Full pinout, schematic, and board layout are detailed in [`pcb1.md`](profiles/pcb1.md).
-- **`breadboard2`**: Second breadboard using the KY-023 analog joystick with continuous ADC, updated display harness, reserved SD card CS line, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard2.md`](profiles/breadboard2.md).
+- **`breadboard2`**: Second breadboard using the KY-023 analog joystick with continuous ADC, updated display harness with the display reset wired to the ESP32-C6 EN pin, reserved SD card CS line, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard2.md`](profiles/breadboard2.md).
 
 ### Compiling for a Specific Profile
 

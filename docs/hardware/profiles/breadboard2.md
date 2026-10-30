@@ -5,7 +5,7 @@ This document specifies the pinout and wiring for the **`breadboard2`** hardware
 ## Overview
 
 - **Architecture Target**: ESP32-C6
-- **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO3, DC on GPIO10, and RST on GPIO11
+- **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO3, DC on GPIO10, and RST wired to the ESP32-C6 EN (`RST`) header pin
 - **SD Card CS**: GPIO9 (reserved for SPI SD Card; software implementation planned)
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
 - **Action Buttons**: Separate pushbuttons for A, B, and START/SELECT
@@ -25,9 +25,36 @@ This document specifies the pinout and wiring for the **`breadboard2`** hardware
 | GPIO6 | SCLK | SPI Serial Clock | Fast SPI (SPI2 IOMUX), shared with SD Card SCLK |
 | GPIO3 | CS | Display Chip Select | Active-low |
 | GPIO10 | DC | Data / Command Select | |
-| GPIO11 | RST | Hardware Reset | |
+| EN (`RST` header pin) | RST | Hardware Reset | No GPIO (`CONFIG_PRG32_PIN_LCD_RST=-1`); reset together with the ESP32-C6, see [Display Reset Line](#display-reset-line) |
 | GPIO5 | BL / LED | Backlight control | Active-high |
 | GPIO9 | SD CARD CS | SD Card Chip Select | Reserved pin; see [SD Card Notes](../sdcard.md) |
+
+#### Display Reset Line
+
+The ILI9341 RST pin is wired to the ESP32-C6-DevKitC-1 header pin labelled
+`RST`, which is the chip enable (EN) input. No GPIO drives the display reset.
+
+- **Hardware reset with the chip.** EN goes low at power-up, when the board's
+  RST button is pressed, and when the USB-UART bridge auto-resets the board
+  for flashing. While EN is low, the ESP32-C6 is off and the display is held
+  in reset; when EN rises, both start together. The ILI9341 needs about 120 ms
+  after a reset before it accepts setup commands, and the ESP32-C6 boot alone
+  takes longer, so the timing is met. The display reset input tolerates the
+  slow EN edge produced by the board's pull-up and capacitor.
+- **Software restarts.** `esp_restart()`, panics, and watchdog resets happen
+  inside the chip and do not drive EN, so the display gets no hardware reset.
+  Every boot runs the display initialization, which raises CS and sends the
+  ILI9341 software reset command before configuring the controller, so the
+  screen is reset on these restarts too (see the [ILI9341 notes](../ili9341.md#reset-line)).
+- **Electrical load.** The display RST input only senses voltage and draws
+  almost no current, so it does not hold EN low and the ESP32-C6 boots
+  normally. A pull-up resistor on the display module pulls the same way as the
+  board's EN pull-up and is harmless.
+
+> [!WARNING]
+> Never wire a GPIO to EN, and never connect the display RST to both EN and a
+> GPIO. When a GPIO pulls EN low the ESP32-C6 switches itself off and the GPIO
+> stops driving, and it fights the RST button and the auto-reset circuit.
 
 ### Controls: 2-Axis Analog Joystick & Buttons
 

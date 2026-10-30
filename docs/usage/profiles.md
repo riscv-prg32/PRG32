@@ -104,7 +104,7 @@ Builds attempting to compile physical firmware without a pin profile are blocked
 ### Built-in Pin Profiles
 
 - **`breadboard1` (`profiles/sdkconfig.pins.breadboard1`)**: The first breadboard pinout using the ILI9341 SPI TFT display (DC: GPIO8, RST: GPIO9), 5-way digital navigation joystick (discrete GPIO switches), and MAX98357A I2S mono/stereo audio as documented in [Breadboard 1](../hardware/profiles/breadboard1.md).
-- **`breadboard2` (`profiles/sdkconfig.pins.breadboard2`)**: The second breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (CS: GPIO3, DC: GPIO10, RST: GPIO11), reserved SD card CS (GPIO9), and MAX98357A I2S audio (LRCLK: GPIO15) as documented in [Breadboard 2](../hardware/profiles/breadboard2.md).
+- **`breadboard2` (`profiles/sdkconfig.pins.breadboard2`)**: The second breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (CS: GPIO3, DC: GPIO10, RST wired to the ESP32-C6 EN pin), reserved SD card CS (GPIO9), and MAX98357A I2S audio (LRCLK: GPIO15) as documented in [Breadboard 2](../hardware/profiles/breadboard2.md).
 - **`pcb1` (`profiles/sdkconfig.pins.pcb1`)**: The soldered PCB pinout: the `breadboard1` display, control, and audio pins, but with P1 DOWN on GPIO13 (the native USB D+ line) and no shared RGB LED. Full pinout and schematic in [PCB 1](../hardware/profiles/pcb1.md).
 - **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
 

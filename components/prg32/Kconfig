@@ -336,6 +336,11 @@ config PRG32_PIN_LCD_DC
 config PRG32_PIN_LCD_RST
     int "LCD RST GPIO"
     default -1
+    help
+        GPIO that drives the ILI9341 hardware reset. Use -1 when no GPIO
+        drives RST, for example when it is wired to the ESP32-C6 EN (RST)
+        pin or to 3V3. The driver then relies on the ILI9341 software reset
+        command sent at the start of display initialization.
 
 config PRG32_PIN_LCD_BL
     int "LCD Backlight GPIO"

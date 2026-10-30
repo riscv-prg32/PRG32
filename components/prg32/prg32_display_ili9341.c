@@ -631,6 +631,10 @@ static void lcd_reset(void) {
         return;
     }
     esp_rom_delay_us(120000);
+#else
+    /* No RST GPIO: the display RST is tied to the ESP32-C6 EN pin (reset
+     * together with the chip) or to 3V3. The SWRESET command at the start of
+     * lcd_init_sequence() resets the controller after software restarts. */
 #endif
 }
 
