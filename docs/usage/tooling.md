@@ -70,7 +70,7 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
 - `run`: run the QEMU emulator environment
 - `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports `-s` / `--skip-target`.
 - `upload`: upload a cartridge to QEMU. `--cart-ram-kib` sets the executable
-  RAM limit; by default it is read from `build-qemu/sdkconfig`, else 64 KiB
+  RAM limit; by default it is read from `build-qemu/sdkconfig`, else 128 KiB
   (see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).
 - `key`: press controller keys on the running emulator, like `esp32c6 key`;
   `--port` defaults to `socket://127.0.0.1:5555`.
@@ -94,7 +94,7 @@ For a complete workflow of making a cartridge run on QEMU, see [docs/qemu.md](qe
 ## Cartridge Tasks (`cartridge`)
 - `build`: build a portable ABI-table `.prg32` cartridge from assembly or C
   source code. Firmware-specific build options are rejected. `--cart-ram-kib`
-  sets the executable RAM limit (default 64; use 32 for the classroom profile,
+  sets the executable RAM limit (default 128; use 64 or 32 for a smaller profile,
   see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).
 - `summary`: print the PRG32 cartridge summary (ABI, feature bits, etc.)
 

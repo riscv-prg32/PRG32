@@ -67,12 +67,13 @@ config PRG32_SPLASH_SOUND_ENABLED
 
 choice PRG32_CART_RAM_PROFILE
     prompt "Executable cartridge RAM profile"
-    default PRG32_CART_RAM_EXTENDED
+    default PRG32_CART_RAM_LARGE_128
     help
         Choose how much internal executable RAM the resident firmware reserves
-        for uploadable cartridges. This memory has a fixed exported address so
-        host tools can link cartridges against prg32_cart_exec. The 128 KiB
-        profile requires the low-memory ILI9341 renderer.
+        for uploadable cartridges. The window always starts at the same
+        address, so changing its size does not move prg32_cart_exec. Portable
+        cartridges that fit the selected window run without being rebuilt. The
+        128 KiB profile requires the low-memory ILI9341 renderer.
 
 config PRG32_CART_RAM_CLASSROOM
     bool "Classroom profile, 32 KiB"
@@ -84,17 +85,18 @@ config PRG32_CART_RAM_CLASSROOM
 config PRG32_CART_RAM_EXTENDED
     bool "Extended profile, 64 KiB"
     help
-        Reserve a 64 KiB cartridge execution window. This is the default for
-        ESP32-C6 and QEMU builds.
+        Reserve a 64 KiB cartridge execution window. It leaves 64 KiB more
+        free heap than the default 128 KiB profile for firmware that does not
+        need cartridges larger than 64 KiB.
 
 config PRG32_CART_RAM_LARGE_128
     bool "Large profile, 128 KiB"
     help
-        Reserve a 128 KiB executable cartridge window for large games. It
-        costs 64 KiB of free heap compared with the default profile. Stored
-        cartridges are read through a flash mapping, so loading one needs no
-        heap copy of its payload. Rebuild resident firmware and cartridges
-        after changing this profile.
+        Reserve a 128 KiB executable cartridge window. This is the default for
+        ESP32-C6 and QEMU builds. It costs 64 KiB of free heap compared with
+        the 64 KiB profile. Stored cartridges are read through a flash mapping,
+        so loading one needs no heap copy of its payload. Portable cartridges
+        built for the 32 KiB or 64 KiB profile run without being rebuilt.
 
 config PRG32_CART_RAM_CUSTOM
     bool "Custom profile"
@@ -128,8 +130,8 @@ config PRG32_CART_MAX_KIB
     range 32 128
     help
         Maximum accepted .prg32 image size. Keep this at or below the size of
-        every cartridge partition. The large 128 KiB RAM profile needs a
-        matching 128 KiB image limit and rebuilt cartridges.
+        every cartridge partition. The default 128 KiB RAM profile uses a
+        matching 128 KiB image limit.
 
 menu "Performance metrics"
 

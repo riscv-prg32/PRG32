@@ -6,9 +6,11 @@ PRG32 uses different SDK configuration profiles to adjust how the resident firmw
 
 - **Classroom Profile (32 KiB)**: An optional smaller window for builds that
   prioritize resident-runtime heap.
-- **Extended Profile (64 KiB)**: The default for physical ESP32-C6 and QEMU
-  builds. The default stored package limit is also 64 KiB.
-- **QEMU Emulator Profile**: The default used by QEMU emulator builds (`profiles/sdkconfig.defaults.qemu`). It configures the system for the emulator (using `esp32c3` as the target, enabling the RGB display, UART input, and failure on real hardware) and extends cartridge RAM to 64 KiB. Use with:
+- **Extended Profile (64 KiB)**: An optional window for builds that need 64 KiB
+  more free heap than the default; see [64 KiB Profile](#64-kib-profile-sdkconfigdefaultscart_64k).
+- **Large Profile (128 KiB)**: The default for physical ESP32-C6 and QEMU builds.
+  The stored package limit is also 128 KiB, the size of a cartridge partition.
+- **QEMU Emulator Profile**: The default used by QEMU emulator builds (`profiles/sdkconfig.defaults.qemu`). It configures the system for the emulator (using `esp32c3` as the target, enabling the RGB display, UART input, and failure on real hardware) and uses the default 128 KiB cartridge RAM. Use with:
   ```bash
   idf.py -B build-qemu -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.qemu" set-target esp32c3
   ```
@@ -18,24 +20,43 @@ described in [Maximizing free heap](../hardware/memory.md#maximizing-free-heap).
 
 ## Optional Profiles
 
-### 128 KiB Profile (`sdkconfig.defaults.esp32c6_128k`)
+### 64 KiB Profile (`sdkconfig.defaults.cart_64k`)
 
-The optional profile reserves 128 KiB of executable cartridge RAM and raises
-the stored package limit to 128 KiB, the size of a cartridge partition. It
-costs 64 KiB of free heap compared with the default profile and also fits
-QEMU builds.
+This fragment returns to a 64 KiB window and a 64 KiB stored package limit. It
+leaves 64 KiB more free heap than the default
+([measured figures](../hardware/memory.md#measured-effect)) and also fits QEMU
+builds.
 
 ```bash
-idf.py -B build-esp32c6-128k \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.esp32c6_128k;profiles/sdkconfig.pins.prototype1" \
+idf.py -B build-esp32c6-64k \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.cart_64k;profiles/sdkconfig.pins.prototype1" \
   set-target esp32c6
-idf.py -B build-esp32c6-128k build
+idf.py -B build-esp32c6-64k build
 ```
 
-Then build large cartridges with `--cart-ram-kib 128` (see below). Board
-uploads check the limit against the firmware's `/api/runtime` or HELLO
+Board uploads check the limit against the firmware's `/api/runtime` or HELLO
 response. The setup resource screen reports `CART RAM` so the active profile
 can be checked on the board.
+
+## Compatibility of Existing Cartridges
+
+Portable cartridges do not need rebuilding when the window size changes. The
+window grows upward from the same start address, `prg32_cart_exec`, and a
+portable cartridge calls the firmware only through the ABI table. The firmware
+checks only that `mem_size` fits the window. A cartridge built with the 32 KiB
+or 64 KiB limit therefore loads unchanged on the 128 KiB default, and cartridges
+already stored in the slots stay valid because the partition table is unchanged.
+This was checked on 2026-10-30; see the
+[validation record](../hardware/memory.md#128-kib-default-validation-2026-10-30).
+
+The reverse does not hold: a cartridge that needs more than 64 KiB is rejected
+at upload by firmware with a smaller window. To keep a new cartridge usable on
+such firmware, build it with `--cart-ram-kib 64`. Legacy absolute-import
+cartridges still need the exact firmware they were linked against.
+
+An existing build directory keeps its old `sdkconfig`. `python3 -m prg32 esp32c6
+build` regenerates it, but a direct `idf.py build` in an old directory stays on
+64 KiB until `sdkconfig` is deleted. HELLO reports the active size.
 
 ## Matching Host Tools to the Profile
 
@@ -46,8 +67,8 @@ its window, so they choose the limit as follows:
 
 | Command | Limit used |
 |---|---|
-| `python3 -m prg32 cartridge build` | `--cart-ram-kib`, else 64 KiB (the default extended profile) |
-| `python3 -m prg32 qemu upload` | `--cart-ram-kib`, else `CONFIG_PRG32_CART_RAM_KIB` from the `sdkconfig` next to `--flash` (normally `build-qemu/sdkconfig`), else 64 KiB |
+| `python3 -m prg32 cartridge build` | `--cart-ram-kib`, else 128 KiB (the default large profile) |
+| `python3 -m prg32 qemu upload` | `--cart-ram-kib`, else `CONFIG_PRG32_CART_RAM_KIB` from the `sdkconfig` next to `--flash` (normally `build-qemu/sdkconfig`), else 128 KiB |
 | `python3 -m prg32 esp32c6 upload` | `cart_ram_size` reported by the board's `/api/runtime` |
 
 `--cart-ram-kib` accepts 16 to 128, the same range as the Kconfig custom

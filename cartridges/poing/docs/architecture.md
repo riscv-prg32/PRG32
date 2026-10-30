@@ -40,5 +40,5 @@ CPU workload and the same instructional rendering pipeline.
 
 The cartridge itself performs no dynamic allocation; the resident broker uses
 its documented temporary sample workspace while a performance run is active.
-Code and constants remain inside the default 64 KiB cartridge image and 64 KiB
-cartridge RAM defaults documented by the target branch.
+Code and constants fit a 64 KiB cartridge image and 64 KiB of cartridge RAM, so
+the cartridge runs on both the 64 KiB profile and the default 128 KiB profile.

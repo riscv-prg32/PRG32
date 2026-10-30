@@ -119,7 +119,7 @@ def resolve_cart_ram_size(cart_ram_kib: int | None,
     """Choose the executable cartridge RAM size in bytes and describe its source.
 
     Priority: explicit --cart-ram-kib, then CONFIG_PRG32_CART_RAM_KIB from the
-    given sdkconfig, then the default firmware profile (64 KiB).
+    given sdkconfig, then the default firmware profile (128 KiB).
     """
     if cart_ram_kib is not None:
         return cart_ram_kib * 1024, "--cart-ram-kib"

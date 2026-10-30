@@ -1,0 +1,5 @@
+# Smaller cartridge window for builds that need 64 KiB more free heap than the
+# default 128 KiB profile. Combine this after profiles/sdkconfig.defaults (and
+# sdkconfig.defaults.qemu). Portable cartridges up to 64 KiB run unchanged.
+CONFIG_PRG32_CART_RAM_EXTENDED=y
+CONFIG_PRG32_CART_MAX_KIB=64

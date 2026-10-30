@@ -62,7 +62,7 @@ scores:  persistent local scoreboard storage
 
 The checked-in classroom firmware supports eight persistent slots (`cart0` to
 `cart7`). Each 128 KiB partition stores a `.prg32` package up to the configured
-64 KiB default. Only one cartridge is loaded into executable RAM at a time, so
+128 KiB default. Only one cartridge is loaded into executable RAM at a time, so
 additional slots cost flash space, not runtime RAM. Starting a stored
 cartridge copies its code/data straight from flash into executable RAM, with
 no heap copy of the package; see
@@ -546,9 +546,10 @@ This is intentionally a classroom loader, not a general dynamic linker.
 
 - Cartridge package size is 128 KiB.
 - For details on executable Cartridge RAM limits and expanding the cartridge limits using profiles, see the [PRG32 Profiles](/docs/usage/profiles.md) documentation.
-- `cartridge build` and `qemu upload` check executable RAM against the 64 KiB
-  default profile. Pass `--cart-ram-kib 128` for the large profile or
-  `--cart-ram-kib 32` for the classroom profile;
+- `cartridge build` and `qemu upload` check executable RAM against the 128 KiB
+  default profile. Pass `--cart-ram-kib 64` for the extended profile or
+  `--cart-ram-kib 32` for the classroom profile. Portable cartridges built for a
+  smaller profile run on the default one without being rebuilt;
   see [Matching Host Tools to the Profile](/docs/usage/profiles.md#matching-host-tools-to-the-profile).
 
 ## Development Guide
