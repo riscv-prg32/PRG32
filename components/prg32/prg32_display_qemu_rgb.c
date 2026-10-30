@@ -18,7 +18,18 @@ static int g_band_color_set;
 static int g_band_area_valid;
 static uint16_t g_band_color;
 static uint16_t g_last_band_color;
-static uint16_t g_fb[PRG32_LCD_W * PRG32_LCD_H];
+#if CONFIG_PRG32_QEMU_FAIL_ON_REAL_HW
+/* Draw straight into the QEMU RGB panel's own framebuffer. It lives outside
+ * the emulated SRAM, so the 153,600-byte RGB565 frame costs no internal RAM
+ * and leaves room for the 128 KiB cartridge window. The window still changes
+ * only when prg32_gfx_present() asks the panel to copy the dirty rows. */
+static uint16_t *g_fb;
+#else
+/* Without the fail-fast check the panel may be missing, so keep a private
+ * SRAM frame that drawing can always use. */
+static uint16_t g_fb_sram[PRG32_LCD_W * PRG32_LCD_H];
+static uint16_t *g_fb = g_fb_sram;
+#endif
 static uint16_t g_palette[256];
 static char g_band_text_cache[2][80];
 static uint16_t g_band_fg_cache[2];
@@ -303,6 +314,7 @@ void prg32_display_init(void) {
     esp_err_t err = esp_lcd_new_rgb_qemu(&cfg, &g_panel);
 #if CONFIG_PRG32_QEMU_FAIL_ON_REAL_HW
     ESP_ERROR_CHECK(err);
+    ESP_ERROR_CHECK(esp_lcd_rgb_qemu_get_frame_buffer(g_panel, (void **)&g_fb));
 #else
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "QEMU RGB panel unavailable: %s", esp_err_to_name(err));

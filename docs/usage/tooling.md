@@ -55,6 +55,11 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
   [Performance Test Guide](/docs/performance_test.md) for the complete workflow
   and [Performance Metrics](/docs/measurement/metrics_api.md) for fields.
 - `screenshot`: Get screenshot of ESP32C6 over HTTP.
+- `wifi-scan`, `wifi-set`, `wifi-forget`: list the networks a running board can
+  see and the ones it stores, store and join a network, or erase a stored one,
+  over `--port`. `wifi-set` reads the password from a hidden prompt or
+  `--password-stdin`, never from the command line. See
+  [Stored Networks](network.md#stored-networks).
 ## QEMU Emulator Tasks (`qemu`)
 - `build`: build QEMU and generate the flash image. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment

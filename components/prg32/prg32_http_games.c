@@ -28,6 +28,9 @@ void prg32_http_register_score_handlers(httpd_handle_t server);
 
 static const char *TAG = "prg32_wifi";
 static httpd_handle_t server;
+
+/* POST /api/games streams the cartridge to flash through this buffer. */
+#define PRG32_HTTP_UPLOAD_CHUNK_BYTES 4096u
 enum {
     BMP_HEADER_SIZE = 54,
     BMP_DIB_SIZE = 40,
@@ -484,40 +487,82 @@ static esp_err_t post_game(httpd_req_t *req) {
         httpd_resp_send_err(req, 400, msg);
         return ESP_FAIL;
     }
-    uint8_t *body = heap_caps_malloc((size_t)req->content_len,
-                                     MALLOC_CAP_8BIT);
-    if (!body) {
+    uint8_t slot = 0;
+    if (request_slot(req, &slot) != 0) {
+        httpd_resp_send_err(req, 400, "invalid cartridge slot");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(TAG, "POST /api/games slot=%u", (unsigned)slot);
+
+    /* Stream the body to flash through one small buffer instead of holding
+     * the whole image in RAM: a 128 KiB cartridge could not be buffered next
+     * to a 128 KiB execution window. */
+    uint8_t *chunk = heap_caps_malloc(PRG32_HTTP_UPLOAD_CHUNK_BYTES,
+                                      MALLOC_CAP_8BIT);
+    if (!chunk) {
         httpd_resp_send_err(req, 500, "out of memory");
         return ESP_ERR_NO_MEM;
     }
-    size_t received = 0;
-    while (received < (size_t)req->content_len) {
-        int n = httpd_req_recv(req,
-                               (char *)body + received,
-                               req->content_len - received);
+    size_t image_size = (size_t)req->content_len;
+    size_t header_len = 0;
+    while (header_len < sizeof(prg32_cart_header_t) && header_len < image_size) {
+        int n = httpd_req_recv(req, (char *)chunk + header_len,
+                               PRG32_HTTP_UPLOAD_CHUNK_BYTES - header_len);
         if (n == HTTPD_SOCK_ERR_TIMEOUT) {
             continue;
         }
         if (n <= 0) {
-            heap_caps_free(body);
+            heap_caps_free(chunk);
+            httpd_resp_send_err(req, 400, "failed to read cartridge");
+            return ESP_FAIL;
+        }
+        header_len += (size_t)n;
+    }
+    /* Reject obviously wrong images before the slot is erased. The complete
+     * header, size, and payload CRC check runs in prg32_cart_stream_end(). */
+    const prg32_cart_header_t *h = (const prg32_cart_header_t *)chunk;
+    if (header_len < sizeof(prg32_cart_header_t) ||
+        memcmp(h->magic, PRG32_CART_MAGIC, sizeof(h->magic)) != 0 ||
+        h->abi_major != PRG32_CART_ABI_MAJOR ||
+        h->mem_size > prg32_cart_ram_size()) {
+        heap_caps_free(chunk);
+        httpd_resp_send_err(req, 400, "invalid cartridge header");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(TAG, "POST /api/games storing slot=%u", (unsigned)slot);
+    if (prg32_cart_stream_begin(slot, image_size) != 0 ||
+        prg32_cart_stream_write(slot, 0, chunk, header_len) != 0) {
+        heap_caps_free(chunk);
+        httpd_resp_send_err(req, 400, prg32_cart_last_error());
+        return ESP_FAIL;
+    }
+    size_t received = header_len;
+    while (received < image_size) {
+        size_t want = image_size - received;
+        if (want > PRG32_HTTP_UPLOAD_CHUNK_BYTES) {
+            want = PRG32_HTTP_UPLOAD_CHUNK_BYTES;
+        }
+        int n = httpd_req_recv(req, (char *)chunk, want);
+        if (n == HTTPD_SOCK_ERR_TIMEOUT) {
+            continue;
+        }
+        if (n <= 0 ||
+            prg32_cart_stream_write(slot, received, chunk, (size_t)n) != 0) {
+            heap_caps_free(chunk);
+            /* Never leave a partially written slot behind. */
+            prg32_cart_erase_slot(slot);
             httpd_resp_send_err(req, 400, "failed to read cartridge");
             return ESP_FAIL;
         }
         received += (size_t)n;
     }
+    heap_caps_free(chunk);
     ESP_LOGI(TAG, "POST /api/games received=%u", (unsigned)received);
-    uint8_t slot = 0;
-    if (request_slot(req, &slot) != 0) {
-        heap_caps_free(body);
-        httpd_resp_send_err(req, 400, "invalid cartridge slot");
-        return ESP_FAIL;
-    }
-    ESP_LOGI(TAG, "POST /api/games slot=%u", (unsigned)slot);
-    ESP_LOGI(TAG, "POST /api/games storing slot=%u", (unsigned)slot);
-    int err = prg32_cart_store_slot(slot, body, received);
-    heap_caps_free(body);
-    if (err != 0) {
-        httpd_resp_send_err(req, 400, prg32_cart_last_error());
+    if (prg32_cart_stream_end(slot, image_size) != 0) {
+        char msg[96];
+        snprintf(msg, sizeof(msg), "%s", prg32_cart_last_error());
+        prg32_cart_erase_slot(slot);
+        httpd_resp_send_err(req, 400, msg);
         return ESP_FAIL;
     }
     ESP_LOGI(TAG, "POST /api/games stored slot=%u", (unsigned)slot);

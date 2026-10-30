@@ -130,10 +130,10 @@ def resolve_cart_ram_size(cart_ram_kib: int | None,
     return FALLBACK_CART_RAM_SIZE, "default firmware profile"
 
 def ensure_cart_max_size(data: bytes) -> None:
-    if len(data) > 64 * 1024:
+    if len(data) > FALLBACK_CART_MAX_SIZE:
         raise SystemExit(
             f"cartridge is {len(data)} bytes, which exceeds the PRG32 hardware "
-            "limit of 64 KiB (65536 bytes)."
+            f"limit of {DEFAULT_CART_MAX_KIB} KiB ({FALLBACK_CART_MAX_SIZE} bytes)."
         )
 
 def runtime(args: argparse.Namespace) -> None:
@@ -182,7 +182,7 @@ def validate_cartridge_contract(
     context: str = "cartridge",
 ) -> None:
     h = cartridge_contract(data)
-    runtime_max_size = int((runtime or {}).get("cart_max_size", 64 * 1024))
+    runtime_max_size = int((runtime or {}).get("cart_max_size", FALLBACK_CART_MAX_SIZE))
     if len(data) > runtime_max_size:
         raise SystemExit(
             f"{context} rejected: cartridge is {len(data)} bytes, but the "

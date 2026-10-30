@@ -84,16 +84,17 @@ config PRG32_CART_RAM_CLASSROOM
 config PRG32_CART_RAM_EXTENDED
     bool "Extended profile, 64 KiB"
     help
-        Reserve a larger cartridge execution window. QEMU uses this profile by
-        default; physical builds can enable it for labs that intentionally need
-        larger linked cartridge images.
+        Reserve a 64 KiB cartridge execution window. This is the default for
+        ESP32-C6 and QEMU builds.
 
 config PRG32_CART_RAM_LARGE_128
     bool "Large profile, 128 KiB"
     help
-        Reserve a 128 KiB executable cartridge window for large games. This
-        is intended for optimized ESP32-C6 physical builds. Rebuild resident
-        firmware and cartridges after changing this profile.
+        Reserve a 128 KiB executable cartridge window for large games. It
+        costs 64 KiB of free heap compared with the default profile. Stored
+        cartridges are read through a flash mapping, so loading one needs no
+        heap copy of its payload. Rebuild resident firmware and cartridges
+        after changing this profile.
 
 config PRG32_CART_RAM_CUSTOM
     bool "Custom profile"

@@ -421,9 +421,29 @@ class CartRamProfileTests(unittest.TestCase):
     def test_fallback_matches_default_firmware_profile(self) -> None:
         self.assertEqual(env_variables.DEFAULT_CART_RAM_KIB, 64)
         self.assertEqual(env_variables.FALLBACK_CART_RAM_SIZE, 64 * 1024)
+        self.assertEqual(env_variables.FALLBACK_CART_MAX_SIZE, 64 * 1024)
         for defaults in ("profiles/sdkconfig.defaults", "profiles/sdkconfig.defaults.qemu"):
             text = (ROOT / defaults).read_text(encoding="utf-8")
             self.assertIn("CONFIG_PRG32_CART_RAM_EXTENDED=y", text, defaults)
+            self.assertIn("CONFIG_PRG32_CART_MAX_KIB=64", text, defaults)
+        kconfig = (ROOT / "components/prg32/Kconfig").read_text(encoding="utf-8")
+        self.assertIn("default PRG32_CART_RAM_EXTENDED\n", kconfig)
+
+    def test_esp32c6_profile_keeps_heap_saving_options(self) -> None:
+        # These options free internal SRAM for the heap; see
+        # docs/hardware/memory.md#maximizing-free-heap.
+        text = (ROOT / "profiles/sdkconfig.defaults.esp32c6").read_text(encoding="utf-8")
+        for line in (
+            "# CONFIG_ESP_WIFI_IRAM_OPT is not set",
+            "# CONFIG_ESP_WIFI_RX_IRAM_OPT is not set",
+            "CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6",
+            "CONFIG_RINGBUF_PLACE_FUNCTIONS_INTO_FLASH=y",
+            "# CONFIG_SPI_MASTER_ISR_IN_IRAM is not set",
+        ):
+            self.assertIn(line, text)
+        # Moving FreeRTOS to flash shifts prg32_cart_exec away from 0x408023a0,
+        # the address legacy Store cartridges are linked against.
+        self.assertNotIn("CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y", text)
 
     def test_contract_uses_64_kib_without_runtime_info(self) -> None:
         data = portable_header(self.MEM_SIZE_40_KIB) + b"\0\0\0\0"

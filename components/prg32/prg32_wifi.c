@@ -16,6 +16,7 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -46,6 +47,46 @@ static uint8_t selected_bssid[6];
 static uint8_t selected_channel;
 static bool selected_ap_valid;
 static bool selected_ap_locked;
+
+/* The most recently connected infrastructure networks, newest first. They are
+ * stored as one NVS blob, "known", in the prg32wifi namespace. */
+typedef struct {
+    char ssid[32];
+    char password[64];
+} known_network_t;
+static known_network_t known_networks[PRG32_WIFI_KNOWN_MAX];
+static int known_count;
+static bool known_loaded;
+
+/* The setup menu (main task) and the device protocol (its own task) both
+ * start, stop, and scan Wi-Fi, so those operations are serialized. The lock
+ * is recursive because connecting restarts Wi-Fi through the same API. */
+static SemaphoreHandle_t wifi_lock;
+static portMUX_TYPE wifi_lock_init_mux = portMUX_INITIALIZER_UNLOCKED;
+
+static void wifi_lock_take(void) {
+    if (!wifi_lock) {
+        /* Create outside the critical section (creating a mutex may not run
+         * with interrupts disabled); only publishing the handle is guarded,
+         * and a task that loses the race deletes its spare mutex. */
+        SemaphoreHandle_t created = xSemaphoreCreateRecursiveMutex();
+        bool published = false;
+        portENTER_CRITICAL(&wifi_lock_init_mux);
+        if (!wifi_lock) {
+            wifi_lock = created;
+            published = true;
+        }
+        portEXIT_CRITICAL(&wifi_lock_init_mux);
+        if (!published && created) {
+            vSemaphoreDelete(created);
+        }
+    }
+    xSemaphoreTakeRecursive(wifi_lock, portMAX_DELAY);
+}
+
+static void wifi_lock_give(void) {
+    xSemaphoreGiveRecursive(wifi_lock);
+}
 
 static void copy_cstr(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -155,6 +196,91 @@ static const char *auth_mode_short_name(wifi_auth_mode_t mode) {
     }
 }
 
+static void known_load(void) {
+    known_count = 0;
+    known_loaded = true;
+    nvs_handle_t nvs;
+    if (nvs_open("prg32wifi", NVS_READONLY, &nvs) != ESP_OK) {
+        return;
+    }
+    size_t size = sizeof(known_networks);
+    if (nvs_get_blob(nvs, "known", known_networks, &size) == ESP_OK &&
+        size % sizeof(known_network_t) == 0) {
+        known_count = (int)(size / sizeof(known_network_t));
+    }
+    nvs_close(nvs);
+    for (int i = 0; i < known_count; ++i) {
+        known_networks[i].ssid[sizeof(known_networks[i].ssid) - 1] = '\0';
+        known_networks[i].password[sizeof(known_networks[i].password) - 1] = '\0';
+    }
+}
+
+static void known_save(void) {
+    nvs_handle_t nvs;
+    if (nvs_open("prg32wifi", NVS_READWRITE, &nvs) != ESP_OK) {
+        return;
+    }
+    if (known_count > 0) {
+        nvs_set_blob(nvs, "known", known_networks,
+                     (size_t)known_count * sizeof(known_network_t));
+    } else {
+        nvs_erase_key(nvs, "known");
+    }
+    nvs_commit(nvs);
+    nvs_close(nvs);
+}
+
+static int known_find(const char *ssid) {
+    for (int i = 0; i < known_count; ++i) {
+        if (strcmp(known_networks[i].ssid, ssid) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void known_remove(int index) {
+    if (index < 0 || index >= known_count) {
+        return;
+    }
+    for (int i = index; i + 1 < known_count; ++i) {
+        known_networks[i] = known_networks[i + 1];
+    }
+    known_count--;
+    /* Leave no copy of the removed password in RAM. */
+    memset(&known_networks[known_count], 0, sizeof(known_networks[0]));
+    known_save();
+}
+
+/* Put a network that just connected first, dropping the oldest when full. */
+static void known_remember(const char *ssid, const char *password) {
+    if (!ssid || ssid[0] == '\0') {
+        return;
+    }
+    int index = known_find(ssid);
+    if (index == 0 &&
+        strcmp(known_networks[0].password, password ? password : "") == 0) {
+        return; /* already first and unchanged: no flash write */
+    }
+    if (index < 0) {
+        index = known_count < PRG32_WIFI_KNOWN_MAX ? known_count
+                                                   : PRG32_WIFI_KNOWN_MAX - 1;
+        if (known_count < PRG32_WIFI_KNOWN_MAX) {
+            known_count++;
+        }
+    }
+    for (int i = index; i > 0; --i) {
+        known_networks[i] = known_networks[i - 1];
+    }
+    memset(&known_networks[0], 0, sizeof(known_networks[0]));
+    copy_cstr(known_networks[0].ssid, sizeof(known_networks[0].ssid), ssid);
+    copy_cstr(known_networks[0].password,
+              sizeof(known_networks[0].password),
+              password);
+    known_save();
+    ESP_LOGI(TAG, "remembered network %s (%d stored)", ssid, known_count);
+}
+
 static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data) {
     (void)arg;
     if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START && sta_autoconnect) {
@@ -182,7 +308,7 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     }
 }
 
-static esp_err_t wifi_stack_init(void) {
+static esp_err_t wifi_stack_init_locked(void) {
     if (wifi_initialized) {
         return ESP_OK;
     }
@@ -226,8 +352,16 @@ static esp_err_t wifi_stack_init(void) {
                                                IP_EVENT_STA_GOT_IP,
                                                wifi_event,
                                                NULL));
+    known_load();
     wifi_initialized = true;
     return ESP_OK;
+}
+
+static esp_err_t wifi_stack_init(void) {
+    wifi_lock_take();
+    esp_err_t err = wifi_stack_init_locked();
+    wifi_lock_give();
+    return err;
 }
 
 static void configure_sta_protocols(void) {
@@ -328,7 +462,7 @@ static bool load_config(prg32_wifi_config_t *config) {
     return true;
 }
 
-int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
+static int start_mode_locked(const prg32_wifi_config_t *config) {
     if (!config || config->mode == PRG32_WIFI_MODE_OFF) {
         active_mode = PRG32_WIFI_MODE_OFF;
         copy_cstr(active_status, sizeof(active_status), "OFF");
@@ -341,7 +475,7 @@ int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
         copy_cstr(active_status, sizeof(active_status), "RESTARTING");
         vTaskDelay(pdMS_TO_TICKS(150));
     }
-    if (wifi_stack_init() != ESP_OK) {
+    if (wifi_stack_init_locked() != ESP_OK) {
         return -1;
     }
 
@@ -426,6 +560,17 @@ int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
     return 0;
 }
 
+int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
+    wifi_lock_take();
+    int rc = start_mode_locked(config);
+    wifi_lock_give();
+    return rc;
+}
+
+const char *prg32_wifi_current_status(void) {
+    return active_status;
+}
+
 prg32_wifi_mode_t prg32_wifi_current_mode(void) {
     return active_mode;
 }
@@ -481,6 +626,8 @@ static void draw_status(const prg32_wifi_config_t *config) {
     prg32_gfx_text8(72, 176, active_status, PRG32_COLOR_YELLOW, 0);
 }
 
+/* Returns 0 for access point, 1 for infrastructure, 2 to forget a stored
+ * network, or -1 to leave. */
 static int choose_mode(prg32_wifi_config_t *config) {
     int choice = config && config->mode == PRG32_WIFI_MODE_STA ? 1 : 0;
     uint32_t last = 0;
@@ -490,11 +637,11 @@ static int choose_mode(prg32_wifi_config_t *config) {
                               MENU_CANCEL);
     while (1) {
         uint32_t input = prg32_input_read_menu();
-        if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP)) {
-            choice = 0;
+        if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
+            choice--;
         }
-        if ((input & PRG32_BTN_DOWN) && !(last & PRG32_BTN_DOWN)) {
-            choice = 1;
+        if ((input & PRG32_BTN_DOWN) && !(last & PRG32_BTN_DOWN) && choice < 2) {
+            choice++;
         }
         if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
             prg32_input_wait_released(MENU_ACCEPT);
@@ -504,7 +651,7 @@ static int choose_mode(prg32_wifi_config_t *config) {
             prg32_input_wait_released(MENU_CANCEL);
             return -1;
         }
-        if (config) {
+        if (config && choice < 2) {
             config->mode = choice == 0 ? PRG32_WIFI_MODE_AP : PRG32_WIFI_MODE_STA;
         }
 
@@ -520,6 +667,11 @@ static int choose_mode(prg32_wifi_config_t *config) {
                          choice == 1 ? "> INFRASTRUCTURE" : "  INFRASTRUCTURE",
                          PRG32_COLOR_WHITE,
                          0);
+        prg32_gfx_text8(8,
+                         72,
+                         choice == 2 ? "> FORGET NETWORK" : "  FORGET NETWORK",
+                         PRG32_COLOR_WHITE,
+                         0);
         draw_status(config);
         prg32_gfx_text8(8, 204, "UP/DOWN CHOOSE  SELECT/A OK  B BACK", PRG32_COLOR_CYAN, 0);
         prg32_gfx_present();
@@ -528,10 +680,59 @@ static int choose_mode(prg32_wifi_config_t *config) {
     }
 }
 
-static int scan_networks(wifi_ap_record_t **records_out,
-                         char *status,
-                         size_t status_size) {
-    if (!records_out || wifi_stack_init() != ESP_OK) {
+static const wifi_scan_config_t PRG32_WIFI_SCAN_CONFIG = {
+    .show_hidden = true,
+    .scan_type = WIFI_SCAN_TYPE_ACTIVE,
+    .scan_time = {
+        .active = {
+            .min = 100,
+            .max = 300
+        }
+    }
+};
+
+/* Run one blocking scan on a started station interface and return the
+ * records (caller frees) or 0 with a reason in `status`. */
+static int scan_records(wifi_ap_record_t **records_out,
+                        char *status,
+                        size_t status_size) {
+    uint16_t found_count = 0;
+    esp_err_t err = esp_wifi_scan_start(&PRG32_WIFI_SCAN_CONFIG, true);
+    if (err == ESP_OK) {
+        uint16_t count = 0;
+        err = esp_wifi_scan_get_ap_num(&count);
+        if (err == ESP_OK && count > 0) {
+            wifi_ap_record_t *records = heap_caps_calloc(count,
+                                                         sizeof(*records),
+                                                         MALLOC_CAP_8BIT);
+            if (!records) {
+                err = ESP_ERR_NO_MEM;
+            } else {
+                err = esp_wifi_scan_get_ap_records(&count, records);
+                if (err == ESP_OK) {
+                    *records_out = records;
+                    found_count = count;
+                    records = NULL;
+                }
+                heap_caps_free(records);
+            }
+        }
+    }
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "Wi-Fi scan found %u networks", (unsigned)found_count);
+    } else {
+        copy_cstr(status, status_size, esp_err_to_name(err));
+        ESP_LOGE(TAG, "Wi-Fi scan failed: %s", esp_err_to_name(err));
+    }
+    return err == ESP_OK ? (int)found_count : 0;
+}
+
+/* Scan from a stopped radio: Wi-Fi is restarted in station mode for the scan
+ * and left stopped afterwards. */
+static int scan_networks_locked(wifi_ap_record_t **records_out,
+                                char *status,
+                                size_t status_size) {
+    if (!records_out || wifi_stack_init_locked() != ESP_OK) {
         copy_cstr(status, status_size, "WIFI INIT FAILED");
         return 0;
     }
@@ -567,44 +768,7 @@ static int scan_networks(wifi_ap_record_t **records_out,
     wifi_started = true;
     vTaskDelay(pdMS_TO_TICKS(250));
 
-    wifi_scan_config_t scan = {
-        .show_hidden = true,
-        .scan_type = WIFI_SCAN_TYPE_ACTIVE,
-        .scan_time = {
-            .active = {
-                .min = 100,
-                .max = 300
-            }
-        }
-    };
-    uint16_t found_count = 0;
-    err = esp_wifi_scan_start(&scan, true);
-    if (err == ESP_OK) {
-        uint16_t count = 0;
-        err = esp_wifi_scan_get_ap_num(&count);
-        if (err == ESP_OK && count > 0) {
-            wifi_ap_record_t *records = heap_caps_calloc(count,
-                                                         sizeof(*records),
-                                                         MALLOC_CAP_8BIT);
-            if (!records) {
-                err = ESP_ERR_NO_MEM;
-            } else {
-                err = esp_wifi_scan_get_ap_records(&count, records);
-                if (err == ESP_OK) {
-                    *records_out = records;
-                    found_count = count;
-                    records = NULL;
-                }
-                heap_caps_free(records);
-            }
-        }
-    }
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Wi-Fi scan found %u networks", (unsigned)found_count);
-    } else {
-        copy_cstr(status, status_size, esp_err_to_name(err));
-        ESP_LOGE(TAG, "Wi-Fi scan failed: %s", esp_err_to_name(err));
-    }
+    int found_count = scan_records(records_out, status, status_size);
     esp_err_t stop_err = esp_wifi_stop();
     if (stop_err != ESP_OK) {
         ESP_LOGW(TAG, "Wi-Fi stop after scan failed: %s",
@@ -613,13 +777,22 @@ static int scan_networks(wifi_ap_record_t **records_out,
     wifi_started = false;
     sta_autoconnect = true;
     active_mode = PRG32_WIFI_MODE_OFF;
-    if (err != ESP_OK || !*records_out) {
+    if (found_count <= 0 || !*records_out) {
         if (status && status_size > 0 && status[0] == '\0') {
             copy_cstr(status, status_size, "NO NETWORKS FOUND");
         }
         return 0;
     }
-    return (int)found_count;
+    return found_count;
+}
+
+static int scan_networks(wifi_ap_record_t **records_out,
+                         char *status,
+                         size_t status_size) {
+    wifi_lock_take();
+    int count = scan_networks_locked(records_out, status, status_size);
+    wifi_lock_give();
+    return count;
 }
 
 static int compare_ap_rssi_desc(const void *lhs, const void *rhs) {
@@ -650,10 +823,28 @@ static void select_ap_record_for_boot(const wifi_ap_record_t *record) {
     selected_ap_locked = true;
 }
 
-static void refresh_stored_sta_ap(const prg32_wifi_config_t *config) {
+static const wifi_ap_record_t *strongest_record(const wifi_ap_record_t *records,
+                                                int count,
+                                                const char *ssid) {
+    const wifi_ap_record_t *best = NULL;
+    for (int i = 0; i < count; ++i) {
+        if (strcmp((const char *)records[i].ssid, ssid) != 0) {
+            continue;
+        }
+        if (!best || records[i].rssi > best->rssi) {
+            best = &records[i];
+        }
+    }
+    return best;
+}
+
+/* Before a station boot, look for the saved network. When it is out of
+ * range, switch to the most recently connected stored network that is in
+ * range, so a console moved between home and lab joins whichever it finds. */
+static void refresh_stored_sta_ap(prg32_wifi_config_t *config) {
     if (!config ||
         config->mode != PRG32_WIFI_MODE_STA ||
-        config->ssid[0] == '\0') {
+        (config->ssid[0] == '\0' && known_count == 0)) {
         return;
     }
 
@@ -669,17 +860,34 @@ static void refresh_stored_sta_ap(const prg32_wifi_config_t *config) {
         return;
     }
 
-    const wifi_ap_record_t *best = NULL;
-    for (int i = 0; i < count; ++i) {
-        if (strcmp((const char *)records[i].ssid, config->ssid) != 0) {
-            continue;
+    const wifi_ap_record_t *best = config->ssid[0]
+        ? strongest_record(records, count, config->ssid)
+        : NULL;
+    if (!best) {
+        for (int k = 0; k < known_count && !best; ++k) {
+            if (strcmp(known_networks[k].ssid, config->ssid) == 0) {
+                continue;
+            }
+            best = strongest_record(records, count, known_networks[k].ssid);
+            if (best) {
+                ESP_LOGI(TAG,
+                         "saved SSID %s not in range, using stored network %s",
+                         config->ssid[0] ? config->ssid : "(none)",
+                         known_networks[k].ssid);
+                copy_cstr(config->ssid, sizeof(config->ssid),
+                          known_networks[k].ssid);
+                copy_cstr(config->password, sizeof(config->password),
+                          known_networks[k].password);
+            }
         }
-        if (!best || records[i].rssi > best->rssi) {
-            best = &records[i];
+        if (best) {
+            select_ap_record_for_boot(best);
+            save_config(config);
         }
+    } else {
+        select_ap_record_for_boot(best);
     }
     if (best) {
-        select_ap_record_for_boot(best);
         ESP_LOGI(TAG,
                  "refreshed stored SSID %s channel=%u rssi=%d",
                  config->ssid,
@@ -689,6 +897,55 @@ static void refresh_stored_sta_ap(const prg32_wifi_config_t *config) {
         ESP_LOGW(TAG, "stored SSID %s not found in refresh scan", config->ssid);
     }
     heap_caps_free(records);
+}
+
+static bool wait_connected(uint32_t timeout_ms) {
+    uint32_t start = prg32_ticks_ms();
+    while (strcmp(active_status, "CONNECTED") != 0 &&
+           prg32_ticks_ms() - start < timeout_ms) {
+        vTaskDelay(pdMS_TO_TICKS(250));
+    }
+    return strcmp(active_status, "CONNECTED") == 0;
+}
+
+/* Record the network the station is connected to, when it is the saved one.
+ * Called before the stored list is read, so a join that finished after the
+ * boot wait is still remembered. Caller holds the Wi-Fi lock. */
+static void remember_active_locked(void) {
+    if (active_mode != PRG32_WIFI_MODE_STA ||
+        strcmp(active_status, "CONNECTED") != 0) {
+        return;
+    }
+    /* Read only the saved credentials: load_config() also resets the
+     * selected access point, which must not change behind a connection. */
+    char ssid[32] = "";
+    char password[64] = "";
+    size_t ssid_len = sizeof(ssid);
+    size_t password_len = sizeof(password);
+    nvs_handle_t nvs;
+    if (nvs_open("prg32wifi", NVS_READONLY, &nvs) != ESP_OK) {
+        return;
+    }
+    bool ok = nvs_get_str(nvs, "ssid", ssid, &ssid_len) == ESP_OK &&
+              nvs_get_str(nvs, "password", password, &password_len) == ESP_OK;
+    nvs_close(nvs);
+    if (ok && strcmp(ssid, active_ssid) == 0) {
+        known_remember(ssid, password);
+    }
+    memset(password, 0, sizeof(password));
+}
+
+/* Remember the station network once it has really connected. */
+static void remember_if_connected(const prg32_wifi_config_t *config) {
+    if (!config ||
+        active_mode != PRG32_WIFI_MODE_STA ||
+        strcmp(active_status, "CONNECTED") != 0 ||
+        strcmp(active_ssid, config->ssid) != 0) {
+        return;
+    }
+    wifi_lock_take();
+    known_remember(config->ssid, config->password);
+    wifi_lock_give();
 }
 
 static int confirm_sta_credentials(const prg32_wifi_config_t *config) {
@@ -863,6 +1120,95 @@ static int choose_ssid(char *ssid, size_t ssid_size) {
     }
 }
 
+static void show_wifi_message(const char *title, const char *line,
+                              uint16_t color) {
+    prg32_gfx_clear(PRG32_COLOR_BLACK);
+    prg32_gfx_text8(8, 8, title, PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 40, line, color, 0);
+    prg32_gfx_text8(8, 204, "B BACK", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_present();
+    prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
+    while ((prg32_input_read_menu() & MENU_CANCEL) == 0) {
+        vTaskDelay(pdMS_TO_TICKS(80));
+    }
+    prg32_input_wait_released(MENU_CANCEL);
+}
+
+/* List the stored networks and erase the one the player confirms. */
+static void forget_network_menu(void) {
+    char ssids[PRG32_WIFI_KNOWN_MAX][32];
+    int count = prg32_wifi_known_networks(ssids, PRG32_WIFI_KNOWN_MAX);
+    if (count <= 0) {
+        show_wifi_message("FORGET NETWORK", "NO SAVED NETWORKS",
+                          PRG32_COLOR_YELLOW);
+        return;
+    }
+    int choice = 0;
+    bool confirming = false;
+    uint32_t last = 0;
+    prg32_input_wait_released(PRG32_BTN_UP | PRG32_BTN_DOWN | MENU_ACCEPT |
+                              MENU_CANCEL);
+    while (1) {
+        uint32_t input = prg32_input_read_menu();
+        if (!confirming) {
+            if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
+                choice--;
+            }
+            if ((input & PRG32_BTN_DOWN) && !(last & PRG32_BTN_DOWN) &&
+                choice + 1 < count) {
+                choice++;
+            }
+        }
+        if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+            prg32_input_wait_released(MENU_CANCEL);
+            if (!confirming) {
+                return;
+            }
+            confirming = false;
+            input = 0;
+        }
+        if ((input & MENU_ACCEPT) && !(last & MENU_ACCEPT)) {
+            prg32_input_wait_released(MENU_ACCEPT);
+            input = 0;
+            if (!confirming) {
+                confirming = true;
+            } else {
+                int rc = prg32_wifi_forget_network(ssids[choice]);
+                show_wifi_message("FORGET NETWORK",
+                                  rc == 0 ? "NETWORK FORGOTTEN"
+                                          : "NETWORK NOT FOUND",
+                                  rc == 0 ? PRG32_COLOR_GREEN
+                                          : PRG32_COLOR_YELLOW);
+                return;
+            }
+        }
+
+        prg32_gfx_clear(PRG32_COLOR_BLACK);
+        prg32_gfx_text8(8, 8, "FORGET NETWORK", PRG32_COLOR_WHITE, 0);
+        if (confirming) {
+            prg32_gfx_text8(8, 40, "FORGET THIS NETWORK?", PRG32_COLOR_YELLOW, 0);
+            prg32_gfx_text8(8, 60, ssids[choice], PRG32_COLOR_WHITE, 0);
+            prg32_gfx_text8(8, 84, "ITS PASSWORD IS ERASED", PRG32_COLOR_CYAN, 0);
+            prg32_gfx_text8(8, 204, "SELECT/A FORGET  B CANCEL",
+                             PRG32_COLOR_CYAN, 0);
+        } else {
+            prg32_gfx_text8(8, 24, "SAVED NETWORKS, NEWEST FIRST",
+                             PRG32_COLOR_GREEN, 0);
+            for (int i = 0; i < count; ++i) {
+                int y = 48 + i * 16;
+                prg32_gfx_text8(8, y, i == choice ? ">" : " ",
+                                 PRG32_COLOR_GREEN, 0);
+                prg32_gfx_text8(24, y, ssids[i], PRG32_COLOR_WHITE, 0);
+            }
+            prg32_gfx_text8(8, 204, "UP/DOWN  SELECT/A FORGET  B BACK",
+                             PRG32_COLOR_CYAN, 0);
+        }
+        prg32_gfx_present();
+        last = input;
+        vTaskDelay(pdMS_TO_TICKS(80));
+    }
+}
+
 int prg32_wifi_setup_run(void) {
     int was_fullscreen = prg32_gfx_fullscreen_enabled();
     prg32_gfx_set_fullscreen(1);
@@ -880,6 +1226,15 @@ int prg32_wifi_setup_run(void) {
             prg32_gfx_set_fullscreen(was_fullscreen);
             return -1;
         }
+        if (mode == 2) {
+            forget_network_menu();
+            /* Forgetting may have changed the saved configuration. */
+            default_config(&stored);
+            if (wifi_stack_init() == ESP_OK && load_config(&stored)) {
+                config = stored;
+            }
+            continue;
+        }
         if (mode == 0) {
             config.mode = PRG32_WIFI_MODE_AP;
             if (prg32_text_input(config.ap_ssid,
@@ -895,13 +1250,21 @@ int prg32_wifi_setup_run(void) {
             if (choose_ssid(config.ssid, sizeof(config.ssid)) != 0) {
                 continue;
             }
-            if (strcmp(config.ssid, stored.ssid) == 0) {
+            /* Offer the password already stored for this network. */
+            wifi_lock_take();
+            int known_index = known_find(config.ssid);
+            if (known_index >= 0) {
+                copy_cstr(config.password,
+                          sizeof(config.password),
+                          known_networks[known_index].password);
+            } else if (strcmp(config.ssid, stored.ssid) == 0) {
                 copy_cstr(config.password,
                           sizeof(config.password),
                           stored.password);
             } else {
                 config.password[0] = '\0';
             }
+            wifi_lock_give();
             if (prg32_text_input(config.password,
                                  sizeof(config.password),
                                  "WIFI PASSWORD") < 0) {
@@ -942,6 +1305,7 @@ int prg32_wifi_setup_run(void) {
             }
             vTaskDelay(pdMS_TO_TICKS(200));
         }
+        remember_if_connected(&config);
         prg32_gfx_set_fullscreen(was_fullscreen);
         return rc;
     }
@@ -966,21 +1330,246 @@ void prg32_wifi_scores_init(void) {
     refresh_stored_sta_ap(&config);
     prg32_wifi_start_mode(&config);
     if (config.mode == PRG32_WIFI_MODE_STA) {
-        uint32_t start = prg32_ticks_ms();
-        while (strcmp(active_status, "CONNECTED") != 0 &&
-               prg32_ticks_ms() - start < 10000) {
-            vTaskDelay(pdMS_TO_TICKS(250));
-        }
-        if (strcmp(active_status, "CONNECTED") != 0) {
+        if (!wait_connected(10000)) {
             ESP_LOGW(TAG, "STA boot connect timed out, retrying SSID-only");
             selected_ap_locked = false;
             selected_ap_valid = false;
             prg32_wifi_start_mode(&config);
+            wait_connected(10000);
         }
+        remember_if_connected(&config);
     }
 }
 
+static int compare_network_rssi_desc(const void *lhs, const void *rhs) {
+    const prg32_wifi_network_t *a = (const prg32_wifi_network_t *)lhs;
+    const prg32_wifi_network_t *b = (const prg32_wifi_network_t *)rhs;
+    return (int)b->rssi - (int)a->rssi;
+}
+
+int prg32_wifi_scan_networks(prg32_wifi_network_t *out, int max, char *status,
+                             size_t status_size) {
+    if (status && status_size > 0) {
+        status[0] = '\0';
+    }
+    if (!out || max <= 0) {
+        copy_cstr(status, status_size, "invalid scan buffer");
+        return -1;
+    }
+    wifi_lock_take();
+    if (wifi_stack_init_locked() != ESP_OK) {
+        wifi_lock_give();
+        copy_cstr(status, status_size, "Wi-Fi init failed");
+        return -1;
+    }
+    wifi_ap_record_t *records = NULL;
+    int count;
+    if (wifi_started && active_mode == PRG32_WIFI_MODE_STA &&
+        strcmp(active_status, "CONNECTED") == 0) {
+        /* A connected station scans without dropping its connection. */
+        count = scan_records(&records, status, status_size);
+    } else {
+        /* Otherwise the radio is restarted for the scan, then the saved
+         * mode (access point or a station still connecting) comes back. */
+        bool was_started = wifi_started;
+        count = scan_networks_locked(&records, status, status_size);
+        if (was_started) {
+            prg32_wifi_config_t config;
+            default_config(&config);
+            load_config(&config);
+            start_mode_locked(&config);
+        }
+    }
+    wifi_lock_give();
+    if (count <= 0) {
+        heap_caps_free(records);
+        if (status && status[0] == '\0') {
+            copy_cstr(status, status_size, "no networks found");
+        }
+        return count < 0 ? -1 : 0;
+    }
+
+    /* One entry per SSID, the strongest access point; hidden ones skipped. */
+    int used = 0;
+    for (int i = 0; i < count; ++i) {
+        const char *ssid = (const char *)records[i].ssid;
+        if (ssid[0] == '\0') {
+            continue;
+        }
+        int slot = -1;
+        for (int j = 0; j < used; ++j) {
+            if (strcmp(out[j].ssid, ssid) == 0) {
+                slot = j;
+                break;
+            }
+        }
+        if (slot >= 0) {
+            if (records[i].rssi > out[slot].rssi) {
+                out[slot].rssi = records[i].rssi;
+                out[slot].channel = records[i].primary;
+                out[slot].auth = auth_mode_short_name(records[i].authmode);
+            }
+            continue;
+        }
+        if (used == max) {
+            /* Full: replace the weakest entry when this one is stronger. */
+            int weakest = 0;
+            for (int j = 1; j < used; ++j) {
+                if (out[j].rssi < out[weakest].rssi) {
+                    weakest = j;
+                }
+            }
+            if (records[i].rssi <= out[weakest].rssi) {
+                continue;
+            }
+            slot = weakest;
+        } else {
+            slot = used++;
+        }
+        copy_cstr(out[slot].ssid, sizeof(out[slot].ssid), ssid);
+        out[slot].rssi = records[i].rssi;
+        out[slot].channel = records[i].primary;
+        out[slot].auth = auth_mode_short_name(records[i].authmode);
+    }
+    heap_caps_free(records);
+    qsort(out, (size_t)used, sizeof(*out), compare_network_rssi_desc);
+    return used;
+}
+
+int prg32_wifi_known_networks(char (*ssids)[32], int max) {
+    if (!ssids || max <= 0 || wifi_stack_init() != ESP_OK) {
+        return 0;
+    }
+    wifi_lock_take();
+    remember_active_locked();
+    int count = known_count < max ? known_count : max;
+    for (int i = 0; i < count; ++i) {
+        copy_cstr(ssids[i], sizeof(ssids[i]), known_networks[i].ssid);
+    }
+    wifi_lock_give();
+    return count;
+}
+
+int prg32_wifi_connect_network(const char *ssid, const char *password,
+                               uint32_t timeout_ms, char *status,
+                               size_t status_size) {
+    size_t ssid_len = ssid ? strlen(ssid) : 0;
+    size_t password_len = password ? strlen(password) : 0;
+    if (ssid_len == 0 || ssid_len >= sizeof(((prg32_wifi_config_t *)0)->ssid)) {
+        copy_cstr(status, status_size, "SSID must be 1 to 31 characters");
+        return -1;
+    }
+    if (password_len >= sizeof(((prg32_wifi_config_t *)0)->password) ||
+        (password_len > 0 && password_len < 8)) {
+        copy_cstr(status, status_size,
+                  "password must be empty or 8 to 63 characters");
+        return -1;
+    }
+    wifi_lock_take();
+    if (wifi_stack_init_locked() != ESP_OK) {
+        wifi_lock_give();
+        copy_cstr(status, status_size, "Wi-Fi init failed");
+        return -1;
+    }
+    prg32_wifi_config_t previous;
+    default_config(&previous);
+    load_config(&previous);
+    bool was_started = wifi_started;
+
+    prg32_wifi_config_t config = previous;
+    config.mode = PRG32_WIFI_MODE_STA;
+    copy_cstr(config.ssid, sizeof(config.ssid), ssid);
+    copy_cstr(config.password, sizeof(config.password), password);
+    select_ap_record(NULL); /* no BSSID pin: join any access point of it */
+    int rc = start_mode_locked(&config);
+    uint32_t start = prg32_ticks_ms();
+    while (rc == 0 && strcmp(active_status, "CONNECTED") != 0 &&
+           prg32_ticks_ms() - start < timeout_ms) {
+        vTaskDelay(pdMS_TO_TICKS(250));
+    }
+    if (rc == 0 && strcmp(active_status, "CONNECTED") == 0) {
+        save_config(&config);
+        known_remember(config.ssid, config.password);
+        copy_cstr(status, status_size, "connected");
+        wifi_lock_give();
+        return 0;
+    }
+
+    copy_cstr(status, status_size,
+              strcmp(active_status, "CONNECTING") == 0 ? "connect timeout"
+                                                       : active_status);
+    ESP_LOGW(TAG, "join %s failed (%s); restoring previous Wi-Fi", ssid,
+             status ? status : "");
+    if (was_started) {
+        start_mode_locked(&previous);
+    } else {
+        esp_wifi_stop();
+        wifi_started = false;
+        active_mode = PRG32_WIFI_MODE_OFF;
+    }
+    wifi_lock_give();
+    return -1;
+}
+
+int prg32_wifi_forget_network(const char *ssid) {
+    if (!ssid || ssid[0] == '\0') {
+        return -1;
+    }
+    wifi_lock_take();
+    if (wifi_stack_init_locked() != ESP_OK) {
+        wifi_lock_give();
+        return -1;
+    }
+    remember_active_locked();
+    prg32_wifi_config_t config;
+    default_config(&config);
+    bool have_config = load_config(&config);
+    int index = known_find(ssid);
+    bool is_current = have_config && config.mode == PRG32_WIFI_MODE_STA &&
+                      strcmp(config.ssid, ssid) == 0;
+    if (index < 0 && !is_current) {
+        wifi_lock_give();
+        return -1;
+    }
+    known_remove(index);
+    if (is_current) {
+        memset(config.ssid, 0, sizeof(config.ssid));
+        memset(config.password, 0, sizeof(config.password));
+        select_ap_record(NULL);
+        if (known_count > 0) {
+            config.mode = PRG32_WIFI_MODE_STA;
+            copy_cstr(config.ssid, sizeof(config.ssid), known_networks[0].ssid);
+            copy_cstr(config.password, sizeof(config.password),
+                      known_networks[0].password);
+        } else {
+            /* Nothing left to join: stay reachable as an access point. */
+            config.mode = PRG32_WIFI_MODE_AP;
+        }
+        save_config(&config);
+    }
+    /* The Wi-Fi driver keeps its own copy of the last credentials and a cache
+     * of recent access points, passwords included, in its NVS namespace.
+     * Reset it so the forgotten password is erased there too, then restart
+     * the remaining configuration. The next join may need one extra attempt
+     * because the driver's cache starts empty. */
+    bool restart = wifi_started;
+    if (wifi_started) {
+        esp_wifi_stop();
+        wifi_started = false;
+        active_mode = PRG32_WIFI_MODE_OFF;
+    }
+    esp_wifi_restore();
+    if (restart) {
+        start_mode_locked(&config);
+    }
+    ESP_LOGI(TAG, "forgot network %s (%d stored)", ssid, known_count);
+    wifi_lock_give();
+    return 0;
+}
+
 #else
+
+#include <stdio.h>
 
 void prg32_wifi_scores_init(void) {}
 int prg32_wifi_start_mode(const prg32_wifi_config_t *config) {
@@ -1001,6 +1590,38 @@ int prg32_wifi_setup_requested(void) {
 }
 int prg32_wifi_setup_run(void) {
     return 0;
+}
+int prg32_wifi_scan_networks(prg32_wifi_network_t *out, int max, char *status,
+                             size_t status_size) {
+    (void)out;
+    (void)max;
+    if (status && status_size > 0) {
+        snprintf(status, status_size, "Wi-Fi is not available in this build");
+    }
+    return -1;
+}
+int prg32_wifi_known_networks(char (*ssids)[32], int max) {
+    (void)ssids;
+    (void)max;
+    return 0;
+}
+int prg32_wifi_connect_network(const char *ssid, const char *password,
+                               uint32_t timeout_ms, char *status,
+                               size_t status_size) {
+    (void)ssid;
+    (void)password;
+    (void)timeout_ms;
+    if (status && status_size > 0) {
+        snprintf(status, status_size, "Wi-Fi is not available in this build");
+    }
+    return -1;
+}
+int prg32_wifi_forget_network(const char *ssid) {
+    (void)ssid;
+    return -1;
+}
+const char *prg32_wifi_current_status(void) {
+    return "OFF";
 }
 
 #endif

@@ -14,14 +14,84 @@ The Store browser uses an 8,192-byte sliding JSON input window instead of
 retaining a complete catalog body. Its result entries and HTTP client still
 consume heap; use the boot and runtime checkpoints below to measure their
 actual impact on a board. The default audio configuration has eight voices at
-22,050 Hz. These settings coexist with the optional 128 KiB executable
-cartridge profile described in [profiles](../usage/profiles.md); the profile
-reserves cartridge execution RAM, not a 128 KiB total-system RAM cap.
+22,050 Hz.
 
-On cartridge startup, Store artwork and metadata stay in flash. The loader
-temporarily allocates only the header, code/data payload, and optional AUDIO
-block; see [cartridge loading](../software/cartridges.md) for the package
-layout. Package size is therefore not the same as cartridge startup heap use.
+## Maximizing Free Heap
+
+The resident runtime keeps as much internal SRAM free for the heap as it can
+next to the static 64 KiB cartridge window, `prg32_cart_exec`
+([profiles](../usage/profiles.md)). Each measure below was checked on the
+ESP32-C6 prototype and in QEMU.
+
+1. **No heap copy when a cartridge starts.** `prg32_cart_load_stored()` maps
+   the stored image with `esp_partition_mmap()`, validates it in place, and
+   copies the code/data payload once, from flash into `prg32_cart_exec`.
+   Store artwork and metadata stay in flash and are never mapped. The mapping
+   stays open while the cartridge is loaded because its AUDIO samples and
+   tracker events play directly from flash; it is released when another slot
+   loads or when that slot is erased or rewritten.
+2. **Streamed uploads.** USB uploads, Store downloads, and `POST /api/games`
+   write the image to flash in chunks of at most 4,096 bytes instead of
+   buffering the whole package. `prg32_cart_stream_end()` then checks the
+   header, sizes, and payload CRC on the flash mapping.
+3. **Less code in IRAM (ESP32-C6).** Code placed in IRAM uses the same SRAM
+   as the heap. `profiles/sdkconfig.defaults.esp32c6` runs these from flash:
+   the Wi-Fi driver's throughput paths (`ESP_WIFI_IRAM_OPT`,
+   `ESP_WIFI_EXTRA_IRAM_OPT`, `ESP_WIFI_RX_IRAM_OPT`, `ESP_WIFI_SLP_IRAM_OPT`),
+   task-context ring-buffer functions, and the SPI master interrupt handler and
+   HAL, which the ILI9341 driver never needs because it uses polling
+   transactions only. ISR-safe ring-buffer functions and the flash driver stay
+   in IRAM. Classroom uploads and score traffic do not need peak Wi-Fi
+   throughput. FreeRTOS stays in IRAM on purpose:
+   `FREERTOS_PLACE_FUNCTIONS_INTO_FLASH` would free about 10 KiB but enlarges
+   the newlib lock code placed before `prg32_cart_exec` and moves the window
+   from 0x408023a0, the address legacy cartridges are linked against (see
+   [cartridge ABI compatibility](../agents/cartridge_abi_compatibility.md)).
+4. **Fewer Wi-Fi receive buffers.** `ESP_WIFI_STATIC_RX_BUFFER_NUM` is 6
+   instead of 10, saving 6.8 KiB.
+5. **Smaller device-protocol task.** The USB protocol task stack is 4,608
+   bytes instead of 8,192; its measured worst case, including streaming a
+   5 KB performance result, is 2,712 bytes. Its transmit ring is 1,024 bytes
+   instead of 4,096 and replies are written in pieces. The receive ring stays
+   at 4,096 bytes because the USB Serial/JTAG driver drops bytes that do not
+   fit while a 4,124-byte upload frame arrives.
+6. **QEMU frame in panel memory.** The QEMU RGB backend draws directly into
+   the virtual panel's own framebuffer, which is outside the emulated SRAM,
+   instead of a 153,600-byte RGB565 copy in `.bss`. The window still updates
+   only when `prg32_gfx_present()` sends the dirty rows to the panel.
+
+The `httpd` (8,192 bytes), mDNS, lwIP, and esp_timer stacks are unchanged
+because the HTTP and Wi-Fi paths could not be exercised under load when these
+measurements were taken.
+
+### Measured Effect
+
+Free heap is reported by the device-protocol HELLO reply
+([`runtime.heap_free`](../software/usb_protocol.md#hello-response)). The
+figures below were taken on 2026-10-29 with the default 64 KiB window, the
+setup menu open, and the same Wi-Fi state; static sizes are from `idf.py size`.
+
+| Build | Static D/IRAM | Free heap | Largest free block |
+|---|---:|---:|---:|
+| ESP32-C6 `prototype1`, before | 307,385 B | 133,040 B | 106,496 B |
+| ESP32-C6 `prototype1`, after | 252,926 B | 187,904 B | 159,744 B |
+| ESP32-C6 `prototype1`, with stored Wi-Fi networks (2026-10-30) | - | 185,832 B | 159,744 B |
+| QEMU (ESP32-C3), before | 296,744 B | not reported | not reported |
+| QEMU (ESP32-C3), after | 143,152 B | 213,648 B | 114,688 B |
+
+On the board, loading the same cartridges again and again left free heap
+unchanged (within 0.2 KiB). Some cartridges start firmware services on first
+use, which lowers free heap once; running all 32 Store cartridges in a row
+lowered it by about 22 KiB in total
+([Store compatibility check](../cartridge_store/cartridge_store.md#store-compatibility-check-2026-10-29)). With the optional 128 KiB profile, a cartridge with a 96 KiB
+initialized table and a 24 KiB `.bss` buffer (`mem_size` 125,832 bytes) loaded
+from flash and ran on both targets.
+
+To repeat the per-task analysis, build with `CONFIG_HEAP_TASK_TRACKING=y` and
+`CONFIG_FREERTOS_USE_TRACE_FACILITY=y`, then read the boot checkpoints,
+per-task heap totals (`heap_caps_get_per_task_info()`), and stack high-water
+marks (`uxTaskGetSystemState()`) after exercising uploads, audio, and
+performance retrieval.
 
 ## ESP32-C6 Memory Layout
 

@@ -390,6 +390,37 @@ const char *prg32_wifi_current_ip(void);
 const char *prg32_wifi_current_ssid(void);
 int prg32_wifi_setup_requested(void);
 int prg32_wifi_setup_run(void);
+
+/* Resident-firmware network management used by the setup menu and the device
+ * protocol. These functions are not in the cartridge ABI: cartridges cannot
+ * list, change, or forget stored networks. */
+#define PRG32_WIFI_KNOWN_MAX 4 /* most recently connected networks kept */
+#define PRG32_WIFI_SCAN_MAX 16 /* networks reported by one scan */
+
+typedef struct {
+  char ssid[32];
+  int8_t rssi;
+  uint8_t channel;
+  const char *auth; /* short security name, for example "WPA2" */
+} prg32_wifi_network_t;
+
+/* Scan nearby networks, strongest first, one entry per SSID, hidden networks
+ * left out. Returns the count or -1 with a reason in `status`. */
+int prg32_wifi_scan_networks(prg32_wifi_network_t *out, int max, char *status,
+                             size_t status_size);
+/* Copy the SSIDs of the stored networks, most recent first; never passwords. */
+int prg32_wifi_known_networks(char (*ssids)[32], int max);
+/* Store and join a network. On success it becomes the first stored network;
+ * on failure the previous configuration is restarted and `status` explains. */
+int prg32_wifi_connect_network(const char *ssid, const char *password,
+                               uint32_t timeout_ms, char *status,
+                               size_t status_size);
+/* Erase a stored network and its password. A connection to it is replaced by
+ * the next stored network, or by access-point mode when none is left.
+ * Returns -1 when the SSID is not stored. */
+int prg32_wifi_forget_network(const char *ssid);
+const char *prg32_wifi_current_status(void);
+
 void prg32_scores_api_start(void);
 int prg32_score_player_get(char *out_player, size_t max_len);
 int prg32_score_player_set(const char *player);

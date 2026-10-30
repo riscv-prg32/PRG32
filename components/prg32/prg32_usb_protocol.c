@@ -1,7 +1,9 @@
 #include "prg32.h"
+#include "prg32_config.h"
 
 #include "cJSON.h"
 #include "driver/uart.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -14,12 +16,28 @@
 
 #if CONFIG_IDF_TARGET_ESP32C6
 #include "driver/usb_serial_jtag.h"
+#include "driver/usb_serial_jtag_vfs.h"
+#else
+#include "driver/uart_vfs.h"
 #endif
 
 #define PROTOCOL_VERSION 1u
 #define PROTOCOL_MAX_PAYLOAD (16u * 1024u)
 #define PROTOCOL_CHUNK_MAX 4096u
-#define PROTOCOL_TASK_STACK 8192u
+/* Measured worst case on 2026-10-29 (uploads, runs, and streaming a 5 KB
+ * performance result): 2,712 bytes. The rest is margin. */
+#define PROTOCOL_TASK_STACK 4608u
+/* The USB Serial/JTAG driver drops received bytes that do not fit in its
+ * ring, so the receive ring stays close to one 4,124-byte UPLOAD_DATA frame
+ * while the protocol task drains it. */
+#define PROTOCOL_RX_RING_BYTES 4096u
+/* Console logs share the wire with protocol frames. Every reply frame is
+ * written to the transmit ring in one call so log text can only land between
+ * frames, never inside one; a frame must therefore fit in the ring. */
+#define PROTOCOL_TX_RING_BYTES 1024u
+#define PROTOCOL_TX_FRAME_MAX PROTOCOL_TX_RING_BYTES
+/* RESULT_DATA chunk size: one header plus this payload fits in a frame. */
+#define PROTOCOL_RESULT_CHUNK 768u
 /* A frame that stops arriving for this long is abandoned so the decoder can
  * search for the next magic instead of consuming unrelated bytes. */
 #define PROTOCOL_BYTE_TIMEOUT_MS 1000u
@@ -30,6 +48,18 @@
 /* A full-screen present takes about 150 ms on the ILI9341, so progress is
  * redrawn at most this often while chunks keep arriving. */
 #define PROTOCOL_PROGRESS_REDRAW_MS 200u
+
+/* Joining a network waits this long for an address before the previous
+ * Wi-Fi configuration is restored. */
+#define PROTOCOL_WIFI_JOIN_TIMEOUT_MS 20000u
+
+#if PRG32_WIFI_ENABLE
+#define PROTOCOL_WIFI_CAPABILITY ",\"wifi\""
+#define PROTOCOL_HAS_WIFI 1
+#else
+#define PROTOCOL_WIFI_CAPABILITY ""
+#define PROTOCOL_HAS_WIFI 0
+#endif
 
 /* Header flag bit 0: final chunk on responses, restart on PERFORMANCE_GET. */
 #define PROTOCOL_FLAG_FINAL 0x0001u
@@ -43,6 +73,9 @@ enum {
   MESSAGE_RUN = 0x05,
   MESSAGE_DEBUG = 0x06,
   MESSAGE_PERFORMANCE_GET = 0x07,
+  MESSAGE_WIFI_SCAN = 0x08,
+  MESSAGE_WIFI_SET = 0x09,
+  MESSAGE_WIFI_FORGET = 0x0A,
   MESSAGE_STATUS = 0x80,
   MESSAGE_RESULT_DATA = 0x81,
 };
@@ -105,11 +138,15 @@ static int transport_read(void *data, size_t size, TickType_t wait) {
 #endif
 }
 
-static int transport_write(const void *data, size_t size) {
+/* Write one whole frame. The USB Serial/JTAG driver copies it into the
+ * transmit ring in one step; the UART driver holds its transmit lock for the
+ * whole call. Either way no console text can be inserted inside the frame. */
+static bool transport_write_frame(const void *data, size_t size) {
 #if CONFIG_IDF_TARGET_ESP32C6
-  return usb_serial_jtag_write_bytes(data, (uint32_t)size, pdMS_TO_TICKS(2000));
+  return usb_serial_jtag_write_bytes(data, (uint32_t)size,
+                                     pdMS_TO_TICKS(2000)) == (int)size;
 #else
-  return uart_write_bytes(UART_NUM_0, data, size);
+  return uart_write_bytes(UART_NUM_0, data, size) == (int)size;
 #endif
 }
 
@@ -129,22 +166,16 @@ static bool read_exact(void *data, size_t size) {
   return true;
 }
 
-static bool write_all(const void *data, size_t size) {
-  const uint8_t *input = data;
-  size_t sent = 0;
-  while (sent < size) {
-    int count = transport_write(input + sent, size - sent);
-    if (count <= 0) {
-      return false;
-    }
-    sent += (size_t)count;
-  }
-  return true;
-}
-
 static void send_frame(uint8_t type, uint16_t flags, uint32_t request_id,
                        const void *payload, size_t payload_size) {
-  if (payload_size > PROTOCOL_MAX_PAYLOAD) {
+  size_t frame_size = sizeof(protocol_header_t) + payload_size;
+  if (frame_size > PROTOCOL_TX_FRAME_MAX) {
+    ESP_LOGE(TAG, "reply frame of %u bytes exceeds %u", (unsigned)frame_size,
+             (unsigned)PROTOCOL_TX_FRAME_MAX);
+    return;
+  }
+  uint8_t *frame = malloc(frame_size);
+  if (!frame) {
     return;
   }
   protocol_header_t header = {
@@ -156,10 +187,12 @@ static void send_frame(uint8_t type, uint16_t flags, uint32_t request_id,
       .payload_crc32 = crc32_update(0, payload, payload_size),
   };
   memcpy(header.magic, PROTOCOL_MAGIC, sizeof(header.magic));
-  write_all(&header, sizeof(header));
+  memcpy(frame, &header, sizeof(header));
   if (payload_size > 0) {
-    write_all(payload, payload_size);
+    memcpy(frame + sizeof(header), payload, payload_size);
   }
+  transport_write_frame(frame, frame_size);
+  free(frame);
 }
 
 static void send_status(uint32_t request_id, bool ok, const char *message) {
@@ -271,16 +304,20 @@ static void handle_hello(uint32_t request_id) {
   char json[512];
   snprintf(json, sizeof(json),
            "{\"ok\":true,\"protocol\":\"prg32-io-1.0\","
-           "\"capabilities\":[\"upload\",\"run\",\"performance\"],"
+           "\"capabilities\":[\"upload\",\"run\",\"performance\""
+           PROTOCOL_WIFI_CAPABILITY "],"
            "\"debug_supported\":false,\"firmware\":\"%s\",\"target\":\"%s\","
            "\"slots\":%u,\"max_chunk\":%u,\"max_payload\":%u,"
            "\"runtime\":{\"cart_ram_size\":%lu,\"cart_max_size\":%lu,"
-           "\"cart_abi_major\":%u,\"cart_abi_minor\":%u}}",
+           "\"cart_abi_major\":%u,\"cart_abi_minor\":%u,"
+           "\"heap_free\":%lu,\"heap_largest\":%lu}}",
            PRG32_FIRMWARE_VERSION, CONFIG_IDF_TARGET, PRG32_CART_SLOT_COUNT,
            PROTOCOL_CHUNK_MAX, PROTOCOL_MAX_PAYLOAD,
            (unsigned long)prg32_cart_ram_size(),
            (unsigned long)PRG32_CART_MAX_SIZE, PRG32_CART_ABI_MAJOR,
-           PRG32_CART_ABI_MINOR);
+           PRG32_CART_ABI_MINOR,
+           (unsigned long)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+           (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
   send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, json,
              strlen(json));
 }
@@ -492,8 +529,8 @@ static void handle_performance_get(uint32_t request_id, uint16_t flags) {
   }
   size_t total = strlen(g_performance_json);
   size_t remaining = total - g_performance_offset;
-  size_t chunk = remaining < PROTOCOL_MAX_PAYLOAD ? remaining
-                                                  : PROTOCOL_MAX_PAYLOAD;
+  size_t chunk = remaining < PROTOCOL_RESULT_CHUNK ? remaining
+                                                   : PROTOCOL_RESULT_CHUNK;
   uint16_t response_flags = chunk == remaining ? PROTOCOL_FLAG_FINAL : 0;
   send_frame(MESSAGE_RESULT_DATA, response_flags, request_id,
              g_performance_json + g_performance_offset, chunk);
@@ -503,6 +540,160 @@ static void handle_performance_get(uint32_t request_id, uint16_t flags) {
     g_performance_json = NULL;
     g_performance_offset = 0;
   }
+}
+
+/* Add the stored network names (never passwords) to a reply. */
+static void add_known_networks(cJSON *root) {
+  char known[PRG32_WIFI_KNOWN_MAX][32];
+  int count = prg32_wifi_known_networks(known, PRG32_WIFI_KNOWN_MAX);
+  cJSON *list = cJSON_AddArrayToObject(root, "known");
+  for (int i = 0; list && i < count; ++i) {
+    cJSON_AddItemToArray(list, cJSON_CreateString(known[i]));
+  }
+}
+
+static void add_connection(cJSON *root) {
+  bool station = prg32_wifi_current_mode() == PRG32_WIFI_MODE_STA &&
+                 strcmp(prg32_wifi_current_status(), "CONNECTED") == 0;
+  cJSON_AddStringToObject(root, "connected",
+                          station ? prg32_wifi_current_ssid() : "");
+  cJSON_AddStringToObject(root, "ip", station ? prg32_wifi_current_ip() : "");
+}
+
+/* Send a reply object, removing the last network until the frame fits. */
+static void send_wifi_reply(uint32_t request_id, cJSON *root) {
+  cJSON *networks = cJSON_GetObjectItem(root, "networks");
+  bool truncated = false;
+  char *json = NULL;
+  while (1) {
+    cJSON_DeleteItemFromObject(root, "truncated");
+    if (networks) {
+      cJSON_AddBoolToObject(root, "truncated", truncated);
+    }
+    json = cJSON_PrintUnformatted(root);
+    if (!json || strlen(json) + sizeof(protocol_header_t) <= PROTOCOL_TX_FRAME_MAX ||
+        !networks || cJSON_GetArraySize(networks) == 0) {
+      break;
+    }
+    cJSON_free(json);
+    json = NULL;
+    cJSON_DeleteItemFromArray(networks, cJSON_GetArraySize(networks) - 1);
+    truncated = true;
+  }
+  if (json) {
+    send_frame(MESSAGE_STATUS, PROTOCOL_FLAG_FINAL, request_id, json,
+               strlen(json));
+    cJSON_free(json);
+  } else {
+    send_status(request_id, false, "out of memory");
+  }
+}
+
+static void handle_wifi_scan(uint32_t request_id) {
+  prg32_wifi_network_t *networks =
+      calloc(PRG32_WIFI_SCAN_MAX, sizeof(*networks));
+  cJSON *root = cJSON_CreateObject();
+  if (!networks || !root) {
+    free(networks);
+    cJSON_Delete(root);
+    send_status(request_id, false, "out of memory");
+    return;
+  }
+  char reason[48];
+  int count = prg32_wifi_scan_networks(networks, PRG32_WIFI_SCAN_MAX, reason,
+                                       sizeof(reason));
+  if (count < 0) {
+    free(networks);
+    cJSON_Delete(root);
+    send_status(request_id, false, reason);
+    return;
+  }
+  char known[PRG32_WIFI_KNOWN_MAX][32];
+  int known_count = prg32_wifi_known_networks(known, PRG32_WIFI_KNOWN_MAX);
+  cJSON_AddBoolToObject(root, "ok", true);
+  cJSON *list = cJSON_AddArrayToObject(root, "networks");
+  for (int i = 0; list && i < count; ++i) {
+    cJSON *item = cJSON_CreateObject();
+    if (!item) {
+      break;
+    }
+    bool is_known = false;
+    for (int k = 0; k < known_count; ++k) {
+      is_known = is_known || strcmp(known[k], networks[i].ssid) == 0;
+    }
+    cJSON_AddStringToObject(item, "ssid", networks[i].ssid);
+    cJSON_AddNumberToObject(item, "rssi", networks[i].rssi);
+    cJSON_AddNumberToObject(item, "channel", networks[i].channel);
+    cJSON_AddStringToObject(item, "auth", networks[i].auth);
+    cJSON_AddBoolToObject(item, "known", is_known);
+    cJSON_AddItemToArray(list, item);
+  }
+  free(networks);
+  add_known_networks(root);
+  add_connection(root);
+  send_wifi_reply(request_id, root);
+  cJSON_Delete(root);
+}
+
+static void handle_wifi_set(uint32_t request_id, const uint8_t *payload,
+                            size_t payload_size) {
+  cJSON *request = cJSON_ParseWithLength((const char *)payload, payload_size);
+  const char *ssid = request ? json_string(request, "ssid") : NULL;
+  const char *password = request ? json_string(request, "password") : NULL;
+  if (!ssid) {
+    cJSON_Delete(request);
+    send_status(request_id, false, "missing ssid");
+    return;
+  }
+  char reason[48];
+  int rc = prg32_wifi_connect_network(ssid, password ? password : "",
+                                      PROTOCOL_WIFI_JOIN_TIMEOUT_MS, reason,
+                                      sizeof(reason));
+  /* The request held the password; clear it before releasing the memory. */
+  if (password) {
+    memset((char *)password, 0, strlen(password));
+  }
+  cJSON_Delete(request);
+  if (rc != 0) {
+    send_status(request_id, false, reason);
+    return;
+  }
+  cJSON *root = cJSON_CreateObject();
+  if (!root) {
+    send_status(request_id, true, "connected");
+    return;
+  }
+  cJSON_AddBoolToObject(root, "ok", true);
+  add_connection(root);
+  add_known_networks(root);
+  send_wifi_reply(request_id, root);
+  cJSON_Delete(root);
+}
+
+static void handle_wifi_forget(uint32_t request_id, const uint8_t *payload,
+                               size_t payload_size) {
+  cJSON *request = cJSON_ParseWithLength((const char *)payload, payload_size);
+  const char *ssid = request ? json_string(request, "ssid") : NULL;
+  int rc = ssid ? prg32_wifi_forget_network(ssid) : -1;
+  cJSON_Delete(request);
+  if (!ssid) {
+    send_status(request_id, false, "missing ssid");
+    return;
+  }
+  if (rc != 0) {
+    send_status(request_id, false, "network is not stored");
+    return;
+  }
+  cJSON *root = cJSON_CreateObject();
+  if (!root) {
+    send_status(request_id, true, "forgotten");
+    return;
+  }
+  cJSON_AddBoolToObject(root, "ok", true);
+  add_known_networks(root);
+  add_connection(root);
+  send_wifi_reply(request_id, root);
+  cJSON_Delete(root);
 }
 
 static void dispatch_frame(const protocol_header_t *header,
@@ -528,6 +719,23 @@ static void dispatch_frame(const protocol_header_t *header,
     break;
   case MESSAGE_PERFORMANCE_GET:
     handle_performance_get(header->request_id, header->flags);
+    break;
+  case MESSAGE_WIFI_SCAN:
+  case MESSAGE_WIFI_SET:
+  case MESSAGE_WIFI_FORGET:
+    /* Wi-Fi changes would stall an upload in progress. */
+    if (!PROTOCOL_HAS_WIFI) {
+      send_status(header->request_id, false,
+                  "Wi-Fi is not available in this build");
+    } else if (g_upload.active) {
+      send_status(header->request_id, false, "upload in progress");
+    } else if (header->type == MESSAGE_WIFI_SCAN) {
+      handle_wifi_scan(header->request_id);
+    } else if (header->type == MESSAGE_WIFI_SET) {
+      handle_wifi_set(header->request_id, payload, header->payload_size);
+    } else {
+      handle_wifi_forget(header->request_id, payload, header->payload_size);
+    }
     break;
   default:
     send_status(header->request_id, false, "unsupported protocol message");
@@ -630,19 +838,27 @@ void prg32_usb_protocol_start(void) {
   }
 #if CONFIG_IDF_TARGET_ESP32C6
   usb_serial_jtag_driver_config_t config = {
-      .tx_buffer_size = 4096,
-      .rx_buffer_size = 4096,
+      .tx_buffer_size = PROTOCOL_TX_RING_BYTES,
+      .rx_buffer_size = PROTOCOL_RX_RING_BYTES,
   };
   if (usb_serial_jtag_driver_install(&config) != ESP_OK) {
     ESP_LOGE(TAG, "could not install USB Serial/JTAG protocol driver");
     return;
   }
+  /* Route console output through the same driver ring as protocol frames.
+   * Without this the console writes straight to the USB FIFO and log text
+   * can be inserted inside a reply frame, breaking its CRC. With no host
+   * reading, the console waits once for 50 ms and then drops output. */
+  usb_serial_jtag_vfs_use_driver();
 #else
   if (!uart_is_driver_installed(UART_NUM_0) &&
       uart_driver_install(UART_NUM_0, 4096, 4096, 0, NULL, 0) != ESP_OK) {
     ESP_LOGE(TAG, "could not install QEMU UART protocol driver");
     return;
   }
+  /* Same reason as on ESP32-C6: console text goes through the UART driver,
+   * whose transmit lock keeps each reply frame whole. */
+  uart_vfs_dev_use_driver(UART_NUM_0);
 #endif
   if (xTaskCreate(protocol_task, "prg32_usb", PROTOCOL_TASK_STACK, NULL, 5,
                   NULL) != pdPASS) {
