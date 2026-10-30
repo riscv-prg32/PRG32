@@ -43,7 +43,7 @@ MAX_CHUNK = 4096
 COMMANDS = ("store", "run", "debug", "performance")
 
 # Keys of firmware without a HELLO "keys" list. Newer firmware reports its own.
-KEYS = ("LEFT", "RIGHT", "UP", "DOWN", "A", "B", "START")
+KEYS = ("LEFT", "RIGHT", "UP", "DOWN", "A", "B", "START", "C", "D", "L", "R")
 # START and SELECT are two names for one button (PRG32_BTN_SELECT).
 KEY_ALIASES = {"SELECT": "START"}
 KEY_HOLD_DEFAULT_MS = 200

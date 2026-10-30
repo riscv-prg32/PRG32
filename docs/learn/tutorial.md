@@ -48,7 +48,7 @@ draw into the centered 320x200 viewport.
 
 If QEMU is your first target, use the monitor terminal keyboard for player 1:
 arrow keys or `W`/`A`/`S`/`D` move the joystick, `Enter`/`Space` is SELECT,
-`H`/`Z` is A, `J`/`X` is B, `K`/`C` is C, and `L`/`V` is D. Use the real ESP32-C6 board for final physical
+`H`/`Z` is A, `J`/`X` is B, `K`/`C` is C, `L`/`V` is D, `Q` is L, and `E` is R. Use the real ESP32-C6 board for final physical
 button, buzzer, Wi-Fi, and LCD wiring checks.
 
 ## 3. Read the API

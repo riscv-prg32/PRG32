@@ -48,6 +48,8 @@ void prg32_input_init(void) {
     pin_in("B", PRG32_PIN_BTN_B);
     pin_in("C", PRG32_PIN_BTN_C);
     pin_in("D", PRG32_PIN_BTN_D);
+    pin_in("L", PRG32_PIN_BTN_L);
+    pin_in("R", PRG32_PIN_BTN_R);
     pin_in("START", PRG32_PIN_BTN_START);
     if (PRG32_PIN_BTN_SELECT != PRG32_PIN_BTN_START) {
         pin_in("SELECT", PRG32_PIN_BTN_SELECT);

@@ -15,6 +15,8 @@ The input API uses a small register-like button mask: you can mask the input wit
 | `PRG32_BTN_SELECT` / `PRG32_BTN_START` | Select / pause |
 | `PRG32_BTN_C` | Extra action (always released when the profile leaves it unwired) |
 | `PRG32_BTN_D` | Extra action (always released when the profile leaves it unwired) |
+| `PRG32_BTN_L` | Left bumper (always released when the profile leaves it unwired) |
+| `PRG32_BTN_R` | Right bumper (always released when the profile leaves it unwired) |
 
 The firmware no longer supports a UART controller bridge or a second local
 digital joystick. `prg32_input_read_player(1)` returns the local joystick mask,

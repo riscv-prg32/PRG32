@@ -70,10 +70,6 @@ Used in the upgraded breadboard design ([Breadboard 2 Profile](profiles/breadboa
 | **X-Axis Analog** | `VRX` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/breadboard2.md)) |
 | **Y-Axis Analog** | `VRY` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/breadboard2.md)) |
 | **Center Switch** | `SW` | Center push switch shorting pin to GND (`START / SELECT`) |
-| **Button A** | Action button | Normally-open momentary pushbutton to GND |
-| **Button B** | Back button | Normally-open momentary pushbutton to GND |
-| **Button C** | Extra action button | Normally-open momentary pushbutton to GND |
-| **Button D** | Extra action button | Normally-open momentary pushbutton to GND |
 
 ### ADC Calibration & Thresholds
 - **Dynamic Range**: 12-bit ADC (`0` to `4095`).
@@ -90,7 +86,7 @@ Used in the upgraded breadboard design ([Breadboard 2 Profile](profiles/breadboa
 
 ---
 
-## Action Buttons (A, B, C, D)
+## Action Buttons (A, B, C, D) and Bumpers (L, R)
 
 All PRG32 hardware setups use at least two tactile momentary pushbuttons:
 - **Button A (Action / Set)**: Confirms menu selections and performs primary in-game actions.
@@ -98,6 +94,11 @@ All PRG32 hardware setups use at least two tactile momentary pushbuttons:
 - **Buttons C and D** (`breadboard2`): Extra in-game action buttons. The resident
   menus do not use them. Profiles without them leave `CONFIG_PRG32_PIN_BTN_C`
   and `CONFIG_PRG32_PIN_BTN_D` at `-1`, and the bits always read as released.
+- **Bumpers L and R** (`breadboard2`): left and right shoulder buttons for
+  games. The resident menus do not use them. Profiles without them leave
+  `CONFIG_PRG32_PIN_BTN_L` and `CONFIG_PRG32_PIN_BTN_R` at `-1`, and the bits
+  always read as released. They are separate from the joystick directions
+  `PRG32_BTN_LEFT` and `PRG32_BTN_RIGHT`.
 - **Wiring**: Normally-open switches connected directly between the assigned signal GPIO and GND. The internal pull-up holds the pin HIGH until pressed.
 
 ---
@@ -144,12 +145,14 @@ if (input & PRG32_BTN_LEFT) {
 | `PRG32_BTN_START` | `1 << 6` (0x40) | Alias for SELECT (center click) |
 | `PRG32_BTN_C` | `1 << 7` (0x80) | Extra action button C |
 | `PRG32_BTN_D` | `1 << 8` (0x100) | Extra action button D |
+| `PRG32_BTN_L` | `1 << 9` (0x200) | Left bumper |
+| `PRG32_BTN_R` | `1 << 10` (0x400) | Right bumper |
 
-All buttons fit in `PRG32_INPUT_BUTTONS_MASK` (`0x1ff`). There are no local
+All buttons fit in `PRG32_INPUT_BUTTONS_MASK` (`0x7ff`). There are no local
 player-2 bits: multiplayer is online only.
 
 > [!NOTE]
-> Store the mask in a `uint32_t`: `PRG32_BTN_D` is bit 8 and does not fit in a byte. Multiplayer games exchange remote player input frames over native Wi-Fi (see [External Controllers & Multiplayer](external_controllers.md)).
+> Store the mask in a `uint32_t`: `PRG32_BTN_D`, `PRG32_BTN_L` and `PRG32_BTN_R` are bits 8 to 10 and do not fit in a byte. Multiplayer games exchange remote player input frames over native Wi-Fi (see [External Controllers & Multiplayer](external_controllers.md)).
 
 ---
 

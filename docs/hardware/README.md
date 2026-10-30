@@ -23,7 +23,7 @@ PRG32 hardware documentation is organized into modular guides covering each subs
 |---|---|---|
 | **Display** | [**ILI9341 SPI TFT Guide**](ili9341.md) | 2.8" SPI TFT (320x240 landscape), 3.3V logic, high-speed SPI wiring, and active-high backlight control. |
 | **Audio** | [**Audio Hardware Guide**](audio.md) | MAX98357A I2S DAC/Amp, mono and stereo channel modes, SD/MODE 390 kΩ resistor divider, and speaker safety. |
-| **Joysticks & Controls** | [**Joystick & Input Guide**](joystick.md) | 5-way digital navigation joystick (`breadboard1`), KY-023 2-axis analog thumbstick with continuous ADC (`breadboard2`), buttons A/B, and hardware shortcuts. |
+| **Joysticks & Controls** | [**Joystick & Input Guide**](joystick.md) | 5-way digital navigation joystick (`breadboard1`), KY-023 2-axis analog thumbstick with continuous ADC (`breadboard2`), buttons A/B (plus C/D and L/R bumpers on `breadboard2`), and hardware shortcuts. |
 | **RGB LED** | [**Onboard RGB LED Guide**](rgb_led.md) | WS2812 addressable LED driver API, pin allocation considerations, and status/visualizer integration. |
 | **Memory** | [**Memory Architecture Guide**](memory.md) | ESP32-C6 SRAM partitions (IRAM, DRAM, LP SRAM), cartridge RAM windows, and build/runtime memory profiling tools. |
 | **Multiplayer / External** | [**External Controllers & Multiplayer**](external_controllers.md) | Local single-player architecture, Wi-Fi multi-console multiplayer, and input packet synchronization. |
@@ -73,7 +73,7 @@ PRG32 completely decouples physical GPIO numbers from Kconfig defaults. All pin 
 
 - **`breadboard1`**: First breadboard using the digital 5-way navigation joystick, reference display harness, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard1.md`](profiles/breadboard1.md).
 - **`pcb1`**: Soldered PCB with the digital 5-way joystick (P1 DOWN on GPIO13, the native USB D+ line), display, and I2S audio. Full pinout, schematic, and board layout are detailed in [`pcb1.md`](profiles/pcb1.md).
-- **`breadboard2`**: Second breadboard using the KY-023 analog joystick with continuous ADC, updated display harness with the display reset wired to the ESP32-C6 EN pin, buttons A/B/C/D, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard2.md`](profiles/breadboard2.md).
+- **`breadboard2`**: Second breadboard using the KY-023 analog joystick with continuous ADC, updated display harness with the display reset wired to the ESP32-C6 EN pin, buttons A/B/C/D, L/R bumpers, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard2.md`](profiles/breadboard2.md).
 
 ### Compiling for a Specific Profile
 

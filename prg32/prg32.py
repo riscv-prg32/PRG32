@@ -182,7 +182,7 @@ def main(argv: list[str]) -> int:
     # Key commands through the device protocol, shared by both targets.
     def add_key_command(parser, default_port):
         parser.add_argument("keys", nargs="*", metavar="KEY",
-                            help="Key to press: LEFT, RIGHT, UP, DOWN, A, B, START (or SELECT). "
+                            help="Key to press: LEFT, RIGHT, UP, DOWN, A, B, START (or SELECT), C, D, L, R. "
                                  "Several arguments are pressed in turn; A+B presses keys together")
         if default_port:
             parser.add_argument("--port", default=default_port, help="Device protocol endpoint of the running emulator")

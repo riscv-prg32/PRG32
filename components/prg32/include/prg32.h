@@ -90,8 +90,8 @@ extern "C" {
 #define PRG32_PLATFORM_ACTOR_LAYER_OFFSET 22
 #define PRG32_PLATFORM_ACTOR_SIZE 24
 
-/* Controller bitmask, bits 0..8. SELECT and START are names for the same
- * physical input. */
+/* Controller bitmask, bits 0..10. SELECT and START are names for the same
+ * physical input. L and R are the left and right bumpers. */
 #define PRG32_BTN_LEFT (1u << 0)
 #define PRG32_BTN_RIGHT (1u << 1)
 #define PRG32_BTN_UP (1u << 2)
@@ -102,7 +102,9 @@ extern "C" {
 #define PRG32_BTN_SELECT PRG32_BTN_START
 #define PRG32_BTN_C (1u << 7)
 #define PRG32_BTN_D (1u << 8)
-#define PRG32_INPUT_BUTTONS_MASK 0x1ffu
+#define PRG32_BTN_L (1u << 9)
+#define PRG32_BTN_R (1u << 10)
+#define PRG32_INPUT_BUTTONS_MASK 0x7ffu
 
 /* Common RGB565 colors. Custom colors use RRRRRGGGGGGBBBBB packing. */
 #define PRG32_COLOR_BLACK 0x0000
@@ -327,7 +329,7 @@ const char *prg32_controller_name(uint32_t bit);
 /* Remote keys sent through the device protocol KEY message. They join the
  * physical buttons in prg32_controller_read(). Firmware only, not cartridge
  * ABI. Adding a button: see docs/agents/device_protocol_consistency.md. */
-#define PRG32_REMOTE_KEY_COUNT 7
+#define PRG32_REMOTE_KEY_COUNT 11
 const char *prg32_controller_remote_name(int index);
 uint32_t prg32_controller_remote_bit(const char *name);
 void prg32_controller_remote_press(uint32_t mask, uint32_t hold_ms);

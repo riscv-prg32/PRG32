@@ -501,6 +501,8 @@ static int setup_audio_pin_conflicts(int gpio) {
          setup_pin_matches(gpio, PRG32_PIN_BTN_B) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_C) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_D) ||
+         setup_pin_matches(gpio, PRG32_PIN_BTN_L) ||
+         setup_pin_matches(gpio, PRG32_PIN_BTN_R) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_SELECT) ||
          setup_pin_matches(gpio, PRG32_PIN_BUZZER);
 }

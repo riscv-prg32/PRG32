@@ -115,8 +115,12 @@ from PWM duty, and sends PCM through the UART audio path.
 | --- | --- |
 | D-Pad (Up, Down, Left, Right) | Arrow keys or `W`, `S`, `A`, `D` |
 | SELECT | `Enter` or `Space` |
-| A button | `J` or `Z` |
-| B button | `K`, `X`, `Backspace`, or `Esc` |
+| A button | `H` or `Z` |
+| B button | `J`, `X`, `Backspace`, or `Esc` |
+| C button | `K` or `C` |
+| D button | `L` or `V` |
+| L bumper | `Q` |
+| R bumper | `E` |
 
 **Key commands**: `python3 -m prg32 qemu key UP A` presses the same buttons as
 the keyboard through the framed protocol, including START; see

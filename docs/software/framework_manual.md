@@ -32,6 +32,8 @@ single local joystick:
 - `PRG32_BTN_SELECT` (`PRG32_BTN_START` is kept as an alias)
 - `PRG32_BTN_C` and `PRG32_BTN_D` (extra action buttons; always released on
   profiles that do not wire them)
+- `PRG32_BTN_L` and `PRG32_BTN_R` (left and right bumpers; always released on
+  profiles that do not wire them)
 
 Games can use `prg32_input_read_player(1)` to get the same normalized low-bit
 mask. `prg32_input_read_player(2)` is kept as a source-compatible helper, but
@@ -135,8 +137,8 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="pr
 When the QEMU backend is selected, `main/prg32_config.h` disables physical GPIO
 buttons and the buzzer. QEMU builds keep player 1 usable through the UART
 console keyboard mapper: arrows or `W`/`A`/`S`/`D` for the joystick,
-`Enter`/`Space` for SELECT, `J`/`Z` for A, `K`/`X` for B, `L`/`C` for C, and
-`;`/`V` for D.
+`Enter`/`Space` for SELECT, `H`/`Z` for A, `J`/`X` for B, `K`/`C` for C,
+`L`/`V` for D, `Q` for the L bumper, and `E` for the R bumper.
 
 ## Splash Screens
 

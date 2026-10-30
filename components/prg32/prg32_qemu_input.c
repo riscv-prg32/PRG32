@@ -36,6 +36,8 @@ static qemu_key_slot_t qemu_key_slots[] = {
     {PRG32_BTN_B, 0},
     {PRG32_BTN_C, 0},
     {PRG32_BTN_D, 0},
+    {PRG32_BTN_L, 0},
+    {PRG32_BTN_R, 0},
 };
 
 static int qemu_uart_ready;
@@ -194,6 +196,14 @@ static void qemu_process_key(uint8_t byte, uint32_t now_ms) {
         case 'v':
         case 'V':
             qemu_press(PRG32_BTN_D, now_ms);
+            break;
+        case 'q':
+        case 'Q':
+            qemu_press(PRG32_BTN_L, now_ms);
+            break;
+        case 'e':
+        case 'E':
+            qemu_press(PRG32_BTN_R, now_ms);
             break;
         default:
             break;

@@ -105,7 +105,8 @@ frame.
 ```json
 {"ok":true,"protocol":"prg32-io-1.0",
  "capabilities":["upload","run","performance","keys"],
- "keys":["LEFT","RIGHT","UP","DOWN","A","B","START"],"debug_supported":false,
+ "keys":["LEFT","RIGHT","UP","DOWN","A","B","START","C","D","L","R"],
+ "debug_supported":false,
  "firmware":"5202077","target":"esp32c6","slots":8,
  "max_chunk":4096,"max_payload":16384,
  "runtime":{"cart_ram_size":131072,"cart_max_size":131072,
@@ -478,6 +479,16 @@ image on the ESP32-C6 until it continued.
 The tests wrote only `cart7`, which was backed up with `esptool read_flash` and
 restored; all eight slots were compared with the backup and are identical. NVS
 listed the same 87 entries afterwards.
+
+### 2026-10-30: keys C, D, L and R
+
+The KEY message and HELLO `keys` gained `C` and `D` (buttons added earlier the
+same day, which had been left out of the table) and the new left and right
+bumpers `L` and `R` (`PRG32_BTN_L` = bit 9, `PRG32_BTN_R` = bit 10). The change
+is additive and keeps `prg32-io-1.0`. `tests/test_key_protocol.py`, which
+failed before because C and D were missing, passed, and the ESP32-C6
+(`breadboard2`) and QEMU firmware built. The new keys were not sent to a
+running board or emulator in this revision, and no cartridge slot was written.
 
 ### 2026-10-30: key commands
 

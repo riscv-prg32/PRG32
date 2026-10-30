@@ -256,7 +256,9 @@ above and in each file, and run that test.
 bits `PRG32_P2_BTN_*` (multiplayer is online only). In PRG32-Construction-Kit,
 remove the `P2_*` button names and constants, add `C` and `D`, then copy the
 modules here. Until then the SDK still accepts `prg32.P2_*`, and its constant
-value for `P2_LEFT` equals button D's bit.
+value for `P2_LEFT` equals button D's bit. The firmware has since added the
+left and right bumpers L and R (`PRG32_BTN_L` = bit 9, `PRG32_BTN_R` = bit 10);
+add them in the same kit change.
 
 ## Validation Record
 

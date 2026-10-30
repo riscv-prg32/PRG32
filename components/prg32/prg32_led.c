@@ -43,6 +43,8 @@ static int pin_conflicts(int gpio) {
            pin_matches(gpio, PRG32_PIN_BTN_B) ||
            pin_matches(gpio, PRG32_PIN_BTN_C) ||
            pin_matches(gpio, PRG32_PIN_BTN_D) ||
+           pin_matches(gpio, PRG32_PIN_BTN_L) ||
+           pin_matches(gpio, PRG32_PIN_BTN_R) ||
            pin_matches(gpio, PRG32_PIN_BTN_SELECT) ||
            pin_matches(gpio, PRG32_PIN_BUZZER);
 }

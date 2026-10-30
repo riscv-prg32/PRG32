@@ -1,6 +1,6 @@
 # PRG32 Hardware Pin Profile: Breadboard 2
 
-This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, and four action buttons (A, B, C, D).
+This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, four action buttons (A, B, C, D), and two bumper buttons (L, R).
 
 ## Overview
 
@@ -8,6 +8,7 @@ This document specifies the pinout and wiring for the **`breadboard2`** hardware
 - **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO9, DC on GPIO10, and RST wired to the ESP32-C6 EN (`RST`) header pin
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
 - **Action Buttons**: Separate pushbuttons for A, B, C, D, and START/SELECT (C on GPIO11, D on GPIO3)
+- **Bumper Buttons**: L (left bumper) on GPIO21 and R (right bumper) on GPIO22
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
 - **RGB LED**: Off by default (`CONFIG_PRG32_PIN_RGB_LED=-1`); GPIO8 is free, so the DevKitC-1 onboard WS2812 can be enabled
 - **Configuration Profile**: `profiles/sdkconfig.pins.breadboard2`
@@ -55,7 +56,7 @@ The ILI9341 RST pin is wired to the ESP32-C6-DevKitC-1 header pin labelled
 > GPIO. When a GPIO pulls EN low the ESP32-C6 switches itself off and the GPIO
 > stops driving, and it fights the RST button and the auto-reset circuit.
 
-### Controls: 2-Axis Analog Joystick & Buttons
+### Controls: 2-Axis Analog Joystick, Buttons & Bumpers
 
 The analog joystick connects two potentiometers (X and Y axes) between 3.3V and GND, providing analog voltages to the ESP32-C6 SAR ADC1. Directional detection supports simultaneous multi-axis activation (diagonals).
 
@@ -68,6 +69,8 @@ The analog joystick connects two potentiometers (X and Y axes) between 3.3V and 
 | GPIO19 | - | P1 B | Action button B, momentary switch to GND |
 | GPIO11 | - | P1 C | Action button C, momentary switch to GND |
 | GPIO3 | - | P1 D | Action button D, momentary switch to GND |
+| GPIO21 | - | P1 L | Left bumper, momentary switch to GND |
+| GPIO22 | - | P1 R | Right bumper, momentary switch to GND |
 
 > [!WARNING]
 > GPIO9 is an ESP32-C6 strapping pin: if it is low at reset, the chip starts
