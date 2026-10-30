@@ -274,17 +274,17 @@ Important constants:
 - `PRG32_CART_META_MAGIC`: optional metadata trailer magic, `PRG32META`.
 - `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
 - `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
-- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, 64 KiB in the default
+- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, 128 KiB in the default
   physical and QEMU configurations.
 - `PRG32_CART_RAM_SIZE`: statically placed executable cartridge RAM window,
   configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 and QEMU
-  builds default to the 64 KiB extended profile; the optional 128 KiB profile
-  (`profiles/sdkconfig.defaults.esp32c6_128k`) also raises the stored-image
-  limit to 128 KiB. The window remains static because legacy cartridges are
+  builds default to the 128 KiB large profile; the optional 64 KiB fragment
+  (`profiles/sdkconfig.defaults.cart_64k`) leaves more free heap. The window
+  remains static because legacy cartridges are
   linked to the exported `prg32_cart_exec` address; portable cartridges use
   the ABI table. How the firmware keeps heap free next to it is described in
   [Maximizing free heap](../hardware/memory.md#maximizing-free-heap).
-  Host tools assume the 64 KiB window unless told otherwise with
+  Host tools assume the 128 KiB window unless told otherwise with
   `--cart-ram-kib`; see [PRG32 Profiles](../usage/profiles.md#matching-host-tools-to-the-profile).
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots; the
   checked-in partition profile provides eight.

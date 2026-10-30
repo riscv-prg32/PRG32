@@ -195,5 +195,5 @@ def add_python_commands(sub: argparse._SubParsersAction, subparsers_action: type
     p.add_argument("--mabi", default="ilp32", help="RISC-V ABI string")
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="prefix of the RISC-V GCC toolchain")
     p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
-                   help="executable cartridge RAM of the target firmware in KiB (default: 64)")
+                   help="executable cartridge RAM of the target firmware in KiB (default: 128)")
     p.set_defaults(func=python_build)
