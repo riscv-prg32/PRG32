@@ -611,6 +611,9 @@ static int run_detail(const char *base_url, int index) {
   const store_game_t *g = &games[index];
   prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
   while (1) {
+    if (prg32_setup_interrupted()) {
+      return 0;
+    }
     char line[48];
     uint16_t action_color =
         game_is_compatible(g) ? PRG32_COLOR_CYAN : PRG32_COLOR_YELLOW;
@@ -646,6 +649,9 @@ static int run_detail(const char *base_url, int index) {
       if (stream_download(base_url, g, slot, status, sizeof(status)) == 0) {
         wait_and_show("INSTALLED", 2000);
         while (1) {
+          if (prg32_setup_interrupted()) {
+            return 0;
+          }
           prg32_gfx_clear(PRG32_COLOR_BLACK);
           prg32_gfx_text8(8, 8, "INSTALLED", PRG32_COLOR_GREEN, 0);
           prg32_gfx_text8(8, 216, "SELECT RUN NOW  B BACK", PRG32_COLOR_CYAN,
@@ -687,6 +693,9 @@ void prg32_setup_store_run(void) {
     int has_current = prg32_store_url_resolve(current, sizeof(current)) == 0;
     uint32_t last = prg32_input_read_menu();
     while (1) {
+      if (prg32_setup_interrupted()) {
+        return;
+      }
       uint32_t input = prg32_input_read_menu();
       if ((input & PRG32_BTN_UP) && !(last & PRG32_BTN_UP) && choice > 0) {
         choice--;
@@ -705,6 +714,9 @@ void prg32_setup_store_run(void) {
           wait_and_show("SCANNING...", 10);
           if (prg32_store_discover(found, sizeof(found)) == 0) {
             while (1) {
+              if (prg32_setup_interrupted()) {
+                return;
+              }
               uint32_t save_input = prg32_input_read_menu();
               prg32_gfx_clear(PRG32_COLOR_BLACK);
               prg32_gfx_text8(8, 8, "CARTRIDGE STORE", PRG32_COLOR_WHITE, 0);
@@ -804,6 +816,9 @@ void prg32_setup_store_browse_run(void) {
   const char *note = strcmp(status, "OK") == 0 ? "" : status;
   prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
   while (1) {
+    if (prg32_setup_interrupted()) {
+      goto done;
+    }
     draw_store_list(selected, page, note);
     uint32_t input = prg32_input_read_menu();
     if (input & MENU_CANCEL) {

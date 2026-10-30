@@ -437,6 +437,40 @@ Free heap did not fall when the same cartridges were loaded repeatedly. Some
 cartridges start firmware services on first use; on the board this lowered
 free heap once, by about 22 KiB across the whole series.
 
+## Store Key Check (2026-10-30)
+
+Every cartridge listed by `GET /api/games` (32 games, latest versions, SHA-256
+checked) was uploaded with `run`, given 3 s to start, and sent LEFT, RIGHT, UP, DOWN,
+A, B, START, and the chord A+B through the
+[KEY message](../software/usb_protocol.md#key-messages), each held for 200 ms.
+A key passed when the device reported it down and later released it, which also
+shows the main loop was still running.
+
+| Result | ESP32-C6 `prototype1` | QEMU |
+|---|---|---|
+| Portable cartridges (30) | all 8 steps passed, no faults | all 8 steps passed, no faults |
+| `it.uniparthenope.space_invaders` 1.0.0 | accepted, then `Load access fault` before any key | refused at upload |
+| `it.uniparthenope.terraforge` 1.0.0 | accepted, then `Illegal instruction` before any key | refused at upload |
+
+The two failures are the legacy cartridges described in the
+[compatibility check](#store-compatibility-check-2026-10-29); the panic now
+depends on where the firmware's functions moved.
+
+On ESP32-C6 a test build, not part of the repository, also logged what each
+cartridge's own input calls returned through the ABI table. The 30 portable
+cartridges received all seven keys. 29 also received A+B; in
+`org.riscv-prg32.spiriti-napoli97` START on the title screen opens
+`prg32_scoreboard_show()`, a firmware screen that reads input outside the ABI
+table, so that A+B did not pass through the logged calls.
+
+The 30 portable cartridges were then run again on the ESP32-C6 with screenshots
+before and after START, A, and a held RIGHT. In 20 the screen changed by more
+than twice what the cartridge's own animation changes when idle. In the other 10
+(Asteroids, Audio Pan Test, Bach, Frogger, Pac-Man, Poing, Pong, Performance Test,
+Spiriti, and Wing Commander) animation hides the effect in this comparison, so
+they rely on the logged calls above. Neither check judges each game's rules. The [key gameplay check](../../tests/key_gameplay/README.md) does that for a
+purpose-built game.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |

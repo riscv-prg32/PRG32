@@ -31,6 +31,7 @@ PERFORMANCE_GET = 0x07
 WIFI_SCAN = 0x08
 WIFI_SET = 0x09
 WIFI_FORGET = 0x0A
+KEY = 0x0B
 STATUS = 0x80
 RESULT_DATA = 0x81
 
@@ -40,6 +41,13 @@ FLAG_FINAL = 0x0001
 FLAG_RESTART = 0x0001
 MAX_CHUNK = 4096
 COMMANDS = ("store", "run", "debug", "performance")
+
+# Keys of firmware without a HELLO "keys" list. Newer firmware reports its own.
+KEYS = ("LEFT", "RIGHT", "UP", "DOWN", "A", "B", "START")
+# START and SELECT are two names for one button (PRG32_BTN_SELECT).
+KEY_ALIASES = {"SELECT": "START"}
+KEY_HOLD_DEFAULT_MS = 200
+KEY_HOLD_MAX_MS = 60000
 
 
 @dataclass(frozen=True)
@@ -314,3 +322,52 @@ def wifi_set(client: ProtocolClient, ssid: str, password: str) -> dict:
 def wifi_forget(client: ProtocolClient, ssid: str) -> dict:
     """Erase a stored network and its password from the device."""
     return client.request_json(WIFI_FORGET, {"ssid": ssid}, timeout=30.0)
+
+
+def require_keys(client: ProtocolClient) -> tuple[str, ...]:
+    """Return the device's key names, or stop when it has no KEY message."""
+    info = hello(client)
+    if "keys" not in info.get("capabilities", []):
+        raise SystemExit(
+            "this PRG32 firmware does not accept key commands over the device "
+            "protocol (PRG32-Qt and firmware older than this feature do not)"
+        )
+    return tuple(info.get("keys", KEYS))
+
+
+def normalize_keys(names: list[str], allowed: tuple[str, ...] = KEYS) -> list[str]:
+    """Upper-case key names and resolve aliases, refusing unknown ones."""
+    keys = []
+    for name in names:
+        key = name.strip().upper()
+        key = KEY_ALIASES.get(key, key)
+        if key not in allowed:
+            raise SystemExit(f"unknown key {name!r}; this device accepts: {', '.join(allowed)}")
+        keys.append(key)
+    return keys
+
+
+def key_press(client: ProtocolClient, keys: list[str], hold_ms: int = KEY_HOLD_DEFAULT_MS) -> dict:
+    """Press keys together. The firmware releases them after ``hold_ms``, once
+    a read has returned them, so the reply comes back while they are still down."""
+    if not 1 <= hold_ms <= KEY_HOLD_MAX_MS:
+        raise SystemExit(f"hold time must be 1..{KEY_HOLD_MAX_MS} ms")
+    return client.request_json(KEY, {"action": "press", "keys": keys, "hold_ms": hold_ms})
+
+
+def key_release(client: ProtocolClient, keys: list[str] | None = None) -> dict:
+    """Release the given keys early, or every remote key when none is given."""
+    return client.request_json(KEY, {"action": "release", "keys": keys or []})
+
+
+def key_sequence(
+    client: ProtocolClient,
+    steps: list[list[str]],
+    hold_ms: int = KEY_HOLD_DEFAULT_MS,
+    gap_ms: int = 100,
+) -> None:
+    """Press each step in turn, waiting so a game sees it go down and come up."""
+    for index, keys in enumerate(steps):
+        key_press(client, keys, hold_ms)
+        if index + 1 < len(steps):
+            time.sleep((hold_ms + gap_ms) / 1000.0)

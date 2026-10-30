@@ -14,7 +14,8 @@ PRG32 supports three Wi-Fi runtime modes:
 
 The **Wi-Fi setup screen** lets the user choose access-point mode, infrastructure mode, or **FORGET NETWORK**. You can access the setup menu by holding the **A** and **B** buttons simultaneously during boot.
 
-- **Infrastructure mode** scans for nearby SSIDs, lists them on screen, and uses UP/DOWN plus SELECT or B to select. A cancels back. The password of a stored network is filled in already.
+- **Infrastructure mode** scans for nearby SSIDs, lists them on screen, and uses UP/DOWN plus SELECT or A to select. B cancels back. The password of a stored network is filled in already.
+- **The scan stops the radio**, so the console is off the network, and its HTTP API does not answer, from the scan until you leave these screens. Leaving without connecting, with B from the network list, keyboard, or confirmation screen, or because a cartridge [took over](../software/usb_protocol.md#device-behavior), starts the saved Wi-Fi mode again; a station reconnects and the HTTP API usually answers within 5 to 15 s, though it took up to 35 s in testing. Nothing you chose on these screens is saved until you confirm it.
 - **FORGET NETWORK** lists the stored networks, newest first; choose one with UP/DOWN and SELECT/A, then confirm with SELECT/A (B cancels).
 - The setup UI also shows the active Wi-Fi mode and IP address; AP mode shows the AP SSID, while infrastructure mode shows the selected/connected SSID.
 
