@@ -20,7 +20,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |       `-- assets/                 Screenshots and 30-second audiovisual previews
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, eight-slot cartridge loader)
-|   |   |-- prg32_bands.c           Status bands and their reset to the saved developer-menu choice before each cartridge
+|   |   |-- prg32_bands.c           Status bands and the reset before each cartridge: saved developer-menu band choice, default palette, game viewport
 |   |   |-- prg32_controller.c      Joins GPIO, QEMU keyboard, diagnostic, and remote input; the table of remote key names lives here
 |   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return)
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation

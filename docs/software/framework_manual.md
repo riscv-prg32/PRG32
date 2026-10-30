@@ -200,8 +200,8 @@ that choice in NVS.
 
 Band settings belong to the cartridge that made them. Before a cartridge starts,
 and when setup opens, the firmware returns the bands to the saved menu choice,
-clears band text and colors, turns full-screen drawing off, and repaints the
-bands black. Set them in `init` rather than relying on an earlier cartridge. A
+clears band text and colors, turns full-screen drawing off, repaints the bands
+black, and restores the default palette. Set them in `init` rather than relying on an earlier cartridge. A
 cartridge that calls `prg32_band_save_config()` makes its modes the saved choice.
 
 Validated 2026-10-30 on ESP32-C6 and QEMU, 128 KiB window, by comparing screens:
@@ -211,6 +211,12 @@ mode still applies to the next cartridge. A scratch cartridge read slot
 information, was refused an empty slot and kept running, then switched to
 `performancetest`, which completed. `performancetest` also completed with a GAME
 band, where a band reads cartridge information while the cartridge presents.
+
+Also on both targets, a cartridge that set all 256 palette entries to magenta no
+longer reaches the next one. Before the fix, Cockroaches Cathisteria on the board
+drew a solid magenta screen after it; afterwards its title screen and Poing are
+correct, and `prg32_palette_get` finds 2 magenta entries instead of 256, the same
+count as a fresh start on QEMU.
 
 ## Screenshot API
 
@@ -520,7 +526,8 @@ Useful calls:
 - `prg32_gfx_pixel_indexed(...)`, `prg32_gfx_rect_indexed(...)`, and
   `prg32_gfx_clear_indexed(...)`: write system-palette indices directly.
 - `prg32_palette_set(...)` / `prg32_palette_get(...)`: change or inspect a
-  system-palette entry; changing it recolors existing indexed pixels.
+  system-palette entry; changing it recolors existing indexed pixels. The default
+  palette returns before each cartridge starts, so set entries in `init`.
 
 The 16x16 and 24x24 helpers treat `PRG32_COLOR_WHITE` as transparent. For other
 sizes or another transparency key, `prg32_sprite_draw_frame` accepts width,

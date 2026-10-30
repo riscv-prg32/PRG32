@@ -161,6 +161,7 @@ void prg32_band_set_setup_text(uint8_t band) {
 }
 
 void prg32_band_reset(void) {
+  prg32_palette_reset();
   prg32_gfx_set_fullscreen(0);
   /* Repaints the bands black: a cartridge that draws only with indexed colors
    * never sets their color itself. */
