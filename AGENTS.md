@@ -8,7 +8,34 @@ Markdown
 
 **MISSION CRITICAL: YOU MUST RUN THESE PHASES COMPLETELY, OTHERWISE THE OUTPUT WILL BE REJECTED**
 
-## [PHASE 1: MANDATORY RESEARCH]
+## [PHASE 0: IF AND WHAT TO BUILD]
+1. At the start of every sessions you must understand if the user is just asking a question about the codebase or if he wants to modify the codebase.
+
+2. If the user wants to modify the codebase, then at the start of every session you MUST ask the user a question:
+"Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
+The possible answers should include:
+- "Yes, please validate the edits by building the PRG32 framework.".
+- "No, I prefer to run the builds on my own.".
+
+3. IF AND ONLY IF the answer is yes, you should then ask:
+"For what architecture are you building for? ESP32C6 or QEMU?"
+The possible answers should include:
+- ESP32C6.
+- QEMU.
+- Both.
+
+If the user's request already says to build or test on QEMU and/or ESP32-C6, that is the answer to both questions; do not ask again.
+
+4. IF AND ONLY IF the answer is yes AND the user is building for ESP32C6, you should then ask:
+"What pin configuration are you targeting?"
+The possible answers should include:
+- pcb1
+- breadboard1
+- breadboard2
+
+If the user's request already specifies the chosen pin profile, do not ask again.
+
+## [PHASE 2: MANDATORY RESEARCH]
 Before writing or modifying any code, you MUST complete these steps:
 
 1. **Read the Structure:** Read `docs/repository_structure.md` to understand where files belong.
@@ -17,23 +44,6 @@ Before writing or modifying any code, you MUST complete these steps:
 4. **Read the Docs**: Based on your prompt, read AT LEAST 5 OTHER files with `cat` from `docs`.
 5. **Follow Redirects:** If a file tells you to look elsewhere, you MUST follow the redirect and read the target file.
 *Do not guess architectural patterns. Read the docs first.*
-
-## [PHASE 2: VALIDATION RUNS]
-1. At the start of every session you must ask the user a question:
-"Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
-The possible answers should include:
-- "Yes, please validate the edits by building the PRG32 framework.".
-- "No, I prefer to run the builds on my own.".
-
-2. IF AND ONLY IF the answer is yes, you should then ask:
-"For what architecture are you building for? ESP32C6 or QEMU?"
-The possible answers should include:
-- ESP32C6.
-- QEMU.
-- Both.
-
-If the user's request already says to build or test on QEMU and/or the
-attached ESP32-C6, that is the answer to both questions; do not ask again.
 
 ## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:
