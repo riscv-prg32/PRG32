@@ -33,6 +33,25 @@ Rules:
   required follow-ups in [web_usb_deployment.md](../software/web_usb_deployment.md#status-reviewed-2026-10-29)
   and tell the user.
 
+## Adding a controller key
+
+Remote keys follow the buttons. When a `PRG32_BTN_*` button is added, in the
+same change:
+
+1. add it to the `REMOTE_KEYS` table in `components/prg32/prg32_controller.c`
+   and update `PRG32_REMOTE_KEY_COUNT` in `components/prg32/include/prg32.h`;
+   HELLO and the KEY message read that table;
+2. add its name to `KEYS` in `prg32/usb_protocol.py` and to the `key` help text
+   in `prg32/prg32.py`;
+3. update the name list in [Key messages](../software/usb_protocol.md#key-messages)
+   and the HELLO example, and the [input](../software/framework_manual.md#input)
+   list.
+
+`tests/test_key_protocol.py` fails until the firmware table and the SDK list
+cover every button defined in `prg32.h`. A new key is additive and keeps the
+`prg32-io-1.0` string. Hosts use the list from HELLO, so an older SDK can send
+new keys to newer firmware.
+
 ## Pin assignment
 
 The canonical source is `profiles/sdkconfig.pins.prototype1`. When a pin

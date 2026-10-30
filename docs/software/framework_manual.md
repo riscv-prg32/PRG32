@@ -37,15 +37,19 @@ returns `0`; multiplayer games should use the PRG32 multiplayer API for remote
 players.
 
 QEMU and host-driven tests can inject the same bitmask through
-`prg32_diag_set_input_state()`.
+`prg32_diag_set_input_state()`. A developer's computer can press the same
+buttons on a running board or emulator with
+[key commands](usb_protocol.md#key-messages), for example
+`python3 -m prg32 esp32c6 key UP --port /dev/cu.usbmodem101`; cartridges need
+no change to receive them.
 
 Menu/setup helpers call `prg32_input_read_menu()` to read the local joystick in
 the same normalized low-bit mask.
 
 System hotkey:
 
-- A + B + DOWN on the local joystick: restart the ESP32-C6 firmware from
-  anywhere in the PRG32 input path.
+- A + B + DOWN on the local joystick, or sent as key commands: restart the
+  ESP32-C6 firmware from anywhere in the PRG32 input path.
 
 ## Random Numbers
 

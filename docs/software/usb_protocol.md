@@ -3,7 +3,8 @@
 `prg32-io-1.0` is the binary development protocol shared by ESP32-C6 native
 USB, QEMU UART-over-TCP, and the loopback-only PRG32-Qt development listener.
 It lets the SDK, the PRG32-Construction-Kit and the CartridgeStore upload, run,
-debug where supported, and retrieve performance results without Wi-Fi. The
+debug where supported, press controller keys, and retrieve performance results
+without Wi-Fi. The
 running firmware recognizes the first valid frame; there is no upload mode and
 no reset into the ROM bootloader.
 
@@ -95,6 +96,7 @@ frame.
 | `0x08` | WIFI_SCAN | empty; returns nearby and stored networks ([Wi-Fi](#wi-fi-messages)) |
 | `0x09` | WIFI_SET | JSON with `ssid` and `password`; stores and joins a network |
 | `0x0A` | WIFI_FORGET | JSON with `ssid`; erases a stored network |
+| `0x0B` | KEY | JSON with `action`, `keys`, `hold_ms`; presses or releases controller keys ([Key messages](#key-messages)) |
 | `0x80` | STATUS | response JSON |
 | `0x81` | RESULT_DATA | performance JSON; flag bit 0 marks the final chunk |
 
@@ -102,7 +104,8 @@ frame.
 
 ```json
 {"ok":true,"protocol":"prg32-io-1.0",
- "capabilities":["upload","run","performance"],"debug_supported":false,
+ "capabilities":["upload","run","performance","keys"],
+ "keys":["LEFT","RIGHT","UP","DOWN","A","B","START"],"debug_supported":false,
  "firmware":"5202077","target":"esp32c6","slots":8,
  "max_chunk":4096,"max_payload":16384,
  "runtime":{"cart_ram_size":65536,"cart_max_size":65536,
@@ -115,7 +118,9 @@ frame.
 fields as unknown and fall back to 1024-byte chunks. `target` is the IDF target
 (`esp32c3` for the QEMU build). `capabilities` contains `"wifi"` only when the
 firmware was built with Wi-Fi (not on QEMU); hosts must check it before
-sending a [Wi-Fi message](#wi-fi-messages). `runtime.heap_free` and
+sending a [Wi-Fi message](#wi-fi-messages). `capabilities` contains
+`"keys"` when the firmware accepts the [KEY message](#key-messages), and the
+`keys` field, added with it, lists the key names that firmware accepts. `runtime.heap_free` and
 `runtime.heap_largest` (free 8-bit heap and its largest block, in bytes, at
 the time of the reply) were added on 2026-10-29 for memory measurements; see
 [Maximizing free heap](../hardware/memory.md#maximizing-free-heap).
@@ -177,6 +182,58 @@ replies with `known`, `connected`, and `ip`; an SSID that is not stored is
 answered with `network is not stored`. Forgetting the network in use switches
 to the next stored network, or to access-point mode when none is left.
 
+### Key messages
+
+Added on 2026-10-30. **KEY** lets a developer or a test press the controller
+buttons of a running device, with the same effect as the physical buttons on
+ESP32-C6 and the keyboard on QEMU: cartridges and the setup menu read remote
+keys through `prg32_controller_read()`, joined with the other inputs, and see
+no difference.
+
+```json
+{"action":"press","keys":["UP","A"],"hold_ms":200}
+```
+
+| Field | Meaning |
+|---|---|
+| `action` | `press` (the default when missing) or `release` |
+| `keys` | array of key names from HELLO `keys`. `SELECT` is accepted as a second name for `START`, which is one button ([input](framework_manual.md#input)). Several keys are pressed together |
+| `hold_ms` | how long a press lasts, 1 to 60000; 200 when missing |
+
+Every press is released by the firmware, so a host that disappears cannot leave
+a key stuck for more than 60 s. `release` ends a press early; a `release` with
+missing or empty `keys` releases all remote keys. To hold a key for an
+unknown time, send `press` with a long `hold_ms`, then `release`.
+
+The reply is STATUS JSON listing the remote keys still down, which for a press
+includes the new keys: the reply does not wait for the release.
+
+```json
+{"ok":true,"active":["UP","A"]}
+```
+
+A game polls input once per frame and a frame can outlast a short press, so a
+key stays down until `hold_ms` has passed **and** two controller reads have
+returned it (the main loop reads once per frame, just before the cartridge's
+update). A press is therefore never lost between two frames, and a press sent
+while nothing reads input is delivered to the next reader. To send a sequence, wait for
+`hold_ms` plus a gap of at least one frame between requests, so that the game
+also sees each release; `prg32 esp32c6 key` does this.
+
+Errors, each with no key changed: `invalid key request`, `invalid key action`,
+`keys must be an array`, `unknown key <name>` (one unknown name refuses the
+whole request), `missing keys` (a press with none), `invalid hold_ms`, and
+`upload in progress` (the main loop is paused, so nothing would read the key).
+
+Remote keys are released when an upload begins and on every `RUN`, so a key does
+not reach the next cartridge. A+B+DOWN is the
+[restart hotkey](framework_manual.md#input) whatever the source of the keys: a
+host that presses the three together restarts the firmware.
+
+Hosts check for the `keys` capability first; firmware without it replies
+`unsupported protocol message`. Adding a button is described in
+[device protocol consistency](../agents/device_protocol_consistency.md#adding-a-controller-key).
+
 ## Device behavior
 
 The upload screen shows the cartridge name, target slot, byte percentage, and
@@ -215,6 +272,18 @@ python3 -m prg32 esp32c6 performance \
   --port socket://127.0.0.1:8081 --out performance.json
 ```
 
+Key commands use `key` on either target (`qemu key` defaults to
+`socket://127.0.0.1:5555`). Each argument is one step, pressed after the
+previous one is released, and `+` presses keys together:
+
+```bash
+python3 -m prg32 esp32c6 key UP UP A --port /dev/cu.usbmodem101
+python3 -m prg32 esp32c6 key A+B --hold-ms 500 --port /dev/cu.usbmodem101
+python3 -m prg32 esp32c6 key RIGHT --hold-ms 5000 --port /dev/cu.usbmodem101
+python3 -m prg32 esp32c6 key --release --port /dev/cu.usbmodem101
+python3 -m prg32 qemu key START
+```
+
 The SDK prints the device's firmware and target, refuses `debug` before
 contacting the slot when `debug_supported` is false, limits `--chunk-size` to
 the device's `max_chunk`, prints progress every 10%, and resends a chunk once
@@ -225,6 +294,35 @@ development uses the running-device protocol and does not require network
 connectivity.
 
 ## Validation record
+
+### 2026-10-30: key commands
+
+The KEY message, the `keys` HELLO capability and field, and the `esp32c6 key`
+and `qemu key` commands were added. Firmware built from this revision for
+ESP32-C6 (`prototype1`) on `/dev/cu.usbmodem1101` and for Espressif QEMU on
+`socket://127.0.0.1:5555` passed the same 30 checks on both targets: HELLO,
+`store`, `run`, press and automatic release, long hold, release of named and of
+all keys, the defaults, `SELECT`, every refusal, release on `RUN` and on an upload,
+refusal during an upload, a corrupt frame, an abandoned upload, reconnection,
+and the A+B+DOWN restart.
+
+Effect on the running program:
+
+- QEMU, Input Tester: comparing the panel framebuffer with the idle screen, each
+  of the seven keys changed 523 pixels, A+B changed 1,095 and showed `Multiple
+  keys registered`, and an idle screen changed none. In the setup menu, DOWN DOWN
+  moved the cursor and UP UP restored the same screen exactly.
+- ESP32-C6: the prototype's network could not be reached from the test computer,
+  so `/api/screenshot.bmp` was not available and pixels were not compared. A
+  separate test build logged what each cartridge's own input calls returned
+  through the ABI table; see
+  [Store key check](../cartridge_store/cartridge_store.md#store-key-check-2026-10-30).
+  In the setup menu, A entered a submenu and B returned, seen in the serial log.
+
+All 32 CartridgeStore cartridges were run on both targets with the same check.
+The tests wrote only `cart7`, which was backed up with `esptool read_flash` and
+restored afterwards; `cart0` to `cart6` were compared and are unchanged. In NVS
+only Wi-Fi driver and PHY calibration entries changed.
 
 ### 2026-10-30: Wi-Fi messages
 

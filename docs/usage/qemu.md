@@ -118,6 +118,12 @@ from PWM duty, and sends PCM through the UART audio path.
 | A button | `J` or `Z` |
 | B button | `K`, `X`, `Backspace`, or `Esc` |
 
+**Key commands**: `python3 -m prg32 qemu key UP A` presses the same buttons as
+the keyboard through the framed protocol, including START; see
+[Key messages](../software/usb_protocol.md#key-messages). Prefer it in test
+automation: unlike raw key bytes it has a reply, a chosen hold time, chords,
+and the same behavior on hardware.
+
 **Diagnostic Input Injection**:
 Framework code can call `prg32_diag_set_input_state()` to inject player-1 inputs in QEMU-oriented tests. 
 
