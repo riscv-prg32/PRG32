@@ -503,6 +503,7 @@ const char *prg32_cart_last_error(void);
  * portable cartridge ABI table. */
 void prg32_setup_request(void);
 int prg32_setup_take_request(void);
+bool prg32_setup_interrupted(void);
 void prg32_setup_run(void);
 void prg32_usb_protocol_start(void);
 bool prg32_usb_protocol_busy(void);

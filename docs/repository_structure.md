@@ -25,6 +25,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only shared RGB/LCD boot-indicator helpers
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
+|   |   |-- prg32_system.c          Boot sequence and setup menus, and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, performance, Wi-Fi, and key-command protocol with upload timeout, failed-slot erase, HELLO heap reporting, and whole-frame writes that console logs cannot split
 |   |   |-- prg32_wifi.c            Wi-Fi modes, setup screens, the last four connected networks, and forgetting a stored network
 |   |   |-- prg32_random.c          Uniform bounded random-number API
@@ -73,7 +74,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (64 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 128 KiB profile)
 |   `-- sdkconfig.pins.*            Hardware pin configuration profiles (e.g. prototype1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), setup-screen takeover, and documentation validation
+|   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents

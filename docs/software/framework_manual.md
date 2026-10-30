@@ -331,7 +331,9 @@ Wi-Fi setup, Cartridge Store configuration and browsing, audio setup, the
 developer band menu, the performance test, the about screen, and exit. The Cartridge Store integration
 contract adds manual/discovered store URL entry, browsing, colophon preview, and
 download-to-slot behavior for future firmware work. Use UP/DOWN to choose,
-SELECT or A to confirm, and B to cancel/back. The
+SELECT or A to confirm, and B to cancel/back. A cartridge started from a
+computer takes over from any setup screen; see
+[device behavior](usb_protocol.md#device-behavior). The
 device smoke test is now the external
 [DeviceDemo cartridge](https://github.com/riscv-prg32/DeviceDemo), which
 exercises display, input, audio, sprites, scrolling, playfield rendering,

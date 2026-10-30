@@ -216,9 +216,11 @@ A game polls input once per frame and a frame can outlast a short press, so a
 key stays down until `hold_ms` has passed **and** two controller reads have
 returned it (the main loop reads once per frame, just before the cartridge's
 update). A press is therefore never lost between two frames, and a press sent
-while nothing reads input is delivered to the next reader. To send a sequence, wait for
-`hold_ms` plus a gap of at least one frame between requests, so that the game
-also sees each release; `prg32 esp32c6 key` does this.
+while nothing reads input is delivered to the next reader. To send a sequence so that the game also sees
+each release, wait at least one frame after `hold_ms` and at least two frames in
+all before the next request; a press sent while the same key is still down
+extends it and is not a new press. `prg32 esp32c6 key` waits `--hold-ms` plus
+`--gap-ms`, which by default is 300 ms in all.
 
 Errors, each with no key changed: `invalid key request`, `invalid key action`,
 `keys must be an array`, `unknown key <name>` (one unknown name refuses the
@@ -248,9 +250,25 @@ costs about 150 ms. Completion is held for 1.2 s so the result is readable.
 | CRC/length mismatch, invalid image, flash write error | red failure text | erased | setup |
 | no frame for 10 s during an upload | UPLOAD TIMED OUT | erased | setup |
 | verified but `run` could not start it | RUN FAILED | kept | setup |
+| `RUN` succeeded | unchanged | unchanged | the cartridge |
 
 Erasing a failed slot guarantees that setup never lists a partial image. A
 `RUN` request is refused while an upload is in progress.
+
+The table holds whichever setup screen is open. When an upload starts or a
+cartridge is loaded, each setup screen that waits for input leaves
+(`prg32_setup_interrupted()`) and control returns to the top-level menu, which
+waits for the upload and then either hands over to the cartridge or rebuilds
+its list of slots. "Setup" in the table is therefore always that top-level menu,
+with its cursor kept. The same applies to
+[`/api/games/select`](api.md). Settings already took effect when they were
+changed, but text being typed and a network not yet confirmed are discarded.
+
+Setup does not leave until the step in progress has finished: a physical button
+still held, a Wi-Fi scan, a Cartridge Store request or download, the audio test
+tune, or a timed message. Those steps can draw over the upload screen until
+then. Two transfers are not coordinated, so do not start a USB upload during a
+Store download.
 
 Physical firmware rejects the protocol `debug` command because its
 instruction-interpreter semantics are implemented by PRG32-Qt. Native
@@ -295,6 +313,78 @@ connectivity.
 
 ## Validation record
 
+### 2026-10-30: saved Wi-Fi mode returns after a setup scan
+
+Leaving the setup network screens without connecting now
+[starts the saved Wi-Fi mode again](../usage/network.md#setup-menu-configuration).
+Before, the scan left the radio stopped until reboot, so the HTTP API stopped
+answering. The wire format did not change.
+
+Each case ran on firmware for ESP32-C6 (`prototype1`) on `/dev/cu.usbmodem1101`,
+in infrastructure mode and connected, after a restart. Key commands opened the
+network list, and `/api/runtime` and `/api/screenshot.bmp` were polled while it
+was open and after leaving.
+
+- Control, on firmware built before this change: B from the list and `RUN` from
+  the list both left HTTP down for the full 30 s observed.
+- B from the network list, keyboard, and confirmation screen: both endpoints
+  answered 4.9 to 6.0 s later, and the screenshot showed the Wi-Fi menu with
+  status CONNECTED.
+- `RUN` from the same three screens: the cartridge started, and both endpoints
+  answered 7.4 to 8.0 s later with the cartridge on screen.
+- HTTP was down on every case while the list was open, so each one left a
+  stopped radio. The confirmation screen cannot be seen with the radio off; the
+  key sequence that reaches it was checked by screenshot on the AP keyboard, where
+  it moved on to the next field.
+
+Not exercised: a saved access-point mode, the no-networks screen, a `run` upload,
+and a `WIFI_SET` arriving while the list is open. The board's saved mode is
+station. No network was confirmed, so these screens saved no setting.
+
+No cartridge slot was written; all eight were read with `esptool read_flash`
+before and after the tests and are identical.
+
+### 2026-10-30: setup screens give way to a cartridge
+
+Every setup screen that waits for input now leaves when an upload starts or a
+cartridge is loaded ([device behavior](#device-behavior)). Each screen was opened
+with key commands on firmware for ESP32-C6 (`prototype1`) on
+`/dev/cu.usbmodem1101` and for Espressif QEMU, then a cartridge was started with
+a `run` upload and, separately, with `RUN`. The check read the state the
+cartridge drew and pressed START and RIGHT to prove it received the keys:
+`/api/screenshot.bmp` on the ESP32-C6, the panel framebuffer on QEMU.
+
+- Both targets: `cartridge_picker`, `cartridge_context_menu`,
+  `default_cartridge_picker`, `settings_menu`, `audio_menu`, `developer_menu`,
+  `about_menu`, the Store setup menu, and the keyboard opened from it. QEMU passed
+  21/21.
+- ESP32-C6 only, because QEMU has no Wi-Fi or Store connection: the Wi-Fi mode
+  menu, forget list and confirmation, AP keyboard, Store list, and Store details.
+  With the screens above, the board passed 33/33.
+- A `store` upload over two submenus and a corrupt image over a third ended on the
+  top-level menu with keys working, on both targets.
+- The Wi-Fi network list, password keyboard, and confirmation, on the ESP32-C6: a
+  setup scan leaves the radio stopped, so the screenshot is unavailable. All six
+  cases replied successfully and the serial log showed the cartridge starting and
+  no later setup lines; pressing keys and reading its screen was not possible.
+- The commands `esp32c6 key A` and `esp32c6 upload ... --command run` showed the
+  cartridge in place of RUN CARTRIDGE on both targets.
+- A cartridge's own `prg32_text_input` still waits for its player on both targets:
+  only an open setup menu interrupts it.
+- Control: firmware built from the previous commit stayed in RUN CARTRIDGE for both
+  a `run` upload and `RUN` on QEMU, and in ABOUT for a `run` upload.
+
+Not exercised: the Wi-Fi connection wait, the no-networks and enterprise-network
+screens, the Store's found-URL and installed screens, and `/api/games/select`.
+Those paths use the same check, and `tests/test_setup_takeover.py` fails when a
+listed screen lacks it. A cartridge blocked inside its update, as in
+`prg32_text_input`, holds the framebuffer, so `/api/screenshot.bmp` returned no
+image on the ESP32-C6 until it continued.
+
+The tests wrote only `cart7`, which was backed up with `esptool read_flash` and
+restored; all eight slots were compared with the backup and are identical. NVS
+listed the same 87 entries afterwards.
+
 ### 2026-10-30: key commands
 
 The KEY message, the `keys` HELLO capability and field, and the `esp32c6 key`
@@ -306,18 +396,28 @@ all keys, the defaults, `SELECT`, every refusal, release on `RUN` and on an uplo
 refusal during an upload, a corrupt frame, an abandoned upload, reconnection,
 and the A+B+DOWN restart.
 
-Effect on the running program:
+Effect on the running program, compared on the screen:
 
-- QEMU, Input Tester: comparing the panel framebuffer with the idle screen, each
-  of the seven keys changed 523 pixels, A+B changed 1,095 and showed `Multiple
-  keys registered`, and an idle screen changed none. In the setup menu, DOWN DOWN
-  moved the cursor and UP UP restored the same screen exactly.
-- ESP32-C6: the prototype's network could not be reached from the test computer,
-  so `/api/screenshot.bmp` was not available and pixels were not compared. A
-  separate test build logged what each cartridge's own input calls returned
-  through the ABI table; see
+- Input Tester, on the ESP32-C6 through `/api/screenshot.bmp` and on QEMU through
+  the panel framebuffer: an idle screen changed no pixels, each of the seven
+  keys changed the same 523 pixels and the screen returned to idle on release,
+  and A+B changed 1,095 and showed `Multiple keys registered`. The screenshot
+  reports the frame the firmware drew; the panel itself was not photographed.
+- The [key gameplay check](../../tests/key_gameplay/README.md), a deterministic
+  game played only with key commands, passed 29/29 on both targets, at about 127
+  ms per frame on the ESP32-C6 and 33 ms on QEMU. Every press was exactly one move,
+  including 20 presses of 1 ms, and a 2 s hold covered 21 frames on the ESP32-C6.
+- Setup menu: DOWN DOWN moved the cursor and UP UP restored the same screen
+  exactly on QEMU; on the ESP32-C6 A entered a submenu and B returned, seen in
+  the serial log, and the cursor moved in the screenshot.
+- Cartridges: see
   [Store key check](../cartridge_store/cartridge_store.md#store-key-check-2026-10-30).
-  In the setup menu, A entered a submenu and B returned, seen in the serial log.
+
+Known limit at this revision, older than this message and
+[fixed the same day](#2026-10-30-setup-screens-give-way-to-a-cartridge): the
+setup menu left for a cartridge only from its top level. A `run` upload finished
+while `cartridge_picker` (RUN CARTRIDGE) was open loaded the cartridge but left
+that menu on screen, and keys then went to the menu.
 
 All 32 CartridgeStore cartridges were run on both targets with the same check.
 The tests wrote only `cart7`, which was backed up with `esptool read_flash` and

@@ -461,8 +461,15 @@ cartridge's own input calls returned through the ABI table. The 30 portable
 cartridges received all seven keys. 29 also received A+B; in
 `org.riscv-prg32.spiriti-napoli97` START on the title screen opens
 `prg32_scoreboard_show()`, a firmware screen that reads input outside the ABI
-table, so that A+B did not pass through the logged calls. The test does not
-judge gameplay, only that the keys arrive.
+table, so that A+B did not pass through the logged calls.
+
+The 30 portable cartridges were then run again on the ESP32-C6 with screenshots
+before and after START, A, and a held RIGHT. In 20 the screen changed by more
+than twice what the cartridge's own animation changes when idle. In the other 10
+(Asteroids, Audio Pan Test, Bach, Frogger, Pac-Man, Poing, Pong, Performance Test,
+Spiriti, and Wing Commander) animation hides the effect in this comparison, so
+they rely on the logged calls above. Neither check judges each game's rules. The [key gameplay check](../../tests/key_gameplay/README.md) does that for a
+purpose-built game.
 
 ## Troubleshooting
 
