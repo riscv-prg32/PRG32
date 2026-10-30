@@ -36,6 +36,21 @@ cartridge running and the console did not restart. Chrome closes the chooser at
 once when the button is pressed by browser automation, so this check needs a
 person.
 
+Firmware from 2026-10-30 onward adds the WIFI_SCAN, WIFI_SET, and WIFI_FORGET
+messages behind a `wifi` HELLO capability
+([Wi-Fi messages](usb_protocol.md#wi-fi-messages)). The web client needs no
+change; a Wi-Fi page in the Construction-Kit or CartridgeStore would be an
+optional follow-up. PRG32-Qt must keep `wifi` out of its HELLO capabilities.
+
+Firmware from 2026-10-29 onward adds `runtime.heap_free` and
+`runtime.heap_largest` to HELLO ([HELLO response](usb_protocol.md#hello-response)).
+The web client ignores unknown fields and needs no change. Firmware built
+with the optional 128 KiB profile accepts packages up to 131,072 bytes; the
+web client reads `cart_max_size` from HELLO, but PRG32-Construction-Kit
+`tools/build_qemu_firmware.py` (`CART_MAX_SIZE = 64 * 1024`) and PRG32-Qt
+`src/qt/IoProtocolServer.cpp` (UPLOAD_BEGIN rejects more than 65,536 bytes)
+still assume the default 64 KiB limit.
+
 ## How it works
 
 ```text

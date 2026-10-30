@@ -300,7 +300,9 @@ Expected behavior:
 
 - upload is accepted only when `PRG32_GAME_UPLOAD_ENABLE` is enabled;
 - validates and stores the cartridge without starting it;
-- the request body must fit in the 64 KiB cartridge package limit;
+- the request body must fit in the 64 KiB cartridge package limit; it is
+  streamed to flash in 4 KiB chunks, and an image that fails validation after
+  the slot was erased leaves the slot erased;
 - invalid cartridge images return `400` with the cartridge validation error;
 - disabled upload support returns `403`.
 

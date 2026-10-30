@@ -408,6 +408,35 @@ Firmware clients uses compact REST calls:
 | `GET`  | `/api/games/<id>/colophon`                                    | fetch compact colophon JSON                                                                                              |
 | `GET`  | `/api/games/<id>/download?architecture=esp32c6&version=1.0.0` | download `.prg32`. The firmware should request `architecture=esp32c6`. QEMU hosts should<br>request `architecture=qemu`. |
 
+## Store Compatibility Check (2026-10-29)
+
+Every cartridge listed by `GET /api/games` on
+`https://store.prg32.uniparthenope.it` (32 games, latest versions) was
+downloaded for both architectures, uploaded with the `run` command over the
+[device protocol](../software/usb_protocol.md) into one slot, and watched for
+12 s on the ESP32-C6 prototype (8 s on QEMU). A cartridge passed when the upload
+succeeded, the serial log showed no panic or reboot, and the device still
+answered HELLO.
+
+| Result | ESP32-C6 `prototype1` | QEMU |
+|---|---|---|
+| Portable cartridges (30) | all ran without faults | all ran without faults |
+| `it.uniparthenope.space_invaders` 1.0.0 | accepted, then `Load access fault` | refused at upload |
+| `it.uniparthenope.terraforge` 1.0.0 | accepted, then `Load access fault` | refused at upload |
+
+The two failing entries are legacy absolute-import cartridges (header v1,
+`load_addr` 0x408023a0 on ESP32-C6 and 0x40381950 on QEMU). Their calls into
+the firmware use absolute addresses that match no function in the current
+firmware, nor in the unmodified firmware of commit `1ca120b` or a September
+2026 build, so they cannot run on any firmware checked here. On ESP32-C6 the
+loader accepts them because only the load address can be checked for a v1
+header. Rebuild them with `cartridge build --portable` and publish new
+versions.
+
+Free heap did not fall when the same cartridges were loaded repeatedly. Some
+cartridges start firmware services on first use; on the board this lowered
+free heap once, by about 22 KiB across the whole series.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
