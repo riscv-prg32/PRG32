@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from prg32.utilities.env_variables import *
-from prg32.utilities.environment_check import doctor
+from prg32.utilities.environment_check import doctor, enable_ccache
 from prg32.utilities.runtime_handler import parse_cart_ram_kib, runtime
 from prg32.utilities.tests_runner import run_tests
 
@@ -444,6 +444,8 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=runtime)
 
     p = sub.add_parser("test", help="run unit tests and smoke tests", usage="%(prog)s [options]")
+    p.add_argument("--unit-only", action="store_true",
+                   help="Run only the Python unit tests and skip the QEMU smoke test, which builds the QEMU firmware")
     p.set_defaults(func=run_tests)
 
     p = sub.add_parser("debug", help="control the optional PRG32-QT cartridge debugger")
@@ -456,6 +458,7 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=list_pins_esp32c6)
 
     args = parser.parse_args(argv)
+    enable_ccache()
     args.func(args)
     return 0
 

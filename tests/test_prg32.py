@@ -676,6 +676,50 @@ class PinProfileTests(unittest.TestCase):
                 args = argparse.Namespace(pin_profile="", debug=False)
                 defaults = get_esp32c6_sdkconfig_defaults(args)
                 self.assertNotIn("sdkconfig.pins.", defaults)
+    def test_cli_test_unit_only_skips_qemu_smoke_test(self) -> None:
+        from prg32.prg32 import main
+        with mock.patch("prg32.prg32.run_tests") as mock_run:
+            main(["test", "--unit-only"])
+            self.assertTrue(mock_run.call_args[0][0].unit_only)
+        with mock.patch("prg32.utilities.tests_runner.subprocess.check_call") as check_call, \
+             mock.patch("prg32.utilities.tests_runner.log_ok"), \
+             mock.patch("prg32.utilities.tests_runner.log_info"), \
+             mock.patch("prg32.utilities.tests_runner.step"):
+            from prg32.utilities.tests_runner import run_tests
+            run_tests(argparse.Namespace(unit_only=True))
+            self.assertEqual(check_call.call_count, 1)
+            self.assertIn("unittest", check_call.call_args[0][0])
+
+    def test_qemu_smoke_step_failure_stops_the_test(self) -> None:
+        import sys
+        from prg32.qemu import smoke_test
+        with mock.patch("prg32.qemu.smoke_test.die", side_effect=SystemExit(1)) as die:
+            with self.assertRaises(SystemExit):
+                smoke_test.run_step("failing", sys.executable, "-c", "raise SystemExit(3)")
+            self.assertIn("failing failed", die.call_args[0][0])
+
+    def test_qemu_smoke_stops_when_qemu_exits_during_boot(self) -> None:
+        from prg32.qemu import smoke_test
+        process = mock.Mock(returncode=1)
+        process.poll.return_value = 1
+        with mock.patch("prg32.qemu.smoke_test.die", side_effect=SystemExit(1)) as die:
+            with self.assertRaises(SystemExit):
+                smoke_test.wait_for_hello(process)
+            self.assertIn("QEMU exited with code 1", die.call_args[0][0])
+
+    def test_enable_ccache_respects_an_explicit_choice(self) -> None:
+        from prg32.utilities.environment_check import enable_ccache
+        with mock.patch.dict("os.environ", {"IDF_CCACHE_ENABLE": "0"}), \
+             mock.patch("prg32.utilities.environment_check.shutil.which", return_value="/usr/bin/ccache"):
+            enable_ccache()
+            import os
+            self.assertEqual(os.environ["IDF_CCACHE_ENABLE"], "0")
+        with mock.patch.dict("os.environ", {}, clear=True), \
+             mock.patch("prg32.utilities.environment_check.shutil.which", return_value=None):
+            enable_ccache()
+            import os
+            self.assertNotIn("IDF_CCACHE_ENABLE", os.environ)
+
     def test_cli_build_flags_and_order(self) -> None:
         from prg32.prg32 import main
         with mock.patch("prg32.prg32.build_esp32c6") as mock_build:

@@ -68,6 +68,8 @@ When modifying code, you are bound by these rules:
 Before reporting task completion, you MUST run the following checks. 
 
 **Pre-requisite:** Source the ESP-IDF environment. Run `source $HOME/esp-idf/export.sh`. If it is not found, STOP and ask the user for the ESP-IDF path.
+`export.sh` can leave the shell in another directory: `cd` back to the
+repository root before running the commands below.
 
 Run these exact commands to validate your work:
 ```bash
@@ -77,7 +79,8 @@ git diff --check
 # 2. Run Python linting/tooling
 python3 -m compileall prg32 tests tools
 python3 -m prg32 doctor
-python3 -m prg32 test
+python3 -m prg32 test            # when the edits target QEMU
+python3 -m prg32 test --unit-only  # when the edits target ESP32-C6 only
 
 # 3. Run CI Tests (from GitHub Actions)
 python3 -m prg32.esp32c6.ci_smoke_test
@@ -92,19 +95,42 @@ sha256sum --check cartridges/blackjack/SHA256SUMS
 
 If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture the edits are targeting. 
 
-If you are working on ESP32c6, Build the physical firmware:
+`python3 -m prg32 test` builds the QEMU firmware for its smoke test, boots it in
+an SDL window, and checks HELLO and a `run` upload on `socket://127.0.0.1:5555`.
+It works from a non-interactive agent shell; close any running QEMU first so
+port 5555 is free. When the edits target only the ESP32-C6, `--unit-only` runs
+the same unit tests without that build.
+
+The PRG32 CLI turns on ccache for every `idf.py` it starts when `ccache` is
+installed (see [ESP-IDF build speed](docs/usage/tooling.md#esp-idf-build-speed)).
+
+If you are working on ESP32c6, Build the physical firmware with the pin profile
+chosen in Phase 0. If the edits since the last successful build changed
+`Kconfig`, `profiles/*` or any `sdkconfig*` file, or if `build-esp32c6/` does
+not exist yet or was built with another profile, run the full build:
 ```bash
-python3 -m prg32 esp32c6 build -p breadboard1
+python3 -m prg32 esp32c6 build -p <profile>
+```
+IF AND ONLY IF none of those files changed and `build-esp32c6/` was last built
+with the same profile, skip the target setup and keep the sdkconfig, which
+rebuilds only what changed:
+```bash
+python3 -m prg32 esp32c6 build -p <profile> -s -k
 ```
 
 `python3 -m prg32 esp32c6 flash` ends in an interactive monitor that needs a
 terminal. From a non-interactive agent shell, flash with
-`idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.breadboard1" -p <port> flash`.
+`idf.py --ccache -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.<profile>" -p <port> flash`.
+Keep `--ccache`: an `idf.py` call without it switches ccache off in the build
+directory and recompiles the whole firmware.
 Flashing the application does not erase cartridge slots.
 
-If you are working on QEMU, Build the QEMU firmware:
+If you are working on QEMU, Build the QEMU firmware. Under the same condition as
+the ESP32-C6 build (no `Kconfig`, `profiles/*` or `sdkconfig*` change, and an
+existing `build-qemu/`), add `-s -k`:
 ```bash
-python3 -m prg32 qemu build
+python3 -m prg32 qemu build        # full
+python3 -m prg32 qemu build -s -k  # incremental
 ```
 
 QEMU's virtual display blocks the firmware unless a display backend runs, so

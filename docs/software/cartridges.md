@@ -507,6 +507,25 @@ Two firmware jobs build the resident runtime for both targets: the physical
 ESP32-C6 firmware and the ESP32-C3 QEMU firmware (`python3 -m prg32 qemu build`),
 so a change that compiles for only one target is caught before merging.
 
+The QEMU job builds the firmware but does not boot it. The boot check is the
+QEMU smoke test in `python3 -m prg32 test` ([tooling](../usage/tooling.md#diagnostic-tasks)),
+which opens an SDL window because the virtual display blocks the firmware
+without one. A headless Linux machine, such as a CI runner or the
+`espressif/idf` container, has no display for that window: run the test under
+a virtual X server with `xvfb-run`. It also needs the ESP-IDF QEMU build and
+the libraries it loads:
+
+```bash
+apt-get install -y xvfb libgcrypt20 libglib2.0-0 libpixman-1-0 libsdl2-2.0-0 libslirp0
+python3 "$IDF_PATH/tools/idf_tools.py" install qemu-riscv32
+. "$IDF_PATH/export.sh"
+xvfb-run -a python3 -m prg32 test
+```
+
+`-a` picks a free display number. The smoke test also needs port 5555 free.
+This recipe is not yet part of the workflow and has not been run on a CI
+runner; it was checked only on macOS with a desktop session (2026-10-30).
+
 Successful runs retain six downloadable workflow artifacts for 14 days:
 
 - `blackjack-cartridge-package`, containing both `.prg32` variants and the

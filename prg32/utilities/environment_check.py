@@ -90,6 +90,18 @@ def find_idf_root() -> Path:
             return c
     raise FileNotFoundError("ESP-IDF root not found")
 
+def enable_ccache() -> None:
+    """Let every idf.py started by this process use ccache when it is installed.
+
+    idf.py stores the ccache choice in the CMake cache, so all calls on one
+    build directory must agree, or the next call recompiles everything.
+    Setting the environment once covers every idf.py the CLI starts. Set
+    IDF_CCACHE_ENABLE=0 to turn it off.
+    """
+    if shutil.which("ccache"):
+        os.environ.setdefault("IDF_CCACHE_ENABLE", "1")
+
+
 def ensure_idf_tools() -> bool:
     return shutil.which("idf.py") is not None and shutil.which("riscv32-esp-elf-gcc") is not None
 

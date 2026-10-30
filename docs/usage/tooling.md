@@ -17,6 +17,7 @@ python3 -m prg32 <command> [subcommand] [options]
 - `abi`: ABI tooling tasks
 - `store`: CartridgeStore and metadata tasks
 - `doctor`: Check local toolchain prerequisites
+- `test`: Run the Python unit tests and the QEMU smoke test
 - `runtime`: Print runtime linker information
 - `debug`: Control an optional PRG32-QT debugger over its device HTTP API
 - `pins`: List available pin setup possibilities
@@ -144,9 +145,39 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 - `doctor`: check local toolchain prerequisites, and report any ESP32-C6
   connected on a native USB port (informational; a missing board is not a failure)
 - `runtime`: print runtime linker information
+- `test`: run the Python unit tests in `tests/`, then the QEMU smoke test
+  (`prg32/qemu/smoke_test.py`). The smoke test runs `qemu build`, builds the
+  pong demo cartridge and stages it in `cart0`, starts QEMU with an SDL window
+  and no monitor, waits up to 60 s for the firmware to answer HELLO on
+  `socket://127.0.0.1:5555`, uploads pong again with `run`, and closes QEMU.
+  It needs no terminal, so it also runs from scripts, but it needs a desktop
+  session for the SDL window (on a headless Linux machine, use `xvfb-run`; see
+  [CI](../software/cartridges.md#continuous-integration-and-delivery-artifacts))
+  and a free port 5555 (close any running QEMU first). Any failed step stops it with exit code 1; QEMU's own output is in
+  `build-qemu/smoke_qemu.log`. `--unit-only` stops after the unit tests: use it
+  when checking a change that does not need the emulator, since the QEMU build
+  is most of the run time.
 - `debug`: query state or send `enable`, `disable`, `pause`, `step`, `resume`,
   and playback `speed` commands to PRG32-QT. See the
   [Web API reference](../software/api.md#prg32-qt-optional-debugger-api).
+
+## ESP-IDF build speed
+
+Most of a validation run is spent compiling the firmware. Two things shorten it:
+
+- **ccache.** When `ccache` is installed (for example `brew install ccache`),
+  the PRG32 CLI sets `IDF_CCACHE_ENABLE=1` for every `idf.py` it starts, so a
+  rebuild reuses compiled files even after `esp32c6 build` deletes
+  `build-esp32c6/`. Set `IDF_CCACHE_ENABLE=0` to turn it off. `idf.py` records
+  the choice in the build directory, so when you call `idf.py` yourself on a
+  PRG32 build directory, pass `--ccache` too (or export `IDF_CCACHE_ENABLE=1`);
+  a call without it switches ccache off there and recompiles everything.
+- **Incremental builds.** `esp32c6 build -s -k` (and `qemu build -s -k`) skips
+  the target setup, which deletes the build directory, and keeps the existing
+  sdkconfig, so only the changed sources are compiled. Use it only when no
+  `Kconfig`, `profiles/*` or `sdkconfig*` file has changed since the last build
+  and that build used the same pin profile; otherwise the kept sdkconfig does
+  not match the source. Run a full build in every other case.
 
 ## GitHub Actions artifacts
 
