@@ -13,7 +13,7 @@ For PCB fabrication files and Fritzing designs, please see the [PCB Reference De
 > [!IMPORTANT]
 > **Architectural Requirement: Single Source of Truth for Pin Setups**
 > Individual component documentation files in this directory (`audio.md`, `joystick.md`, `ili9341.md`, `sdcard.md`, `rgb_led.md`, etc.) **must NEVER contain physical pin setups, GPIO numbers, or pinout tables**.
-> All GPIO pin configurations, schematics, and wiring tables are maintained exclusively in the [**`profiles/`**](profiles/README.md) directory (see [`prototype1`](profiles/prototype1.md) and [`prototype2`](profiles/prototype2.md)) and their corresponding build fragment files in `profiles/sdkconfig.pins.*`.
+> All GPIO pin configurations, schematics, and wiring tables are maintained exclusively in the [**`profiles/`**](profiles/README.md) directory and their corresponding build fragment files in `profiles/sdkconfig.pins.*`.
 
 ## Component Hardware Guides
 
@@ -23,12 +23,12 @@ PRG32 hardware documentation is organized into modular guides covering each subs
 |---|---|---|
 | **Display** | [**ILI9341 SPI TFT Guide**](ili9341.md) | 2.8" SPI TFT (320x240 landscape), 3.3V logic, high-speed SPI wiring, and active-high backlight control. |
 | **Audio** | [**Audio Hardware Guide**](audio.md) | MAX98357A I2S DAC/Amp, mono and stereo channel modes, SD/MODE 390 kΩ resistor divider, and speaker safety. |
-| **Joysticks & Controls** | [**Joystick & Input Guide**](joystick.md) | 5-way digital navigation joystick (`prototype1`), KY-023 2-axis analog thumbstick with continuous ADC (`prototype2`), buttons A/B, and hardware shortcuts. |
+| **Joysticks & Controls** | [**Joystick & Input Guide**](joystick.md) | 5-way digital navigation joystick (`breadboard1`), KY-023 2-axis analog thumbstick with continuous ADC (`breadboard2`), buttons A/B, and hardware shortcuts. |
 | **RGB LED** | [**Onboard RGB LED Guide**](rgb_led.md) | WS2812 addressable LED driver API, pin allocation considerations, and status/visualizer integration. |
 | **MicroSD Interface** | [**MicroSD Card Guide**](sdcard.md) | Shared SPI bus connection, reserved Chip Select line, and future storage support. |
 | **Memory** | [**Memory Architecture Guide**](memory.md) | ESP32-C6 SRAM partitions (IRAM, DRAM, LP SRAM), cartridge RAM windows, and build/runtime memory profiling tools. |
 | **Multiplayer / External** | [**External Controllers & Multiplayer**](external_controllers.md) | Local single-player architecture, Wi-Fi multi-console multiplayer, and input packet synchronization. |
-| **Hardware Profiles** | [**Pin Profiles Directory**](profiles/README.md) | Complete comparison and wiring tables for [`prototype1`](profiles/prototype1.md) and [`prototype2`](profiles/prototype2.md). |
+| **Hardware Profiles** | [**Pin Profiles Directory**](profiles/README.md) | Complete comparison and wiring tables for [`breadboard1`](profiles/breadboard1.md) and [`breadboard2`](profiles/breadboard2.md). |
 | **Bill of Materials** | [**Where to Buy & Sourcing Guide**](where_to_buy.md) | Central parts list, component specifications, and direct Amazon search links across 23 countries. |
 
 ---
@@ -60,9 +60,9 @@ In the reference breadboard build:
 1. **Disconnect Power**: Disconnect USB cables and any external power sources before placing components.
 2. **Mount the MCU**: Place the ESP32-C6 horizontally across the center trench. Verify that pin rows occupy distinct terminal strips.
 3. **Bridge Ground Rails**: Install a jumper bridging the upper blue rail to the lower blue rail (e.g. at column 61) so the display, MCU, controls, and amplifiers share a unified ground plane.
-4. **Wire 3.3V Logic**: Connect the upper red rail exclusively to ESP32-C6 3V3, display VCC, and (if using `prototype2`) analog joystick potentiometer VCC.
+4. **Wire 3.3V Logic**: Connect the upper red rail exclusively to ESP32-C6 3V3, display VCC, and (if using `breadboard2`) analog joystick potentiometer VCC.
 5. **Wire 5V Audio**: Connect the lower red rail to ESP32-C6 5V / VBUS and the MAX98357A VIN pins.
-6. **Wire Signals**: Connect signals according to the active hardware profile guide ([`prototype1`](profiles/prototype1.md) or [`prototype2`](profiles/prototype2.md)).
+6. **Wire Signals**: Connect signals according to the active hardware profile guide ([`breadboard1`](profiles/breadboard1.md) or [`breadboard2`](profiles/breadboard2.md)).
 
 ---
 
@@ -72,8 +72,9 @@ PRG32 completely decouples physical GPIO numbers from Kconfig defaults. All pin 
 
 ### Active Profiles
 
-- **`prototype1`**: First breadboard prototype using the digital 5-way navigation joystick, reference display harness, and I2S audio. Full pinout and wiring tables are detailed in [`prototype1.md`](profiles/prototype1.md).
-- **`prototype2`**: Second breadboard prototype using the KY-023 analog joystick with continuous ADC, updated display harness, reserved SD card CS line, and I2S audio. Full pinout and wiring tables are detailed in [`prototype2.md`](profiles/prototype2.md).
+- **`breadboard1`**: First breadboard using the digital 5-way navigation joystick, reference display harness, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard1.md`](profiles/breadboard1.md).
+- **`pcb1`**: Soldered PCB with the digital 5-way joystick (P1 DOWN on GPIO13, the native USB D+ line), display, and I2S audio. Full pinout, schematic, and board layout are detailed in [`pcb1.md`](profiles/pcb1.md).
+- **`breadboard2`**: Second breadboard using the KY-023 analog joystick with continuous ADC, updated display harness, reserved SD card CS line, and I2S audio. Full pinout and wiring tables are detailed in [`breadboard2.md`](profiles/breadboard2.md).
 
 ### Compiling for a Specific Profile
 
@@ -82,11 +83,11 @@ PRG32 completely decouples physical GPIO numbers from Kconfig defaults. All pin 
 python3 -m prg32 esp32c6 pins
 
 # Build specifying the hardware profile
-python3 -m prg32 esp32c6 build --pin-profile prototype1
-python3 -m prg32 esp32c6 build --pin-profile prototype2
+python3 -m prg32 esp32c6 build --pin-profile breadboard1
+python3 -m prg32 esp32c6 build --pin-profile breadboard2
 
 # Build and flash directly to your board
-python3 -m prg32 esp32c6 build --pin-profile prototype2 && python3 -m prg32 esp32c6 flash
+python3 -m prg32 esp32c6 build --pin-profile breadboard2 && python3 -m prg32 esp32c6 flash
 ```
 
 You can also choose the profile interactively in `idf.py menuconfig`:

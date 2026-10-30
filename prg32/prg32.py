@@ -86,7 +86,7 @@ def main(argv: list[str]) -> int:
         help="Skip setting target to ESP32C6 (it takes more time to build and it is useless if you have set the target before)"
     )
     p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
-        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+        help="Hardware pin configuration profile to use (e.g. 'breadboard1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.add_argument("-e", "--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
     p.add_argument("-k", "--keep-sdkconfig", "--no-erase-sdkconfig", dest="no_erase_sdkconfig", action="store_true",
@@ -96,10 +96,10 @@ def main(argv: list[str]) -> int:
     p = esp32c6_sub.add_parser("flash", help="flash the ESP32C6 image. Does not do anything when a cartridge is running!")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
-        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+        help="Hardware pin configuration profile to use (e.g. 'breadboard1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
     p.set_defaults(func=flash_esp32c6)
 
-    p = esp32c6_sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'prototype1')")
+    p = esp32c6_sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'breadboard1')")
     p.set_defaults(func=list_pins_esp32c6)
 
     p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
@@ -108,7 +108,7 @@ def main(argv: list[str]) -> int:
     p = esp32c6_sub.add_parser("reset", help=f"erase flash and re-flash {ESP32C6_IMAGE} to ESP32C6 over USB")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
-        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+        help="Hardware pin configuration profile to use (e.g. 'breadboard1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
     p.add_argument("-k", "--keep-sdkconfig", "--no-erase-sdkconfig", dest="no_erase_sdkconfig", action="store_true",
         help="Do not erase sdkconfig files before resetting")
     p.set_defaults(func=reset_esp32c6)
@@ -442,7 +442,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--speed", type=float, choices=SUPPORTED_SPEEDS, help="Playback multiplier for the speed command")
     p.set_defaults(func=debug_cli)
 
-    p = sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'prototype1')")
+    p = sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'breadboard1')")
     p.set_defaults(func=list_pins_esp32c6)
 
     args = parser.parse_args(argv)

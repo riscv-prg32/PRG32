@@ -51,11 +51,14 @@ def get_sdkconfig_pin_profile() -> tuple[str, bool]:
                 if val and val.lower() != "none":
                     profile_name = val
                     is_custom = False
-            elif line == "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" and not profile_name:
-                profile_name = "prototype1"
+            elif line == "CONFIG_PRG32_PIN_PROFILE_BREADBOARD1=y" and not profile_name:
+                profile_name = "breadboard1"
                 is_custom = False
-            elif line == "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE2=y" and not profile_name:
-                profile_name = "prototype2"
+            elif line == "CONFIG_PRG32_PIN_PROFILE_BREADBOARD2=y" and not profile_name:
+                profile_name = "breadboard2"
+                is_custom = False
+            elif line == "CONFIG_PRG32_PIN_PROFILE_PCB1=y" and not profile_name:
+                profile_name = "pcb1"
                 is_custom = False
 
     if is_custom:
@@ -79,7 +82,7 @@ def get_esp32c6_sdkconfig_defaults(args: argparse.Namespace) -> str:
                 "No PRG32 hardware pin profile configured!\n"
                 "Pins are no longer defaulted in Kconfig.\n"
                 "Specify a pin profile when building, e.g.:\n"
-                "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
+                "  python3 -m prg32 esp32c6 build --pin-profile breadboard1\n"
                 "See available pin setup possibilities with:\n"
                 "  python3 -m prg32 esp32c6 pins\n"
                 "Or configure a pin profile (or Custom Profile) in 'idf.py menuconfig'."

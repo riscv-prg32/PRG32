@@ -4,8 +4,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def test_prototype1_preserves_fixed_lcd_and_rgb_wiring():
-    profile = (ROOT / "profiles/sdkconfig.pins.prototype1").read_text()
+def test_breadboard1_preserves_fixed_lcd_and_rgb_wiring():
+    profile = (ROOT / "profiles/sdkconfig.pins.breadboard1").read_text()
     assert "CONFIG_PRG32_PIN_LCD_DC=8" in profile
     assert "CONFIG_PRG32_PIN_RGB_LED=-1" in profile
     assert "CONFIG_PRG32_PIN_SHARED_RGB_LED=8" in profile

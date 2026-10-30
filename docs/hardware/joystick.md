@@ -5,23 +5,23 @@ PRG32 provides a unified, register-like input API for 8-bit and 16-bit retro gam
 > [!IMPORTANT]
 > **Single Source of Truth for Pin Setups**:
 > This component guide describes joystick mechanisms, electrical characteristics, ADC thresholds, and input APIs. **Physical GPIO pin numbers are never defined here**.
-> All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`prototype1`](profiles/prototype1.md) for the 5-way digital navigation joystick and [`prototype2`](profiles/prototype2.md) for the KY-023 analog joystick).
+> All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`breadboard1`](profiles/breadboard1.md) for the 5-way digital navigation joystick and [`breadboard2`](profiles/breadboard2.md) for the KY-023 analog joystick).
 
 ---
 
 ## Overview
 
 PRG32 supports two primary hardware joystick architectures on the ESP32-C6:
-1. **5-Way Digital Navigation Joystick** (`prototype1`): Discrete mechanical switches representing Left, Right, Up, Down, and Center Press.
-2. **2-Axis Analog Thumbstick** (`prototype2`): Continuous potentiometer-based analog stick (e.g. KY-023 / PS2 controller thumbstick) sampled via high-speed continuous ADC DMA.
+1. **5-Way Digital Navigation Joystick** (`breadboard1`): Discrete mechanical switches representing Left, Right, Up, Down, and Center Press.
+2. **2-Axis Analog Thumbstick** (`breadboard2`): Continuous potentiometer-based analog stick (e.g. KY-023 / PS2 controller thumbstick) sampled via high-speed continuous ADC DMA.
 
 Both architectures combine directional input with two tactile momentary pushbuttons (A and B).
 
 ---
 
-## 1. Digital 5-Way Navigation Joystick (`prototype1`)
+## 1. Digital 5-Way Navigation Joystick (`breadboard1`)
 
-Used in the reference breadboard design ([Prototype 1 Profile](profiles/prototype1.md)).
+Used in the reference breadboard design ([Breadboard 1 Profile](profiles/breadboard1.md)).
 
 ![Breadboard prototype with digital joystick](images/prg32-breadboard-prototype.svg)
 
@@ -30,9 +30,9 @@ Used in the reference breadboard design ([Prototype 1 Profile](profiles/prototyp
 - **Logic Level**: 3.3V logic.
 - **Pull-ups**: The ESP32-C6 firmware enables internal pull-ups on all digital input GPIOs. Connecting each switch between its designated MCU GPIO and GND is sufficient; no external pull-up resistors are required.
 - **Center Button**: Center click serves as the combined `START / SELECT` button.
-- **Pin Assignment**: See [Prototype 1 Pin Profile](profiles/prototype1.md).
+- **Pin Assignment**: See [Breadboard 1 Pin Profile](profiles/breadboard1.md).
 
-### Signal Interface (`prototype1`)
+### Signal Interface (`breadboard1`)
 
 | Input Signal | Function | Electrical Interface |
 |---|---|---|
@@ -46,29 +46,29 @@ Used in the reference breadboard design ([Prototype 1 Profile](profiles/prototyp
 
 ---
 
-## 2. Analog 2-Axis Thumbstick (`prototype2`)
+## 2. Analog 2-Axis Thumbstick (`breadboard2`)
 
-Used in the upgraded breadboard design ([Prototype 2 Profile](profiles/prototype2.md)).
+Used in the upgraded breadboard design ([Breadboard 2 Profile](profiles/breadboard2.md)).
 
 ### Mechanical & Electrical Operation
 - **Potentiometers**: Dual 10 kΩ orthogonal potentiometers for X and Y displacement (`VRx` and `VRy`).
 - **Sampling Backend**: Read continuously using the ESP32-C6 continuous ADC driver (`ADC1`) with DMA streaming into circular ring buffers (`components/prg32/prg32_joystick_analog.c`).
 - **Integrated Push Switch (`SW`)**: Standard tactile switch triggered by pressing the stick inward, serving as `START / SELECT`.
-- **Pin Assignment**: See [Prototype 2 Pin Profile](profiles/prototype2.md).
+- **Pin Assignment**: See [Breadboard 2 Pin Profile](profiles/breadboard2.md).
 
 > [!WARNING]
 > **CRITICAL POWER REQUIREMENT — 3.3V ONLY**:
 > Connect the analog joystick `VCC` pin exclusively to the breadboard's **3.3V rail (`3V3`)**, **NEVER to 5V**.
 > The ESP32-C6 ADC inputs tolerate a maximum voltage of 3.6V. Powering the potentiometers from 5V will expose the ADC inputs to overvoltage and permanently destroy the ADC peripheral.
 
-### Signal Interface (`prototype2`)
+### Signal Interface (`breadboard2`)
 
 | Signal Line | Joystick / Button Pin | Electrical Interface |
 |---|---|---|
 | **Power** | `VCC` | 3.3V rail ONLY |
 | **Ground** | `GND` | Common ground rail |
-| **X-Axis Analog** | `VRX` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/prototype2.md)) |
-| **Y-Axis Analog** | `VRY` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/prototype2.md)) |
+| **X-Axis Analog** | `VRX` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/breadboard2.md)) |
+| **Y-Axis Analog** | `VRY` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/breadboard2.md)) |
 | **Center Switch** | `SW` | Center push switch shorting pin to GND (`START / SELECT`) |
 | **Button A** | Action button | Normally-open momentary pushbutton to GND |
 | **Button B** | Back button | Normally-open momentary pushbutton to GND |
@@ -149,10 +149,10 @@ To select the active joystick subsystem for your physical build:
 
 ```bash
 # Digital 5-way joystick build
-python3 -m prg32 esp32c6 build --pin-profile prototype1
+python3 -m prg32 esp32c6 build --pin-profile breadboard1
 
 # Analog 2-axis thumbstick build
-python3 -m prg32 esp32c6 build --pin-profile prototype2
+python3 -m prg32 esp32c6 build --pin-profile breadboard2
 ```
 
 Or configure via `idf.py menuconfig`:
@@ -162,7 +162,7 @@ Or configure via `idf.py menuconfig`:
 
 ## Related Documentation
 
-- [Hardware Pin Profiles](profiles/README.md): Authoritative pin mappings for `prototype1` and `prototype2`.
+- [Hardware Pin Profiles](profiles/README.md): Authoritative pin mappings for `breadboard1` and `breadboard2`.
 - [Hardware Documentation Overview](README.md): Master breadboard guide and power rails.
 - [External Controllers & Multiplayer](external_controllers.md): Wi-Fi networking and multiplayer input architecture.
 - [Bill of Materials & Where to Buy](where_to_buy.md): Sourcing digital and analog joystick components.

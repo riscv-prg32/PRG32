@@ -1,7 +1,7 @@
-# PRG32 Hardware Pin Profile: Prototype 2 (Analog Joystick & New Harness)
-CONFIG_PRG32_PIN_PROFILE_PROTOTYPE2=y
+# PRG32 Hardware Pin Profile: Breadboard 2 (Analog Joystick & New Harness)
+CONFIG_PRG32_PIN_PROFILE_BREADBOARD2=y
 CONFIG_PRG32_PINS_CONFIGURED=y
-CONFIG_PRG32_PIN_PROFILE_NAME="prototype2"
+CONFIG_PRG32_PIN_PROFILE_NAME="breadboard2"
 
 # Display (ILI9341 SPI TFT)
 CONFIG_PRG32_PIN_LCD_MOSI=7

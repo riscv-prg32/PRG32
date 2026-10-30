@@ -23,8 +23,8 @@ select `CONFIG_PRG32_AUDIO_MODE_STEREO=y` before the firmware is built.
 
 ## Layout Status
 
-Reviewed **2026-10-28** against the canonical `prototype1` pins in
-[`profiles/sdkconfig.pins.prototype1`](../../../profiles/sdkconfig.pins.prototype1).
+Reviewed **2026-10-28** against the canonical `breadboard1` pins in
+[`profiles/sdkconfig.pins.breadboard1`](../../../profiles/sdkconfig.pins.breadboard1).
 
 | Net | ESP32-C6 pin | Schematic | PCB copper |
 |---|---|---|---|
@@ -67,9 +67,9 @@ wires directly. Both use the canonical GPIO assignments.
 
 ## Prototype parts
 
-See the [bill of materials and purchasing guide](../where_to_buy.md)
-for parts, quantities and supplier links. Check each selected module against
-the Fritzing footprints before ordering PCB components.
+The [bill of materials and purchasing guide](../where_to_buy.md) covers
+breadboard builds only. Soldered PCB boards are documented by their pin
+profile, such as [`pcb1`](../profiles/pcb1.md), and have no purchasing list.
 
 Desktop QEMU can emulate the PRG32 graphics viewport for early software tests,
 but it does not replace this hardware validation. Use the physical board for

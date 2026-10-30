@@ -10,7 +10,7 @@
 - Additive functions or optional feature bits may increase `PRG32_ABI_MINOR`.
 - Portable cartridges must not link against firmware-specific symbol addresses.
 - Legacy cartridges are linked to a fixed `prg32_cart_exec` address
-  (0x408023a0 in the default ESP32-C6 `prototype1` build). Code placed in IRAM
+  (0x408023a0 in the default ESP32-C6 `breadboard1` build). Code placed in IRAM
   before the window moves it, so after changing IRAM-placement options or
   IRAM code, check `riscv32-esp-elf-nm build-esp32c6/PRG32.elf | grep
   prg32_cart_exec` and keep the address unless the change is announced.

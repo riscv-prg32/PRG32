@@ -23,6 +23,10 @@ hardware documentation; update affected entries in the same change.
 - When reviewing suppliers, check current manufacturer specifications and
   affected links. Record the actual review date and mark unavailable or
   unverifiable listings; never invent stock, prices or delivery coverage.
+- The purchasing list covers breadboard pin profiles only (`breadboard1`,
+  `breadboard2`, and future `breadboardN` profiles). PCB profiles such as
+  `pcb1` describe boards that are already soldered: never add their parts,
+  footprints, or fabrication to the purchasing list.
 - Keep the purchasing list in one place. Other documents should link to it,
   and it should link back to canonical wiring and configuration documentation.
 - This automatic maintenance is part of the agent's repository-editing workflow.

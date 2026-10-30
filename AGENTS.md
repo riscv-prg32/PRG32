@@ -84,12 +84,12 @@ If the user explicitly asked for you to do the builds after the edits, you shoul
 
 If you are working on ESP32c6, Build the physical firmware:
 ```bash
-python3 -m prg32 esp32c6 build -p prototype1
+python3 -m prg32 esp32c6 build -p breadboard1
 ```
 
 `python3 -m prg32 esp32c6 flash` ends in an interactive monitor that needs a
 terminal. From a non-interactive agent shell, flash with
-`idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" -p <port> flash`.
+`idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.breadboard1" -p <port> flash`.
 Flashing the application does not erase cartridge slots.
 
 If you are working on QEMU, Build the QEMU firmware:

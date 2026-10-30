@@ -545,7 +545,7 @@ to the USB Serial/JTAG FIFO, were inserted inside the 5,133-byte RESULT_DATA
 frame and broke its CRC. The prototype's setup menu logs an RMT flush timeout
 about every 140 ms, which made this frequent.
 
-Firmware built from this revision for ESP32-C6 (`prototype1`) and QEMU was
+Firmware built from this revision for ESP32-C6 (`breadboard1`) and QEMU was
 exercised with HELLO, `store`, `run`, and `performance` uploads, an image
 with a correct transport CRC but a corrupted payload, an oversize image, a
 frame with a bad CRC, repeated `RUN` switches, and reconnection.
@@ -565,7 +565,7 @@ frame with a bad CRC, repeated `RUN` switches, and reconnection.
 
 ### 2026-10-28: robustness and throughput revision
 
-Firmware built from this revision for ESP32-C6 (`prototype1`) and QEMU, then
+Firmware built from this revision for ESP32-C6 (`breadboard1`) and QEMU, then
 exercised with an end-to-end script covering HELLO, a corrupt frame, debug
 refusal, `store` and `run` uploads (including while a cartridge was running),
 a duplicated chunk, an out-of-order chunk, an abandoned upload, reconnection,

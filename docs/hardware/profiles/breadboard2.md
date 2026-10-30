@@ -1,6 +1,6 @@
-# PRG32 Hardware Pin Profile: Prototype 2
+# PRG32 Hardware Pin Profile: Breadboard 2
 
-This document specifies the pinout and wiring for the **`prototype2`** hardware profile (`profiles/sdkconfig.pins.prototype2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, and a reserved pin for SD card SPI Chip Select.
+This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, and a reserved pin for SD card SPI Chip Select.
 
 ## Overview
 
@@ -10,7 +10,7 @@ This document specifies the pinout and wiring for the **`prototype2`** hardware 
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
 - **Action Buttons**: Separate pushbuttons for A, B, and START/SELECT
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
-- **Configuration Profile**: `profiles/sdkconfig.pins.prototype2`
+- **Configuration Profile**: `profiles/sdkconfig.pins.breadboard2`
 
 ## Pinout and Wiring
 
@@ -98,14 +98,14 @@ To compile physical firmware using this profile:
 
 ```bash
 # PRG32 CLI
-python3 -m prg32 esp32c6 build --pin-profile prototype2
+python3 -m prg32 esp32c6 build --pin-profile breadboard2
 
 # Flash directly
-python3 -m prg32 esp32c6 build --pin-profile prototype2 && python3 -m prg32 esp32c6 flash
+python3 -m prg32 esp32c6 build --pin-profile breadboard2 && python3 -m prg32 esp32c6 flash
 
 # Direct ESP-IDF build
-idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype2" build
+idf.py -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.breadboard2" build
 ```
 
-You can also select `prototype2` interactively in `idf.py menuconfig`:
-`Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration` -> `Hardware Pin Profile` -> `prototype2 (Second Prototype Breadboard with Analog Joystick)`.
+You can also select `breadboard2` interactively in `idf.py menuconfig`:
+`Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration` -> `Hardware Pin Profile` -> `breadboard2 (Second Breadboard with Analog Joystick)`.

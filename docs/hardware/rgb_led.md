@@ -5,7 +5,7 @@ PRG32 provides built-in support for controlling WS2812 addressable RGB LEDs (oft
 > [!IMPORTANT]
 > **Single Source of Truth for Pin Setups**:
 > This component guide describes the WS2812 driver API, DevKit hardware wiring constraints, and driver behavior.
-> Console wiring profiles and external pin assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`prototype1`](profiles/prototype1.md) and [`prototype2`](profiles/prototype2.md)).
+> Console wiring profiles and external pin assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory.
 
 ---
 
@@ -39,17 +39,17 @@ On official Espressif development boards (such as the **ESP32-C6-DevKitC-1-N8**)
 
 Because the onboard LED occupies GPIO8 on the DevKit, hardware pin profiles must account for this shared resource:
 
-- **Conflict in `prototype1` (Display DC on GPIO8)**:
-  In the reference [`prototype1`](profiles/prototype1.md) profile, GPIO8 is allocated to the ILI9341 display's Data/Command (`DC`) line. During SPI rendering, the display driver toggles GPIO8 thousands of times per second. If the WS2812 driver were active on GPIO8 simultaneously:
+- **Conflict in `breadboard1` (Display DC on GPIO8)**:
+  In the reference [`breadboard1`](profiles/breadboard1.md) profile, GPIO8 is allocated to the ILI9341 display's Data/Command (`DC`) line. During SPI rendering, the display driver toggles GPIO8 thousands of times per second. If the WS2812 driver were active on GPIO8 simultaneously:
   - High-speed display toggles cause the onboard LED to flash or emit random colors.
   - WS2812 RMT transmissions interrupt display command sequencing, causing severe graphical artifacts.
   
   To prevent hardware contention:
-  - `CONFIG_PRG32_PIN_RGB_LED` defaults to `-1` (disabled) in `profiles/sdkconfig.pins.prototype1`.
+  - `CONFIG_PRG32_PIN_RGB_LED` defaults to `-1` (disabled) in `profiles/sdkconfig.pins.breadboard1`.
   - The resident setup audio menu automatically suppresses the RGB LED visualizer option when the pin is disabled.
 
-- **Unconflicted Harness in `prototype2` (Display DC on GPIO10, Audio LRCLK on GPIO15)**:
-  In the [`prototype2`](profiles/prototype2.md) profile, the ILI9341 display harness uses GPIO3 for `CS`, GPIO10 for `DC`, and GPIO11 for `RST` (with GPIO15 assigned to I2S LRCLK). This completely frees GPIO8 from display obligations. While `prototype2` defaults `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds, developers running `prototype2` on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
+- **Unconflicted Harness in `breadboard2` (Display DC on GPIO10, Audio LRCLK on GPIO15)**:
+  In the [`breadboard2`](profiles/breadboard2.md) profile, the ILI9341 display harness uses GPIO3 for `CS`, GPIO10 for `DC`, and GPIO11 for `RST` (with GPIO15 assigned to I2S LRCLK). This completely frees GPIO8 from display obligations. While `breadboard2` defaults `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds, developers running `breadboard2` on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
 
 - **Custom Boards & External NeoPixels**:
   When building custom hardware or attaching external WS2812 addressable LED strips, any unused general-purpose GPIO can be assigned to the driver in Kconfig or profile fragment files.

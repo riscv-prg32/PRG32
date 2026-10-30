@@ -143,7 +143,7 @@ def open_stream(port: str, baud: int, timeout: float):
     # asserted while DTR is not.  Requesting dtr=False/rts=False makes pyserial
     # clear DTR first, passing through exactly that state, so every connection
     # restarted the firmware.  Both lines asserted, and the simultaneous release
-    # at close, leave the running firmware untouched (verified on prototype1).
+    # at close, leave the running firmware untouched (verified on breadboard1).
     stream = serial.Serial()
     stream.port = port
     stream.baudrate = baud

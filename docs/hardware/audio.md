@@ -5,7 +5,7 @@ PRG32 uses native ESP-IDF I2S digital audio output connected to external MAX9835
 > [!IMPORTANT]
 > **Single Source of Truth for Pin Setups**:
 > This component guide describes the audio hardware architecture, signal protocols, and circuit wiring. **Physical GPIO pin numbers are never defined here**.
-> All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`prototype1`](profiles/prototype1.md) and [`prototype2`](profiles/prototype2.md)).
+> All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory.
 
 ---
 
@@ -121,7 +121,7 @@ In QEMU emulator builds (`profiles/sdkconfig.defaults.qemu`):
 
 ## Related Documentation
 
-- [Hardware Pin Profiles](profiles/README.md): Authoritative pin assignments for `prototype1`, `prototype2`, and custom builds.
+- [Hardware Pin Profiles](profiles/README.md): Authoritative pin assignments for `breadboard1`, `breadboard2`, and custom builds.
 - [PRG32 Audio Engine Guide](../tools/audio.md): Sound design, SID oscillator mechanics, and tracker JSON conversion.
 - [Hardware Documentation Overview](README.md): Central hardware directory and master breadboard layout.
 - [Bill of Materials & Where to Buy](where_to_buy.md): Sourcing MAX98357A breakouts, speakers, and resistors.

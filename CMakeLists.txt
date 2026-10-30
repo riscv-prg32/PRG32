@@ -55,11 +55,14 @@ if(NOT SDKCONFIG_DEFAULTS MATCHES "sdkconfig\\.pins\\.")
             elseif(PRG32_LINE MATCHES "^CONFIG_PRG32_DEFAULT_PIN_PROFILE=\"([^\"]+)\"")
                 set(PRG32_AUTOPROFILE "${CMAKE_MATCH_1}")
                 set(PRG32_IS_CUSTOM FALSE)
-            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" AND NOT PRG32_AUTOPROFILE)
-                set(PRG32_AUTOPROFILE "prototype1")
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_BREADBOARD1=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "breadboard1")
                 set(PRG32_IS_CUSTOM FALSE)
-            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE2=y" AND NOT PRG32_AUTOPROFILE)
-                set(PRG32_AUTOPROFILE "prototype2")
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_BREADBOARD2=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "breadboard2")
+                set(PRG32_IS_CUSTOM FALSE)
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PCB1=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "pcb1")
                 set(PRG32_IS_CUSTOM FALSE)
             endif()
         endforeach()
@@ -96,9 +99,9 @@ if(IDF_TARGET STREQUAL "esp32c6" AND NOT CONFIG_PRG32_PINS_CONFIGURED)
         "ERROR: No PRG32 hardware pin profile configured!\n"
         "Pins are no longer defaulted in Kconfig.\n"
         "Specify a pin profile when building, e.g.:\n"
-        "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
+        "  python3 -m prg32 esp32c6 build --pin-profile breadboard1\n"
         "Or include a pin profile in SDKCONFIG_DEFAULTS:\n"
-        "  -D SDKCONFIG_DEFAULTS=\"...;profiles/sdkconfig.pins.prototype1\"\n"
+        "  -D SDKCONFIG_DEFAULTS=\"...;profiles/sdkconfig.pins.breadboard1\"\n"
         "Or select Custom in idf.py menuconfig.\n"
         "=================================================================\n"
     )

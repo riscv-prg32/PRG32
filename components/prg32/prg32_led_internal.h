@@ -2,7 +2,7 @@
 #define PRG32_LED_INTERNAL_H
 
 /*
- * The prototype1 PCB shares its addressable RGB data pin with LCD D/C.
+ * The breadboard1 PCB shares its addressable RGB data pin with LCD D/C.
  * These helpers are firmware-internal; cartridges use the public LED API,
  * which rejects pins owned by another peripheral.
  */

@@ -46,8 +46,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- memory.md               ESP32-C6 memory layout (IRAM, DRAM, Flash, cartridge window) and profiling tools
 |   |   |-- external_controllers.md Local input architecture and Wi-Fi multiplayer frame exchange
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
-|   |   |-- images/                 Electrical schematic (Fritzing export) and breadboard prototype figures
-|   |   |-- profiles/               Detailed hardware pin profiles (prototype1, prototype2)
+|   |   |-- images/                 Electrical schematics (Fritzing exports, including the pcb1 board) and breadboard prototype figures
+|   |   |-- profiles/               Self-contained pin profile documents (breadboard1, breadboard2, pcb1) and the rules for writing them
 |   |   |-- sdcard.md               MicroSD card interface notes and reserved pin status
 |   |   |-- pcb/                    Fritzing PCB reference design, layout status, and fabrication notes
 |   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links

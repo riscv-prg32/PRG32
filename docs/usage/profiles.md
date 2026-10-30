@@ -29,7 +29,7 @@ builds.
 
 ```bash
 idf.py -B build-esp32c6-64k \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.cart_64k;profiles/sdkconfig.pins.prototype1" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.defaults.cart_64k;profiles/sdkconfig.pins.breadboard1" \
   set-target esp32c6
 idf.py -B build-esp32c6-64k build
 ```
@@ -93,7 +93,7 @@ a flash image with no `sdkconfig` next to it.
 PRG32 completely decouples GPIO pin assignments from Kconfig defaults to avoid duplication:
 - **No Pin Duplication in Kconfig**: Pin numbers are not hardcoded or defaulted in `components/prg32/Kconfig`. All GPIO options in Kconfig default to `-1`.
 - **Single Source of Truth**: All physical hardware pin assignments are defined exclusively in profile fragment files under `profiles/sdkconfig.pins.*`.
-- **Automatic Merging**: When a named profile (like `prototype1`) is selected, the build system automatically merges its profile file into the build configuration via `SDKCONFIG_DEFAULTS`, overriding the `-1` placeholders.
+- **Automatic Merging**: When a named profile (like `breadboard1`) is selected, the build system automatically merges its profile file into the build configuration via `SDKCONFIG_DEFAULTS`, overriding the `-1` placeholders.
 - **Custom Mode**: If and only if the `Custom Profile` mode is activated in `menuconfig`, the GPIO numbers configured manually by the user in `menuconfig` and saved in `sdkconfig` are used directly without loading an external profile file.
 
 Builds attempting to compile physical firmware without a pin profile are blocked at three levels:
@@ -103,8 +103,9 @@ Builds attempting to compile physical firmware without a pin profile are blocked
 
 ### Built-in Pin Profiles
 
-- **`prototype1` (`profiles/sdkconfig.pins.prototype1`)**: The first prototype breadboard pinout using the ILI9341 SPI TFT display (DC: GPIO8, RST: GPIO9), 5-way digital navigation joystick (discrete GPIO switches), and MAX98357A I2S mono/stereo audio as documented in [Prototype 1](../hardware/profiles/prototype1.md).
-- **`prototype2` (`profiles/sdkconfig.pins.prototype2`)**: The second prototype breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (CS: GPIO3, DC: GPIO10, RST: GPIO11), reserved SD card CS (GPIO9), and MAX98357A I2S audio (LRCLK: GPIO15) as documented in [Prototype 2](../hardware/profiles/prototype2.md).
+- **`breadboard1` (`profiles/sdkconfig.pins.breadboard1`)**: The first breadboard pinout using the ILI9341 SPI TFT display (DC: GPIO8, RST: GPIO9), 5-way digital navigation joystick (discrete GPIO switches), and MAX98357A I2S mono/stereo audio as documented in [Breadboard 1](../hardware/profiles/breadboard1.md).
+- **`breadboard2` (`profiles/sdkconfig.pins.breadboard2`)**: The second breadboard pinout using a 2-axis analog thumbstick (read continuously via ADC1 on GPIO0 and GPIO1), updated display harness (CS: GPIO3, DC: GPIO10, RST: GPIO11), reserved SD card CS (GPIO9), and MAX98357A I2S audio (LRCLK: GPIO15) as documented in [Breadboard 2](../hardware/profiles/breadboard2.md).
+- **`pcb1` (`profiles/sdkconfig.pins.pcb1`)**: The soldered PCB pinout: the `breadboard1` display, control, and audio pins, but with P1 DOWN on GPIO13 (the native USB D+ line) and no shared RGB LED. Full pinout and schematic in [PCB 1](../hardware/profiles/pcb1.md).
 - **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
 
 ### Selecting a Pin Profile
@@ -117,8 +118,9 @@ You can set a persistent pin configuration default in your `sdkconfig` via `menu
 2. Navigate to `Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration` -> `Hardware Pin Profile`.
 3. Choose your pin profile from the dropdown:
    - **`None (no default - build halts)`**: The default setting. Pin configuration is omitted; any physical build will crash/halt at build time if unconfigured.
-   - **`prototype1 (First Prototype Breadboard)`**: Designates the reference breadboard pin profile. Pin numbers are defined in `profiles/sdkconfig.pins.prototype1` and merged into the build, overriding the `-1` menuconfig defaults.
-   - **`prototype2 (Second Prototype Breadboard with Analog Joystick)`**: Designates the second breadboard pin profile with continuous ADC analog joystick and updated harness. Pin numbers are defined in `profiles/sdkconfig.pins.prototype2`.
+   - **`breadboard1 (First Breadboard)`**: Designates the reference breadboard pin profile. Pin numbers are defined in `profiles/sdkconfig.pins.breadboard1` and merged into the build, overriding the `-1` menuconfig defaults.
+   - **`breadboard2 (Second Breadboard with Analog Joystick)`**: Designates the second breadboard pin profile with continuous ADC analog joystick and updated harness. Pin numbers are defined in `profiles/sdkconfig.pins.breadboard2`.
+   - **`pcb1 (Soldered PCB, DOWN on GPIO13)`**: Designates the soldered PCB pin profile. Pin numbers are defined in `profiles/sdkconfig.pins.pcb1`.
    - **`Custom Profile (configure pins manually in menuconfig)`**: If and only if Custom profile is activated, the build uses the pin values set manually in `menuconfig` and saved in `sdkconfig`. No external profile file is appended.
 
 #### 2. Via PRG32 Tooling (`--pin-profile`)
@@ -128,21 +130,21 @@ Pass the `--pin-profile` (or `--pins`) flag when building. If no pin profile is 
 # List available pin setup possibilities
 python3 -m prg32 esp32c6 pins
 
-# Build with prototype 1 pins
-python3 -m prg32 esp32c6 build --pin-profile prototype1
+# Build with breadboard 1 pins
+python3 -m prg32 esp32c6 build --pin-profile breadboard1
 
-# Build with prototype 2 pins (analog joystick)
-python3 -m prg32 esp32c6 build --pin-profile prototype2
+# Build with breadboard 2 pins (analog joystick)
+python3 -m prg32 esp32c6 build --pin-profile breadboard2
 
 # Build and flash directly
-python3 -m prg32 esp32c6 build --pin-profile prototype2 && python3 -m prg32 esp32c6 flash
+python3 -m prg32 esp32c6 build --pin-profile breadboard2 && python3 -m prg32 esp32c6 flash
 ```
 
 For direct `idf.py` builds, add the profile to `SDKCONFIG_DEFAULTS`:
 
 ```bash
 idf.py -B build-esp32c6 \
-  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype2" \
+  -D SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.breadboard2" \
   build
 ```
 

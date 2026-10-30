@@ -261,5 +261,5 @@ above and in each file, and run that test.
   and from assembly (3920 bytes), staged into cart0 of a scratch copy of
   `build-qemu/qemu_flash.bin`, started from the setup menu, and played on QEMU
   (`-display sdl`): both showed the moving ball and the computer paddle.
-- The QEMU and ESP32-C6 (`prototype1`) firmware built unchanged. No board was
+- The QEMU and ESP32-C6 (`breadboard1`) firmware built unchanged. No board was
   flashed and no physical cartridge slot was written.

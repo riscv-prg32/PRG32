@@ -4,12 +4,12 @@
 > **Status: Planned / Not Yet Implemented**
 > 
 > MicroSD card software drivers and filesystem mounting are **not yet implemented** in the resident PRG32 firmware.
-> The SPI Chip Select (CS) GPIO has been reserved in hardware pin profiles (e.g. `prototype2`) and Kconfig to facilitate hardware preparation and future compatibility.
+> The SPI Chip Select (CS) GPIO has been reserved in hardware pin profiles (e.g. `breadboard2`) and Kconfig to facilitate hardware preparation and future compatibility.
 
 > [!NOTE]
 > **Single Source of Truth for Pin Setups**:
 > This component guide describes the SPI bus sharing and planned filesystem architecture. **Physical GPIO pin numbers are never defined here**.
-> All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`prototype2`](profiles/prototype2.md)).
+> All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`breadboard2`](profiles/breadboard2.md)).
 
 ---
 
@@ -26,7 +26,7 @@ The MicroSD card interface is designed to share the high-speed hardware SPI mast
 | **Logic Supply** | `VCC` | 3.3V Logic Supply ONLY |
 | **Ground** | `GND` | Common Ground |
 
-In hardware pin profiles where the SD card CS pin is unassigned (e.g. `prototype1`), `CONFIG_PRG32_PIN_SDCARD_CS` defaults to `-1`.
+In hardware pin profiles where the SD card CS pin is unassigned (e.g. `breadboard1`), `CONFIG_PRG32_PIN_SDCARD_CS` defaults to `-1`.
 
 ---
 
@@ -50,6 +50,6 @@ When implemented in a future release:
 
 ## Related Documentation
 
-- [Hardware Pin Profiles](profiles/README.md): Pin configurations and reserved signals for `prototype1` and `prototype2`.
+- [Hardware Pin Profiles](profiles/README.md): Pin configurations and reserved signals for `breadboard1` and `breadboard2`.
 - [Hardware Documentation Overview](README.md): Central hardware directory and master breadboard layout.
 - [Display Hardware (ILI9341)](ili9341.md): Shared SPI bus master configuration.

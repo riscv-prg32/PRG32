@@ -20,7 +20,7 @@ Here are common issues and solutions when working with the PRG32 framework.
   python3 -m prg32 esp32c6 build && python3 -m prg32 esp32c6 flash
   ```
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*
-- **The prototype1 onboard RGB LED flashes green or white while the display updates**: This is expected on the fixed PCB. GPIO8 is shared by LCD D/C and the DevKitC WS2812 data input, so display traffic can resemble LED data. Firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire. Do not move the canonical LCD pin in the `prototype1` profile.
+- **The breadboard1 onboard RGB LED flashes green or white while the display updates**: This is expected on the fixed PCB. GPIO8 is shared by LCD D/C and the DevKitC WS2812 data input, so display traffic can resemble LED data. Firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire. Do not move the canonical LCD pin in the `breadboard1` profile.
 
 ## QEMU Emulator Issues
 

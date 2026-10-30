@@ -4,13 +4,19 @@ Hardware and supplier reference reviewed: **2026-10-15**. The MAX98357A
 mode guidance and 390 kΩ resistor sourcing were checked **2026-09-13**;
 country search links were updated (including KY-023 analog joystick links), but stock and delivery were not verified.
 
-This is the purchasing list for one physical ESP32-C6 PRG32 unit. Use the
-[hardware guide](README.md) for authoritative wiring, the
+This is the purchasing list for one physical ESP32-C6 PRG32 unit built on a
+breadboard. Use the [hardware guide](README.md) for authoritative wiring, the
 [display notes](ili9341.md) for the ILI9341 backend, and the
-[audio guide](../tools/audio.md) for mono/stereo configuration. The
-[PCB reference](pcb/README.md) defines mechanical placement and footprints.
-Supplier examples below are candidates for a breadboard build; they have not
-all been assembled and tested with PRG32 or verified to fit the reference PCB.
+[audio guide](../tools/audio.md) for mono/stereo configuration. Supplier
+examples below are candidates for a breadboard build; they have not all been
+assembled and tested with PRG32.
+
+> [!NOTE]
+> **Scope: breadboard profiles only.** This list covers the parts for the
+> breadboard pin profiles [`breadboard1`](profiles/breadboard1.md) and
+> [`breadboard2`](profiles/breadboard2.md). PCB profiles such as
+> [`pcb1`](profiles/pcb1.md) describe boards that are already soldered, so
+> they have no purchasing entries here.
 
 ## Bill of materials
 
@@ -21,7 +27,7 @@ not additions to the mono column. The classroom baseline includes mono audio.
 |---|---|---:|---:|
 | MCU | ESP32-C6 development board with headers, at least 4 MB flash, and all GPIOs required by the hardware guide exposed; ESP32-C6-DevKitC-1-N8 is a candidate with 8 MB flash | 1 | 1 |
 | TFT | ILI9341 2.8-inch SPI TFT, 320x240 in landscape, compatible with 3.3 V logic and the documented power/backlight connections | 1 | 1 |
-| JOY | Joystick module: 5-way digital navigation module (for `prototype1`) OR 2-axis analog thumbstick with VRx/VRy potentiometers and push switch (e.g. KY-023 / PS2 thumbstick for `prototype2`) | 1 | 1 |
+| JOY | Joystick module: 5-way digital navigation module (for `breadboard1`) OR 2-axis analog thumbstick with VRx/VRy potentiometers and push switch (e.g. KY-023 / PS2 thumbstick for `breadboard2`) | 1 | 1 |
 | BTN | Normally-open momentary pushbuttons for A and B; breadboard-compatible leads | 2 | 2 |
 | AMP | MAX98357A I2S DAC/amplifier breakout, with accessible channel-selection pin or jumper | 1 | 2 |
 | SPK | Passive 4–8 ohm speaker, 1–3 W; choose 3 W for more power headroom and dimensions suitable for your enclosure | 1 | 2 |
@@ -38,11 +44,8 @@ before choosing an additional regulated supply. A computer and a suitable USB
 power source are assumed available. A soldering iron, solder and a multimeter
 are shared assembly tools rather than components of each unit.
 
-For a PCB build, replace the breadboard with the board fabricated from the
-[reference design](pcb/README.md), and choose headers, buttons, speakers and
-mounting hardware against its actual footprints. PCB fabrication and enclosure
-hardware require a quote for the chosen design; this list is not a claim that
-all linked modules are mechanically interchangeable.
+This list is not a claim that all linked modules are mechanically
+interchangeable; check each module against your breadboard layout.
 
 ## Check before ordering
 
@@ -56,8 +59,8 @@ all linked modules are mechanically interchangeable.
   [Adafruit display example](https://www.adafruit.com/product/1770) supports SPI,
   but its header layout must be mapped to the PRG32 signals.
 - A KY-023 / PS2 analog joystick with VRx/VRy outputs is supported natively by the
-  [`prototype2`](profiles/prototype2.md) hardware profile via continuous ADC mode.
-  For the [`prototype1`](profiles/prototype1.md) profile, use a 5-way digital navigation module providing
+  [`breadboard2`](profiles/breadboard2.md) hardware profile via continuous ADC mode.
+  For the [`breadboard1`](profiles/breadboard1.md) profile, use a 5-way digital navigation module providing
   discrete active-low switch outputs. Center press is START/SELECT. Separate
   A/B momentary buttons retain the reference layout; spare buttons on a navigation
   module can replace them only when wired to the corresponding inputs. No extra
@@ -83,15 +86,15 @@ have **not** been verified for every destination, and no prices are promised.
 |---|---|---|
 | MCU | [Adafruit 5672](https://www.adafruit.com/product/5672); [DigiKey search](https://www.digikey.com/en/products?keywords=ESP32-C6-DevKitC-1-N8) | Development board, not a bare WROOM module |
 | TFT | [Adafruit 1770](https://www.adafruit.com/product/1770); [DigiKey search](https://www.digikey.com/en/products?keywords=Adafruit%201770) | Configure the breakout for SPI; check physical fit |
-| JOY | Digital (`prototype1`): [Joy-IT COM-5WS at GoTronic](https://www.gotronic.fr/art-module-a-joystick-5-directions-com-5ws-38766.htm) ([manufacturer manual](https://joy-it.net/files/files/Produkte/COM-5WS/COM-5WS_Manual-EN_2025-08-25.pdf)). Analog (`prototype2`): [Adafruit 512](https://www.adafruit.com/product/512); [DigiKey KY-023 search](https://www.digikey.com/en/products?keywords=KY-023) | Digital: verify individual switch outputs and 3.3 V operation. Analog: KY-023 / PS2 dual-axis potentiometers with 3.3 V operation on VRx/VRy |
-| BTN | [Adafruit 1119](https://www.adafruit.com/product/1119); [DigiKey search](https://www.digikey.com/en/products?keywords=momentary%20tactile%20switch%20through%20hole) | Two buttons, not two packs; PCB footprint may differ |
+| JOY | Digital (`breadboard1`): [Joy-IT COM-5WS at GoTronic](https://www.gotronic.fr/art-module-a-joystick-5-directions-com-5ws-38766.htm) ([manufacturer manual](https://joy-it.net/files/files/Produkte/COM-5WS/COM-5WS_Manual-EN_2025-08-25.pdf)). Analog (`breadboard2`): [Adafruit 512](https://www.adafruit.com/product/512); [DigiKey KY-023 search](https://www.digikey.com/en/products?keywords=KY-023) | Digital: verify individual switch outputs and 3.3 V operation. Analog: KY-023 / PS2 dual-axis potentiometers with 3.3 V operation on VRx/VRy |
+| BTN | [Adafruit 1119](https://www.adafruit.com/product/1119); [DigiKey search](https://www.digikey.com/en/products?keywords=momentary%20tactile%20switch%20through%20hole) | Two buttons, not two packs |
 | AMP | [Adafruit 3006](https://www.adafruit.com/product/3006); [same module at DigiKey](https://www.digikey.com/en/products/detail/adafruit-industries-llc/3006/6058477) | Buy one for mono or two for stereo |
 | SPK | [Adafruit 1314](https://www.adafruit.com/product/1314); [DigiKey search](https://www.digikey.com/en/products?keywords=speaker%204%20ohm%203W) | 1314 was listed out of stock at review; its approximately 78 mm body is only a breadboard candidate |
 | BB | [Adafruit 239](https://www.adafruit.com/product/239); [DigiKey search](https://www.digikey.com/en/products?keywords=solderless%20breadboard%20830) | Check usable width around the MCU |
 | WIRE | [Male/male jumpers](https://www.adafruit.com/product/1956); [male/female jumpers](https://www.adafruit.com/product/1954) | Choose lengths and pack counts for your layout |
 | USB | [Micro-USB data cable example](https://www.adafruit.com/product/2185); [DigiKey USB-C cable search](https://www.digikey.com/en/products?keywords=USB%20C%20data%20cable) | Choose the connector fitted to your board |
 | HDR | [Adafruit 392](https://www.adafruit.com/product/392); [DigiKey search](https://www.digikey.com/en/products?keywords=2.54mm%20male%20header) | Only buy missing headers |
-| MODE | [DigiKey axial resistor search](https://www.digikey.com/en/products?keywords=390k%205%25%20through%20hole%20resistor); [DigiKey 1206 resistor search](https://www.digikey.com/en/products?keywords=390k%205%25%201206%20resistor) | For a breadboard use a 390 kΩ ±5% axial resistor; the PCB design uses a 1206 footprint. Confirm the exact amplifier mode circuit before ordering |
+| MODE | [DigiKey axial resistor search](https://www.digikey.com/en/products?keywords=390k%205%25%20through%20hole%20resistor) | Use a 390 kΩ ±5% axial resistor. Confirm the exact amplifier mode circuit before ordering |
 | CONN | [DigiKey connector search](https://www.digikey.com/en/products?keywords=2%20pin%20wire%20connector) | Match both halves and wire rating; optional |
 
 ## Amazon searches by country
@@ -102,8 +105,8 @@ specifications before purchasing. The same model/part terms are intentionally
 used across stores; translate generic terms locally if a search is sparse.
 These are ordinary links without affiliate tags. For the joystick (`JOY`), links
 are provided for both the digital 5-way navigation module (`[JOY (digital)]` for
-`prototype1`) and the KY-023 2-axis analog joystick module (`[JOY (analog)]` for
-`prototype2`).
+`breadboard1`) and the KY-023 2-axis analog joystick module (`[JOY (analog)]` for
+`breadboard2`).
 
 Country-store references: [Amazon Global Selling](https://sell.amazon.com/global-selling),
 [European stores including Ireland](https://sellercentral.amazon.ie/welcome/sell-across-europe),
@@ -161,7 +164,7 @@ Malaysia, the Philippines, and other countries without a row here. This is a
 worldwide sourcing route, not a country-by-country shipping guarantee.
 
 The existing [Digirak Amazon Italy listing](https://www.amazon.it/dp/B07HBPW3DF)
-was recorded with the PCB reference. Its live availability could not be verified
+was recorded in an earlier review. Its live availability could not be verified
 during this review; use the JOY searches or the documented alternative above.
 
 ## Keeping this list current
@@ -170,6 +173,6 @@ Follow [the hardware agent instructions](AGENTS.md). Update quantities,
 compatibility notes and affected buying links as part of any hardware change.
 Record the review date and any links that could not be checked. Keep wiring in
 [the hardware guide](README.md), audio behavior in [the audio guide](../tools/audio.md),
-and fabrication details in [the PCB reference](../pcb/README.md).
+and fabrication details for soldered boards in [the PCB reference](pcb/README.md).
 This document is maintained with repository changes; it is not a live stock or
 price monitor.
