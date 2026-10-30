@@ -8,7 +8,6 @@
 > - [**Audio Hardware (MAX98357A I2S)**](audio.md)
 > - [**Joysticks & Controller Inputs**](joystick.md)
 > - [**Onboard RGB LED**](rgb_led.md)
-> - [**MicroSD Card Interface**](sdcard.md)
 > - [**Memory Architecture**](memory.md)
 > - [**External Controllers & Multiplayer**](external_controllers.md)
 > - [**Hardware Pin Profiles**](profiles/README.md)

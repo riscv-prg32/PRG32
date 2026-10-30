@@ -26,7 +26,7 @@ The object must move only while the matching button is pressed.
 
 This checkpoint works in QEMU with the monitor terminal keyboard mapper:
 arrow keys or `W`/`A`/`S`/`D` drive joystick 1, `Enter`/`Space` is SELECT,
-`J`/`Z` is A, and `K`/`X` is B. Repeat the same check on the physical board
+`J`/`Z` is A, `K`/`X` is B, `L`/`C` is C, and `;`/`V` is D. Repeat the same check on the physical board
 when validating the GPIO wiring.
 
 ## Debug Question

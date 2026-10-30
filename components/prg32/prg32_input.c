@@ -46,6 +46,8 @@ void prg32_input_init(void) {
 
     pin_in("A", PRG32_PIN_BTN_A);
     pin_in("B", PRG32_PIN_BTN_B);
+    pin_in("C", PRG32_PIN_BTN_C);
+    pin_in("D", PRG32_PIN_BTN_D);
     pin_in("START", PRG32_PIN_BTN_START);
     if (PRG32_PIN_BTN_SELECT != PRG32_PIN_BTN_START) {
         pin_in("SELECT", PRG32_PIN_BTN_SELECT);
@@ -63,11 +65,11 @@ uint32_t prg32_input_read_player(uint8_t player) {
     if (player == 2) {
         return 0;
     }
-    return prg32_input_read() & 0x7fu;
+    return prg32_input_read() & PRG32_INPUT_BUTTONS_MASK;
 }
 
 uint32_t prg32_input_read_menu(void) {
-    return prg32_input_read() & 0x7fu;
+    return prg32_input_read() & PRG32_INPUT_BUTTONS_MASK;
 }
 
 void prg32_input_wait_released(uint32_t mask) {

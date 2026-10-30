@@ -90,8 +90,8 @@ extern "C" {
 #define PRG32_PLATFORM_ACTOR_LAYER_OFFSET 22
 #define PRG32_PLATFORM_ACTOR_SIZE 24
 
-/* Controller bitmask. Player 1 occupies bits 0..6 and player 2 occupies
- * bits 8..14. SELECT and START are names for the same physical input. */
+/* Controller bitmask, bits 0..8. SELECT and START are names for the same
+ * physical input. */
 #define PRG32_BTN_LEFT (1u << 0)
 #define PRG32_BTN_RIGHT (1u << 1)
 #define PRG32_BTN_UP (1u << 2)
@@ -100,15 +100,9 @@ extern "C" {
 #define PRG32_BTN_B (1u << 5)
 #define PRG32_BTN_START (1u << 6)
 #define PRG32_BTN_SELECT PRG32_BTN_START
-
-#define PRG32_P2_BTN_LEFT (1u << 8)
-#define PRG32_P2_BTN_RIGHT (1u << 9)
-#define PRG32_P2_BTN_UP (1u << 10)
-#define PRG32_P2_BTN_DOWN (1u << 11)
-#define PRG32_P2_BTN_A (1u << 12)
-#define PRG32_P2_BTN_B (1u << 13)
-#define PRG32_P2_BTN_START (1u << 14)
-#define PRG32_P2_BTN_SELECT PRG32_P2_BTN_START
+#define PRG32_BTN_C (1u << 7)
+#define PRG32_BTN_D (1u << 8)
+#define PRG32_INPUT_BUTTONS_MASK 0x1ffu
 
 /* Common RGB565 colors. Custom colors use RRRRRGGGGGGBBBBB packing. */
 #define PRG32_COLOR_BLACK 0x0000

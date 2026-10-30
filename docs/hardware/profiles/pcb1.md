@@ -29,7 +29,6 @@ Fritzing project in the repository has since moved to the `breadboard1` pins
 - **Input Type**: Digital 5-way navigation joystick (discrete GPIO switches with pull-ups), DOWN on GPIO13
 - **Action Buttons**: Separate pushbuttons for A and B; the joystick center press is START/SELECT
 - **Audio**: MAX98357A I2S DAC / amplifier with LRC/WS on GPIO11; the board has positions for stereo, the firmware defaults to mono
-- **SD Card**: Not used (`CONFIG_PRG32_PIN_SDCARD_CS` keeps its `-1` default)
 - **RGB LED**: Not used (`CONFIG_PRG32_PIN_RGB_LED=-1`, no shared boot indication)
 - **Configuration Profile**: `profiles/sdkconfig.pins.pcb1`
 
@@ -207,8 +206,7 @@ CONFIG_PRG32_PIN_RGB_LED=-1
 ```
 
 Options the file does not set keep their Kconfig defaults: the digital
-joystick (`CONFIG_PRG32_JOYSTICK_DIGITAL=y`), no SD card CS
-(`CONFIG_PRG32_PIN_SDCARD_CS=-1`), and no shared RGB LED
+joystick (`CONFIG_PRG32_JOYSTICK_DIGITAL=y`) and no shared RGB LED
 (`CONFIG_PRG32_PIN_SHARED_RGB_LED=-1`).
 
 ## Software & Build Selection

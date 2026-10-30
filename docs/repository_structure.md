@@ -48,7 +48,6 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
 |   |   |-- images/                 Electrical schematics (Fritzing exports, including the pcb1 board) and breadboard prototype figures
 |   |   |-- profiles/               Self-contained pin profile documents (breadboard1, breadboard2, pcb1) and the rules for writing them
-|   |   |-- sdcard.md               MicroSD card interface notes and reserved pin status
 |   |   |-- pcb/                    Fritzing PCB reference design, layout status, and fabrication notes
 |   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material

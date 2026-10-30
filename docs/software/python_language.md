@@ -175,8 +175,10 @@ def double(v: int) -> int:
 
 Colours: `prg32.BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, ORANGE,
 PINK, GRAY, DARK_GRAY, BROWN, PURPLE, NAVY, LIME`. Buttons: `prg32.LEFT, RIGHT,
-UP, DOWN, A, B, START, SELECT`, and `prg32.P2_LEFT`, `prg32.P2_A`, ... for
-player 2. Numbers: `prg32.SCREEN_W` (320), `prg32.SCREEN_H` (200) and the other
+UP, DOWN, A, B, START, SELECT`. The `prg32.P2_LEFT`, `prg32.P2_A`, ... names
+still parse but are being retired: the firmware no longer defines local
+player-2 buttons, so C output that uses them does not compile (see
+[Keeping the SDK and the Kit Aligned](#keeping-the-sdk-and-the-kit-aligned)). Numbers: `prg32.SCREEN_W` (320), `prg32.SCREEN_H` (200) and the other
 `PRG32_` constants of [the C API](api.md) without the `PRG32_` start
 (`prg32.TILE_W`, ...).
 
@@ -248,6 +250,13 @@ and assembly with the kit's when a kit checkout is found beside this
 repository or in `PRG32_CONSTRUCTION_KIT`. When the kit's language changes,
 copy the four modules again, re-apply the `SDK:` lines, update the revision
 above and in each file, and run that test.
+
+**Pending kit change (2026-10-30).** The firmware added buttons C and D
+(`PRG32_BTN_C` = bit 7, `PRG32_BTN_D` = bit 8) and removed the local player-2
+bits `PRG32_P2_BTN_*` (multiplayer is online only). In PRG32-Construction-Kit,
+remove the `P2_*` button names and constants, add `C` and `D`, then copy the
+modules here. Until then the SDK still accepts `prg32.P2_*`, and its constant
+value for `P2_LEFT` equals button D's bit.
 
 ## Validation Record
 

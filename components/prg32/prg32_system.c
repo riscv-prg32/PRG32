@@ -491,7 +491,6 @@ static int setup_audio_pin_conflicts(int gpio) {
          setup_pin_matches(gpio, PRG32_PIN_LCD_DC) ||
          setup_pin_matches(gpio, PRG32_PIN_LCD_RST) ||
          setup_pin_matches(gpio, PRG32_PIN_LCD_BL) ||
-         setup_pin_matches(gpio, PRG32_PIN_SDCARD_CS) ||
          setup_pin_matches(gpio, PRG32_PIN_JOYSTICK_X) ||
          setup_pin_matches(gpio, PRG32_PIN_JOYSTICK_Y) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_LEFT) ||
@@ -500,6 +499,8 @@ static int setup_audio_pin_conflicts(int gpio) {
          setup_pin_matches(gpio, PRG32_PIN_BTN_DOWN) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_A) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_B) ||
+         setup_pin_matches(gpio, PRG32_PIN_BTN_C) ||
+         setup_pin_matches(gpio, PRG32_PIN_BTN_D) ||
          setup_pin_matches(gpio, PRG32_PIN_BTN_SELECT) ||
          setup_pin_matches(gpio, PRG32_PIN_BUZZER);
 }

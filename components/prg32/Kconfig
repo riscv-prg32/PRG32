@@ -268,7 +268,7 @@ config PRG32_PIN_PROFILE_BREADBOARD2
         Second breadboard pin configuration profile loaded from
         profiles/sdkconfig.pins.breadboard2. Features an analog joystick
         sampled via ADC continuous mode, updated display pin assignments,
-        and reserved SD card CS.
+        and buttons C and D.
 
 config PRG32_PIN_PROFILE_PCB1
     bool "pcb1 (Soldered PCB, DOWN on GPIO13)"
@@ -345,13 +345,6 @@ config PRG32_PIN_LCD_RST
 config PRG32_PIN_LCD_BL
     int "LCD Backlight GPIO"
     default -1
-
-config PRG32_PIN_SDCARD_CS
-    int "SD Card CS GPIO"
-    default -1
-    help
-        Chip Select (CS) GPIO for SPI SD card. Set to -1 if unassigned.
-        Note: SD card software support is planned and currently under development.
 
 choice PRG32_JOYSTICK_TYPE
     prompt "Joystick Type"
@@ -446,6 +439,14 @@ config PRG32_PIN_BTN_A
 
 config PRG32_PIN_BTN_B
     int "B Button GPIO"
+    default -1
+
+config PRG32_PIN_BTN_C
+    int "C Button GPIO"
+    default -1
+
+config PRG32_PIN_BTN_D
+    int "D Button GPIO"
     default -1
 
 config PRG32_ENABLE_SEPARATE_SELECT_PIN

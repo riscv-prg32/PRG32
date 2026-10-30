@@ -1,14 +1,13 @@
 # PRG32 Hardware Pin Profile: Breadboard 2
 
-This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, and a reserved pin for SD card SPI Chip Select.
+This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, and four action buttons (A, B, C, D).
 
 ## Overview
 
 - **Architecture Target**: ESP32-C6
-- **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO3, DC on GPIO10, and RST wired to the ESP32-C6 EN (`RST`) header pin
-- **SD Card CS**: GPIO9 (reserved for SPI SD Card; software implementation planned)
+- **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO9, DC on GPIO10, and RST wired to the ESP32-C6 EN (`RST`) header pin
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
-- **Action Buttons**: Separate pushbuttons for A, B, and START/SELECT
+- **Action Buttons**: Separate pushbuttons for A, B, C, D, and START/SELECT (C on GPIO11, D on GPIO3)
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
 - **Configuration Profile**: `profiles/sdkconfig.pins.breadboard2`
 
@@ -20,14 +19,13 @@ This document specifies the pinout and wiring for the **`breadboard2`** hardware
 |---|---|---|---|
 | 3V3 | VCC | 3.3V Logic Supply | |
 | GND | GND | Ground | |
-| GPIO7 | MOSI | SPI Master Out Slave In | Fast SPI (SPI2 IOMUX), shared with SD Card MOSI |
-| GPIO2 | MISO / DO | SPI Master In Slave Out | Fast SPI (SPI2 IOMUX), shared with SD Card MISO |
-| GPIO6 | SCLK | SPI Serial Clock | Fast SPI (SPI2 IOMUX), shared with SD Card SCLK |
-| GPIO3 | CS | Display Chip Select | Active-low |
+| GPIO7 | MOSI | SPI Master Out Slave In | Fast SPI (SPI2 IOMUX) |
+| GPIO2 | MISO / DO | SPI Master In Slave Out | Fast SPI (SPI2 IOMUX); used to read the display ID at boot |
+| GPIO6 | SCLK | SPI Serial Clock | Fast SPI (SPI2 IOMUX) |
+| GPIO9 | CS | Display Chip Select | Active-low; GPIO9 is the strapping/BOOT pin, see the warning below |
 | GPIO10 | DC | Data / Command Select | |
 | EN (`RST` header pin) | RST | Hardware Reset | No GPIO (`CONFIG_PRG32_PIN_LCD_RST=-1`); reset together with the ESP32-C6, see [Display Reset Line](#display-reset-line) |
 | GPIO5 | BL / LED | Backlight control | Active-high |
-| GPIO9 | SD CARD CS | SD Card Chip Select | Reserved pin; see [SD Card Notes](../sdcard.md) |
 
 #### Display Reset Line
 
@@ -67,6 +65,18 @@ The analog joystick connects two potentiometers (X and Y axes) between 3.3V and 
 | GPIO20 | - | P1 START / SELECT | Joystick thumbstick switch or button to GND |
 | GPIO18 | - | P1 A | Action button A, momentary switch to GND |
 | GPIO19 | - | P1 B | Action button B, momentary switch to GND |
+| GPIO11 | - | P1 C | Action button C, momentary switch to GND |
+| GPIO3 | - | P1 D | Action button D, momentary switch to GND |
+
+> [!WARNING]
+> GPIO9 is an ESP32-C6 strapping pin: if it is low at reset, the chip starts
+> the ROM download mode instead of PRG32. It is also wired to the DevKitC-1
+> **BOOT** button. This profile therefore puts the display CS on GPIO9, a
+> signal nobody presses: the display input never pulls the pin low, and the
+> boot pull-up keeps the display deselected until the driver starts. Pressing
+> BOOT while PRG32 runs only holds CS low and may glitch the screen briefly.
+> Never wire buttons to GPIO9 or to GPIO12/GPIO13 (the native USB D-/D+ pair
+> used for uploads and the device protocol).
 
 > [!NOTE]
 > The firmware reads ADC1 channels continuously in DMA mode (`adc_continuous`). The raw 12-bit samples (0–4095, center ~2048) are converted into standard PRG32 directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`) using dedicated, configurable thresholds for both axes:

@@ -30,7 +30,7 @@ uint32_t prg32_qemu_input_read(void);
  * input on desktop builds, diagnostic input used by tests, and remote keys
  * sent by a developer through the device protocol.
  *
- * The game sees only the stable PRG32 bitmask: LEFT/RIGHT/UP/DOWN/SELECT/A/B.
+ * The game sees only the stable PRG32 bitmask: LEFT/RIGHT/UP/DOWN/SELECT/A/B/C/D.
  * This is intentionally similar to memory-mapped input registers on 1980s
  * consoles, which makes it a useful Computer Architecture teaching example.
  */
@@ -148,6 +148,12 @@ static uint32_t read_gpio_buttons(void) {
     if (PRG32_PIN_BTN_B >= 0 && !gpio_get_level(PRG32_PIN_BTN_B)) {
         v |= PRG32_BTN_B;
     }
+    if (PRG32_PIN_BTN_C >= 0 && !gpio_get_level(PRG32_PIN_BTN_C)) {
+        v |= PRG32_BTN_C;
+    }
+    if (PRG32_PIN_BTN_D >= 0 && !gpio_get_level(PRG32_PIN_BTN_D)) {
+        v |= PRG32_BTN_D;
+    }
     if (PRG32_PIN_BTN_START >= 0 && !gpio_get_level(PRG32_PIN_BTN_START)) {
         v |= PRG32_BTN_START;
     }
@@ -180,6 +186,8 @@ const char *prg32_controller_name(uint32_t bit) {
         case PRG32_BTN_DOWN: return "DOWN";
         case PRG32_BTN_A: return "A";
         case PRG32_BTN_B: return "B / BACK";
+        case PRG32_BTN_C: return "C";
+        case PRG32_BTN_D: return "D";
         case PRG32_BTN_START: return "SELECT";
         default: return "UNKNOWN";
     }

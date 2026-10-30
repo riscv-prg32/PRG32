@@ -9,7 +9,7 @@ This directory contains detailed wiring diagrams, schematics, and pinout tables 
 | Profile Name | Description | Display Pinout | Controller / Input | Audio |
 |---|---|---|---|---|
 | [`breadboard1`](breadboard1.md) | First breadboard | ILI9341 SPI (DC: GPIO8, RST: GPIO9) | 5-way digital navigation joystick (discrete GPIO switches on GPIO3, 0, 18, 19, 20) + buttons A (21), B (22) | MAX98357A I2S (BCLK: 4, LRCLK: 11, DIN: 23) |
-| [`breadboard2`](breadboard2.md) | Second breadboard with analog joystick | ILI9341 SPI (CS: GPIO3, DC: GPIO10, RST: ESP32-C6 EN pin, SD CS: GPIO9) | 2-axis analog thumbstick (ADC1 continuous mode on GPIO0, GPIO1) + buttons A (18), B (19), START/SELECT (20) | MAX98357A I2S (BCLK: 4, LRCLK: 15, DIN: 23) |
+| [`breadboard2`](breadboard2.md) | Second breadboard with analog joystick | ILI9341 SPI (CS: GPIO9, DC: GPIO10, RST: ESP32-C6 EN pin) | 2-axis analog thumbstick (ADC1 continuous mode on GPIO0, GPIO1) + buttons A (18), B (19), C (11), D (3), START/SELECT (20) | MAX98357A I2S (BCLK: 4, LRCLK: 15, DIN: 23) |
 | [`pcb1`](pcb1.md) | Soldered PCB | ILI9341 SPI (DC: GPIO8, RST: GPIO9) | 5-way digital navigation joystick (discrete GPIO switches on GPIO3, 13, 18, 19, 20) + buttons A (21), B (22) | MAX98357A I2S (BCLK: 4, LRCLK: 11, DIN: 23) |
 
 Profiles named `breadboardN` describe solderless breadboard builds; their
@@ -55,7 +55,7 @@ from this one document alone.
 2. **Matches the pin file exactly.** Every GPIO in the document equals the
    value in `profiles/sdkconfig.pins.<name>`. Options the file leaves out are
    documented with their Kconfig default (for example
-   `CONFIG_PRG32_PIN_SDCARD_CS=-1`). Unused signals are shown as
+   `CONFIG_PRG32_PIN_BUZZER=-1`). Unused signals are shown as
    `Not wired (-1)`, never omitted.
 3. **One place for pins.** GPIO numbers and pinout tables belong only in these
    documents and the pin files. Component guides (`audio.md`, `joystick.md`,
@@ -81,9 +81,9 @@ Use this order and these headings:
 | Section | Content |
 |---|---|
 | `# PRG32 Hardware Pin Profile: <Name>` | Intro naming the profile and its pin file, then the figure and any `[!WARNING]` |
-| `## Overview` | Target, board, display, input, buttons, audio, SD card, RGB LED, and configuration profile, one line each |
+| `## Overview` | Target, board, display, input, buttons, audio, RGB LED, and configuration profile, one line each |
 | `## Board Layout` (PCB) | Component placement on each side |
-| `## Pinout and Wiring` | One `###` table per subsystem: display, controls, audio (mono and stereo), RGB LED, SD card when used; columns start with `ESP32-C6 GPIO` |
+| `## Pinout and Wiring` | One `###` table per subsystem: display, controls, audio (mono and stereo), RGB LED; columns start with `ESP32-C6 GPIO` |
 | `### GPIO Usage Summary` | Every exposed GPIO with its function or `Free` |
 | `## Breadboard Power Distribution & Assembly` (breadboard) or `## Power Distribution` (PCB) | Rails or nets, voltages, connections; assembly steps or pre-power checks |
 | `## Profile File` | The settings of `profiles/sdkconfig.pins.<name>` and the defaults it relies on |

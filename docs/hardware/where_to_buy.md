@@ -3,6 +3,7 @@
 Hardware and supplier reference reviewed: **2026-10-15**. The MAX98357A
 mode guidance and 390 kΩ resistor sourcing were checked **2026-09-13**;
 country search links were updated (including KY-023 analog joystick links), but stock and delivery were not verified.
+On **2026-10-30** the `breadboard2` button quantity was raised to four (A, B, C, D).
 
 This is the purchasing list for one physical ESP32-C6 PRG32 unit built on a
 breadboard. Use the [hardware guide](README.md) for authoritative wiring, the
@@ -28,7 +29,7 @@ not additions to the mono column. The classroom baseline includes mono audio.
 | MCU | ESP32-C6 development board with headers, at least 4 MB flash, and all GPIOs required by the hardware guide exposed; ESP32-C6-DevKitC-1-N8 is a candidate with 8 MB flash | 1 | 1 |
 | TFT | ILI9341 2.8-inch SPI TFT, 320x240 in landscape, compatible with 3.3 V logic and the documented power/backlight connections | 1 | 1 |
 | JOY | Joystick module: 5-way digital navigation module (for `breadboard1`) OR 2-axis analog thumbstick with VRx/VRy potentiometers and push switch (e.g. KY-023 / PS2 thumbstick for `breadboard2`) | 1 | 1 |
-| BTN | Normally-open momentary pushbuttons for A and B; breadboard-compatible leads | 2 | 2 |
+| BTN | Normally-open momentary pushbuttons: A and B (`breadboard1`); A, B, C and D (`breadboard2`); breadboard-compatible leads | 2 (`breadboard1`) / 4 (`breadboard2`) | 2 (`breadboard1`) / 4 (`breadboard2`) |
 | AMP | MAX98357A I2S DAC/amplifier breakout, with accessible channel-selection pin or jumper | 1 | 2 |
 | SPK | Passive 4–8 ohm speaker, 1–3 W; choose 3 W for more power headroom and dimensions suitable for your enclosure | 1 | 2 |
 | BB | Full-size solderless breadboard, approximately 830 tie points; add another if the selected modules obstruct usable holes | 1 | 1–2 |
@@ -87,7 +88,7 @@ have **not** been verified for every destination, and no prices are promised.
 | MCU | [Adafruit 5672](https://www.adafruit.com/product/5672); [DigiKey search](https://www.digikey.com/en/products?keywords=ESP32-C6-DevKitC-1-N8) | Development board, not a bare WROOM module |
 | TFT | [Adafruit 1770](https://www.adafruit.com/product/1770); [DigiKey search](https://www.digikey.com/en/products?keywords=Adafruit%201770) | Configure the breakout for SPI; check physical fit |
 | JOY | Digital (`breadboard1`): [Joy-IT COM-5WS at GoTronic](https://www.gotronic.fr/art-module-a-joystick-5-directions-com-5ws-38766.htm) ([manufacturer manual](https://joy-it.net/files/files/Produkte/COM-5WS/COM-5WS_Manual-EN_2025-08-25.pdf)). Analog (`breadboard2`): [Adafruit 512](https://www.adafruit.com/product/512); [DigiKey KY-023 search](https://www.digikey.com/en/products?keywords=KY-023) | Digital: verify individual switch outputs and 3.3 V operation. Analog: KY-023 / PS2 dual-axis potentiometers with 3.3 V operation on VRx/VRy |
-| BTN | [Adafruit 1119](https://www.adafruit.com/product/1119); [DigiKey search](https://www.digikey.com/en/products?keywords=momentary%20tactile%20switch%20through%20hole) | Two buttons, not two packs |
+| BTN | [Adafruit 1119](https://www.adafruit.com/product/1119); [DigiKey search](https://www.digikey.com/en/products?keywords=momentary%20tactile%20switch%20through%20hole) | Two buttons (`breadboard1`) or four (`breadboard2`), not packs |
 | AMP | [Adafruit 3006](https://www.adafruit.com/product/3006); [same module at DigiKey](https://www.digikey.com/en/products/detail/adafruit-industries-llc/3006/6058477) | Buy one for mono or two for stereo |
 | SPK | [Adafruit 1314](https://www.adafruit.com/product/1314); [DigiKey search](https://www.digikey.com/en/products?keywords=speaker%204%20ohm%203W) | 1314 was listed out of stock at review; its approximately 78 mm body is only a breadboard candidate |
 | BB | [Adafruit 239](https://www.adafruit.com/product/239); [DigiKey search](https://www.digikey.com/en/products?keywords=solderless%20breadboard%20830) | Check usable width around the MCU |
