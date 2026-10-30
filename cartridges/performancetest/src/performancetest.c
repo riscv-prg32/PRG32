@@ -4,6 +4,10 @@
 #define CASES 5u
 #define MODES 2u
 #define FRAMES 60u
+/* g_done values: 0 while running, then how the run ended. */
+#define DONE_COMPLETE 1
+#define DONE_ABORTED 2
+#define DONE_NOT_STARTED 3
 
 static uint32_t g_case, g_mode, g_frame, g_global, g_last_input;
 static uint64_t g_update_start, g_update_end;
@@ -181,7 +185,9 @@ static void start(void){
   s.suite_version=1;s.name="setup-performance-test";
   g_case=g_mode=g_frame=g_global=0;g_done=0;g_result_mode=0;
   g_summary.frames=0;
-  g_running=prg32_perf_begin(&s)==0&&begin_case()==0;
+  int begun=prg32_perf_begin(&s)==0;
+  g_running=begun&&begin_case()==0;
+  if(!g_running){if(begun)prg32_perf_abort();g_done=DONE_NOT_STARTED;}
 }
 static void draw_probe(void){
   for(int i=0;i<24;i++){int x=(i*13+(int)g_frame)%316,y=28+(i*29)%116;
@@ -215,8 +221,8 @@ void performancetest_init(void){
 }
 void performancetest_update(void){
   uint32_t input=prg32_input_read(),pressed=input&~g_last_input;g_last_input=input;
-  if(g_running&&(pressed&(PRG32_BTN_B|PRG32_BTN_SELECT))){prg32_perf_abort();g_running=0;g_done=2;}
-  else if(g_done==1&&(pressed&(PRG32_BTN_LEFT|PRG32_BTN_RIGHT)))g_result_mode^=1u;
+  if(g_running&&(pressed&(PRG32_BTN_B|PRG32_BTN_SELECT))){prg32_perf_abort();g_running=0;g_done=DONE_ABORTED;}
+  else if(g_done==DONE_COMPLETE&&(pressed&(PRG32_BTN_LEFT|PRG32_BTN_RIGHT)))g_result_mode^=1u;
   else if(g_done&&(pressed&PRG32_BTN_A))start();
   g_update_start=prg32_perf_now_us();
   if(g_running){g_scroll=(g_scroll+1)%320;}
@@ -224,8 +230,12 @@ void performancetest_update(void){
 }
 void performancetest_draw(void){
   if(!g_running){prg32_gfx_clear(PRG32_COLOR_BLACK);
-    if(g_done==1){
+    if(g_done==DONE_COMPLETE){
       draw_results_table();
+    }else if(g_done==DONE_NOT_STARTED){
+      prg32_gfx_text8(24,18,"PERFORMANCE TEST DID NOT START",PRG32_COLOR_YELLOW,0);
+      prg32_gfx_text8(24,54,"NOTHING WAS MEASURED",PRG32_COLOR_WHITE,0);
+      prg32_gfx_text8(24,78,"A: TRY AGAIN",PRG32_COLOR_WHITE,0);
     }else{
       prg32_gfx_text8(24,18,"PERFORMANCE TEST ABORTED",PRG32_COLOR_YELLOW,0);
       prg32_gfx_text8(24,54,"NO RESULTS WERE SAVED",PRG32_COLOR_WHITE,0);
@@ -239,18 +249,18 @@ void performancetest_draw(void){
   s.frame_index=g_global;s.update_us=(uint32_t)(g_update_end-g_update_start);
   s.draw_us=(uint32_t)(draw1-draw0);s.present_us=(uint32_t)(present1-present0);
   s.frame_total_us=(uint32_t)(present1-g_update_start);s.input_mask=g_last_input;
-  if(prg32_perf_record(&s)!=0){prg32_perf_abort();g_running=0;g_done=2;return;}
+  if(prg32_perf_record(&s)!=0){prg32_perf_abort();g_running=0;g_done=DONE_ABORTED;return;}
   g_frame_times[g_frame]=s.frame_total_us;
   g_update_total+=s.update_us;g_draw_total+=s.draw_us;
   g_present_total+=s.present_us;g_frame_total+=s.frame_total_us;
   ++g_frame;++g_global;
   if(g_frame==FRAMES){finish_case_measurements();
-    if(prg32_perf_case_end()!=0){prg32_perf_abort();g_running=0;g_done=2;return;}
+    if(prg32_perf_case_end()!=0){prg32_perf_abort();g_running=0;g_done=DONE_ABORTED;return;}
     ++g_case;if(g_case==CASES){g_case=0;++g_mode;}
     if(g_mode==MODES){
       if(prg32_perf_end()!=0||prg32_perf_get_summary(&g_summary)!=0){
-        prg32_perf_abort();g_running=0;g_done=2;
-      }else{g_running=0;g_done=1;}
+        prg32_perf_abort();g_running=0;g_done=DONE_ABORTED;
+      }else{g_running=0;g_done=DONE_COMPLETE;}
     }
-    else if(begin_case()!=0){prg32_perf_abort();g_running=0;g_done=2;}}
+    else if(begin_case()!=0){prg32_perf_abort();g_running=0;g_done=DONE_ABORTED;}}
 }

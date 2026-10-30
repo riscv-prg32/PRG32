@@ -248,7 +248,8 @@ The optional `performancetest` cartridge provides an unattended multi-case
 benchmark that retains compact per-screen/per-color-mode summaries in RAM
 without streaming every frame. Temporary percentile samples are released at
 the end of each case. The latest run is
-available as `/api/performance.json` until the next benchmark or reboot. The
+available as `/api/performance.json` until the next benchmark or reboot; leaving
+the cartridge mid-run discards that partial run. The
 cartridge cases isolate clear/fill, text overlay, sprite storm, scrolling, and
 mixed-gameplay workloads. Every workload runs through matched RGB565 and
 full indexed-native primitives and indexed-color sprite probes; the final screen reports an aggregate summary and

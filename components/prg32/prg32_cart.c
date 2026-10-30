@@ -406,6 +406,9 @@ static int load_image_locked(const void *image, size_t image_size) {
         return -1;
     }
 
+    /* The suite belonged to the cartridge being replaced. The caller holds the
+     * cartridge lock, so none of that cartridge's code is using the suite. */
+    prg32_perf_abort();
     g_loaded = false;
     memset(prg32_cart_exec, 0, sizeof(prg32_cart_exec));
     memcpy(prg32_cart_exec, payload, h->code_size);
@@ -484,6 +487,10 @@ void prg32_cart_unload(void) {
     if (lock_cart() != 0) {
         return;
     }
+    /* A suite cannot outlive its cartridge, and only one may be active, so
+     * leaving it running would refuse every later run until a restart. Holding
+     * the lock waits for a running update/draw call that may be using it. */
+    prg32_perf_abort();
     g_loaded = false;
     g_stored = false;
     g_generation++;
@@ -503,8 +510,7 @@ int prg32_cart_load_stored(void) {
     uint32_t audio_size = 0;
     if (read_stored_header(g_current_slot, &header, &stored_size,
                            &audio_size) != 0) {
-        g_loaded = false;
-        g_stored = false;
+        prg32_cart_unload();
         set_errorf("no stored cartridge in %s", slot_name(g_current_slot));
         return -1;
     }
@@ -822,8 +828,7 @@ int prg32_cart_select_stored(void) {
             return prg32_cart_select_slot(slot);
         }
     }
-    g_loaded = false;
-    g_stored = false;
+    prg32_cart_unload();
     set_error("no stored cartridge");
     return -1;
 }

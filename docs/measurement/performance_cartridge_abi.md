@@ -34,7 +34,9 @@ lifecycle and free/largest-block checkpoints, and
 `prg32_perf_get_summary` for the completed aggregate.
 
 Any failure should lead the cartridge to call `prg32_perf_abort`. Only one
-suite and one case may be active. Results remain volatile until a new run or
+suite and one case may be active. The firmware also aborts a running suite and
+frees its temporary array when the cartridge is unloaded or replaced, so a
+cartridge has no way to leave a suite behind for the next one. Results remain volatile until a new run or
 reboot. This avoids flash wear and follows existing RAM-only result semantics.
 
 The HTTP endpoint remains `GET /api/performance.json`. Schema version 2 keeps
