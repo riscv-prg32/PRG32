@@ -298,7 +298,10 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
                  event ? (unsigned)event->reason : 0,
                  active_status);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        esp_wifi_connect();
+        /* A scan may have started during the wait; connecting would end it. */
+        if (sta_autoconnect) {
+            esp_wifi_connect();
+        }
     }
     if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)data;
@@ -748,6 +751,9 @@ static int scan_networks_locked(wifi_ap_record_t **records_out,
         return 0;
     }
     *records_out = NULL;
+    /* Before the stop: stopping a connected station raises a disconnect event,
+     * and the reconnect it would start ends the scan with nothing found. */
+    sta_autoconnect = false;
     if (wifi_started) {
         esp_err_t stop_err = esp_wifi_stop();
         if (stop_err != ESP_OK) {
@@ -756,10 +762,11 @@ static int scan_networks_locked(wifi_ap_record_t **records_out,
         }
         wifi_started = false;
         active_mode = PRG32_WIFI_MODE_OFF;
+        copy_cstr(active_ip, sizeof(active_ip), "-");
+        copy_cstr(active_status, sizeof(active_status), "OFF");
         vTaskDelay(pdMS_TO_TICKS(150));
     }
 
-    sta_autoconnect = false;
     esp_err_t err = esp_wifi_set_mode(WIFI_MODE_STA);
     if (err != ESP_OK) {
         copy_cstr(status, status_size, esp_err_to_name(err));

@@ -313,6 +313,93 @@ connectivity.
 
 ## Validation record
 
+### 2026-10-30: a connected console lists networks
+
+Opening INFRASTRUCTURE while connected used to scan for about 600 ms and show NO
+NETWORKS FOUND, every time. Stopping the radio raised a disconnect event whose
+handler waited 1 s and then called `esp_wifi_connect()`, which ended the scan.
+`scan_networks_locked()` now clears `sta_autoconnect` before the stop, and the
+handler checks it again after the wait. While the radio is stopped the status is
+OFF and the IP is `-`, because that event no longer changes them. `WIFI_SCAN` from a
+connected station did not stop the radio and is unchanged. The wire format did not
+change.
+
+On ESP32-C6 (`prototype1`), with the serial log counting what each scan found:
+
+- Before: 0 networks from a connected console in each of three scans, 24 when
+  already disconnected. After: 22 to 25 in all four scans.
+- With the fix, these rows of the
+  [table below](#2026-10-30-paths-the-earlier-records-left-out) passed again: the
+  list, keyboard, and confirmation exits (7 of the 8, without a `run` upload from the
+  keyboard), saved access-point mode, `WIFI_SET` of an absent and a stored network,
+  B from the no-networks and enterprise screens, and the connection wait. The rows
+  that used the test build used it again, with the fix applied. `RUN` from the
+  no-networks and enterprise screens was not repeated.
+- Time from B on the network list until the HTTP API answered, six runs each:
+  5.0 to 29.0 s before (median 7), 6.4 to 35.1 s after (median 13). The poll can
+  take up to 11 s, so these are coarse; the runs do not show whether the fix
+  changes this time.
+
+`tests/test_wifi_protocol.py` fails if either check is removed. QEMU has no Wi-Fi;
+its firmware was only built. No physical button was pressed.
+
+The tests wrote `cart7` and NVS, both restored from `esptool read_flash`, and compared
+with the backup.
+
+### 2026-10-30: paths the earlier records left out
+
+Firmware `c14d1dd` on ESP32-C6 (`prototype1`) and, built from the same source,
+on Espressif QEMU. Key commands drove the screens; no physical button was pressed
+and the panel was not looked at, so the screen evidence is `/api/screenshot.bmp`.
+The wire format did not change.
+
+| Check | Result |
+|---|---|
+| HELLO, `store`, `run`, bad slot, corrupt frame, wrong image CRC, `RUN` during an upload, abandoned upload, reconnection, unknown key | 11/11 on both targets |
+| [Key gameplay check](../../tests/key_gameplay/README.md) | 29/29 on both targets |
+| Setup takeover: every screen, by `run` upload and by `RUN` | 21/21 on QEMU; on the ESP32-C6 all passed once the check allowed for a screenshot caught mid-draw |
+| `/api/games/select` from the top menu, ABOUT, RUN CARTRIDGE, SETUP, and the Store keyboard | 5/5, ESP32-C6 |
+| Network list, keyboard, and confirmation with networks really listed: B and `RUN` from each, `run` upload from the first two | 8/8, ESP32-C6 |
+| Saved access-point mode: set up with keys, B and `RUN` from the list | radio back in softAP, seen in the serial log |
+| `WIFI_SET` during the list: absent network | refused with `NO AP FOUND`; B restored the saved network |
+| `WIFI_SET` during the list: stored network | joined; leaving did not restart the radio |
+| No-networks screen: B and `RUN` | passed |
+| Enterprise-network screen: B and `RUN` | passed |
+| Connection wait: connected, left by `RUN` after 329 ms, left by B after 586 ms, wrong password | passed; the wrong password ended at 30 s |
+| Store found-URL screen: B, SELECT saves, `run` upload | passed |
+| Store installed screen: B, SELECT runs it, `RUN`, `run` upload | passed |
+
+The no-networks, enterprise, and connection-wait rows, and the `WIFI_SET` of a stored
+network, ran on a scratch test build of the same source. It logs screen titles to the serial port, forces
+the no-networks and enterprise cases, lists only stored networks, and reuses the
+stored password on request. The Store rows used a local CartridgeStore and a small
+mDNS responder sending PTR, SRV, TXT, and A records, as zeroconf does; the Store's own
+zeroconf advertisement was not run.
+
+Problems found, none caused by this revision's changes. The first is
+[fixed](#2026-10-30-a-connected-console-lists-networks); the others are still open:
+
+- **A connected console listed no networks.**
+- **SELECT on Store details also presses RUN NOW over key commands.** `run_detail()`
+  starts the download without waiting for the release, so the key command is
+  still down afterwards and the installed screen is skipped. A works. A button held
+  until the download ends should do the same; this was not tried.
+- **Discovery silently misses an advertisement without its address.** A service
+  registered with macOS `dns-sd`, seen by other computers, gave NOT FOUND in under
+  2 s with no log line.
+- **Setup screens can keep a cartridge's chrome.** After DeviceDemo+ ran, the Store
+  screens still showed its title and FPS text.
+
+The two records below say the network list, keyboard, and confirmation were
+exercised. Those runs opened them from a connected console, so what they exercised
+was the no-networks screen; this record replaces them for those screens.
+
+Still not exercised: physical buttons and the panel, the real Store's mDNS
+advertisement, and a real enterprise network.
+
+The tests wrote `cart7` and NVS, both restored from `esptool read_flash`. All eight
+slots, NVS, and `scores` were compared with the backup and are identical.
+
 ### 2026-10-30: saved Wi-Fi mode returns after a setup scan
 
 Leaving the setup network screens without connecting now
