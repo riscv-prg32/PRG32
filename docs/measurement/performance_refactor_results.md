@@ -78,3 +78,8 @@ frame time 82,436 microseconds, free heap 185,832 B before and 185,856 B after.
 Firmware without the fix (`2ef2ac1`, 128 KiB window) kept answering
 `{"ok":false,"running":true}` after a switch and showed
 `PERFORMANCE TEST DID NOT START` with the rebuilt cartridge.
+
+The test was repeated with the 128 KiB window on ESP32-C6 and QEMU, including the
+empty-slot case on both, and passed: on the board 600 frames, 12.10 FPS, mean
+frame time 82,628 microseconds, free heap 120,356 B before and after. A suite
+left by a cartridge that selects another slot itself is aborted the same way.

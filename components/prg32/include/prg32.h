@@ -551,6 +551,11 @@ void prg32_band_set_colors(uint8_t band, uint16_t fg, uint16_t bg);
 void prg32_band_use_default_colors(uint8_t band);
 void prg32_band_load_config(void);
 void prg32_band_save_config(void);
+/* Firmware only: return the bands and viewport to what the developer menu saved,
+ * before a cartridge starts or setup opens. Must not hold the cartridge lock. */
+void prg32_band_reset(void);
+/* Firmware only: the text of a band the developer menu set to CUSTOM. */
+void prg32_band_set_setup_text(uint8_t band);
 void prg32_gfx_pixel(int x, int y, uint16_t color);
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color);
 void prg32_gfx_pixel_indexed(int x, int y, uint8_t index);

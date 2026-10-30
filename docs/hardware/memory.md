@@ -115,9 +115,7 @@ the `prototype1` board. `prg32_cart_exec` stayed at 0x408023a0 (ESP32-C6) and
 | USB and HTTP uploads of the 103,168-byte package | Worked (USB on both targets; HTTP on the board) |
 
 Multiplayer and a metadata-bearing package of exactly 131,072 bytes were not
-exercised. Running `performancetest` after leaving it mid-run shows
-`PERFORMANCE TEST ABORTED` until the next restart; the 64 KiB firmware does the
-same because the firmware keeps the suite marked as running.
+exercised.
 
 ## ESP32-C6 Memory Layout
 

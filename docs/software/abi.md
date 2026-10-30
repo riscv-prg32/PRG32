@@ -349,7 +349,7 @@ Setup screens and cartridge programs use the same button bitmasks:
 | `prg32_multiplayer_get_peer` | copy one peer snapshot |
 | `prg32_cart_default_slot` | return the saved default cartridge slot, or `-1` |
 | `prg32_cart_set_default_slot` | save a default cartridge slot, or clear with `-1` |
-| `prg32_cart_select_default` | load the saved default cartridge |
+| `prg32_cart_select_default` | load the saved default cartridge; called by a cartridge, it happens when the current entry point returns |
 | `prg32_score_player_get` | copy the current scoreboard player name |
 | `prg32_score_player_set` | set the current scoreboard player name |
 | `prg32_score_player_prompt` | show the on-screen player-name entry UI |

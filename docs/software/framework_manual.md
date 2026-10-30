@@ -198,6 +198,20 @@ Available modes are `PRG32_BAND_MODE_NONE`, `PRG32_BAND_MODE_FPS`,
 menu lets a trainer choose what appears in the top and bottom bands and stores
 that choice in NVS.
 
+Band settings belong to the cartridge that made them. Before a cartridge starts,
+and when setup opens, the firmware returns the bands to the saved menu choice,
+clears band text and colors, turns full-screen drawing off, and repaints the
+bands black. Set them in `init` rather than relying on an earlier cartridge. A
+cartridge that calls `prg32_band_save_config()` makes its modes the saved choice.
+
+Validated 2026-10-30 on ESP32-C6 and QEMU, 128 KiB window, by comparing screens:
+Poing has plain black bands after Cockroaches Cathisteria (board) and after
+DeviceDemo (QEMU), and is centered after `performancetest` on QEMU; a saved GAME
+mode still applies to the next cartridge. A scratch cartridge read slot
+information, was refused an empty slot and kept running, then switched to
+`performancetest`, which completed. `performancetest` also completed with a GAME
+band, where a band reads cartridge information while the cartridge presents.
+
 ## Screenshot API
 
 When the resident HTTP server is reachable, `GET /api/screenshot.bmp` streams
@@ -296,10 +310,14 @@ Important functions:
 - `prg32_cart_store_slot(slot, image, size)`: validate and store an image without running it.
 - `prg32_cart_install_slot(slot, image, size, persist)`: install to one of
   `cart0` through `cart7`.
-- `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot.
+- `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot. A
+  cartridge may call this to start another one: it gets `0` and the switch
+  happens when its current `init`, `update`, or `draw` returns, so that call must
+  be its last action; an empty slot returns a negative value and it keeps running.
 - `prg32_cart_default_slot()`: read the saved default boot cartridge.
 - `prg32_cart_set_default_slot(slot)`: save a default slot, or pass `-1` to clear it.
-- `prg32_cart_select_default()`: load the saved default slot.
+- `prg32_cart_select_default()`: load the saved default slot, with the same rule
+  when a cartridge calls it.
 - `prg32_cart_stored_count()`: count valid stored cartridges.
 - `prg32_cart_get_slot_info(slot, info)`: inspect one persistent slot.
 - `prg32_cart_call_init()`

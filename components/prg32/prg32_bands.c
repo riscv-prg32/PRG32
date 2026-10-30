@@ -32,6 +32,11 @@ static prg32_band_state_t g_band[2] = {
     },
 };
 
+/* What the setup developer menu saved. A cartridge's own choices last only
+ * until the next cartridge starts. */
+static prg32_band_mode_t g_saved_mode[2] = {PRG32_BAND_MODE_NONE,
+                                            PRG32_BAND_MODE_NONE};
+
 static char g_game_info[BAND_TEXT_LEN];
 static char g_debug_info[BAND_TEXT_LEN];
 
@@ -150,6 +155,31 @@ void prg32_band_use_default_colors(uint8_t band) {
   g_band[band].custom_bg = 0;
 }
 
+void prg32_band_set_setup_text(uint8_t band) {
+  prg32_band_set_text(band, band == PRG32_BAND_TOP ? "PRG32 TOP STATUS"
+                                                   : "PRG32 BOTTOM STATUS");
+}
+
+void prg32_band_reset(void) {
+  prg32_gfx_set_fullscreen(0);
+  /* Repaints the bands black: a cartridge that draws only with indexed colors
+   * never sets their color itself. */
+  prg32_gfx_set_band_color(PRG32_COLOR_BLACK);
+  prg32_gfx_use_background_bands();
+  for (uint8_t band = PRG32_BAND_TOP; band <= PRG32_BAND_BOTTOM; ++band) {
+    g_band[band].mode = g_saved_mode[band];
+    g_band[band].fg = band == PRG32_BAND_TOP ? PRG32_COLOR_CYAN : PRG32_COLOR_GREEN;
+    g_band[band].bg = PRG32_COLOR_BLACK;
+    g_band[band].custom_bg = 0;
+    g_band[band].text[0] = '\0';
+    if (g_saved_mode[band] == PRG32_BAND_MODE_CUSTOM) {
+      prg32_band_set_setup_text(band);
+    }
+  }
+  g_game_info[0] = '\0';
+  g_debug_info[0] = '\0';
+}
+
 void prg32_band_load_config(void) {
   if (band_nvs_init() != ESP_OK) {
     return;
@@ -164,6 +194,8 @@ void prg32_band_load_config(void) {
   nvs_get_u8(nvs, "bottom", &bottom);
   g_band[PRG32_BAND_TOP].mode = normalize_mode((prg32_band_mode_t)top);
   g_band[PRG32_BAND_BOTTOM].mode = normalize_mode((prg32_band_mode_t)bottom);
+  g_saved_mode[PRG32_BAND_TOP] = g_band[PRG32_BAND_TOP].mode;
+  g_saved_mode[PRG32_BAND_BOTTOM] = g_band[PRG32_BAND_BOTTOM].mode;
   nvs_close(nvs);
 }
 
@@ -178,6 +210,8 @@ void prg32_band_save_config(void) {
   nvs_set_u8(nvs, "top", (uint8_t)g_band[PRG32_BAND_TOP].mode);
   nvs_set_u8(nvs, "bottom", (uint8_t)g_band[PRG32_BAND_BOTTOM].mode);
   nvs_commit(nvs);
+  g_saved_mode[PRG32_BAND_TOP] = g_band[PRG32_BAND_TOP].mode;
+  g_saved_mode[PRG32_BAND_BOTTOM] = g_band[PRG32_BAND_BOTTOM].mode;
   nvs_close(nvs);
 }
 

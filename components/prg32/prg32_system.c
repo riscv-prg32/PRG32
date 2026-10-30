@@ -839,9 +839,7 @@ static void developer_menu(void) {
       uint8_t band = choice == 0 ? PRG32_BAND_TOP : PRG32_BAND_BOTTOM;
       prg32_band_set_mode(band, next_band_mode(prg32_band_mode(band), adjust));
       if (prg32_band_mode(band) == PRG32_BAND_MODE_CUSTOM) {
-        prg32_band_set_text(band, band == PRG32_BAND_TOP
-                                      ? "PRG32 TOP STATUS"
-                                      : "PRG32 BOTTOM STATUS");
+        prg32_band_set_setup_text(band);
       }
       prg32_band_save_config();
       prg32_input_wait_released(MENU_ACCEPT | SETUP_ADJUST);
@@ -1124,6 +1122,7 @@ int prg32_setup_take_request(void) {
 }
 
 void prg32_setup_run(void) {
+  prg32_band_reset();
   prg32_gfx_set_fullscreen(1);
   run_setup_menu();
   prg32_gfx_set_fullscreen(0);

@@ -15,6 +15,7 @@
 #include "esp_partition.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 
 #define PRG32_CART_HEADER_MIN_SIZE ((size_t)sizeof(prg32_cart_header_t))
 #define PRG32_CART_META_MAGIC_LEN 9
@@ -73,6 +74,16 @@ static bool g_loaded;
 static bool g_stored;
 static char g_error[96] = "no cartridge loaded";
 
+/* The task running cartridge code, or NULL. While it is set that task holds the
+ * cartridge lock, and firmware functions it calls were called by the cartridge. */
+static TaskHandle_t g_entry_task;
+/* A slot the running cartridge selected, loaded once its entry point returns. */
+static bool g_switch_requested;
+static uint8_t g_switch_slot;
+/* The generation whose init was called. A cartridge can be loaded by another
+ * task between two calls of the main loop, and must not update or draw yet. */
+static uint32_t g_init_generation;
+
 /* A stored cartridge is read through a flash memory mapping instead of a heap
  * copy. The mapping stays open while the cartridge is loaded because the
  * AUDIO block's samples and tracker events are played directly from it. */
@@ -126,16 +137,19 @@ static uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len) {
     return ~crc;
 }
 
+/* Recursive because cartridge code runs with the lock held and may call back
+ * into functions that take it: prg32_cart_get_slot_info() through the ABI, and
+ * prg32_cart_get_info() from a status band while it presents a frame. */
 static int lock_cart(void) {
     if (!g_cart_lock) {
         return 0;
     }
-    return xSemaphoreTake(g_cart_lock, portMAX_DELAY) == pdTRUE ? 0 : -1;
+    return xSemaphoreTakeRecursive(g_cart_lock, portMAX_DELAY) == pdTRUE ? 0 : -1;
 }
 
 static void unlock_cart(void) {
     if (g_cart_lock) {
-        xSemaphoreGive(g_cart_lock);
+        xSemaphoreGiveRecursive(g_cart_lock);
     }
 }
 
@@ -449,7 +463,7 @@ static int load_image_locked(const void *image, size_t image_size) {
 
 void prg32_cart_init(void) {
     if (!g_cart_lock) {
-        g_cart_lock = xSemaphoreCreateMutex();
+        g_cart_lock = xSemaphoreCreateRecursiveMutex();
     }
     bool any_partition = false;
     for (uint8_t slot = 0; slot < PRG32_CART_SLOT_COUNT; ++slot) {
@@ -838,6 +852,19 @@ int prg32_cart_select_slot(uint8_t slot) {
         set_error("invalid cartridge slot");
         return -1;
     }
+    if (g_entry_task == xTaskGetCurrentTaskHandle()) {
+        /* The running cartridge is asking: loading now would overwrite the code
+         * making this call. An empty slot is refused here so that the cartridge
+         * keeps running and can handle the error. */
+        prg32_cart_header_t header;
+        if (read_stored_header(slot, &header, NULL, NULL) != 0) {
+            set_errorf("no stored cartridge in %s", slot_name(slot));
+            return -1;
+        }
+        g_switch_slot = slot;
+        g_switch_requested = true;
+        return 0;
+    }
     g_current_slot = slot;
     return prg32_cart_load_stored();
 }
@@ -980,14 +1007,23 @@ int prg32_cart_get_info(prg32_cart_info_t *info) {
     return 0;
 }
 
-static int call_entry(prg32_cart_entry_t entry) {
-    if (!entry || !g_loaded) {
+/* The entry is passed by address and read with the lock held: a pointer read
+ * earlier could belong to a cartridge that another task has since replaced. */
+static int call_entry(const prg32_cart_entry_t *entry_ptr, bool is_init) {
+    if (!g_loaded) {
         return -1;
     }
     if (lock_cart() != 0) {
         return -1;
     }
-    if (!g_loaded) {
+    prg32_cart_entry_t entry = *entry_ptr;
+    if (!g_loaded || !entry) {
+        unlock_cart();
+        return -1;
+    }
+    if (is_init) {
+        g_init_generation = g_generation;
+    } else if (g_init_generation != g_generation) {
         unlock_cart();
         return -1;
     }
@@ -999,25 +1035,31 @@ static int call_entry(prg32_cart_entry_t entry) {
         unlock_cart();
         return -1;
     }
+    g_entry_task = xTaskGetCurrentTaskHandle();
     if (g_import_model == PRG32_IMPORT_MODEL_ABI_TABLE) {
         ((prg32_cart_abi_entry_t)entry)(&prg32_abi_table);
     } else {
         entry();
     }
+    g_entry_task = NULL;
     unlock_cart();
+    if (g_switch_requested) {
+        g_switch_requested = false;
+        prg32_cart_select_slot(g_switch_slot);
+    }
     return 0;
 }
 
 int prg32_cart_call_init(void) {
-    return call_entry(g_init);
+    return call_entry(&g_init, true);
 }
 
 int prg32_cart_call_update(void) {
-    return call_entry(g_update);
+    return call_entry(&g_update, false);
 }
 
 int prg32_cart_call_draw(void) {
-    return call_entry(g_draw);
+    return call_entry(&g_draw, false);
 }
 
 const char *prg32_cart_last_error(void) {
