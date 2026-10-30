@@ -114,8 +114,31 @@ the `prototype1` board. `prg32_cart_exec` stayed at 0x408023a0 (ESP32-C6) and
 | HTTPS Store catalog and one download on the board | Worked; lowest free heap 99,500 B, largest block 65,536 B |
 | USB and HTTP uploads of the 103,168-byte package | Worked (USB on both targets; HTTP on the board) |
 
-Multiplayer and a metadata-bearing package of exactly 131,072 bytes were not
-exercised.
+A metadata-bearing package of exactly 131,072 bytes was not exercised.
+
+### Multiplayer Check (2026-10-30)
+
+Galleria2007, unchanged, ran on the board for five minutes with three simulated
+players, a screenshot request every 10 seconds, then a relay outage. The firmware
+differed only in its window and in `PRG32_MULTIPLAYER_SERVER_URL`. The relay was
+the `CartridgeStore` multiplayer module.
+
+| Measure | 64 KiB window | 128 KiB window |
+|---|---:|---:|
+| Free heap at the setup menu | 185,960 B | 120,356 B |
+| Free heap while playing | 175,996 B | 110,392 B |
+| Lowest free heap | 164,884 B | 100,564 B |
+| Smallest largest block | 126,976 B | 60,416 B |
+| Screenshots served | 28 of 28 | 28 of 28 |
+| Game frame sent at the end of the soak | 9,330 | 9,328 |
+
+On both windows free heap returned to its starting value after each dip and the
+board rejoined its room by itself after the relay came back. A separate test
+cartridge also reached the room limit on 128 KiB: the board saw seven peers, they
+received its state, and free heap stayed above 106,864 B.
+
+One board and simulated peers were used, not several boards. An HTTPS Store
+session with a multiplayer connection open was not exercised.
 
 ## ESP32-C6 Memory Layout
 
