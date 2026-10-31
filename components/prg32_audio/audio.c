@@ -1,4 +1,5 @@
 #include "audio_internal.h"
+#include "prg32_audio_frame_clock.h"
 #include "esp_timer.h"
 #include <string.h>
 
@@ -17,9 +18,136 @@ void prg32_audio_set_default_master_volume(uint8_t volume) {
   g_default_master_volume = volume;
 }
 
+#if PRG32_QEMU_AUDIO_REDIRECT
+/* The audio frame clock (prg32_audio_frame_clock.h). While a cartridge runs, its frames
+ * tell the audio task how many 20 ms buffers to render (work_) and wait until it has
+ * (done_); between frames the task renders nothing. render_lock_ is held while the task
+ * renders on its own, so a cartridge starts between two buffers. These live outside
+ * g_prg32_audio because a cartridge may call prg32_audio_init, which clears that state. */
+static SemaphoreHandle_t render_lock_, work_, done_;
+static volatile bool cartridge_clock_;
+static uint32_t cartridge_pending_ms_;
+
+static uint32_t buffer_ms(void) {
+  return (uint32_t)(PRG32_AUDIO_MIX_FRAMES * 1000u /
+                    g_prg32_audio.config.sample_rate);
+}
+
+/* Advance the engine by one buffer, mix it and send it to the host (QEMU UART1). */
+static void render_buffer(int16_t *buffer) {
+  prg32_audio_tracker_step(buffer_ms());
+  prg32_audio_voices_step(buffer_ms());
+  if (prg32_audio_get_mode() == PRG32_AUDIO_MODE_STEREO) {
+    prg32_audio_mix_stereo(buffer, PRG32_AUDIO_MIX_FRAMES);
+  } else {
+    prg32_audio_mix_mono(buffer, PRG32_AUDIO_MIX_FRAMES);
+  }
+  prg32_qemu_audio_write_pcm(buffer, PRG32_AUDIO_MIX_FRAMES,
+                             prg32_audio_get_mode());
+  // Block until the host sends a 1-byte ACK: QEMU fast-forwards when idle and
+  // would otherwise generate audio faster than real time.
+  uint8_t ack;
+  prg32_qemu_audio_read_ack(&ack, 1);
+}
+
+/* Cartridge time has moved on by `ms`: the audio task renders the whole buffers that
+ * fit, and the cartridge waits for them. */
+static void cartridge_advance(uint32_t ms) {
+  if (!g_prg32_audio.task || !g_prg32_audio.i2s_ready || !work_) {
+    return;
+  }
+  cartridge_pending_ms_ += ms;
+  uint32_t buffers = 0;
+  while (cartridge_pending_ms_ >= buffer_ms()) {
+    cartridge_pending_ms_ -= buffer_ms();
+    xSemaphoreGive(work_);
+    ++buffers;
+  }
+  while (buffers-- > 0) {
+    xSemaphoreTake(done_, portMAX_DELAY);
+  }
+}
+#endif
+
+void prg32_audio_cartridge_start(void) {
+#if PRG32_QEMU_AUDIO_REDIRECT
+  if (!render_lock_) {
+    return;
+  }
+  // Wait for a buffer the audio task is rendering on its own; after that it renders
+  // only the buffers the cartridge's frames ask for.
+  xSemaphoreTake(render_lock_, portMAX_DELAY);
+  cartridge_clock_ = true;
+  cartridge_pending_ms_ = 0;
+  xSemaphoreGive(render_lock_);
+#endif
+}
+
+void prg32_audio_cartridge_frame(uint32_t ms) {
+#if PRG32_QEMU_AUDIO_REDIRECT
+  if (cartridge_clock_) {
+    cartridge_advance(ms);
+  }
+#else
+  (void)ms;
+#endif
+}
+
+void prg32_audio_cartridge_stop(void) {
+#if PRG32_QEMU_AUDIO_REDIRECT
+  cartridge_clock_ = false;
+#endif
+}
+
+/* prg32_audio_notes waits between its notes. Under the audio frame clock that wait is
+ * rendered, as the browser core does; otherwise the task sleeps. */
+void prg32_audio_wait_ms(uint32_t ms) {
+#if PRG32_QEMU_AUDIO_REDIRECT
+  if (cartridge_clock_) {
+    cartridge_advance(ms);
+    return;
+  }
+#endif
+  vTaskDelay(pdMS_TO_TICKS(ms));
+}
+
 static void audio_task(void *arg) {
   (void)arg;
   int16_t buffer[PRG32_AUDIO_MIX_FRAMES * 2];
+#if PRG32_QEMU_AUDIO_REDIRECT
+  /* In QEMU nothing paces the task like the console's I2S DMA does, so the engine
+   * advances by the audio it renders (one buffer per period), and the period is
+   * kept on the emulated clock with vTaskDelayUntil. While a cartridge runs, its
+   * frames ask for the buffers instead (the audio frame clock). */
+  TickType_t next_wake = xTaskGetTickCount();
+  // At least one tick: pdMS_TO_TICKS(4) is 0 at 100 Hz, and a task that never blocks
+  // would starve the cartridge's lower-priority task.
+  const TickType_t idle_ticks = pdMS_TO_TICKS(4) > 0 ? pdMS_TO_TICKS(4) : 1;
+
+  while (!g_prg32_audio.task_stop) {
+    if (cartridge_clock_) {
+      if (xSemaphoreTake(work_, idle_ticks) == pdTRUE) {
+        render_buffer(buffer);
+        xSemaphoreGive(done_);
+      }
+      next_wake = xTaskGetTickCount();
+      continue;
+    }
+    if (!g_prg32_audio.i2s_ready) {
+      vTaskDelay(idle_ticks);
+      next_wake = xTaskGetTickCount();
+      continue;
+    }
+    xSemaphoreTake(render_lock_, portMAX_DELAY);
+    if (!cartridge_clock_) {
+      render_buffer(buffer);
+    }
+    xSemaphoreGive(render_lock_);
+    // Wait for the rest of this buffer's 20 ms on the emulated clock (441
+    // frames at 22050 Hz), however long the acknowledgement took.
+    vTaskDelayUntil(&next_wake, pdMS_TO_TICKS(buffer_ms()));
+  }
+#else
   int64_t last_us = esp_timer_get_time();
 
   while (!g_prg32_audio.task_stop) {
@@ -39,26 +167,13 @@ static void audio_task(void *arg) {
     }
 
     if (g_prg32_audio.i2s_ready) {
-#if PRG32_QEMU_AUDIO_REDIRECT
-      prg32_qemu_audio_write_pcm(buffer, PRG32_AUDIO_MIX_FRAMES,
-                                 prg32_audio_get_mode());
-      // Block the audio task until Python sends a 1-byte ACK!
-      // We use a ACK system due to QEMU fast-forwarding when idle and
-      // generating audio faster than real time speed.
-      uint8_t ack;
-      prg32_qemu_audio_read_ack(&ack, 1);
-
-      // Advance the QEMU virtual clock by exactly 20ms, which is the length of
-      // the generated audio (441 frames at 22050MHz).
-      vTaskDelay(pdMS_TO_TICKS(20));
-#else
       prg32_audio_i2s_write(buffer, PRG32_AUDIO_MIX_FRAMES,
                             g_prg32_audio.config.mode);
-#endif
     } else {
       vTaskDelay(pdMS_TO_TICKS(4));
     }
   }
+#endif
 
   g_prg32_audio.task = NULL;
   vTaskDelete(NULL);
@@ -153,6 +268,13 @@ bool prg32_audio_init(const prg32_audio_config_t *config) {
 
   prg32_audio_restore_defaults();
 
+#if PRG32_QEMU_AUDIO_REDIRECT
+  if (!render_lock_) {
+    render_lock_ = xSemaphoreCreateMutex();
+    work_ = xSemaphoreCreateCounting(1000, 0);
+    done_ = xSemaphoreCreateCounting(1000, 0);
+  }
+#endif
   int priority = tskIDLE_PRIORITY + 2;
   xTaskCreate(audio_task, "prg32_audio", 4096, NULL, priority,
               &g_prg32_audio.task);
