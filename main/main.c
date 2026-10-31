@@ -214,6 +214,7 @@ void app_main(void) {
         cart_generation = current_generation;
         prg32_console_clear();
         prg32_stop_metrics_run();
+        prg32_band_reset();
         prg32_display_log_memory("immediately before cartridge init");
         prg32_cart_call_init();
         prg32_start_metrics_for_loaded_cart();

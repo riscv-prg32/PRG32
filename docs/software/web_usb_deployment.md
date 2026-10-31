@@ -50,14 +50,16 @@ messages behind a `wifi` HELLO capability
 change; a Wi-Fi page in the Construction-Kit or CartridgeStore would be an
 optional follow-up. PRG32-Qt must keep `wifi` out of its HELLO capabilities.
 
+Firmware from 2026-10-30 onward defaults to a 128 KiB window and accepts
+packages up to 131,072 bytes. Existing packages keep working, and the web client
+reads the limits from HELLO. PRG32-Construction-Kit
+`tools/build_qemu_firmware.py` (`CART_MAX_SIZE = 64 * 1024`) and PRG32-Qt
+`src/qt/IoProtocolServer.cpp` (UPLOAD_BEGIN rejects more than 65,536 bytes) must
+still be raised before they can handle a package larger than 64 KiB.
+
 Firmware from 2026-10-29 onward adds `runtime.heap_free` and
 `runtime.heap_largest` to HELLO ([HELLO response](usb_protocol.md#hello-response)).
-The web client ignores unknown fields and needs no change. Firmware built
-with the optional 128 KiB profile accepts packages up to 131,072 bytes; the
-web client reads `cart_max_size` from HELLO, but PRG32-Construction-Kit
-`tools/build_qemu_firmware.py` (`CART_MAX_SIZE = 64 * 1024`) and PRG32-Qt
-`src/qt/IoProtocolServer.cpp` (UPLOAD_BEGIN rejects more than 65,536 bytes)
-still assume the default 64 KiB limit.
+The web client ignores unknown fields and needs no change.
 
 ## How it works
 

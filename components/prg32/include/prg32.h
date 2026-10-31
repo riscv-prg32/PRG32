@@ -148,11 +148,11 @@ extern "C" {
 #define PRG32_CART_ARCH_QEMU "qemu"
 #define PRG32_CART_LOAD_ADDR 0x40800000u
 #ifndef CONFIG_PRG32_CART_MAX_KIB
-#define CONFIG_PRG32_CART_MAX_KIB 64
+#define CONFIG_PRG32_CART_MAX_KIB 128
 #endif
 #define PRG32_CART_MAX_SIZE ((uint32_t)CONFIG_PRG32_CART_MAX_KIB * 1024u)
 #ifndef CONFIG_PRG32_CART_RAM_KIB
-#define CONFIG_PRG32_CART_RAM_KIB 64
+#define CONFIG_PRG32_CART_RAM_KIB 128
 #endif
 #define PRG32_CART_RAM_SIZE ((uint32_t)CONFIG_PRG32_CART_RAM_KIB * 1024u)
 #define PRG32_CART_NAME_LEN 32
@@ -551,12 +551,20 @@ void prg32_band_set_colors(uint8_t band, uint16_t fg, uint16_t bg);
 void prg32_band_use_default_colors(uint8_t band);
 void prg32_band_load_config(void);
 void prg32_band_save_config(void);
+/* Firmware only: return the palette, bands and viewport to their defaults and
+ * what the developer menu saved, before a cartridge starts or setup opens. Must
+ * not hold the cartridge lock. */
+void prg32_band_reset(void);
+/* Firmware only: the text of a band the developer menu set to CUSTOM. */
+void prg32_band_set_setup_text(uint8_t band);
 void prg32_gfx_pixel(int x, int y, uint16_t color);
 void prg32_gfx_rect(int x, int y, int w, int h, uint16_t color);
 void prg32_gfx_pixel_indexed(int x, int y, uint8_t index);
 void prg32_gfx_rect_indexed(int x, int y, int w, int h, uint8_t index);
 void prg32_palette_set(uint8_t index, uint16_t rgb565);
 uint16_t prg32_palette_get(uint8_t index);
+/* Firmware only: restore the default system palette. */
+void prg32_palette_reset(void);
 void prg32_gfx_text8(int x, int y, const char *s, uint16_t fg, uint16_t bg);
 int prg32_gfx_snapshot_row_rgb565(int y, uint16_t *out, size_t pixels);
 void prg32_splash_draw(const char *title, const char *subtitle, uint16_t bg,

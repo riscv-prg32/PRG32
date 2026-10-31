@@ -19,7 +19,7 @@ actual impact on a board. The default audio configuration has eight voices at
 ## Maximizing Free Heap
 
 The resident runtime keeps as much internal SRAM free for the heap as it can
-next to the static 64 KiB cartridge window, `prg32_cart_exec`
+next to the static 128 KiB cartridge window, `prg32_cart_exec`
 ([profiles](../usage/profiles.md)). Each measure below was checked on the
 ESP32-C6 prototype and in QEMU.
 
@@ -68,8 +68,9 @@ measurements were taken.
 
 Free heap is reported by the device-protocol HELLO reply
 ([`runtime.heap_free`](../software/usb_protocol.md#hello-response)). The
-figures below were taken on 2026-10-29 with the default 64 KiB window, the
+"before" and "after" rows were taken on 2026-10-29 with a 64 KiB window, the
 setup menu open, and the same Wi-Fi state; static sizes are from `idf.py size`.
+The last rows show the cost of the 128 KiB default.
 
 | Build | Static D/IRAM | Free heap | Largest free block |
 |---|---:|---:|---:|
@@ -78,20 +79,66 @@ setup menu open, and the same Wi-Fi state; static sizes are from `idf.py size`.
 | ESP32-C6 `prototype1`, with stored Wi-Fi networks (2026-10-30) | - | 185,832 B | 159,744 B |
 | QEMU (ESP32-C3), before | 296,744 B | not reported | not reported |
 | QEMU (ESP32-C3), after | 143,152 B | 213,648 B | 114,688 B |
+| ESP32-C6 `prototype1`, 64 KiB window (2026-10-30) | 253,359 B | 185,856 B | 159,744 B |
+| ESP32-C6 `prototype1`, 128 KiB default (2026-10-30) | 318,895 B | 120,220 B | 94,208 B |
+| QEMU (ESP32-C3), 64 KiB window (2026-10-30) | - | 213,528 B | 114,688 B |
+| QEMU (ESP32-C3), 128 KiB default (2026-10-30) | - | 148,060 B | 114,688 B |
+
+The 128 KiB default costs 65,636 B of free heap on the board and 65,468 B in
+QEMU. Plan new cartridge services around the board's 94,208-byte largest block.
 
 On the board, loading the same cartridges again and again left free heap
 unchanged (within 0.2 KiB). Some cartridges start firmware services on first
 use, which lowers free heap once; running all 32 Store cartridges in a row
 lowered it by about 22 KiB in total
-([Store compatibility check](../cartridge_store/cartridge_store.md#store-compatibility-check-2026-10-29)). With the optional 128 KiB profile, a cartridge with a 96 KiB
-initialized table and a 24 KiB `.bss` buffer (`mem_size` 125,832 bytes) loaded
-from flash and ran on both targets.
+([Store compatibility check](../cartridge_store/cartridge_store.md#store-compatibility-check-2026-10-29)).
 
 To repeat the per-task analysis, build with `CONFIG_HEAP_TASK_TRACKING=y` and
 `CONFIG_FREERTOS_USE_TRACE_FACILITY=y`, then read the boot checkpoints,
 per-task heap totals (`heap_caps_get_per_task_info()`), and stack high-water
 marks (`uxTaskGetSystemState()`) after exercising uploads, audio, and
 performance retrieval.
+
+### 128 KiB Default Validation (2026-10-30)
+
+The 64 KiB and 128 KiB firmware were built from the same source and compared on
+the `prototype1` board. `prg32_cart_exec` stayed at 0x408023a0 (ESP32-C6) and
+0x40381910 (QEMU). No cartridge was rebuilt for the 128 KiB firmware.
+
+| Check | Result on 128 KiB firmware |
+|---|---|
+| Stored portable cartridges in slots 0-3 and 5-7, `mem_size` up to 63,596 bytes (slot 4 held the same image as slots 0-3) | All ran with no panic. Free heap 120,048 B, or 111,256 B once firmware services started (177 KB on 64 KiB firmware) |
+| Prebuilt `dist/` cartridges and cartridges built earlier with the 32 KiB and 64 KiB limits | All ran on both targets; `blackjack` and the first frames of `cockroaches` were pixel-identical to the 64 KiB firmware |
+| Scratch cartridge, `mem_size` 130,072 bytes: 100,000-byte table, 27,000-byte `.bss`, code in `.data` about 100 KB into the window | Table checksum, `.bss`, and high code all passed on the board; ran on both targets |
+| `performancetest` | 600 frames, mean frame time 81,933 microseconds (81,954 on 64 KiB firmware), minimum free heap 117,952 B |
+| HTTPS Store catalog and one download on the board | Worked; lowest free heap 99,500 B, largest block 65,536 B |
+| USB and HTTP uploads of the 103,168-byte package | Worked (USB on both targets; HTTP on the board) |
+
+A metadata-bearing package of exactly 131,072 bytes was not exercised.
+
+### Multiplayer Check (2026-10-30)
+
+Galleria2007, unchanged, ran on the board for five minutes with three simulated
+players, a screenshot request every 10 seconds, then a relay outage. The firmware
+differed only in its window and in `PRG32_MULTIPLAYER_SERVER_URL`. The relay was
+the `CartridgeStore` multiplayer module.
+
+| Measure | 64 KiB window | 128 KiB window |
+|---|---:|---:|
+| Free heap at the setup menu | 185,960 B | 120,356 B |
+| Free heap while playing | 175,996 B | 110,392 B |
+| Lowest free heap | 164,884 B | 100,564 B |
+| Smallest largest block | 126,976 B | 60,416 B |
+| Screenshots served | 28 of 28 | 28 of 28 |
+| Game frame sent at the end of the soak | 9,330 | 9,328 |
+
+On both windows free heap returned to its starting value after each dip and the
+board rejoined its room by itself after the relay came back. A separate test
+cartridge also reached the room limit on 128 KiB: the board saw seven peers, they
+received its state, and free heap stayed above 106,864 B.
+
+One board and simulated peers were used, not several boards. An HTTPS Store
+session with a multiplayer connection open was not exercised.
 
 ## ESP32-C6 Memory Layout
 

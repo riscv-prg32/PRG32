@@ -305,7 +305,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--tool-prefix", default="riscv32-esp-elf-", help="Prefix for the RISC-V GCC toolchain")
     p.add_argument("--cart-ram-kib", type=parse_cart_ram_kib, default=None,
         help=f"Executable cartridge RAM of the target firmware in KiB (default: {DEFAULT_CART_RAM_KIB}, "
-             f"the extended profile; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
+             f"the large profile; use {CLASSROOM_CART_RAM_KIB} for the classroom profile)")
     arch_group = p.add_mutually_exclusive_group(required=False)
     arch_group.add_argument("--architecture", choices=["esp32c6", "qemu"], help="Target architecture (esp32c6 or qemu)")
     arch_group.add_argument("--firmware-elf", help="Deprecated: firmware-specific cartridge builds are unsupported")

@@ -1069,6 +1069,13 @@ void prg32_palette_set(uint8_t index, uint16_t rgb565) {
     prg32_gfx_unlock();
 }
 
+void prg32_palette_reset(void) {
+    prg32_gfx_lock();
+    palette_init();
+    dirty_add(0, 0, PRG32_GAME_W, PRG32_GAME_H);
+    prg32_gfx_unlock();
+}
+
 uint16_t prg32_palette_get(uint8_t index) {
     prg32_gfx_lock();
     uint16_t color = rgb565_wire(g_palette[index]);

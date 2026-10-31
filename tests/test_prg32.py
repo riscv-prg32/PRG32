@@ -74,11 +74,14 @@ class CartridgeSizeCompatibilityTests(unittest.TestCase):
     def test_legacy_32_kib_cartridge_remains_accepted(self) -> None:
         runtime_handler.ensure_cart_max_size(b"\0" * (32 * 1024))
 
-    def test_64_kib_limit_is_inclusive(self) -> None:
+    def test_64_kib_cartridge_remains_accepted(self) -> None:
         runtime_handler.ensure_cart_max_size(b"\0" * (64 * 1024))
 
+    def test_128_kib_limit_is_inclusive(self) -> None:
+        runtime_handler.ensure_cart_max_size(b"\0" * (128 * 1024))
+
         with self.assertRaises(SystemExit):
-            runtime_handler.ensure_cart_max_size(b"\0" * (64 * 1024 + 1))
+            runtime_handler.ensure_cart_max_size(b"\0" * (128 * 1024 + 1))
 
 class SymbolParsingTests(unittest.TestCase):
     def test_parse_nm_ignores_non_symbol_lines(self) -> None:
@@ -417,17 +420,24 @@ class CartRamProfileTests(unittest.TestCase):
     # A cartridge that fits the 64 KiB extended profile but not the
     # 32 KiB classroom profile.
     MEM_SIZE_40_KIB = 40 * 1024
+    # A cartridge that fits only the default 128 KiB large profile.
+    MEM_SIZE_96_KIB = 96 * 1024
 
     def test_fallback_matches_default_firmware_profile(self) -> None:
-        self.assertEqual(env_variables.DEFAULT_CART_RAM_KIB, 64)
-        self.assertEqual(env_variables.FALLBACK_CART_RAM_SIZE, 64 * 1024)
-        self.assertEqual(env_variables.FALLBACK_CART_MAX_SIZE, 64 * 1024)
+        self.assertEqual(env_variables.DEFAULT_CART_RAM_KIB, 128)
+        self.assertEqual(env_variables.FALLBACK_CART_RAM_SIZE, 128 * 1024)
+        self.assertEqual(env_variables.FALLBACK_CART_MAX_SIZE, 128 * 1024)
         for defaults in ("profiles/sdkconfig.defaults", "profiles/sdkconfig.defaults.qemu"):
             text = (ROOT / defaults).read_text(encoding="utf-8")
-            self.assertIn("CONFIG_PRG32_CART_RAM_EXTENDED=y", text, defaults)
-            self.assertIn("CONFIG_PRG32_CART_MAX_KIB=64", text, defaults)
+            self.assertIn("CONFIG_PRG32_CART_RAM_LARGE_128=y", text, defaults)
+            self.assertIn("CONFIG_PRG32_CART_MAX_KIB=128", text, defaults)
+            self.assertNotIn("CONFIG_PRG32_CART_RAM_EXTENDED=y", text, defaults)
         kconfig = (ROOT / "components/prg32/Kconfig").read_text(encoding="utf-8")
-        self.assertIn("default PRG32_CART_RAM_EXTENDED\n", kconfig)
+        self.assertIn("default PRG32_CART_RAM_LARGE_128\n", kconfig)
+        # The smaller window stays available as an optional fragment.
+        text = (ROOT / "profiles/sdkconfig.defaults.cart_64k").read_text(encoding="utf-8")
+        self.assertIn("CONFIG_PRG32_CART_RAM_EXTENDED=y", text)
+        self.assertIn("CONFIG_PRG32_CART_MAX_KIB=64", text)
 
     def test_esp32c6_profile_keeps_heap_saving_options(self) -> None:
         # These options free internal SRAM for the heap; see
@@ -445,13 +455,26 @@ class CartRamProfileTests(unittest.TestCase):
         # the address legacy Store cartridges are linked against.
         self.assertNotIn("CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y", text)
 
-    def test_contract_uses_64_kib_without_runtime_info(self) -> None:
-        data = portable_header(self.MEM_SIZE_40_KIB) + b"\0\0\0\0"
+    def test_contract_uses_128_kib_without_runtime_info(self) -> None:
+        data = portable_header(self.MEM_SIZE_96_KIB) + b"\0\0\0\0"
         runtime_handler.validate_cartridge_contract(data)
         with self.assertRaisesRegex(SystemExit, "executable RAM"):
             runtime_handler.validate_cartridge_contract(
                 data,
+                runtime={"cart_ram_size": 64 * 1024},
+            )
+        with self.assertRaisesRegex(SystemExit, "executable RAM"):
+            runtime_handler.validate_cartridge_contract(
+                portable_header(self.MEM_SIZE_40_KIB) + b"\0\0\0\0",
                 runtime={"cart_ram_size": 32 * 1024},
+            )
+
+    def test_cartridges_built_for_smaller_profiles_stay_accepted(self) -> None:
+        # Portable cartridges built before the window grew are not rebuilt.
+        for mem_size in (32 * 1024, 64 * 1024):
+            runtime_handler.validate_cartridge_contract(
+                portable_header(mem_size) + b"\0\0\0\0",
+                runtime={"cart_ram_size": 128 * 1024, "cart_max_size": 128 * 1024},
             )
 
     def test_parse_cart_ram_kib_uses_kconfig_range(self) -> None:
@@ -466,7 +489,7 @@ class CartRamProfileTests(unittest.TestCase):
             sdkconfig = Path(tmp) / "sdkconfig"
             self.assertEqual(
                 runtime_handler.resolve_cart_ram_size(None, sdkconfig)[0],
-                64 * 1024,
+                128 * 1024,
             )
             sdkconfig.write_text(
                 "CONFIG_PRG32_CART_RAM_CLASSROOM=y\n"
