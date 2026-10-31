@@ -100,6 +100,9 @@ jobs:
       - name: Check Poing renderer
         run: cartridges/poing/tests/run.sh
 
+      - name: Check Poing Wall
+        run: cartridges/poingwall/tests/run.sh
+
       - name: Build portable graphics assembly examples
         shell: bash
         run: |
@@ -159,6 +162,8 @@ jobs:
           . "$IDF_PATH/export.sh"
           PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poing/build.sh "$GITHUB_WORKSPACE" esp32c6
           PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poing/build.sh "$GITHUB_WORKSPACE" qemu
+          PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poingwall/build.sh "$GITHUB_WORKSPACE" esp32c6
+          PRG32_REPO="$GITHUB_WORKSPACE" cartridges/poingwall/build.sh "$GITHUB_WORKSPACE" qemu
 
       - name: Build Audio Pan Test and Performance Test packages
         shell: bash

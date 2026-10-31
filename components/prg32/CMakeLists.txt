@@ -15,7 +15,7 @@ set(PRG32_PRIV_REQUIRES
 )
 
 if(IDF_TARGET STREQUAL "esp32c3")
-    list(APPEND PRG32_PRIV_REQUIRES esp_lcd esp_lcd_qemu_rgb)
+    list(APPEND PRG32_PRIV_REQUIRES esp_lcd esp_lcd_qemu_rgb esp_websocket_client esp_eth)
 endif()
 
 if(IDF_TARGET STREQUAL "esp32c6")
@@ -51,6 +51,7 @@ idf_component_register(
         "prg32_platform.c"
         "prg32_random.c"
         "prg32_multiplayer.c"
+        "prg32_multiplayer_wire.c"
         "prg32_qemu_input.c"
         "prg32_random.c"
         "prg32_sprite.c"

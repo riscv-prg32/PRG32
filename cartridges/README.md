@@ -19,6 +19,8 @@ Each can be built as a portable package for supported PRG32 targets.
   score APIs.
 - [Performance Test](performancetest/README.md) is the reference cartridge for
   reproducible measurements through the public performance broker ABI.
+- [Poing Wall](poingwall/README.md) bounces one ball across the screens of
+  several networked consoles, and is the visual test of the multiplayer protocol.
 - [Poing](poing/README.md) is a real-time procedural graphics showcase featuring
   a textured bouncing sphere, perspective grid, lighting, and synchronized
   impact audio.

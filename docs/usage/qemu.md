@@ -87,6 +87,26 @@ QEMU does not expose a cartridge-visible Wi-Fi address, so the completion
 screen shows an explicit `<board-ip>` placeholder. Retrieve the same JSON
 without HTTP through `esp32c6 performance --port socket://127.0.0.1:5555`.
 
+## Running Several Emulators
+
+Each emulator with `--instance` behaves like a separate console:
+
+```bash
+python3 -m prg32 qemu run --instance 1 --no-audio
+```
+
+| Instance `N` has | Where |
+|---|---|
+| Its own flash, cartridges, and settings | `build-qemu/instances/N/qemu_flash.bin` |
+| Its own multiplayer identity | Created on first boot; the copy's NVS is erased when it is made |
+| Its own device protocol port | `5555 + 10 * N` |
+| Its own monitor | TCP port `5556 + 10 * N`, instead of the terminal |
+| Its own audio port | `4321 + 10 * N` |
+
+The copy is made once, from `build-qemu/qemu_flash.bin`. To give an instance new
+firmware, delete its directory, which also gives it a new identity. `--no-audio`
+keeps an instance from starting an audio player.
+
 ## QEMU Audio (UART Redirection)
 
 Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a custom **Credit-Based Flow Control** protocol to redirect the 22050Hz PCM audio stream over the virtual UART port (`tcp::4321`) to the host machine.
@@ -128,7 +148,7 @@ and the same behavior on hardware.
 Framework code can call `prg32_diag_set_input_state()` to inject player-1 inputs in QEMU-oriented tests. 
 
 **Multiplayer API**:
-The multiplayer API works in QEMU without actual Wi-Fi. Calling `prg32_multiplayer_join()` succeeds locally, `prg32_multiplayer_available()` returns true, and peer snapshots default to empty.
+QEMU plays real network multiplayer against a real server, over emulated Ethernet instead of Wi-Fi, with the same firmware code as the board. See [Multiplayer protocol](../software/multiplayer_protocol.md). A deterministic test can set `CONFIG_PRG32_MULTIPLAYER_OFFLINE_STUB`: join then succeeds locally with no peers, and `prg32_multiplayer_available()` returns false, because that is not real multiplayer.
 
 ## Recording cartridge previews
 

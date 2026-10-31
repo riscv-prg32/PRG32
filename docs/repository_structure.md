@@ -16,8 +16,9 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- blackjack/                  Casino blackjack game and rules tests
 |   |-- devicedemo/                 Hardware/runtime feature showcase
 |   |-- performancetest/            RGB565/full-indexed public-ABI measurement reference
-|   `-- poing/                      Indexed procedural graphics and application benchmark
-|       `-- assets/                 Screenshots and 30-second audiovisual previews
+|   |-- poing/                      Indexed procedural graphics and application benchmark
+|   |   `-- assets/                 Screenshots and 30-second audiovisual previews
+|   `-- poingwall/                  One ball across several networked screens; visual test of the multiplayer protocol
 |-- components/
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, eight-slot cartridge loader)
 |   |   |-- prg32_bands.c           Status bands and the reset before each cartridge: saved developer-menu band choice, default palette, game viewport
@@ -25,6 +26,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return)
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only shared RGB/LCD boot-indicator helpers
+|   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, peer table, identity, and QEMU's emulated Ethernet
+|   |   |-- prg32_multiplayer_wire.c  The protocol's JSON messages, validated, with no networking so that they can be tested on a computer
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
 |   |   |-- prg32_system.c          Boot sequence and setup menus, and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, performance, Wi-Fi, and key-command protocol with upload timeout, failed-slot erase, HELLO heap reporting, and whole-frame writes that console logs cannot split
@@ -47,6 +50,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- performance_test.md         Canonical performance-test execution, interpretation, and extension guide
 |   |-- measurement/                Scientific methodology, metrics schema, ABI, and validation records
 |   |-- software/                   Firmware manuals, C framework details, and ABI definitions (Note: the framework manual is for cartridge users, not framework developers)
+|   |   |-- multiplayer_protocol.md  How the firmware implements prg32-multiplayer-1.0, its limits, and its test record
 |   |   |-- python_language.md      PRG32 Python language, commands, and alignment with the Construction Kit
 |   |   |-- usb_protocol.md         Versioned offline device-protocol wire format, transport rules, and SDK workflow
 |   |   `-- web_usb_deployment.md   Web Serial deployment contract for the Construction-Kit and CartridgeStore
@@ -65,9 +69,10 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- prg32/                          Python module containing the core CLI tooling
 |   |-- abi/                        Cartridge ABI generator and JSON specification
 |   |-- cartridge/                  Cartridge packaging scripts
+|   |-- multiplayer/                Local multiplayer server address for builds
 |   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, verification, and USB Wi-Fi network and key commands
 |   |-- python/                     PRG32 Python compiler shared with PRG32-Construction-Kit (game.py -> game IR -> C/assembly) and the `python` command
-|   |-- qemu/                       Emulator launch, staging, key commands, and automated smoke testing
+|   |-- qemu/                       Emulator launch (including several independent instances), staging, key commands, and automated smoke testing
 |   |-- usb_protocol.py             Shared framed device-protocol client and stream decoder
 |   |-- store/                      CartridgeStore integration (publishing, formatting, metadata)
 |   `-- utilities/                  Common utility functions for logging, environment checks, and partitions
@@ -75,9 +80,9 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (128 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 64 KiB fragment, `sdkconfig.defaults.cart_64k`)
 |   `-- sdkconfig.pins.*            Hardware pin configuration profiles (e.g. prototype1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), the multiplayer wire format and session rules, setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
-|-- tools/                          Developer scripts, including real QEMU cartridge preview capture and media validation
+|-- tools/                          Developer scripts, including real QEMU cartridge preview capture, media validation, and the multiplayer wall test against a real server
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents
 |-- CMakeLists.txt                  Top-level CMake project definition

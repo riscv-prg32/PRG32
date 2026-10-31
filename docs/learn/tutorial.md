@@ -160,7 +160,7 @@ prg32_multiplayer_tick();
 ```
 
 On ESP32-C6 this uses Wi-Fi station mode and WebSocket. Run the standalone
-[MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer) on the
+[PRG32-Multiplayer-Server](https://github.com/riscv-prg32/PRG32-Multiplayer-Server) on the
 classroom LAN. QEMU exposes the same API with a local offline stub, so the
 cartridge still compiles and `join` succeeds.
 

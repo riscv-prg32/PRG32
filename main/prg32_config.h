@@ -144,7 +144,8 @@
 #define PRG32_SCORE_MAX 16
 #define PRG32_IDLE_HEARTBEAT_MS 5000
 
-/* Optional cartridge multiplayer service over Wi-Fi STA + WebSocket. */
+/* Optional cartridge multiplayer service over WebSocket: Wi-Fi station mode on
+ * ESP32-C6, emulated Ethernet on QEMU. */
 #ifdef CONFIG_PRG32_MULTIPLAYER_ENABLE
 #define PRG32_MULTIPLAYER_ENABLE 1
 #else
@@ -154,7 +155,9 @@
 #define PRG32_MULTIPLAYER_SEND_PERIOD_MS 50
 #define PRG32_MULTIPLAYER_PEER_TIMEOUT_MS 3000
 
-#if CONFIG_PRG32_DISPLAY_QEMU_RGB
+/* QEMU uses the same WebSocket transport, over emulated Ethernet. Only the
+ * explicit offline stub turns the network off. */
+#if CONFIG_PRG32_MULTIPLAYER_OFFLINE_STUB
 #define PRG32_MULTIPLAYER_TRANSPORT_ENABLE 0
 #else
 #define PRG32_MULTIPLAYER_TRANSPORT_ENABLE PRG32_MULTIPLAYER_ENABLE

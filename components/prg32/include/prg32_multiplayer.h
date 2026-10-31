@@ -27,6 +27,9 @@ bool prg32_multiplayer_available(void);
 int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags);
 int prg32_multiplayer_leave(void);
 void prg32_multiplayer_tick(void);
+/* The player ID the server confirmed for this session, or 0 until then. It can
+ * change after a reconnection. Do not use it as a persistent device identity. */
+uint32_t prg32_multiplayer_local_player_id(void);
 int prg32_multiplayer_set_local_state(int16_t x,
                                       int16_t y,
                                       uint16_t sprite,

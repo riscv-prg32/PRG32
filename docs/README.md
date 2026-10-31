@@ -43,6 +43,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 - [Cartridge Format](software/cartridges.md)
 - [Cartridge Metadata](cartridge_store/cartridge_store.md)
 - [Colophon ABI](software/colophon_abi.md)
+- [Multiplayer Protocol in the Firmware](software/multiplayer_protocol.md)
 - [PRG32 Python Language](software/python_language.md)
 
 ## Learn

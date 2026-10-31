@@ -1122,6 +1122,9 @@ int prg32_setup_take_request(void) {
 }
 
 void prg32_setup_run(void) {
+  /* A running cartridge starts again from its init after setup, and joins
+   * again there. Setup does not tick the session and may stop the radio. */
+  prg32_multiplayer_leave();
   prg32_band_reset();
   prg32_gfx_set_fullscreen(1);
   run_setup_menu();

@@ -30,6 +30,7 @@ from prg32.store.store_api import store_discover, store_list, store_download
 from prg32.store.publish import publish, pack_bundle, publish_bundle
 from prg32.store.utils import ARCHITECTURE_PROFILES
 from prg32.store.config_cli import store_set_url, store_clear_url
+from prg32.multiplayer.config_cli import multiplayer_set_url, multiplayer_clear_url
 
 from prg32.debug import SUPPORTED_SPEEDS, debug_cli
 from prg32.usb_protocol import KEY_HOLD_DEFAULT_MS, KEY_HOLD_MAX_MS
@@ -245,6 +246,11 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=build_and_flash_qemu)
 
     p = qemu_sub.add_parser("run", help="run the QEMU emulator environment")
+    p.add_argument("--instance", type=int, default=None, metavar="N",
+        help="Run independent emulator N, with its own flash, multiplayer identity, "
+             "and ports: the device protocol moves to 5555 + 10 * N")
+    p.add_argument("--no-audio", action="store_true",
+        help="Do not start the audio player, and do not wait for one")
     p.set_defaults(func=launch_qemu)
     
     p =  qemu_sub.add_parser("build-and-run", help="build QEMU, generate flash image, and run the emulator")
@@ -420,6 +426,16 @@ def main(argv: list[str]) -> int:
     # ==========================================
     # 'wifi' Subcommand Menu
     # ==========================================
+    multiplayer_p = sub.add_parser("multiplayer", help="Manage the local multiplayer server address")
+    multiplayer_sub = multiplayer_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
+
+    p = multiplayer_sub.add_parser("set-url", help="Set the multiplayer server for local builds", usage="%(prog)s URL")
+    p.add_argument("url", help="WebSocket address of the server, ws:// or wss://")
+    p.set_defaults(func=multiplayer_set_url)
+
+    p = multiplayer_sub.add_parser("clear-url", help="Clear the local multiplayer server address")
+    p.set_defaults(func=multiplayer_clear_url)
+
     wifi_p = sub.add_parser("wifi", help="Manage local WiFi configuration", description="Manage local WiFi credentials and mode (AP or INFRASTRUCTURE) for the next firmware build.")
     wifi_sub = wifi_p.add_subparsers(dest="sub_cmd", required=True, action=AbbrevSubParsersAction)
 

@@ -323,6 +323,10 @@ static esp_err_t wifi_stack_init_locked(void) {
         err = nvs_flash_init();
     }
     ESP_RETURN_ON_ERROR(err, TAG, "nvs init failed");
+    /* The driver's "mode : sta (MAC)" line would log the factory MAC, which the
+     * multiplayer protocol uses as the identity source and forbids logging. This
+     * file logs connection progress itself; driver warnings still appear. */
+    esp_log_level_set("wifi", ESP_LOG_WARN);
     ESP_RETURN_ON_ERROR(esp_netif_init(), TAG, "netif init failed");
     err = esp_event_loop_create_default();
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {

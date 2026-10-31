@@ -389,7 +389,10 @@ ASCII signatures such as `pong-v1` or `mygame:lab`. Players only see peers that
 joined the same cartridge signature, so different games or different cartridge
 revisions do not share a playfield.
 
-The ESP32-C6 transport uses Wi-Fi station mode and WebSocket over TCP:
+The firmware implements the `prg32-multiplayer-1.0` protocol; see
+[Multiplayer protocol](multiplayer_protocol.md) for how. ESP32-C6 uses Wi-Fi
+station mode and WebSocket over TCP, and QEMU runs the same transport over
+emulated Ethernet:
 
 - ESP32-C6 has native Wi-Fi, so station mode is the right physical network
   transport for a classroom LAN.
@@ -405,25 +408,32 @@ Useful calls:
 - `prg32_multiplayer_join(signature, flags)`
 - `prg32_multiplayer_leave()`
 - `prg32_multiplayer_tick()`
+- `prg32_multiplayer_local_player_id()`: the ID the server confirmed, or 0 until
+  then. Compare it with peer IDs to order consoles or elect one, as
+  [Poing Wall](../../cartridges/poingwall/README.md) does.
 - `prg32_multiplayer_set_local_state(x, y, sprite, flags)`
 - `prg32_multiplayer_set_input(input)`
 - `prg32_multiplayer_get_peer_count()`
 - `prg32_multiplayer_get_peer(index, out)`
 
+`prg32_multiplayer_join()` returning 0 means the request was accepted, not that
+the server has admitted the console: that takes a moment, and the connection can
+be lost and regained at any time. Call `prg32_multiplayer_tick()` every frame,
+because it is what publishes state, and treat a local player ID of 0 as "not in
+the room yet". When a cartridge stops, its session ends with it.
+
 Run the standalone relay server from
-[riscv-prg32/MultiplayerServer](https://github.com/riscv-prg32/MultiplayerServer):
+[riscv-prg32/PRG32-Multiplayer-Server](https://github.com/riscv-prg32/PRG32-Multiplayer-Server):
 
 ```bash
-git clone https://github.com/riscv-prg32/MultiplayerServer.git
-cd MultiplayerServer
+git clone https://github.com/riscv-prg32/PRG32-Multiplayer-Server.git
+cd PRG32-Multiplayer-Server
 npm install
 npm start
 ```
 
-Configure the board-side endpoint in `idf.py menuconfig` (`PRG32 Firmware Features -> Multiplayer Server URL`) with
-`PRG32_MULTIPLAYER_SERVER_URL`. QEMU exposes the same API with an offline local
-stub: `prg32_multiplayer_available()` returns true, `join` succeeds for a
-non-empty signature, and peer snapshots are empty by default.
+Configure the firmware's server address as described in
+[Multiplayer server address](../usage/network.md#multiplayer-server-address).
 
 ## Tile engine
 

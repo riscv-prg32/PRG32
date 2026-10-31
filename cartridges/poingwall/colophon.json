@@ -1,0 +1,16 @@
+{
+  "abi": "prg32-colophon-1.0",
+  "title": "Poing Wall",
+  "version": "1.0.0",
+  "developer": {"name": "PRG32 contributors"},
+  "authors": [],
+  "controls": [
+    {"input": "A", "action": "Send the ball back the other way"}
+  ],
+  "credits": [
+    "Ball and floor renderer adapted from the Poing cartridge"
+  ],
+  "copyright": "Copyright 2026 PRG32 contributors",
+  "license": "MIT",
+  "third_party_assets": []
+}

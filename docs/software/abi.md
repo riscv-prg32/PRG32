@@ -347,6 +347,7 @@ Setup screens and cartridge programs use the same button bitmasks:
 | `prg32_multiplayer_set_input` | publish local player input |
 | `prg32_multiplayer_get_peer_count` | return visible peer count |
 | `prg32_multiplayer_get_peer` | copy one peer snapshot |
+| `prg32_multiplayer_local_player_id` | return the player ID the server confirmed, or 0 before admission (ABI 1.7) |
 | `prg32_cart_default_slot` | return the saved default cartridge slot, or `-1` |
 | `prg32_cart_set_default_slot` | save a default cartridge slot, or clear with `-1` |
 | `prg32_cart_select_default` | load the saved default cartridge; called by a cartridge, it happens when the current entry point returns |
