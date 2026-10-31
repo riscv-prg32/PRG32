@@ -12,6 +12,11 @@
 #define PRG32_PIN_RGB_LED -1
 #endif
 
+/* rmt_tx_wait_all_done() takes milliseconds and rounds down to whole ticks.
+ * One LED frame lasts about 30 us, so this is only a limit for a stuck channel.
+ * 20 ms is two ticks at 100 Hz: one tick could end just after the wait starts. */
+#define PRG32_LED_FLUSH_TIMEOUT_MS 20
+
 static rmt_channel_handle_t g_led_channel;
 static rmt_encoder_handle_t g_led_encoder;
 static int g_led_gpio = -1;
@@ -137,7 +142,7 @@ void prg32_rgb_led_set(uint8_t red, uint8_t green, uint8_t blue) {
                      grb,
                      sizeof(grb),
                      &tx_config) == ESP_OK) {
-        rmt_tx_wait_all_done(g_led_channel, pdMS_TO_TICKS(10));
+        rmt_tx_wait_all_done(g_led_channel, PRG32_LED_FLUSH_TIMEOUT_MS);
         /* WS2812-compatible LEDs latch a frame only after a low reset gap. */
         esp_rom_delay_us(80);
     }

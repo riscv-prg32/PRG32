@@ -21,6 +21,7 @@ Here are common issues and solutions when working with the PRG32 framework.
   ```
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*
 - **The prototype1 onboard RGB LED flashes green or white while the display updates**: This is expected on the fixed PCB. GPIO8 is shared by LCD D/C and the DevKitC WS2812 data input, so display traffic can resemble LED data. Firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire. Do not move the canonical LCD pin in the `prototype1` profile.
+- **The serial log repeats `rmt: rmt_tx_wait_all_done(612): flush timeout`**: Firmware from 2026-10-26 until the fix of 2026-10-31 logged this twice for every display update on `prototype1`, because the LED code gave the RMT driver a wait that rounded down to zero. The LED and the display still worked. Rebuild and flash current firmware; the cost is recorded under [Onboard RGB LED](../hardware/hardware.md#onboard-rgb-led).
 
 ## QEMU Emulator Issues
 
