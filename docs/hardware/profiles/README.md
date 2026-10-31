@@ -9,7 +9,7 @@ This directory contains detailed wiring diagrams, schematics, and pinout tables 
 | Profile Name | Description | Display Pinout | Controller / Input | Audio |
 |---|---|---|---|---|
 | [`breadboard1`](breadboard1.md) | First breadboard | ILI9341 SPI (DC: GPIO8, RST: GPIO9) | 5-way digital navigation joystick (discrete GPIO switches on GPIO3, 0, 18, 19, 20) + buttons A (21), B (22) | MAX98357A I2S (BCLK: 4, LRCLK: 11, DIN: 23) |
-| [`breadboard2`](breadboard2.md) | Second breadboard with analog joystick | ILI9341 SPI (CS: GPIO9, DC: GPIO10, RST: ESP32-C6 EN pin) | 2-axis analog thumbstick (ADC1 continuous mode on GPIO0, GPIO1) + buttons A (18), B (19), C (11), D (3), L (21), R (22), START/SELECT (20) | MAX98357A I2S (BCLK: 4, LRCLK: 15, DIN: 23) |
+| [`breadboard2`](breadboard2.md) | Second breadboard with analog joystick | ILI9341 SPI (CS: GPIO9, DC: GPIO10, RST: ESP32-C6 EN pin) | 2-axis analog thumbstick (ADC1 one-shot mode on GPIO0, GPIO1) + buttons A (18), B (19), C (11), D (3), L (21), R (22), START/SELECT (20) | MAX98357A I2S (BCLK: 4, LRCLK: 15, DIN: 23) |
 | [`pcb1`](pcb1.md) | Soldered PCB | ILI9341 SPI (DC: GPIO8, RST: GPIO9) | 5-way digital navigation joystick (discrete GPIO switches on GPIO3, 13, 18, 19, 20) + buttons A (21), B (22) | MAX98357A I2S (BCLK: 4, LRCLK: 11, DIN: 23) |
 
 Profiles named `breadboardN` describe solderless breadboard builds; their

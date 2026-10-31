@@ -1,12 +1,12 @@
 # PRG32 Hardware Pin Profile: Breadboard 2
 
-This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 continuous ADC mode, an updated display harness, four action buttons (A, B, C, D), and two bumper buttons (L, R).
+This document specifies the pinout and wiring for the **`breadboard2`** hardware profile (`profiles/sdkconfig.pins.breadboard2`), featuring a 2-axis analog thumbstick read via ESP32-C6 ADC one-shot mode, an updated display harness, four action buttons (A, B, C, D), and two bumper buttons (L, R).
 
 ## Overview
 
 - **Architecture Target**: ESP32-C6
 - **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO9, DC on GPIO10, and RST wired to the ESP32-C6 EN (`RST`) header pin
-- **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 Continuous mode)
+- **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 one-shot mode)
 - **Action Buttons**: Separate pushbuttons for A, B, C, D, and START/SELECT (C on GPIO11, D on GPIO3)
 - **Bumper Buttons**: L (left bumper) on GPIO21 and R (right bumper) on GPIO22
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
@@ -83,7 +83,7 @@ The analog joystick connects two potentiometers (X and Y axes) between 3.3V and 
 > used for uploads and the device protocol).
 
 > [!NOTE]
-> The firmware reads ADC1 channels continuously in DMA mode (`adc_continuous`). The raw 12-bit samples (0–4095, center ~2048) are converted into standard PRG32 directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`) using dedicated, configurable thresholds for both axes:
+> The firmware converts both ADC1 channels each time input is read (`adc_oneshot`, see [sampling backend](../joystick.md#mechanical--electrical-operation-1)). The raw 12-bit samples (0–4095, center ~2048) are converted into standard PRG32 directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`) using dedicated, configurable thresholds for both axes:
 > - **Horizontal (X)**: `s_last_raw_x < LEFT_THRESHOLD` sets `PRG32_BTN_LEFT`; `s_last_raw_x > RIGHT_THRESHOLD` sets `PRG32_BTN_RIGHT`.
 > - **Vertical (Y)**: `s_last_raw_y < UP_THRESHOLD` sets `PRG32_BTN_UP`; `s_last_raw_y > DOWN_THRESHOLD` sets `PRG32_BTN_DOWN`.
 > - Diagonals (e.g., UP + RIGHT) are fully supported with simultaneous bit assertions. Axis inversion is also automatically detected if a low threshold exceeds a high threshold.

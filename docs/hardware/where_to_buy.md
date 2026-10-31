@@ -61,7 +61,7 @@ interchangeable; check each module against your breadboard layout.
   [Adafruit display example](https://www.adafruit.com/product/1770) supports SPI,
   but its header layout must be mapped to the PRG32 signals.
 - A KY-023 / PS2 analog joystick with VRx/VRy outputs is supported natively by the
-  [`breadboard2`](profiles/breadboard2.md) hardware profile via continuous ADC mode.
+  [`breadboard2`](profiles/breadboard2.md) hardware profile via ADC one-shot mode.
   For the [`breadboard1`](profiles/breadboard1.md) profile, use a 5-way digital navigation module providing
   discrete active-low switch outputs. Center press is START/SELECT. Separate
   A/B momentary buttons retain the reference layout; spare buttons on a navigation

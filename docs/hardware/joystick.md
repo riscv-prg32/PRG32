@@ -13,7 +13,7 @@ PRG32 provides a unified, register-like input API for 8-bit and 16-bit retro gam
 
 PRG32 supports two primary hardware joystick architectures on the ESP32-C6:
 1. **5-Way Digital Navigation Joystick** (`breadboard1`): Discrete mechanical switches representing Left, Right, Up, Down, and Center Press.
-2. **2-Axis Analog Thumbstick** (`breadboard2`): Continuous potentiometer-based analog stick (e.g. KY-023 / PS2 controller thumbstick) sampled via high-speed continuous ADC DMA.
+2. **2-Axis Analog Thumbstick** (`breadboard2`): Potentiometer-based analog stick (e.g. KY-023 / PS2 controller thumbstick) sampled with ADC one-shot conversions each time input is read.
 
 Both architectures combine directional input with two tactile momentary pushbuttons (A and B).
 
@@ -52,7 +52,17 @@ Used in the upgraded breadboard design ([Breadboard 2 Profile](profiles/breadboa
 
 ### Mechanical & Electrical Operation
 - **Potentiometers**: Dual 10 kΩ orthogonal potentiometers for X and Y displacement (`VRx` and `VRy`).
-- **Sampling Backend**: Read continuously using the ESP32-C6 continuous ADC driver (`ADC1`) with DMA streaming into circular ring buffers (`components/prg32/prg32_joystick_analog.c`).
+- **Sampling Backend**: ESP32-C6 ADC one-shot driver on `ADC1`
+  (`components/prg32/prg32_joystick_analog.c`). Every input read converts X
+  and Y once, about two conversions per frame. `prg32_joystick_analog_get_raw()`
+  also converts fresh values, so axis-based input reads the current stick
+  position rather than a cached one.
+- **Why not continuous DMA**: the ADC continuous driver hands each DMA buffer
+  back from an interrupt. Flash erases and writes (cartridge uploads, Store
+  downloads, saved settings) switch the flash cache off for longer than the
+  DMA needs to fill its buffers, the interrupt cannot run, and the DMA stops
+  for good: the stick froze until the next reset. One-shot conversions use no
+  DMA and no interrupt, so flash writes cannot stop them.
 - **Integrated Push Switch (`SW`)**: Standard tactile switch triggered by pressing the stick inward, serving as `START / SELECT`.
 - **Pin Assignment**: See [Breadboard 2 Pin Profile](profiles/breadboard2.md).
 

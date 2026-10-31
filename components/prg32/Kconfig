@@ -267,7 +267,7 @@ config PRG32_PIN_PROFILE_BREADBOARD2
     help
         Second breadboard pin configuration profile loaded from
         profiles/sdkconfig.pins.breadboard2. Features an analog joystick
-        sampled via ADC continuous mode, updated display pin assignments,
+        sampled via ADC one-shot mode, updated display pin assignments,
         buttons C and D, and the L and R bumpers.
 
 config PRG32_PIN_PROFILE_PCB1
@@ -352,7 +352,7 @@ choice PRG32_JOYSTICK_TYPE
     help
         Select joystick hardware type:
         - Digital: 4 directional switch inputs (UP, DOWN, LEFT, RIGHT).
-        - Analog: 2-axis potentiometer thumbstick read via continuous ADC mode.
+        - Analog: 2-axis potentiometer thumbstick read via ADC one-shot mode.
 
 config PRG32_JOYSTICK_DIGITAL
     bool "Digital Joystick (discrete GPIO switches)"
@@ -360,10 +360,11 @@ config PRG32_JOYSTICK_DIGITAL
         Reads direction states from discrete active-low GPIO switches.
 
 config PRG32_JOYSTICK_ANALOG
-    bool "Analog Joystick (ADC continuous mode on X/Y axes)"
+    bool "Analog Joystick (ADC one-shot mode on X/Y axes)"
     help
-        Reads analog potentiometer voltage on ADC channels continuously and maps
-        them to direction states with deadzone thresholding (allowing diagonals).
+        Converts the analog potentiometer voltage on two ADC1 channels each time
+        input is read and maps it to direction states with deadzone
+        thresholding (allowing diagonals).
 
 endchoice
 

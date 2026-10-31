@@ -43,6 +43,8 @@ Here are common issues and solutions when working with the PRG32 framework.
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*
 - **The onboard RGB LED flashes green or white while the display updates (`breadboard1`, `pcb1`)**: This is expected. Both profiles put LCD D/C on GPIO8, which the ESP32-C6-DevKitC-1 also wires to its WS2812 data input, so display traffic can resemble LED data. The firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire (see [RGB LED](../hardware/rgb_led.md#shared-boot-indication)). Do not move the canonical LCD pin in these profiles.
 
+- **The analog joystick (`breadboard2`) stops responding after a cartridge upload, a Store download, or a saved setting, while the buttons keep working**: the firmware predates the switch to ADC one-shot sampling; its continuous DMA sampling stopped at the first flash write (see [sampling backend](../hardware/joystick.md#mechanical--electrical-operation-1)). Rebuild and flash the current firmware. A reset restores the stick until the next flash write.
+
 ## QEMU Emulator Issues
 
 - **QEMU build fails with `fatal error: <header>.h: No such file or directory` while the ESP32-C6 build succeeds**: The header's ESP-IDF component is missing from `PRG32_PRIV_REQUIRES` in `components/prg32/CMakeLists.txt` and is only reachable transitively on ESP32-C6. See [explicit component requirements](qemu.md#how-it-works).

@@ -40,7 +40,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
 |   |   |-- README.md               Central hardware directory guide, breadboard layout, and architecture index
 |   |   |-- audio.md                MAX98357A I2S DAC/Amp wiring, mono/stereo mode selection, and speaker safety
-|   |   |-- joystick.md             Digital 5-way joystick, analog KY-023 continuous ADC thumbstick, buttons, and input API
+|   |   |-- joystick.md             Digital 5-way joystick, analog KY-023 one-shot ADC thumbstick, buttons, and input API
 |   |   |-- rgb_led.md              WS2812 addressable onboard RGB LED driver and pin allocation
 |   |   |-- ili9341.md              ILI9341 2.8" SPI TFT display integration and backlight control
 |   |   |-- memory.md               ESP32-C6 memory layout (IRAM, DRAM, Flash, cartridge window) and profiling tools
