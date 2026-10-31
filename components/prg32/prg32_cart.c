@@ -423,6 +423,7 @@ static int load_image_locked(const void *image, size_t image_size) {
     /* The suite belonged to the cartridge being replaced. The caller holds the
      * cartridge lock, so none of that cartridge's code is using the suite. */
     prg32_perf_abort();
+    prg32_multiplayer_leave();
     g_loaded = false;
     memset(prg32_cart_exec, 0, sizeof(prg32_cart_exec));
     memcpy(prg32_cart_exec, payload, h->code_size);
@@ -503,8 +504,11 @@ void prg32_cart_unload(void) {
     }
     /* A suite cannot outlive its cartridge, and only one may be active, so
      * leaving it running would refuse every later run until a restart. Holding
-     * the lock waits for a running update/draw call that may be using it. */
+     * the lock waits for a running update/draw call that may be using it. The
+     * same goes for a multiplayer session, which the next cartridge must not
+     * inherit. */
     prg32_perf_abort();
+    prg32_multiplayer_leave();
     g_loaded = false;
     g_stored = false;
     g_generation++;

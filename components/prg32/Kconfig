@@ -481,6 +481,19 @@ config PRG32_MULTIPLAYER_SERVER_URL
     string "Multiplayer Server URL"
     depends on PRG32_MULTIPLAYER_ENABLE
     default "ws://192.168.4.2:8081"
+    help
+        WebSocket address of the PRG32 Multiplayer Server, ws:// or wss://. A
+        QEMU build also accepts a LAN address, and ws://10.0.2.2:PORT reaches
+        a server on the computer running QEMU. Use wss:// on public networks.
+
+config PRG32_MULTIPLAYER_OFFLINE_STUB
+    bool "Replace the multiplayer network with an offline stub"
+    depends on PRG32_MULTIPLAYER_ENABLE
+    default n
+    help
+        Deterministic test profile. prg32_multiplayer_join() succeeds locally
+        and no peers appear. prg32_multiplayer_available() returns false,
+        because this is not real multiplayer.
 
 config PRG32_BOOT_SETUP_MODE
     int "Boot Setup Mode"

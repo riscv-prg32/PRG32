@@ -11,6 +11,10 @@ Here are common issues and solutions when working with the PRG32 framework.
   python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
   . $IDF_PATH/export.sh
   ```
+- **A cartridge check fails on GitHub Actions with `may be used uninitialized`, but passes on your computer**: The checks build with `-O2 -Werror`, and this warning depends on the compiler. CI uses GCC 13 from `espressif/idf:v5.4.1`, while `cc` on macOS is Clang, which does not report it. If the variable is only read after a flag says it was set, as with `leader` in `cartridges/poingwall/poingwall.c`, initialize it at its declaration. To run a check with CI's compiler:
+  ```bash
+  docker run --rm -v "$PWD:/project" -w /project espressif/idf:v5.4.1 cartridges/poingwall/tests/run.sh
+  ```
 
 ## Hardware and Flashing Issues
 
@@ -21,6 +25,7 @@ Here are common issues and solutions when working with the PRG32 framework.
   ```
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*
 - **The prototype1 onboard RGB LED flashes green or white while the display updates**: This is expected on the fixed PCB. GPIO8 is shared by LCD D/C and the DevKitC WS2812 data input, so display traffic can resemble LED data. Firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire. Do not move the canonical LCD pin in the `prototype1` profile.
+- **The serial log repeats `rmt: rmt_tx_wait_all_done(612): flush timeout`**: Firmware from 2026-10-26 until the fix of 2026-10-31 logged this twice for every display update on `prototype1`, because the LED code gave the RMT driver a wait that rounded down to zero. The LED and the display still worked. Rebuild and flash current firmware; the cost is recorded under [Onboard RGB LED](../hardware/hardware.md#onboard-rgb-led).
 
 ## QEMU Emulator Issues
 

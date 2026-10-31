@@ -196,6 +196,21 @@ the LED independently controllable on this PCB; do not change the canonical
 LCD pin merely to hide those flashes. A future PCB revision should give LCD D/C
 and RGB separate GPIOs. QEMU does not initialize physical LED hardware.
 
+The off frame is sent inside `prg32_gfx_present()` on every frame that changes
+the screen, and creates and removes an RMT channel each time. Measured on
+`prototype1` on 2026-10-31 with the reference
+[performance suite](../performance_test.md) (600 frames, ESP-IDF v5.4, two runs
+per firmware; mean over all workloads):
+
+| Firmware | Frame time | `present_us` | FPS | RMT errors |
+|---|---|---|---|---|
+| Before: LED wait timed out at once | 82.0-82.5 ms | 46.5-47.0 ms | 12.11-12.19 | about 25 per second |
+| Current | 81.0 ms | 45.6 ms | 12.34 | none |
+| Test build without the off frame | 80.2 ms | 44.8 ms | 12.47 | none |
+
+So the off frame costs about 0.75 ms per frame, and the rest of `present_us` is
+the LCD update itself. The display, not the LED, sets the frame rate.
+
 ### Audio Configuration
 
 The shipped profiles enable I2S audio at 22,050 Hz with eight voices and mono

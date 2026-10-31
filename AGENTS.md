@@ -75,6 +75,7 @@ python3 -m prg32 abi check
 cartridges/devicedemo/tests/check_source.sh
 cartridges/bachdemo/scripts/test.sh
 cartridges/poing/tests/run.sh
+cartridges/poingwall/tests/run.sh
 cc -std=c11 -Wall -Wextra -Werror cartridges/blackjack/tests/test_rules.c cartridges/blackjack/blackjack_rules.c -o /tmp/prg32-blackjack-rules
 /tmp/prg32-blackjack-rules
 sha256sum --check cartridges/blackjack/SHA256SUMS

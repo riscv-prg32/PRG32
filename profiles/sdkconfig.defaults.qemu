@@ -17,3 +17,10 @@ CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO=-1
 CONFIG_PRG32_AUDIO_I2S_LRCLK_GPIO=-1
 CONFIG_PRG32_AUDIO_I2S_DATA_GPIO=-1
 CONFIG_PRG32_AUDIO_I2S_SD_GPIO=-1
+# Multiplayer reaches the network through QEMU's emulated OpenCores Ethernet.
+# 10.0.2.2 is the computer running QEMU; see docs/usage/network.md. A full room
+# delivers a burst of peer snapshots at once: eight receive buffers hold it.
+CONFIG_ETH_USE_OPENETH=y
+CONFIG_ETH_OPENETH_DMA_RX_BUFFER_NUM=8
+CONFIG_ETH_OPENETH_DMA_TX_BUFFER_NUM=1
+CONFIG_PRG32_MULTIPLAYER_SERVER_URL="ws://10.0.2.2:8081"

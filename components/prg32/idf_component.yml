@@ -3,7 +3,7 @@ dependencies:
     version: "^1.5.0"
     require: no
     rules:
-      - if: "target == esp32c6"
+      - if: "target in [esp32c3, esp32c6]"
   espressif/esp_lcd_qemu_rgb:
     version: "^1.0.2"
     require: no

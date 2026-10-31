@@ -130,9 +130,11 @@ class PortableHeaderTests(unittest.TestCase):
         for hash_value, count in ((0x006427C2, 133), (0x6BE6E8D0, 138)):
             prior = {**abi, "minor": 5, "functions": abi["functions"][:count]}
             self.assertEqual(abi_hash(prior), hash_value)
+        prior = {**abi, "minor": 6, "functions": abi["functions"][:139]}
+        self.assertEqual(abi_hash(prior), 0x260F6136)
 
     def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
-        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0])
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0, 0x260F6136])
         payload = b"\0\0\0\0"
         for old_hash in (0xEC21EFE2, 0x5626CB8A):
             header = env_variables.CART_HEADER_V2.pack(

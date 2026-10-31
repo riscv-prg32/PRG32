@@ -30,14 +30,14 @@ curl -X POST http://localhost:5000/api/scores \
 5. Start the multiplayer relay in another terminal:
 
 ```bash
-git clone https://github.com/riscv-prg32/MultiplayerServer.git
-cd MultiplayerServer
+git clone https://github.com/riscv-prg32/PRG32-Multiplayer-Server.git
+cd PRG32-Multiplayer-Server
 npm install
 npm start
 ```
 
-6. Configure `PRG32_MULTIPLAYER_SERVER_URL` in `idf.py menuconfig` (`PRG32 Firmware Features -> Multiplayer Server URL`) to point at
-   the server host.
+6. Point the firmware at the server host, as described in
+   [Multiplayer server address](../../usage/network.md#multiplayer-server-address).
 7. In a small C cartridge, call:
 
 ```c
@@ -47,8 +47,8 @@ prg32_multiplayer_set_local_state(x, y, 0, 0);
 prg32_multiplayer_tick();
 ```
 
-8. Verify that `prg32_multiplayer_available()` returns true. On QEMU,
-   `prg32_multiplayer_join()` succeeds locally even without real Wi-Fi.
+8. Verify that `prg32_multiplayer_available()` returns true, and that
+   `prg32_multiplayer_local_player_id()` becomes nonzero shortly after the join.
 9. Query the cartridge runtime:
 
 ```bash
@@ -67,8 +67,9 @@ python3 -m prg32 cartridge build examples/games/pong/c/game.c \
 Show one score in `/api/scores`, one multiplayer join using a cartridge
 signature, and at least one uploaded cartridge slot listed by `/api/games`.
 
-Use the physical ESP32-C6 board for Wi-Fi station mode and WebSocket testing.
-QEMU can still run the cartridge and exercise the offline multiplayer API.
+Both the physical ESP32-C6 board and QEMU join real rooms. Run two QEMU instances
+([Running several emulators](../../usage/qemu.md#running-several-emulators)) to
+see a second player without a second board.
 
 ## Reflection
 

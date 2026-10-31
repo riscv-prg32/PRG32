@@ -2,6 +2,7 @@
 import subprocess
 import sys
 from pathlib import Path
+from prg32.utilities.env_variables import QEMU_SDKCONFIG_DEFAULTS
 from prg32.utilities.logging import *
 
 def require_cmd(cmd, hint):
@@ -22,7 +23,9 @@ def main():
     ROOT = Path(__file__).resolve().parents[2]
     QEMU_BUILD_DIR = "build-qemu"
     QEMU_SDKCONFIG = f"{QEMU_BUILD_DIR}/sdkconfig"
-    QEMU_DEFAULTS = "profiles/sdkconfig.defaults.qemu"
+    # The same defaults as `prg32 qemu build`. The base profile holds the partition
+    # table, without which the firmware no longer fits its app partition.
+    QEMU_DEFAULTS = QEMU_SDKCONFIG_DEFAULTS
     require_cmd("python3", "Install Python 3 and retry.")
     require_cmd("idf.py", "Run: . $HOME/esp-idf/export.sh")
     # riscv toolchain optional

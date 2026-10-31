@@ -1,8 +1,8 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 6,
-  "compatible_hashes": ["0x006427c2", "0x6be6e8d0"],
+  "minor": 7,
+  "compatible_hashes": ["0x006427c2", "0x6be6e8d0", "0x260f6136"],
   "functions": [
     {
       "name": "prg32_ticks_ms",
@@ -976,6 +976,13 @@
       "args": ["uint32_t", "uint32_t"],
       "feature": "core",
       "notes": "Return a uniformly distributed integer between min and max inclusive; return min when max is less than or equal to min."
+    },
+    {
+      "name": "prg32_multiplayer_local_player_id",
+      "return": "uint32_t",
+      "args": [],
+      "feature": "multiplayer",
+      "notes": "Return the player ID the server confirmed for this session, or 0 before admission."
     }
   ]
 }

@@ -79,7 +79,21 @@ In Station mode (`PRG32_WIFI_MODE_STA`), the IP address will be assigned by the 
 
 ### QEMU Networking
 
-QEMU builds keep physical Wi-Fi disabled by default (`CONFIG_PRG32_DISPLAY_QEMU_RGB`), but games can still compile against the same API and exercise setup screens. However, mDNS, CartridgeStore downloads, and multiplayer capabilities generally require specific forwarding or bridging on the virtual QEMU network to function, or they rely on local configuration overrides.
+QEMU builds have no Wi-Fi (`CONFIG_PRG32_DISPLAY_QEMU_RGB`), but games can still compile against the same API and exercise setup screens. mDNS, CartridgeStore downloads, and the HTTP API do not run on QEMU.
+
+Multiplayer does: the firmware starts QEMU's emulated OpenCores Ethernet the first time a cartridge joins a room, and gets an address from QEMU's user-mode network. The console reaches any address the computer can reach, without configuration on the computer. From inside QEMU, `10.0.2.2` means the computer running QEMU, so the default server address of a QEMU build is `ws://10.0.2.2:8081`.
+
+## Multiplayer Server Address
+
+The address of the [multiplayer server](../software/multiplayer_protocol.md) is compiled into the firmware:
+
+```bash
+python3 -m prg32 multiplayer set-url ws://192.168.1.10:8081
+```
+
+This saves `CONFIG_PRG32_MULTIPLAYER_SERVER_URL` in `profiles/sdkconfig.defaults.local`, which is ignored by Git, and applies to both firmware targets. It takes effect when a new `sdkconfig` is generated. `python3 -m prg32 esp32c6 build` always generates one. A QEMU build keeps its `sdkconfig`, so delete `build-qemu/sdkconfig` first. Then flash the firmware again, or rebuild the QEMU flash image.
+
+Use `python3 -m prg32 multiplayer clear-url` to return to the defaults. Use `ws://` only on a local network you control, and `wss://` on a public one.
 
 ## Advanced: Pre-configuring Wi-Fi Credentials
 
@@ -111,5 +125,5 @@ python3 -m prg32 wifi clear
 
 - `prg32_input_read_player(2)` returns `0`; multiplayer games should use the
   cartridge multiplayer API for remote player snapshots.
-- Cartridge multiplayer groups peers by cartridge signature and uses ESP32-C6
-  Wi-Fi station mode plus WebSocket to a Node.js `ws` server.
+- See [Multiplayer protocol](../software/multiplayer_protocol.md) for the
+  transport, identity, and session rules.
