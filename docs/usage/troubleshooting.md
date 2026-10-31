@@ -11,6 +11,10 @@ Here are common issues and solutions when working with the PRG32 framework.
   python $IDF_PATH/tools/idf_tools.py install qemu-riscv32
   . $IDF_PATH/export.sh
   ```
+- **A cartridge check fails on GitHub Actions with `may be used uninitialized`, but passes on your computer**: The checks build with `-O2 -Werror`, and this warning depends on the compiler. CI uses GCC 13 from `espressif/idf:v5.4.1`, while `cc` on macOS is Clang, which does not report it. If the variable is only read after a flag says it was set, as with `leader` in `cartridges/poingwall/poingwall.c`, initialize it at its declaration. To run a check with CI's compiler:
+  ```bash
+  docker run --rm -v "$PWD:/project" -w /project espressif/idf:v5.4.1 cartridges/poingwall/tests/run.sh
+  ```
 
 ## Hardware and Flashing Issues
 

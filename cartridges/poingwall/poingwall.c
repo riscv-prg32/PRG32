@@ -215,7 +215,9 @@ static void sort_ids(uint32_t *ids, int count) {
  * consoles that are ready. Follows that console's snapshot when it is another. */
 static void update_room(uint32_t now) {
     uint32_t input = 0;
-    prg32_player_state_t leader;
+    /* Read only when have_leader is set. Some compilers cannot see that through
+     * the loop and warn, so it starts cleared. */
+    prg32_player_state_t leader = {0};
     int have_leader = 0;
     uint32_t lowest_ready = s.ready ? s.local_id : 0;
     int count = 0;
