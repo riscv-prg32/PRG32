@@ -363,8 +363,8 @@ config PRG32_JOYSTICK_ANALOG
     bool "Analog Joystick (ADC one-shot mode on X/Y axes)"
     help
         Converts the analog potentiometer voltage on two ADC1 channels each time
-        input is read and maps it to direction states with deadzone
-        thresholding (allowing diagonals).
+        input is read into calibrated -127..127 axes and derives direction
+        states from them (allowing diagonals).
 
 endchoice
 
@@ -382,33 +382,32 @@ config PRG32_PIN_JOYSTICK_Y
     help
         GPIO connected to joystick vertical (Y) axis potentiometer (e.g. GPIO1).
 
-config PRG32_JOYSTICK_ADC_LEFT_THRESHOLD
-    int "Analog Joystick Left Threshold (X-Axis)"
+config PRG32_JOYSTICK_DIRECTION_THRESHOLD
+    int "Analog Joystick Direction Threshold (8-120)"
     depends on PRG32_JOYSTICK_ANALOG
-    default 1300
+    range 8 120
+    default 40
     help
-        ADC raw reading below this value triggers LEFT (or above if inverted).
+        Tilt, in the -127..127 units of the calibrated axes, at which LEFT,
+        RIGHT, UP, or DOWN turns on. A direction turns off again below three
+        fifths of this value (24 for the default 40), so a stick held near the
+        threshold does not flicker and repeat menu moves.
 
-config PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD
-    int "Analog Joystick Right Threshold (X-Axis)"
+config PRG32_JOYSTICK_INVERT_X
+    bool "Invert Analog Joystick X-Axis"
     depends on PRG32_JOYSTICK_ANALOG
-    default 2800
+    default n
     help
-        ADC raw reading above this value triggers RIGHT (or below if inverted).
+        Swap LEFT and RIGHT, for a stick mounted so that a higher ADC reading
+        means left.
 
-config PRG32_JOYSTICK_ADC_UP_THRESHOLD
-    int "Analog Joystick Up Threshold (Y-Axis)"
+config PRG32_JOYSTICK_INVERT_Y
+    bool "Invert Analog Joystick Y-Axis"
     depends on PRG32_JOYSTICK_ANALOG
-    default 1300
+    default n
     help
-        ADC raw reading below this value triggers UP (or above if inverted).
-
-config PRG32_JOYSTICK_ADC_DOWN_THRESHOLD
-    int "Analog Joystick Down Threshold (Y-Axis)"
-    depends on PRG32_JOYSTICK_ANALOG
-    default 2800
-    help
-        ADC raw reading above this value triggers DOWN (or below if inverted).
+        Swap UP and DOWN, for a stick mounted so that a higher ADC reading
+        means up.
 
 config PRG32_JOYSTICK_AXIS_DEADZONE
     int "Analog Joystick Axis Deadzone (0-100)"

@@ -63,8 +63,10 @@ tilted instead of only which direction (ABI 1.7):
 | `int prg32_input_axes_raw(int *x, int *y)` | fresh 12-bit readings, `0` to `4095`; returns `-1` and `2048` without an analog stick |
 
 Each call reads the stick at that moment. The firmware centres the axes on the
-stick's rest position, measured at boot, and ignores small movements around
-it (see [calibration and deadzone](../hardware/joystick.md#analog-axes-calibration-and-deadzone)).
+stick's rest position and scales them to its travel, both recorded once with
+**SETUP → JOYSTICK CALIBRATION** and kept in flash, and ignores small
+movements around rest (see
+[calibration and deadzone](../hardware/joystick.md#analog-axes-calibration-and-deadzone)).
 
 Without an analog stick (`breadboard1`, QEMU) the axes come from the
 directions of `prg32_input_read()`: LEFT gives `-127`, RIGHT `127`, neither

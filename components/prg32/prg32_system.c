@@ -912,14 +912,109 @@ static void about_menu(void) {
   }
 }
 
+/* Average a few raw readings so one noisy sample does not set the rest point. */
+static void joystick_rest_position(int *out_x, int *out_y) {
+  int sum_x = 0;
+  int sum_y = 0;
+  for (int i = 0; i < 16; ++i) {
+    int x = 0;
+    int y = 0;
+    prg32_joystick_analog_get_raw(&x, &y);
+    sum_x += x;
+    sum_y += y;
+    vTaskDelay(pdMS_TO_TICKS(5));
+  }
+  *out_x = sum_x / 16;
+  *out_y = sum_y / 16;
+}
+
+/* Record the analog stick's rest position, then its travel, and save both to
+ * flash. Only A confirms: pressing the stick (SELECT) would move it. B leaves
+ * without saving. */
+static void joystick_calibration_menu(void) {
+  prg32_joystick_calibration_t cal;
+  int saved = prg32_joystick_analog_calibration_get(&cal);
+  int step = 0; /* 0: rest position, 1: travel */
+  prg32_input_wait_released(SETUP_KEYS);
+  uint32_t last = 0;
+  while (1) {
+    if (prg32_setup_interrupted()) {
+      return;
+    }
+    uint32_t input = prg32_input_read_menu();
+    int x = 0;
+    int y = 0;
+    /* Drawing a frame takes about 150 ms, so sample several times per frame
+     * to catch the edges while the stick moves. */
+    for (int i = 0; i < 8; ++i) {
+      prg32_joystick_analog_get_raw(&x, &y);
+      if (step == 1) {
+        cal.min_x = x < cal.min_x ? x : cal.min_x;
+        cal.max_x = x > cal.max_x ? x : cal.max_x;
+        cal.min_y = y < cal.min_y ? y : cal.min_y;
+        cal.max_y = y > cal.max_y ? y : cal.max_y;
+      }
+    }
+    if ((input & MENU_CANCEL) && !(last & MENU_CANCEL)) {
+      prg32_input_wait_released(MENU_CANCEL);
+      return;
+    }
+    if ((input & PRG32_BTN_A) && !(last & PRG32_BTN_A)) {
+      prg32_input_wait_released(PRG32_BTN_A);
+      if (step == 0) {
+        joystick_rest_position(&cal.center_x, &cal.center_y);
+        cal.min_x = cal.max_x = cal.center_x;
+        cal.min_y = cal.max_y = cal.center_y;
+        step = 1;
+      } else if (prg32_joystick_analog_calibration_save(&cal) == 0) {
+        show_setup_message("JOYSTICK CALIBRATION", "CALIBRATION SAVED",
+                           PRG32_COLOR_GREEN, 1200);
+        return;
+      } else {
+        show_setup_message("JOYSTICK CALIBRATION",
+                           "MOVE THE STICK FURTHER TO EACH EDGE",
+                           PRG32_COLOR_YELLOW, 1500);
+      }
+      input = 0;
+    }
+
+    char line[64];
+    prg32_gfx_clear(PRG32_COLOR_BLACK);
+    prg32_gfx_text8(8, 8, "JOYSTICK CALIBRATION", PRG32_COLOR_WHITE, 0);
+    if (step == 0) {
+      prg32_gfx_text8(8, 40, "1. RELEASE THE STICK", PRG32_COLOR_YELLOW, 0);
+      prg32_gfx_text8(8, 56, "   THEN PRESS A", PRG32_COLOR_YELLOW, 0);
+      snprintf(line, sizeof(line), "SAVED CALIBRATION: %s", saved ? "YES" : "NO");
+      prg32_gfx_text8(8, 120, line, PRG32_COLOR_CYAN, 0);
+    } else {
+      prg32_gfx_text8(8, 40, "2. ROTATE THE STICK IN ALL DIRECTIONS", PRG32_COLOR_YELLOW, 0);
+      prg32_gfx_text8(8, 56, "   AS FURTHER AS POSSIBLE, THEN PRESS A", PRG32_COLOR_YELLOW, 0);
+      snprintf(line, sizeof(line), "X %4d .. %4d .. %4d", cal.min_x,
+               cal.center_x, cal.max_x);
+      prg32_gfx_text8(8, 120, line, PRG32_COLOR_CYAN, 0);
+      snprintf(line, sizeof(line), "Y %4d .. %4d .. %4d", cal.min_y,
+               cal.center_y, cal.max_y);
+      prg32_gfx_text8(8, 136, line, PRG32_COLOR_CYAN, 0);
+    }
+    snprintf(line, sizeof(line), "RAW X %4d  Y %4d", x, y);
+    prg32_gfx_text8(8, 88, line, PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 216, "A NEXT  B CANCEL", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_present();
+    last = input;
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
+}
+
 static void settings_menu(void) {
   int choice = 0;
-  const int option_count = 4;
+  /* Joystick calibration is listed only when an analog stick is sampled. */
+  const int option_count = prg32_joystick_analog_available() ? 5 : 4;
   static const char *options[] = {
       "WIFI SETUP",
       "STORE SETUP",
       "AUDIO SETUP",
       "DEVELOPER SETTINGS",
+      "JOYSTICK CALIBRATION",
   };
   prg32_input_wait_released(SETUP_KEYS);
   uint32_t last = 0;
@@ -950,6 +1045,8 @@ static void settings_menu(void) {
         audio_menu();
       } else if (choice == 3) {
         developer_menu();
+      } else if (choice == 4) {
+        joystick_calibration_menu();
       }
       prg32_input_wait_released(SETUP_KEYS);
     }

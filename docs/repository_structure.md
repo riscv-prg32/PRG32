@@ -26,7 +26,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only helpers for an RGB LED sharing LCD D/C (`PRG32_PIN_SHARED_RGB_LED`): boot flash and post-frame off latch
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
-|   |   |-- prg32_system.c          Boot sequence and setup menus, and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
+|   |   |-- prg32_joystick_analog.c Analog stick: ADC one-shot sampling, -127..127 axes, and the joystick calibration kept in NVS
+|   |   |-- prg32_system.c          Boot sequence and setup menus (including joystick calibration), and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, performance, Wi-Fi, and key-command protocol with upload timeout, failed-slot erase, HELLO heap reporting, and whole-frame writes that console logs cannot split
 |   |   |-- prg32_wifi.c            Wi-Fi modes, setup screens, the last four connected networks, and forgetting a stored network
 |   |   |-- prg32_random.c          Uniform bounded random-number API

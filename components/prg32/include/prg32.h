@@ -351,6 +351,21 @@ uint32_t prg32_joystick_analog_read(void);
 int prg32_joystick_analog_get_raw(int *out_x, int *out_y);
 int prg32_joystick_analog_get_axes(int *out_x, int *out_y);
 int prg32_joystick_analog_available(void);
+/* Raw ADC rest position and travel of the analog stick. Firmware only, not
+ * cartridge ABI: the setup menu records it in flash (NVS namespace "prg32").
+ * calibration_get returns 1 for a saved calibration, 0 for the boot estimate.
+ * calibration_save applies and stores a calibration; it returns -1 when a side
+ * spans fewer than 400 codes or the flash write fails. */
+typedef struct {
+  int center_x;
+  int center_y;
+  int min_x;
+  int max_x;
+  int min_y;
+  int max_y;
+} prg32_joystick_calibration_t;
+int prg32_joystick_analog_calibration_get(prg32_joystick_calibration_t *out);
+int prg32_joystick_analog_calibration_save(const prg32_joystick_calibration_t *cal);
 void prg32_diag_set_input_state(uint32_t input_state);
 void prg32_diag_increment_frame(void);
 uint32_t prg32_diag_input_state(void);

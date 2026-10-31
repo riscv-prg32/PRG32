@@ -4,7 +4,7 @@ PRG32 provides a unified, register-like input API for 8-bit and 16-bit retro gam
 
 > [!IMPORTANT]
 > **Single Source of Truth for Pin Setups**:
-> This component guide describes joystick mechanisms, electrical characteristics, ADC thresholds, and input APIs. **Physical GPIO pin numbers are never defined here**.
+> This component guide describes joystick mechanisms, electrical characteristics, ADC calibration, and input APIs. **Physical GPIO pin numbers are never defined here**.
 > All physical pinout tables and wiring assignments are maintained exclusively in the [**Hardware Profiles**](profiles/README.md) directory (see [`breadboard1`](profiles/breadboard1.md) for the 5-way digital navigation joystick and [`breadboard2`](profiles/breadboard2.md) for the KY-023 analog joystick).
 
 ---
@@ -81,18 +81,22 @@ Used in the upgraded breadboard design ([Breadboard 2 Profile](profiles/breadboa
 | **Y-Axis Analog** | `VRY` | Analog voltage (0V to 3.3V) read by ADC1 Channel (see [profiles](profiles/breadboard2.md)) |
 | **Center Switch** | `SW` | Center push switch shorting pin to GND (`START / SELECT`) |
 
-### ADC Calibration & Thresholds
+### ADC Range and Direction Bits
 - **Dynamic Range**: 12-bit ADC (`0` to `4095`).
 - **Resting Center**: ~`1650` (ideal midpoint is ~`2048`, but typical KY-023 units idle around 1600–1800).
-- **Deadband Hysteresis & Directional Bitmask Mapping**:
-  - **Horizontal (X-Axis)**:
-    - Raw reading below `CONFIG_PRG32_JOYSTICK_ADC_LEFT_THRESHOLD` (default `1300`): asserts `PRG32_BTN_LEFT`.
-    - Raw reading above `CONFIG_PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD` (default `2800`): asserts `PRG32_BTN_RIGHT`.
-  - **Vertical (Y-Axis)**:
-    - Raw reading below `CONFIG_PRG32_JOYSTICK_ADC_UP_THRESHOLD` (default `1300`): asserts `PRG32_BTN_UP`.
-    - Raw reading above `CONFIG_PRG32_JOYSTICK_ADC_DOWN_THRESHOLD` (default `2800`): asserts `PRG32_BTN_DOWN`.
-  - **Neutral Deadband**: Readings between low and high thresholds register as neutral (no directional bits set).
-  - **Diagonals**: Simultaneous deflection in both axes asserts both directional bits (e.g. `PRG32_BTN_UP | PRG32_BTN_RIGHT`). Axis inversion is also automatically detected if low and high thresholds are swapped.
+- **Direction Bits**: `PRG32_BTN_LEFT`, `RIGHT`, `UP`, and `DOWN` come from the
+  calibrated axes described below, so all four turn on at the same tilt
+  whatever the stick's rest position:
+  - a direction turns on when its axis reaches
+    `CONFIG_PRG32_JOYSTICK_DIRECTION_THRESHOLD` (default `40`, about 38% of the
+    travel with the default deadzone) toward that side;
+  - it turns off again below three fifths of that value (`24`, about 27% of the
+    travel). The gap is hysteresis: a stick held near the threshold does not
+    flicker and repeat menu moves.
+  - **Diagonals**: Simultaneous deflection in both axes asserts both directional bits (e.g. `PRG32_BTN_UP | PRG32_BTN_RIGHT`).
+- **Orientation**: `CONFIG_PRG32_JOYSTICK_INVERT_X` and
+  `CONFIG_PRG32_JOYSTICK_INVERT_Y` swap LEFT/RIGHT and UP/DOWN, for both the
+  bits and the axes, on a stick mounted the other way round.
 
 ### Analog Axes, Calibration and Deadzone
 
@@ -100,23 +104,45 @@ The [analog axis API](../software/framework_manual.md#analog-axes)
 (`prg32_input_axis_x()`, `prg32_input_axis_y()`) turns readings into `-127`
 to `127`:
 
-1. **Rest position**: at boot the firmware averages 16 readings of each axis
-   and uses them as `0`. Keep the stick released while the board starts. A
-   rest reading below `512` or above `3584` means the stick was held; the
-   firmware then logs a warning and uses `2048`.
-2. **Two half-ranges**: the side from the rest position down to `0` and the
-   side up to `4095` are scaled separately, so both full tilts read `±127`
-   even though a KY-023 rests off-centre.
+1. **Rest position and travel**: taken from the saved
+   [joystick calibration](#joystick-calibration). Without one, the firmware
+   averages 16 readings at boot and uses them as `0`, and assumes the full
+   `0..4095` travel; a rest reading below `512` or above `3584` means the stick
+   was held, so the firmware logs a warning and uses `2048`.
+2. **Two half-ranges**: the side from the rest position down to the lowest
+   reading and the side up to the highest are scaled separately, so both full
+   tilts read `±127` even though a KY-023 rests off-centre. Readings beyond the
+   calibrated edges read `±127`.
 3. **Deadzone**: values within `CONFIG_PRG32_JOYSTICK_AXIS_DEADZONE` (default
    `12`, in the same `-127..127` units) of rest read `0`, so a released stick
    does not drift. The remaining travel is rescaled to reach `±127`.
-4. **Orientation**: swapped thresholds invert the axis, the same rule as the
-   direction bits above.
+4. **Orientation**: `CONFIG_PRG32_JOYSTICK_INVERT_X` / `_INVERT_Y` turn the
+   axis around, for the direction bits as well.
 
-The direction bits and the axes are independent: the bits still use the raw
-thresholds. With the default thresholds and a rest point of `1650`, LEFT turns
-on near axis `-16` and RIGHT near `53`; the thresholds are fixed codes while
-the axes follow the measured rest point.
+### Joystick Calibration
+
+Calibrate once per stick so the axes no longer depend on where the stick is
+when the board starts. In the startup menu choose **SETUP → JOYSTICK
+CALIBRATION** (listed only when an analog stick is configured):
+
+1. Release the stick and press **A**: 16 readings are averaged into the rest
+   position.
+2. Move the stick to every edge, holding each one briefly, and press **A**.
+   The screen shows the lowest, rest, and highest reading of each axis as they
+   grow.
+
+Only **A** confirms, because pressing the stick (SELECT) would move it. **B**
+leaves without changing anything. The calibration is refused, with "MOVE THE
+STICK FURTHER TO EACH EDGE", while any side spans fewer than `400` codes from
+the rest position; that usually means an edge was missed.
+
+The values are applied at once and stored in flash, in the `prg32` NVS
+namespace as `joy_cx`, `joy_cy`, `joy_xmin`, `joy_xmax`, `joy_ymin`, and
+`joy_ymax`. They survive reboots, firmware updates, and cartridge uploads; an
+`erase-flash` removes them. The boot log names the source:
+`rest position X=... Y=... (saved calibration)` or `(measured at boot)`.
+Calibrate again after replacing the stick. The direction bits follow the
+calibration too, so menu navigation becomes even on all four sides.
 
 ---
 

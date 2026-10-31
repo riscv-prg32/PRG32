@@ -45,6 +45,8 @@ Here are common issues and solutions when working with the PRG32 framework.
 
 - **The analog joystick (`breadboard2`) stops responding after a cartridge upload, a Store download, or a saved setting, while the buttons keep working**: the firmware predates the switch to ADC one-shot sampling; its continuous DMA sampling stopped at the first flash write (see [sampling backend](../hardware/joystick.md#mechanical--electrical-operation-1)). Rebuild and flash the current firmware. A reset restores the stick until the next flash write.
 
+- **Analog axes drift at rest, do not reach ±127, or change after a reboot (`breadboard2`)**: the stick has no saved calibration, so the rest position is measured at each boot. Run **SETUP → JOYSTICK CALIBRATION** once ([joystick calibration](../hardware/joystick.md#joystick-calibration)); the boot log then reports `(saved calibration)`.
+
 ## QEMU Emulator Issues
 
 - **QEMU build fails with `fatal error: <header>.h: No such file or directory` while the ESP32-C6 build succeeds**: The header's ESP-IDF component is missing from `PRG32_PRIV_REQUIRES` in `components/prg32/CMakeLists.txt` and is only reachable transitively on ESP32-C6. See [explicit component requirements](qemu.md#how-it-works).

@@ -59,7 +59,9 @@ With one stored cartridge, PRG32 starts it automatically. With several stored
 cartridges, it starts the saved default. The startup menu appears when no
 cartridge can be selected, or when you hold A+B during boot. From that menu
 you can run a cartridge, set the default, configure Wi-Fi and CartridgeStore,
-open audio or developer settings, and view the about screen. The optional
+open audio or developer settings, calibrate an analog joystick
+([joystick calibration](../hardware/joystick.md#joystick-calibration)), and
+view the about screen. The optional
 performance-test cartridge runs matched RGB565 and full-indexed passes,
 displays an aggregate summary, and retains compact JSON at
 `/api/performance.json` until reboot or the next run. Poing can publish a

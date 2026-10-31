@@ -83,10 +83,7 @@ The analog joystick connects two potentiometers (X and Y axes) between 3.3V and 
 > used for uploads and the device protocol).
 
 > [!NOTE]
-> The firmware converts both ADC1 channels each time input is read (`adc_oneshot`, see [sampling backend](../joystick.md#mechanical--electrical-operation-1)). The raw 12-bit samples (0–4095, center ~2048) are converted into standard PRG32 directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`) using dedicated, configurable thresholds for both axes:
-> - **Horizontal (X)**: `s_last_raw_x < LEFT_THRESHOLD` sets `PRG32_BTN_LEFT`; `s_last_raw_x > RIGHT_THRESHOLD` sets `PRG32_BTN_RIGHT`.
-> - **Vertical (Y)**: `s_last_raw_y < UP_THRESHOLD` sets `PRG32_BTN_UP`; `s_last_raw_y > DOWN_THRESHOLD` sets `PRG32_BTN_DOWN`.
-> - Diagonals (e.g., UP + RIGHT) are fully supported with simultaneous bit assertions. Axis inversion is also automatically detected if a low threshold exceeds a high threshold.
+> The firmware converts both ADC1 channels each time input is read (`adc_oneshot`, see [sampling backend](../joystick.md#mechanical--electrical-operation-1)). The raw 12-bit samples (0–4095) become calibrated `-127..127` axes, and the directional button bits (`PRG32_BTN_LEFT`, `PRG32_BTN_RIGHT`, `PRG32_BTN_UP`, `PRG32_BTN_DOWN`, diagonals included) are derived from them with `CONFIG_PRG32_JOYSTICK_DIRECTION_THRESHOLD=40` from this profile. See [direction bits](../joystick.md#adc-range-and-direction-bits) and [joystick calibration](../joystick.md#joystick-calibration).
 
 ### Audio (I2S MAX98357A)
 
