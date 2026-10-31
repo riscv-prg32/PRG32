@@ -283,8 +283,7 @@ static void draw_band_overlays(void) {
     }
 }
 
-void prg32_display_init(void) {
-    prg32_gfx_lock_init();
+static void palette_init(void) {
     for (unsigned i = 0; i < 256; ++i) {
         if (i < 16) g_palette[i] = 0;
         else if (i < 232) {
@@ -305,6 +304,11 @@ void prg32_display_init(void) {
     g_palette[5] = PRG32_COLOR_YELLOW;
     g_palette[6] = PRG32_COLOR_CYAN;
     g_palette[7] = PRG32_COLOR_MAGENTA;
+}
+
+void prg32_display_init(void) {
+    prg32_gfx_lock_init();
+    palette_init();
     esp_lcd_rgb_qemu_config_t cfg = {
         .width = PRG32_LCD_W,
         .height = PRG32_LCD_H,
@@ -403,6 +407,11 @@ int prg32_gfx_palette_matches_unlocked(uint8_t index, uint16_t color) {
 }
 
 void prg32_palette_set(uint8_t index, uint16_t rgb565) { g_palette[index] = rgb565; }
+void prg32_palette_reset(void) {
+    prg32_gfx_lock();
+    palette_init();
+    prg32_gfx_unlock();
+}
 uint16_t prg32_palette_get(uint8_t index) { return g_palette[index]; }
 void prg32_gfx_pixel_indexed(int x, int y, uint8_t index) {
     prg32_gfx_pixel(x, y, g_palette[index]);

@@ -19,8 +19,10 @@ PRG32_ARCHITECTURE=qemu cartridges/performancetest/scripts/build.sh
 
 The cartridge owns all workload code, probe assets and scene state. Firmware
 retains only compact aggregate results. Press B or SELECT to abort; all
-temporary broker memory is released. Completed JSON remains available from
-`GET /api/performance.json`.
+temporary broker memory is released. Loading another cartridge mid-run does the
+same. Completed JSON remains available from `GET /api/performance.json`. If a
+run cannot begin, the screen says `PERFORMANCE TEST DID NOT START` rather than
+`ABORTED`, and A tries again.
 
 After a successful run, the cartridge presents a per-workload results table.
 LEFT and RIGHT switch between the RGB565 and indexed-color tables, and A starts

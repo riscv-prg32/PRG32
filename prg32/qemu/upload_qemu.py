@@ -28,7 +28,7 @@ def inject_cartridge(cartridge: str,
     data = cart.read_bytes()
     ensure_cart_max_size(data)
     # QEMU has no /api/runtime during staging. Use --cart-ram-kib, else the
-    # profile recorded in the sdkconfig next to the flash image, else 64 KiB.
+    # profile recorded in the sdkconfig next to the flash image, else 128 KiB.
     cart_ram_size, ram_source = resolve_cart_ram_size(
         cart_ram_kib,
         flash.parent / "sdkconfig",

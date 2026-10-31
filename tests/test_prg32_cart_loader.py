@@ -30,7 +30,7 @@ def test_stored_cartridges_load_through_flash_mapping_without_heap_copy() -> Non
     load_stored = text.split("int prg32_cart_load_stored(void) {", 1)[1].split("\n}\n", 1)[0]
 
     # The payload is copied from the flash mapping straight into prg32_cart_exec;
-    # a heap copy of a 128 KiB image cannot fit next to the 128 KiB window.
+    # a heap copy of a 128 KiB image cannot fit next to the default 128 KiB window.
     assert "esp_partition_mmap(" in load_stored
     assert "heap_caps_malloc" not in load_stored
     # AUDIO assets play from the mapping, so slot rewrites must release it first.

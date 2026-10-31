@@ -86,6 +86,9 @@ Results are volatile:
 
 - starting a new suite replaces the preceding result;
 - aborting a run releases the active temporary allocation;
+- loading another cartridge or unloading the current one aborts a running suite,
+  so its partial data is discarded and the next run can start, while an earlier
+  completed result stays available if no suite was running;
 - rebooting the board or QEMU clears the result; and
 - schema version 2 does not retain raw samples.
 
@@ -686,7 +689,8 @@ The cartridge README should specify:
 
 | Symptom | Likely cause | Corrective action |
 | --- | --- | --- |
-| `prg32_perf_begin()` returns nonzero | Another suite is active or the descriptor is invalid. | Abort the prior run and initialize version, size, and name. |
+| `prg32_perf_begin()` returns nonzero | This cartridge already began a suite or the descriptor is invalid. A suite never survives its cartridge. | Abort the prior run and initialize version, size, and name. |
+| Reference cartridge shows `PERFORMANCE TEST DID NOT START` | `prg32_perf_begin()` or the first `prg32_perf_case_begin()` failed, so nothing was measured. `PERFORMANCE TEST ABORTED` means a run that had started was stopped. | Press A to try again. Firmware older than 2026-10-30 keeps refusing after a cartridge was left mid-run, until a restart. |
 | Case creation returns `-2` | Insufficient heap for `expected_samples`. | Reduce the sample count or free cartridge allocations. |
 | Recording returns `-2` | More samples were submitted than declared. | Align the loop bound and `expected_samples`. |
 | Suite completion fails | A case is still active. | End the case before ending the suite. |

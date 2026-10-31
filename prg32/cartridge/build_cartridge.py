@@ -159,7 +159,7 @@ def build_cartridge_core(source: str,
         )
 
     # Portable builds have no runtime to query, so the executable RAM limit
-    # comes from the selected firmware profile (--cart-ram-kib, default 64).
+    # comes from the selected firmware profile (--cart-ram-kib, default 128).
     load_addr = FALLBACK_CART_LOAD_ADDR
     ram_size = int(cart_ram_size)
     req_features = feature_mask(required_features)

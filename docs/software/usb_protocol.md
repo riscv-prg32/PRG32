@@ -108,9 +108,9 @@ frame.
  "keys":["LEFT","RIGHT","UP","DOWN","A","B","START"],"debug_supported":false,
  "firmware":"5202077","target":"esp32c6","slots":8,
  "max_chunk":4096,"max_payload":16384,
- "runtime":{"cart_ram_size":65536,"cart_max_size":65536,
+ "runtime":{"cart_ram_size":131072,"cart_max_size":131072,
             "cart_abi_major":1,"cart_abi_minor":1,
-            "heap_free":197800,"heap_largest":172032}}
+            "heap_free":120220,"heap_largest":94208}}
 ```
 
 `firmware`, `target`, `slots`, `max_chunk`, `max_payload` and

@@ -3,7 +3,7 @@ CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
 # CONFIG_ESP_CONSOLE_SECONDARY_NONE is not set
 CONFIG_PRG32_DISPLAY_ILI9341=y
-# Free internal SRAM for the 128 KiB cartridge window: run the Wi-Fi driver's
+# Free internal SRAM next to the 128 KiB cartridge window: run the Wi-Fi driver's
 # throughput paths from flash instead of IRAM, and keep fewer pre-allocated
 # receive buffers. Classroom traffic (uploads, scores, Store) does not need
 # peak Wi-Fi throughput.

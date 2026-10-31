@@ -198,6 +198,26 @@ Available modes are `PRG32_BAND_MODE_NONE`, `PRG32_BAND_MODE_FPS`,
 menu lets a trainer choose what appears in the top and bottom bands and stores
 that choice in NVS.
 
+Band settings belong to the cartridge that made them. Before a cartridge starts,
+and when setup opens, the firmware returns the bands to the saved menu choice,
+clears band text and colors, turns full-screen drawing off, repaints the bands
+black, and restores the default palette. Set them in `init` rather than relying on an earlier cartridge. A
+cartridge that calls `prg32_band_save_config()` makes its modes the saved choice.
+
+Validated 2026-10-30 on ESP32-C6 and QEMU, 128 KiB window, by comparing screens:
+Poing has plain black bands after Cockroaches Cathisteria (board) and after
+DeviceDemo (QEMU), and is centered after `performancetest` on QEMU; a saved GAME
+mode still applies to the next cartridge. A scratch cartridge read slot
+information, was refused an empty slot and kept running, then switched to
+`performancetest`, which completed. `performancetest` also completed with a GAME
+band, where a band reads cartridge information while the cartridge presents.
+
+Also on both targets, a cartridge that set all 256 palette entries to magenta no
+longer reaches the next one. Before the fix, Cockroaches Cathisteria on the board
+drew a solid magenta screen after it; afterwards its title screen and Poing are
+correct, and `prg32_palette_get` finds 2 magenta entries instead of 256, the same
+count as a fresh start on QEMU.
+
 ## Screenshot API
 
 When the resident HTTP server is reachable, `GET /api/screenshot.bmp` streams
@@ -248,7 +268,8 @@ The optional `performancetest` cartridge provides an unattended multi-case
 benchmark that retains compact per-screen/per-color-mode summaries in RAM
 without streaming every frame. Temporary percentile samples are released at
 the end of each case. The latest run is
-available as `/api/performance.json` until the next benchmark or reboot. The
+available as `/api/performance.json` until the next benchmark or reboot; leaving
+the cartridge mid-run discards that partial run. The
 cartridge cases isolate clear/fill, text overlay, sprite storm, scrolling, and
 mixed-gameplay workloads. Every workload runs through matched RGB565 and
 full indexed-native primitives and indexed-color sprite probes; the final screen reports an aggregate summary and
@@ -273,17 +294,17 @@ Important constants:
 - `PRG32_CART_META_MAGIC`: optional metadata trailer magic, `PRG32META`.
 - `PRG32_CART_META_ABI`: metadata JSON ABI, `prg32-metadata-1.0`.
 - `PRG32_CART_COLOPHON_ABI`: colophon JSON ABI, `prg32-colophon-1.0`.
-- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, 64 KiB in the default
+- `PRG32_CART_MAX_SIZE`: maximum `.prg32` package size, 128 KiB in the default
   physical and QEMU configurations.
 - `PRG32_CART_RAM_SIZE`: statically placed executable cartridge RAM window,
   configured by `CONFIG_PRG32_CART_RAM_PROFILE`. Physical ESP32-C6 and QEMU
-  builds default to the 64 KiB extended profile; the optional 128 KiB profile
-  (`profiles/sdkconfig.defaults.esp32c6_128k`) also raises the stored-image
-  limit to 128 KiB. The window remains static because legacy cartridges are
+  builds default to the 128 KiB large profile; the optional 64 KiB fragment
+  (`profiles/sdkconfig.defaults.cart_64k`) leaves more free heap. The window
+  remains static because legacy cartridges are
   linked to the exported `prg32_cart_exec` address; portable cartridges use
   the ABI table. How the firmware keeps heap free next to it is described in
   [Maximizing free heap](../hardware/memory.md#maximizing-free-heap).
-  Host tools assume the 64 KiB window unless told otherwise with
+  Host tools assume the 128 KiB window unless told otherwise with
   `--cart-ram-kib`; see [PRG32 Profiles](../usage/profiles.md#matching-host-tools-to-the-profile).
 - `PRG32_CART_SLOT_COUNT`: number of persistent flash cartridge slots; the
   checked-in partition profile provides eight.
@@ -295,10 +316,14 @@ Important functions:
 - `prg32_cart_store_slot(slot, image, size)`: validate and store an image without running it.
 - `prg32_cart_install_slot(slot, image, size, persist)`: install to one of
   `cart0` through `cart7`.
-- `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot.
+- `prg32_cart_select_slot(slot)`: load a stored cartridge from one slot. A
+  cartridge may call this to start another one: it gets `0` and the switch
+  happens when its current `init`, `update`, or `draw` returns, so that call must
+  be its last action; an empty slot returns a negative value and it keeps running.
 - `prg32_cart_default_slot()`: read the saved default boot cartridge.
 - `prg32_cart_set_default_slot(slot)`: save a default slot, or pass `-1` to clear it.
-- `prg32_cart_select_default()`: load the saved default slot.
+- `prg32_cart_select_default()`: load the saved default slot, with the same rule
+  when a cartridge calls it.
 - `prg32_cart_stored_count()`: count valid stored cartridges.
 - `prg32_cart_get_slot_info(slot, info)`: inspect one persistent slot.
 - `prg32_cart_call_init()`
@@ -501,7 +526,8 @@ Useful calls:
 - `prg32_gfx_pixel_indexed(...)`, `prg32_gfx_rect_indexed(...)`, and
   `prg32_gfx_clear_indexed(...)`: write system-palette indices directly.
 - `prg32_palette_set(...)` / `prg32_palette_get(...)`: change or inspect a
-  system-palette entry; changing it recolors existing indexed pixels.
+  system-palette entry; changing it recolors existing indexed pixels. The default
+  palette returns before each cartridge starts, so set entries in `init`.
 
 The 16x16 and 24x24 helpers treat `PRG32_COLOR_WHITE` as transparent. For other
 sizes or another transparency key, `prg32_sprite_draw_frame` accepts width,

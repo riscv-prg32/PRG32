@@ -49,3 +49,37 @@ ordinary-cartridge-afterward checkpoints still require a separate driven run.
 The broker deliberately uses volatile RAM only and performs no flash writes, so
 the refactor adds no flash-wear concern. Completed results survive cartridge
 replacement but not reboot or a new suite.
+
+## Leaving a run mid-way (validated 2026-10-30)
+
+A suite left running by a cartridge switch used to refuse every later run until
+a restart. The firmware now aborts it whenever the cartridge is unloaded or
+replaced. On ESP32-C3 QEMU (64 KiB window), `performancetest` was left about six
+seconds into a run, then run again:
+
+| Way of leaving | Result right after leaving | Next run |
+|---|---|---|
+| `RUN` of another slot | `no performance test results` | `ok`, 600 frames |
+| `RUN` of an empty slot (refused) | `no performance test results` | `ok`, 600 frames |
+| Upload of another cartridge to a third slot | `no performance test results` | `ok`, 600 frames |
+
+Results were read with `PERFORMANCE_GET`, which uses the same JSON writer as
+`GET /api/performance.json`; QEMU has no reachable HTTP address. A completed
+result survived a later cartridge switch. After three abandoned runs the last
+run had the same free heap before and after (213,512 B), so the aborted runs
+left no allocation behind. This also closes the post-abort checkpoint above for
+QEMU.
+
+On the ESP32-C6 `prototype1` board (firmware `9ebc603`, 64 KiB window), the same
+test passed for leaving by `RUN` and by upload; the empty-slot case was not run
+because all eight slots were full. `GET /api/performance.json` and
+`PERFORMANCE_GET` returned the same completed run: 600 frames, 12.13 FPS, mean
+frame time 82,436 microseconds, free heap 185,832 B before and 185,856 B after.
+Firmware without the fix (`2ef2ac1`, 128 KiB window) kept answering
+`{"ok":false,"running":true}` after a switch and showed
+`PERFORMANCE TEST DID NOT START` with the rebuilt cartridge.
+
+The test was repeated with the 128 KiB window on ESP32-C6 and QEMU, including the
+empty-slot case on both, and passed: on the board 600 frames, 12.10 FPS, mean
+frame time 82,628 microseconds, free heap 120,356 B before and after. A suite
+left by a cartridge that selects another slot itself is aborted the same way.
