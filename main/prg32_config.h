@@ -43,7 +43,18 @@
 #define PRG32_PIN_BTN_DOWN -1
 #define PRG32_PIN_BTN_A -1
 #define PRG32_PIN_BTN_B -1
+#define PRG32_PIN_BTN_C -1
+#define PRG32_PIN_BTN_D -1
+#define PRG32_PIN_BTN_L -1
+#define PRG32_PIN_BTN_R -1
 #define PRG32_PIN_BTN_START -1
+
+#define PRG32_PIN_JOYSTICK_X -1
+#define PRG32_PIN_JOYSTICK_Y -1
+#define PRG32_JOYSTICK_DIRECTION_THRESHOLD 40
+#define PRG32_JOYSTICK_INVERT_X 0
+#define PRG32_JOYSTICK_INVERT_Y 0
+#define PRG32_JOYSTICK_AXIS_DEADZONE 12
 
 #define PRG32_PIN_SETUP -1
 
@@ -59,7 +70,8 @@
 #else /* Physical ESP32-C6 build. */
 
 #if !defined(CONFIG_PRG32_PINS_CONFIGURED) || !CONFIG_PRG32_PINS_CONFIGURED
-#error "PRG32 pin configuration not defined! You must select a hardware pin profile in profiles/."
+#error                                                                         \
+    "PRG32 pin configuration not defined! You must select a hardware pin profile in profiles/."
 #endif
 
 // Display ILI9341
@@ -78,14 +90,88 @@
 #define PRG32_BOOT_SIGNAL_ENABLE CONFIG_PRG32_BOOT_SIGNAL_ENABLE
 #define PRG32_BOOT_DIAGNOSTIC_DELAY_MS CONFIG_PRG32_BOOT_DIAGNOSTIC_DELAY_MS
 
-// Joystick
+// Joystick (Digital or Analog)
+#if defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
+#ifdef CONFIG_PRG32_PIN_BTN_UP
 #define PRG32_PIN_BTN_UP CONFIG_PRG32_PIN_BTN_UP
+#else
+#define PRG32_PIN_BTN_UP -1
+#endif
+#ifdef CONFIG_PRG32_PIN_BTN_DOWN
 #define PRG32_PIN_BTN_DOWN CONFIG_PRG32_PIN_BTN_DOWN
+#else
+#define PRG32_PIN_BTN_DOWN -1
+#endif
+#ifdef CONFIG_PRG32_PIN_BTN_LEFT
 #define PRG32_PIN_BTN_LEFT CONFIG_PRG32_PIN_BTN_LEFT
+#else
+#define PRG32_PIN_BTN_LEFT -1
+#endif
+#ifdef CONFIG_PRG32_PIN_BTN_RIGHT
 #define PRG32_PIN_BTN_RIGHT CONFIG_PRG32_PIN_BTN_RIGHT
+#else
+#define PRG32_PIN_BTN_RIGHT -1
+#endif
+#else
+#define PRG32_PIN_BTN_UP -1
+#define PRG32_PIN_BTN_DOWN -1
+#define PRG32_PIN_BTN_LEFT -1
+#define PRG32_PIN_BTN_RIGHT -1
+#endif
+
 #define PRG32_PIN_BTN_START CONFIG_PRG32_PIN_BTN_START
 #define PRG32_PIN_BTN_A CONFIG_PRG32_PIN_BTN_A
 #define PRG32_PIN_BTN_B CONFIG_PRG32_PIN_BTN_B
+#define PRG32_PIN_BTN_C CONFIG_PRG32_PIN_BTN_C
+#define PRG32_PIN_BTN_D CONFIG_PRG32_PIN_BTN_D
+#define PRG32_PIN_BTN_L CONFIG_PRG32_PIN_BTN_L
+#define PRG32_PIN_BTN_R CONFIG_PRG32_PIN_BTN_R
+
+#if defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
+#ifdef CONFIG_PRG32_PIN_JOYSTICK_X
+#define PRG32_PIN_JOYSTICK_X CONFIG_PRG32_PIN_JOYSTICK_X
+#else
+#define PRG32_PIN_JOYSTICK_X -1
+#endif
+
+#ifdef CONFIG_PRG32_PIN_JOYSTICK_Y
+#define PRG32_PIN_JOYSTICK_Y CONFIG_PRG32_PIN_JOYSTICK_Y
+#else
+#define PRG32_PIN_JOYSTICK_Y -1
+#endif
+
+#ifdef CONFIG_PRG32_JOYSTICK_DIRECTION_THRESHOLD
+#define PRG32_JOYSTICK_DIRECTION_THRESHOLD CONFIG_PRG32_JOYSTICK_DIRECTION_THRESHOLD
+#else
+#define PRG32_JOYSTICK_DIRECTION_THRESHOLD 40
+#endif
+
+#if defined(CONFIG_PRG32_JOYSTICK_INVERT_X) && CONFIG_PRG32_JOYSTICK_INVERT_X
+#define PRG32_JOYSTICK_INVERT_X 1
+#else
+#define PRG32_JOYSTICK_INVERT_X 0
+#endif
+
+#if defined(CONFIG_PRG32_JOYSTICK_INVERT_Y) && CONFIG_PRG32_JOYSTICK_INVERT_Y
+#define PRG32_JOYSTICK_INVERT_Y 1
+#else
+#define PRG32_JOYSTICK_INVERT_Y 0
+#endif
+
+#ifdef CONFIG_PRG32_JOYSTICK_AXIS_DEADZONE
+#define PRG32_JOYSTICK_AXIS_DEADZONE CONFIG_PRG32_JOYSTICK_AXIS_DEADZONE
+#else
+#define PRG32_JOYSTICK_AXIS_DEADZONE 12
+#endif
+
+#else
+#define PRG32_PIN_JOYSTICK_X -1
+#define PRG32_PIN_JOYSTICK_Y -1
+#define PRG32_JOYSTICK_DIRECTION_THRESHOLD 40
+#define PRG32_JOYSTICK_INVERT_X 0
+#define PRG32_JOYSTICK_INVERT_Y 0
+#define PRG32_JOYSTICK_AXIS_DEADZONE 12
+#endif
 
 /* Enter setup by holding A+B during boot; no dedicated setup GPIO is wired. */
 #define PRG32_PIN_SETUP CONFIG_PRG32_PIN_SETUP
@@ -161,17 +247,19 @@
 #endif
 
 #define PRG32_WIFI_STA_ENABLE                                                  \
-  (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_STA)
-#define PRG32_WIFI_AP_ENABLE (PRG32_GAME_UPLOAD_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_AP)
+  (PRG32_WIFI_SCORES_ENABLE || PRG32_MULTIPLAYER_TRANSPORT_ENABLE ||           \
+   CONFIG_PRG32_WIFI_BOOT_MODE_STA)
+#define PRG32_WIFI_AP_ENABLE                                                   \
+  (PRG32_GAME_UPLOAD_ENABLE || CONFIG_PRG32_WIFI_BOOT_MODE_AP)
 
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #define PRG32_WIFI_ENABLE 0
 #else
 #define PRG32_WIFI_ENABLE (PRG32_WIFI_STA_ENABLE || PRG32_WIFI_AP_ENABLE)
 #endif
-/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup if enabled.
- * Setup also opens when no unambiguous cartridge can boot. Classroom images
- * may set this to 1 to force setup on every boot. */
+/* Autoload the sole/default cartridge. Hold A+B at boot to enter setup if
+ * enabled. Setup also opens when no unambiguous cartridge can boot. Classroom
+ * images may set this to 1 to force setup on every boot. */
 #define PRG32_BOOT_SETUP_MODE CONFIG_PRG32_BOOT_SETUP_MODE
 #ifdef CONFIG_PRG32_ENABLE_BOOT_SETUP_COMBO
 #define PRG32_ENABLE_BOOT_SETUP_COMBO 1

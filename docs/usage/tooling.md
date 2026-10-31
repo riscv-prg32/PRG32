@@ -17,6 +17,7 @@ python3 -m prg32 <command> [subcommand] [options]
 - `abi`: ABI tooling tasks
 - `store`: CartridgeStore and metadata tasks
 - `doctor`: Check local toolchain prerequisites
+- `test`: Run the Python unit tests and the QEMU smoke test
 - `runtime`: Print runtime linker information
 - `debug`: Control an optional PRG32-QT debugger over its device HTTP API
 - `pins`: List available pin setup possibilities
@@ -25,27 +26,37 @@ python3 -m prg32 <command> [subcommand] [options]
 All commands interacting with physical ESP32-C6 hardware fall under the `esp32c6` group.
 
 ### Firmware Operations
-- `build`: build the ESP32C6 firmware. Use `-p <name>` / `--pin-profile <name>` (or `--pins <name>`) to select the hardware pin configuration profile (e.g. `prototype1`, see [PRG32 Profiles](profiles.md#hardware-pin-profiles)). You can see all available pin setup possibilities with `python3 -m prg32 esp32c6 pins`. If no pin profile is supplied and no Custom Profile is configured in `sdkconfig`, the build command will fail fast. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build). Use `-d` / `--debug` for debug profiles and `-e` / `--enable-heap-tracking` for heap task tracking.
+- `build`: build the ESP32C6 firmware. Cleans `./sdkconfig` and `build-esp32c6/sdkconfig` before configuring to guarantee local default configurations (`profiles/sdkconfig.defaults.local`) are always applied. Use `-k` / `--keep-sdkconfig` (or `--no-erase-sdkconfig`) to disable erasing `sdkconfig` files and preserve existing manual menuconfig changes. Use `-p <name>` / `--pin-profile <name>` (or `--pins <name>`) to select the hardware pin configuration profile (e.g. `breadboard1`, see [PRG32 Profiles](profiles.md#hardware-pin-profiles)). You can see all available pin setup possibilities with `python3 -m prg32 esp32c6 pins`. If no pin profile is supplied and no Custom Profile is configured in `sdkconfig`, the build command will fail fast. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C6 target was already set (e.g. from a previous build). Use `-d` / `--debug` for debug profiles and `-e` / `--enable-heap-tracking` for heap task tracking.
 - `flash`: flash the ESP32C6 image. Does not do anything when a cartridge is running!
-    - `build-and-flash`: combination of `build` and `flash` commands for convenience. Also supports `-s` / `--skip-target`, `-p` / `--pin-profile`, `-d` / `--debug`, and `-e` / `--enable-heap-tracking`.
-- `pins`: list available pin setup possibilities discovered in `profiles/` (e.g. `prototype1`).
+- `pins`: list available pin setup possibilities discovered in `profiles/` (e.g. `breadboard1`).
 - `erase-flash`: erase flash of ESP32C6. It is sometimes useful to completely erase the flash for debugging purposes.
-    - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience.
+    - `reset`: erase flash and re-flash. Combination of `erase-flash` and `flash`, for convenience. Erases `./sdkconfig` and `build-esp32c6/sdkconfig` (disable with `-k` / `--keep-sdkconfig` / `--no-erase-sdkconfig`).
 - `memory`: get static and dynamic memory analysis of the ESP32C6 SoC (See [docs/memory.md](/docs/hardware/memory.md)
 ### Upload & Run Cartridges
-- `upload`: upload over HTTP with `--url`, or use the automatic running-device
-  protocol with `--port`. The latter supports native USB and
-  `socket://HOST:PORT` emulator endpoints, requires no reset or upload mode,
-  and accepts `--command store|run|debug|performance`. See the
+- `upload`: upload over HTTP with `--url`, or otherwise through the running-device
+  protocol. The protocol supports native USB and `socket://HOST:PORT` emulator
+  endpoints, requires no reset or upload mode, and accepts
+  `--command store|run|debug|performance`. See the
   [device protocol](../software/usb_protocol.md). Browsers use the same
   protocol; see [Web-to-USB cartridge deployment](../software/web_usb_deployment.md).
 - `run`: run a stored slot over HTTP or the device protocol. `--debug` requests
   instruction debugging on PRG32-Qt; physical firmware reports it unsupported.
-    - `upload-and-run`: combination of `upload` and `run` for convenience.
+- `ports`: list the connected ESP32-C6 boards and, separately, the other serial
+  ports, which cannot receive cartridges.
+
+`upload`, `run`, `performance`, `key`, and the `wifi-*` commands find the board themselves when
+neither `--url` nor `--port` is given: they use the only serial port that reports
+the ESP32-C6 native USB ID (`303A:1001`), on Windows, Linux, and macOS alike.
+With no board connected they explain the usual causes; with several boards they
+list them and stop, so a lab bench with many boards needs `--port`. An explicit
+`--port` is always used as given. The ID identifies the connector labelled USB;
+the UART bridge connector is never chosen because the protocol does not run
+there.
+
 ### Firmware Tools
 These scripts are used to prepare and flashing single-file firmwares. They are useful to run legacy firmware for debugging purposes or to share modified versions of the firmware.
 
-- `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing
+- `prepare-firmware`: prepare a single-file legacy PRG32 firmware image for publishing. Use `-k` / `--keep-sdkconfig` / `--no-erase-sdkconfig` to disable erasing sdkconfig files.
 - `flash-firmware`: flash a published single-file legacy PRG32 firmware image
 ### Utilities
 - `performance`: download the latest in-RAM Performance Test JSON over HTTP or
@@ -66,9 +77,8 @@ These scripts are used to prepare and flashing single-file firmwares. They are u
   set the timing, and `--release` ends a long press early. See
   [Key messages](../software/usb_protocol.md#key-messages).
 ## QEMU Emulator Tasks (`qemu`)
-- `build`: build QEMU and generate the flash image. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
+- `build`: build QEMU and generate the flash image. Cleans `./sdkconfig` and `build-qemu/sdkconfig` before configuring to guarantee local default configurations (`profiles/sdkconfig.defaults.local`) are always applied. Use `-k` / `--keep-sdkconfig` (or `--no-erase-sdkconfig`) to disable erasing `sdkconfig` files and preserve existing manual menuconfig changes. Use `-s` / `--skip-target` to decrease compilation time if the ESP32C3 target was already set (e.g. from a previous build).
 - `run`: run the QEMU emulator environment
-- `build-and-run`: build QEMU, generate flash image, and run the emulator. Also supports `-s` / `--skip-target`.
 - `upload`: upload a cartridge to QEMU. `--cart-ram-kib` sets the executable
   RAM limit; by default it is read from `build-qemu/sdkconfig`, else 128 KiB
   (see [PRG32 Profiles](profiles.md#matching-host-tools-to-the-profile)).
@@ -132,11 +142,42 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
 - `pack-bundle`: pack a flat CartridgeStore zip bundle
 - `publish-bundle`: publish a CartridgeStore zip bundle
 ## Diagnostic Tasks
-- `doctor`: check local toolchain prerequisites
+- `doctor`: check local toolchain prerequisites, and report any ESP32-C6
+  connected on a native USB port (informational; a missing board is not a failure)
 - `runtime`: print runtime linker information
+- `test`: run the Python unit tests in `tests/`, then the QEMU smoke test
+  (`prg32/qemu/smoke_test.py`). The smoke test runs `qemu build`, builds the
+  pong demo cartridge and stages it in `cart0`, starts QEMU with an SDL window
+  and no monitor, waits up to 60 s for the firmware to answer HELLO on
+  `socket://127.0.0.1:5555`, uploads pong again with `run`, and closes QEMU.
+  It needs no terminal, so it also runs from scripts, but it needs a desktop
+  session for the SDL window (on a headless Linux machine, use `xvfb-run`; see
+  [CI](../software/cartridges.md#continuous-integration-and-delivery-artifacts))
+  and a free port 5555 (close any running QEMU first). Any failed step stops it with exit code 1; QEMU's own output is in
+  `build-qemu/smoke_qemu.log`. `--unit-only` stops after the unit tests: use it
+  when checking a change that does not need the emulator, since the QEMU build
+  is most of the run time.
 - `debug`: query state or send `enable`, `disable`, `pause`, `step`, `resume`,
   and playback `speed` commands to PRG32-QT. See the
   [Web API reference](../software/api.md#prg32-qt-optional-debugger-api).
+
+## ESP-IDF build speed
+
+Most of a validation run is spent compiling the firmware. Two things shorten it:
+
+- **ccache.** When `ccache` is installed (for example `brew install ccache`),
+  the PRG32 CLI sets `IDF_CCACHE_ENABLE=1` for every `idf.py` it starts, so a
+  rebuild reuses compiled files even after `esp32c6 build` deletes
+  `build-esp32c6/`. Set `IDF_CCACHE_ENABLE=0` to turn it off. `idf.py` records
+  the choice in the build directory, so when you call `idf.py` yourself on a
+  PRG32 build directory, pass `--ccache` too (or export `IDF_CCACHE_ENABLE=1`);
+  a call without it switches ccache off there and recompiles everything.
+- **Incremental builds.** `esp32c6 build -s -k` (and `qemu build -s -k`) skips
+  the target setup, which deletes the build directory, and keeps the existing
+  sdkconfig, so only the changed sources are compiled. Use it only when no
+  `Kconfig`, `profiles/*` or `sdkconfig*` file has changed since the last build
+  and that build used the same pin profile; otherwise the kept sdkconfig does
+  not match the source. Run a full build in every other case.
 
 ## GitHub Actions artifacts
 

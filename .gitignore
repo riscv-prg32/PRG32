@@ -79,6 +79,7 @@ sdkconfig
 profiles/sdkconfig.defaults.local
 .vscode/c_cpp_properties.json
 .vscode/launch.json
+.claude/
 
 # Local Python tooling
 .venv/

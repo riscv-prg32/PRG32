@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 import argparse
+from prg32.esp32c6.find_port import resolve_port
 from prg32.utilities.logging import *
 from prg32.utilities.env_variables import *
 from prg32.utilities.partition_handler import read_partition_slot
@@ -89,7 +90,10 @@ def upload_esp32c6_usb(args: argparse.Namespace, data: bytes) -> None:
 def upload_esp32c6(args: argparse.Namespace) -> None:
     data = Path(args.cartridge).read_bytes()
     ensure_cart_max_size(data)
-    if getattr(args, "port", None):
+    # Without --url the upload uses the device protocol; with neither --url
+    # nor --port the connected ESP32-C6 is found by its USB ID.
+    if not getattr(args, "url", None):
+        args.port = resolve_port(getattr(args, "port", None))
         upload_esp32c6_usb(args, data)
         return
 
@@ -113,8 +117,9 @@ def upload_esp32c6(args: argparse.Namespace) -> None:
         raise SystemExit(f"upload failed: {exc}") from exc
 
 def run_esp32c6(args: argparse.Namespace) -> None:
-    if getattr(args, "port", None):
-        client = ProtocolClient(open_stream(args.port, int(args.baud), float(args.timeout)), float(args.timeout))
+    if not getattr(args, "url", None):
+        port = resolve_port(getattr(args, "port", None))
+        client = ProtocolClient(open_stream(port, int(args.baud), float(args.timeout)), float(args.timeout))
         try:
             client.request_json(DEBUG if getattr(args, "debug", False) else RUN, {"slot": args.slot})
         finally:
@@ -139,8 +144,3 @@ def run_esp32c6(args: argparse.Namespace) -> None:
         raise SystemExit(f"Selection failed: HTTP {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
         raise SystemExit(f"Selection failed: {exc}") from exc
-    
-def upload_and_run_esp32c6(args: argparse.Namespace):
-    upload_esp32c6(args)
-    run_esp32c6(args)
-    log_ok("Finished upload and run on ESP32C6")

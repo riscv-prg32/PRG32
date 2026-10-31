@@ -121,15 +121,18 @@ python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --url http://192.1
 
 The firmware stores the cartridge in `cart0` by default and starts running it from the main loop. You can upload to another slot with `--slot cart1`.
 
-When Wi-Fi is unavailable, upload through the running firmware's automatically
-detected USB protocol:
+When Wi-Fi is unavailable, connect the board's connector labelled USB and
+upload through the running firmware's automatically detected USB protocol:
 
 ```bash
-python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 \
-  --port /dev/cu.usbmodem101 --slot cart0
+python3 -m prg32 esp32c6 upload build-esp32c6/asteroids.prg32 --slot cart0
 ```
 
-Use the serial port name for your host (`COM5` is a typical Windows example).
+Without `--url` or `--port`, the SDK finds the board by its native USB ID and
+prints the port it chose. With several boards connected, pass the port name for
+your host, for example `--port COM5` (Windows), `--port /dev/ttyACM0` (Linux),
+or `--port /dev/cu.usbmodem101` (macOS); `python3 -m prg32 esp32c6 ports` lists
+them ([tooling](../usage/tooling.md#upload--run-cartridges)).
 USB upload validates the portable ABI and RAM requirement, opens the device's
 progress screen, streams into the selected slot, prints progress every 10%,
 and reports success or failure. A 24 KiB cartridge takes about two seconds.
@@ -503,6 +506,25 @@ the repository smoke suite and generated-ABI check.
 Two firmware jobs build the resident runtime for both targets: the physical
 ESP32-C6 firmware and the ESP32-C3 QEMU firmware (`python3 -m prg32 qemu build`),
 so a change that compiles for only one target is caught before merging.
+
+The QEMU job builds the firmware but does not boot it. The boot check is the
+QEMU smoke test in `python3 -m prg32 test` ([tooling](../usage/tooling.md#diagnostic-tasks)),
+which opens an SDL window because the virtual display blocks the firmware
+without one. A headless Linux machine, such as a CI runner or the
+`espressif/idf` container, has no display for that window: run the test under
+a virtual X server with `xvfb-run`. It also needs the ESP-IDF QEMU build and
+the libraries it loads:
+
+```bash
+apt-get install -y xvfb libgcrypt20 libglib2.0-0 libpixman-1-0 libsdl2-2.0-0 libslirp0
+python3 "$IDF_PATH/tools/idf_tools.py" install qemu-riscv32
+. "$IDF_PATH/export.sh"
+xvfb-run -a python3 -m prg32 test
+```
+
+`-a` picks a free display number. The smoke test also needs port 5555 free.
+This recipe is not yet part of the workflow and has not been run on a CI
+runner; it was checked only on macOS with a desktop session (2026-10-30).
 
 Successful runs retain six downloadable workflow artifacts for 14 days:
 

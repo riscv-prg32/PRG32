@@ -43,7 +43,7 @@ MAX_CHUNK = 4096
 COMMANDS = ("store", "run", "debug", "performance")
 
 # Keys of firmware without a HELLO "keys" list. Newer firmware reports its own.
-KEYS = ("LEFT", "RIGHT", "UP", "DOWN", "A", "B", "START")
+KEYS = ("LEFT", "RIGHT", "UP", "DOWN", "A", "B", "START", "C", "D", "L", "R")
 # START and SELECT are two names for one button (PRG32_BTN_SELECT).
 KEY_ALIASES = {"SELECT": "START"}
 KEY_HOLD_DEFAULT_MS = 200
@@ -143,7 +143,7 @@ def open_stream(port: str, baud: int, timeout: float):
     # asserted while DTR is not.  Requesting dtr=False/rts=False makes pyserial
     # clear DTR first, passing through exactly that state, so every connection
     # restarted the firmware.  Both lines asserted, and the simultaneous release
-    # at close, leave the running firmware untouched (verified on prototype1).
+    # at close, leave the running firmware untouched (verified on breadboard1).
     stream = serial.Serial()
     stream.port = port
     stream.baudrate = baud

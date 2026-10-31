@@ -57,8 +57,8 @@ python3 -m prg32 test
 Then verify that the project is building correctly:
 
 ```bash
-python3 -m prg32 qemu build-and-run
-python3 -m prg32 esp32c6 build-and-flash
+python3 -m prg32 qemu build && python3 -m prg32 qemu run
+python3 -m prg32 esp32c6 build && python3 -m prg32 esp32c6 flash
 ```
 
 

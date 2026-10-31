@@ -54,7 +54,7 @@ new keys to newer firmware.
 
 ## Pin assignment
 
-The canonical source is `profiles/sdkconfig.pins.prototype1`. When a pin
+The canonical source is `profiles/sdkconfig.pins.breadboard1`. When a pin
 changes, update in the same change:
 
 1. [hardware.md](../hardware/hardware.md) wiring tables (follow the

@@ -8,7 +8,34 @@ Markdown
 
 **MISSION CRITICAL: YOU MUST RUN THESE PHASES COMPLETELY, OTHERWISE THE OUTPUT WILL BE REJECTED**
 
-## [PHASE 1: MANDATORY RESEARCH]
+## [PHASE 0: IF AND WHAT TO BUILD]
+1. At the start of every sessions you must understand if the user is just asking a question about the codebase or if he wants to modify the codebase.
+
+2. If the user wants to modify the codebase, then at the start of every session you MUST ask the user a question:
+"Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
+The possible answers should include:
+- "Yes, please validate the edits by building the PRG32 framework.".
+- "No, I prefer to run the builds on my own.".
+
+3. IF AND ONLY IF the answer is yes, you should then ask:
+"For what architecture are you building for? ESP32C6 or QEMU?"
+The possible answers should include:
+- ESP32C6.
+- QEMU.
+- Both.
+
+If the user's request already says to build or test on QEMU and/or ESP32-C6, that is the answer to both questions; do not ask again.
+
+4. IF AND ONLY IF the answer is yes AND the user is building for ESP32C6, you should then ask:
+"What pin configuration are you targeting?"
+The possible answers should include:
+- pcb1
+- breadboard1
+- breadboard2
+
+If the user's request already specifies the chosen pin profile, do not ask again.
+
+## [PHASE 2: MANDATORY RESEARCH]
 Before writing or modifying any code, you MUST complete these steps:
 
 1. **Read the Structure:** Read `docs/repository_structure.md` to understand where files belong.
@@ -17,23 +44,6 @@ Before writing or modifying any code, you MUST complete these steps:
 4. **Read the Docs**: Based on your prompt, read AT LEAST 5 OTHER files with `cat` from `docs`.
 5. **Follow Redirects:** If a file tells you to look elsewhere, you MUST follow the redirect and read the target file.
 *Do not guess architectural patterns. Read the docs first.*
-
-## [PHASE 2: VALIDATION RUNS]
-1. At the start of every session you must ask the user a question:
-"Would you like to validate my edits by allowing me to build the PRG32 framework or do you prefer to run the builds on your own?"
-The possible answers should include:
-- "Yes, please validate the edits by building the PRG32 framework.".
-- "No, I prefer to run the builds on my own.".
-
-2. IF AND ONLY IF the answer is yes, you should then ask:
-"For what architecture are you building for? ESP32C6 or QEMU?"
-The possible answers should include:
-- ESP32C6.
-- QEMU.
-- Both.
-
-If the user's request already says to build or test on QEMU and/or the
-attached ESP32-C6, that is the answer to both questions; do not ask again.
 
 ## [PHASE 3: EXECUTION & DOCUMENTATION]
 When modifying code, you are bound by these rules:
@@ -48,7 +58,7 @@ When modifying code, you are bound by these rules:
   Never toggle DTR/RTS one at a time when opening a board's serial port: it
   restarts the ESP32-C6.
 - **Controller keys:** The device protocol KEY message and `prg32 esp32c6 key`
-  cover UP, DOWN, LEFT, RIGHT, START, A, and B. Any button added later must be
+  cover UP, DOWN, LEFT, RIGHT, START, A, B, C, D, L, and R. Any button added later must be
   added to them in the same change, following
   [adding a controller key](docs/agents/device_protocol_consistency.md#adding-a-controller-key).
 - **Attached hardware:** Testing on a connected board overwrites cartridge
@@ -58,6 +68,8 @@ When modifying code, you are bound by these rules:
 Before reporting task completion, you MUST run the following checks. 
 
 **Pre-requisite:** Source the ESP-IDF environment. Run `source $HOME/esp-idf/export.sh`. If it is not found, STOP and ask the user for the ESP-IDF path.
+`export.sh` can leave the shell in another directory: `cd` back to the
+repository root before running the commands below.
 
 Run these exact commands to validate your work:
 ```bash
@@ -67,7 +79,8 @@ git diff --check
 # 2. Run Python linting/tooling
 python3 -m compileall prg32 tests tools
 python3 -m prg32 doctor
-python3 -m prg32 test
+python3 -m prg32 test            # when the edits target QEMU
+python3 -m prg32 test --unit-only  # when the edits target ESP32-C6 only
 
 # 3. Run CI Tests (from GitHub Actions)
 python3 -m prg32.esp32c6.ci_smoke_test
@@ -82,19 +95,42 @@ sha256sum --check cartridges/blackjack/SHA256SUMS
 
 If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture the edits are targeting. 
 
-If you are working on ESP32c6, Build the physical firmware:
+`python3 -m prg32 test` builds the QEMU firmware for its smoke test, boots it in
+an SDL window, and checks HELLO and a `run` upload on `socket://127.0.0.1:5555`.
+It works from a non-interactive agent shell; close any running QEMU first so
+port 5555 is free. When the edits target only the ESP32-C6, `--unit-only` runs
+the same unit tests without that build.
+
+The PRG32 CLI turns on ccache for every `idf.py` it starts when `ccache` is
+installed (see [ESP-IDF build speed](docs/usage/tooling.md#esp-idf-build-speed)).
+
+If you are working on ESP32c6, Build the physical firmware with the pin profile
+chosen in Phase 0. If the edits since the last successful build changed
+`Kconfig`, `profiles/*` or any `sdkconfig*` file, or if `build-esp32c6/` does
+not exist yet or was built with another profile, run the full build:
 ```bash
-python3 -m prg32 esp32c6 build -p prototype1
+python3 -m prg32 esp32c6 build -p <profile>
+```
+IF AND ONLY IF none of those files changed and `build-esp32c6/` was last built
+with the same profile, skip the target setup and keep the sdkconfig, which
+rebuilds only what changed:
+```bash
+python3 -m prg32 esp32c6 build -p <profile> -s -k
 ```
 
 `python3 -m prg32 esp32c6 flash` ends in an interactive monitor that needs a
 terminal. From a non-interactive agent shell, flash with
-`idf.py -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.prototype1" -p <port> flash`.
+`idf.py --ccache -B build-esp32c6 -D SDKCONFIG=build-esp32c6/sdkconfig -D "SDKCONFIG_DEFAULTS=profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.esp32c6;profiles/sdkconfig.pins.<profile>" -p <port> flash`.
+Keep `--ccache`: an `idf.py` call without it switches ccache off in the build
+directory and recompiles the whole firmware.
 Flashing the application does not erase cartridge slots.
 
-If you are working on QEMU, Build the QEMU firmware:
+If you are working on QEMU, Build the QEMU firmware. Under the same condition as
+the ESP32-C6 build (no `Kconfig`, `profiles/*` or `sdkconfig*` change, and an
+existing `build-qemu/`), add `-s -k`:
 ```bash
-python3 -m prg32 qemu build
+python3 -m prg32 qemu build        # full
+python3 -m prg32 qemu build -s -k  # incremental
 ```
 
 QEMU's virtual display blocks the firmware unless a display backend runs, so

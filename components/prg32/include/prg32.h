@@ -90,8 +90,8 @@ extern "C" {
 #define PRG32_PLATFORM_ACTOR_LAYER_OFFSET 22
 #define PRG32_PLATFORM_ACTOR_SIZE 24
 
-/* Controller bitmask. Player 1 occupies bits 0..6 and player 2 occupies
- * bits 8..14. SELECT and START are names for the same physical input. */
+/* Controller bitmask, bits 0..10. SELECT and START are names for the same
+ * physical input. L and R are the left and right bumpers. */
 #define PRG32_BTN_LEFT (1u << 0)
 #define PRG32_BTN_RIGHT (1u << 1)
 #define PRG32_BTN_UP (1u << 2)
@@ -100,15 +100,11 @@ extern "C" {
 #define PRG32_BTN_B (1u << 5)
 #define PRG32_BTN_START (1u << 6)
 #define PRG32_BTN_SELECT PRG32_BTN_START
-
-#define PRG32_P2_BTN_LEFT (1u << 8)
-#define PRG32_P2_BTN_RIGHT (1u << 9)
-#define PRG32_P2_BTN_UP (1u << 10)
-#define PRG32_P2_BTN_DOWN (1u << 11)
-#define PRG32_P2_BTN_A (1u << 12)
-#define PRG32_P2_BTN_B (1u << 13)
-#define PRG32_P2_BTN_START (1u << 14)
-#define PRG32_P2_BTN_SELECT PRG32_P2_BTN_START
+#define PRG32_BTN_C (1u << 7)
+#define PRG32_BTN_D (1u << 8)
+#define PRG32_BTN_L (1u << 9)
+#define PRG32_BTN_R (1u << 10)
+#define PRG32_INPUT_BUTTONS_MASK 0x7ffu
 
 /* Common RGB565 colors. Custom colors use RRRRRGGGGGGBBBBB packing. */
 #define PRG32_COLOR_BLACK 0x0000
@@ -329,16 +325,47 @@ uint32_t prg32_input_read_player(uint8_t player);
 uint32_t prg32_input_read_menu(void);
 void prg32_input_wait_released(uint32_t mask);
 uint32_t prg32_controller_read(void);
+/* Analog stick axes for axis-based games, -127 (left/up) to 127 (right/down)
+ * and 0 at rest. Without an analog stick, or while it rests, the directions of
+ * prg32_input_read() give -127/0/127, so the same code runs on digital
+ * joysticks, QEMU, and remote keys. axes_raw copies fresh 12-bit readings
+ * (0..4095) and returns -1 with 2048 when there is no analog stick. */
+int32_t prg32_input_axis_x(void);
+int32_t prg32_input_axis_y(void);
+int prg32_input_axes_raw(int *out_x, int *out_y);
+int prg32_input_has_analog(void);
 const char *prg32_controller_name(uint32_t bit);
 /* Remote keys sent through the device protocol KEY message. They join the
  * physical buttons in prg32_controller_read(). Firmware only, not cartridge
  * ABI. Adding a button: see docs/agents/device_protocol_consistency.md. */
-#define PRG32_REMOTE_KEY_COUNT 7
+#define PRG32_REMOTE_KEY_COUNT 11
 const char *prg32_controller_remote_name(int index);
 uint32_t prg32_controller_remote_bit(const char *name);
 void prg32_controller_remote_press(uint32_t mask, uint32_t hold_ms);
 void prg32_controller_remote_release(uint32_t mask);
 uint32_t prg32_controller_remote_active(void);
+void prg32_joystick_digital_init(void);
+uint32_t prg32_joystick_digital_read(void);
+void prg32_joystick_analog_init(void);
+uint32_t prg32_joystick_analog_read(void);
+int prg32_joystick_analog_get_raw(int *out_x, int *out_y);
+int prg32_joystick_analog_get_axes(int *out_x, int *out_y);
+int prg32_joystick_analog_available(void);
+/* Raw ADC rest position and travel of the analog stick. Firmware only, not
+ * cartridge ABI: the setup menu records it in flash (NVS namespace "prg32").
+ * calibration_get returns 1 for a saved calibration, 0 for the boot estimate.
+ * calibration_save applies and stores a calibration; it returns -1 when a side
+ * spans fewer than 400 codes or the flash write fails. */
+typedef struct {
+  int center_x;
+  int center_y;
+  int min_x;
+  int max_x;
+  int min_y;
+  int max_y;
+} prg32_joystick_calibration_t;
+int prg32_joystick_analog_calibration_get(prg32_joystick_calibration_t *out);
+int prg32_joystick_analog_calibration_save(const prg32_joystick_calibration_t *cal);
 void prg32_diag_set_input_state(uint32_t input_state);
 void prg32_diag_increment_frame(void);
 uint32_t prg32_diag_input_state(void);

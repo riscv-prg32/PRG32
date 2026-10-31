@@ -14,13 +14,38 @@ Here are common issues and solutions when working with the PRG32 framework.
 
 ## Hardware and Flashing Issues
 
-- **Serial port not detected**: If the serial port is not detected, pass it explicitly. Add `-p COMx` on Windows, `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS when using raw `idf.py` commands.
+- **Serial port not detected**: If the serial port is not detected, pass it explicitly. Add `-p COMx` on Windows, `-p /dev/ttyACM0` on Linux, or `-p /dev/cu.usbmodemXXXX` on macOS when using raw `idf.py` commands. `python3 -m prg32 esp32c6 ports` names the port of a board connected through its connector labelled USB.
+- **`no ESP32-C6 found on a native USB port`**: `upload`, `run`, `key`, and the
+  `wifi-*` commands, and `performance`, look for the board by its native USB ID when `--port` is
+  left out ([tooling](tooling.md#upload--run-cartridges)). Check, in order:
+  1. the cable is in the connector labelled USB, not UART; the UART bridge
+     appears in `esp32c6 ports` under "Other serial ports" and cannot receive
+     cartridges;
+  2. the cable carries data: if `esp32c6 ports` lists nothing new when the
+     board is plugged in, try another cable;
+  3. no serial monitor or other program holds the port;
+  4. the firmware does not use the `pcb1` profile, which takes GPIO13 (USB D+)
+     for P1 DOWN;
+  5. on Linux, `groups` lists `dialout` (or `uucp` on Arch-based systems); see
+     the Linux notes in the [README](../../README.md#install--setup);
+  6. on Windows, the board appears in Device Manager under *Ports (COM & LPT)*
+     as *USB Serial Device*. Windows 10 and 11 need no driver for it; under
+     *Other devices* or with a warning sign, reconnect the cable or try another
+     USB socket.
+- **`ESP32-C6 boards are connected; choose one with --port`**: the SDK never
+  guesses between boards, because an upload overwrites a cartridge slot. Pass
+  one of the listed ports with `--port`. Unplug a board to see which name
+  disappears from `python3 -m prg32 esp32c6 ports`.
 - **Physical board flashes fail, crash, or show a black display**: You likely compiled the firmware for QEMU (`ESP32-C3`) instead of the physical board (`ESP32-C6`). Rebuild and flash the physical board using the Python tooling:
   ```bash
-  python3 -m prg32 esp32c6 build-and-flash
+  python3 -m prg32 esp32c6 build && python3 -m prg32 esp32c6 flash
   ```
   *(The monitor should log `prg32_lcd` with the configured ILI9341 pins if successful.)*
-- **The prototype1 onboard RGB LED flashes green or white while the display updates**: This is expected on the fixed PCB. GPIO8 is shared by LCD D/C and the DevKitC WS2812 data input, so display traffic can resemble LED data. Firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire. Do not move the canonical LCD pin in the `prototype1` profile.
+- **The onboard RGB LED flashes green or white while the display updates (`breadboard1`, `pcb1`)**: This is expected. Both profiles put LCD D/C on GPIO8, which the ESP32-C6-DevKitC-1 also wires to its WS2812 data input, so display traffic can resemble LED data. The firmware flashes cyan during boot and latches an off frame after display updates, but it cannot independently control both devices on one wire (see [RGB LED](../hardware/rgb_led.md#shared-boot-indication)). Do not move the canonical LCD pin in these profiles.
+
+- **The analog joystick (`breadboard2`) stops responding after a cartridge upload, a Store download, or a saved setting, while the buttons keep working**: the firmware predates the switch to ADC one-shot sampling; its continuous DMA sampling stopped at the first flash write (see [sampling backend](../hardware/joystick.md#mechanical--electrical-operation-1)). Rebuild and flash the current firmware. A reset restores the stick until the next flash write.
+
+- **Analog axes drift at rest, do not reach ±127, or change after a reboot (`breadboard2`)**: the stick has no saved calibration, so the rest position is measured at each boot. Run **SETUP → JOYSTICK CALIBRATION** once ([joystick calibration](../hardware/joystick.md#joystick-calibration)); the boot log then reports `(saved calibration)`.
 
 ## QEMU Emulator Issues
 

@@ -202,8 +202,11 @@ PRG32_DEVICE_URL=http://192.168.4.1
 ### Step 4: upload and launch the cartridge
 
 ```bash
-python3 -m prg32 esp32c6 upload-and-run \
+python3 -m prg32 esp32c6 upload \
   cartridges/performancetest/dist/performancetest-esp32c6.prg32 \
+  --url "$PRG32_DEVICE_URL" \
+  --slot cart0 && \
+python3 -m prg32 esp32c6 run \
   --url "$PRG32_DEVICE_URL" \
   --slot cart0
 ```
@@ -233,6 +236,15 @@ The preferred CLI command validates the HTTP response and writes the JSON:
 ```bash
 python3 -m prg32 esp32c6 performance \
   --url "$PRG32_DEVICE_URL" \
+  --out data/prg32_performance_run01.json
+```
+
+Without Wi-Fi, retrieve it through the board's connector labelled USB; the SDK
+finds the board, or takes `--port` when several are connected (see
+[tooling](usage/tooling.md#upload--run-cartridges)):
+
+```bash
+python3 -m prg32 esp32c6 performance \
   --out data/prg32_performance_run01.json
 ```
 

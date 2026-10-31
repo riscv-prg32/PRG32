@@ -418,7 +418,7 @@ downloaded for both architectures, uploaded with the `run` command over the
 succeeded, the serial log showed no panic or reboot, and the device still
 answered HELLO.
 
-| Result | ESP32-C6 `prototype1` | QEMU |
+| Result | ESP32-C6 `breadboard1` | QEMU |
 |---|---|---|
 | Portable cartridges (30) | all ran without faults | all ran without faults |
 | `it.uniparthenope.space_invaders` 1.0.0 | accepted, then `Load access fault` | refused at upload |

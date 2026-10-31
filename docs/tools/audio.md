@@ -107,7 +107,7 @@ inputs. They are bridged speaker outputs.
 
 ## MAX98357A Wiring
 
-See [`hardware.md`](/docs/hardware/hardware.md) for the PRG32 audio pin configurations.
+See the [Audio Hardware Guide](/docs/hardware/audio.md) for the PRG32 audio pin configurations.
 
 The required I2S pins avoid the reference LCD, joystick, and passive buzzer
 wiring. If a MAX98357A breakout needs explicit shutdown control, assign
@@ -127,7 +127,7 @@ audio is enabled, and the I2S driver starts on the configured pins. QEMU display
 builds disable physical I2S output, but seamlessly redirect the audio PCM stream
 over the UART port to the host machine for playback.
 
-Stereo wiring shares the same I2S signals across two boards (Left and Right). See [`hardware.md`](/docs/hardware/hardware.md) for the full diagram.
+Stereo wiring shares the same I2S signals across two boards (Left and Right). See the [Audio Hardware Guide](/docs/hardware/audio.md) and [Hardware Guide](/docs/hardware/README.md) for the full diagram.
 
 Configure the left board for the left I2S channel and the right board for the
 right channel. Breakout labels vary: common names include `L/R`, `GAIN`,

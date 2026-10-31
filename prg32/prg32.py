@@ -5,14 +5,14 @@ from __future__ import annotations
 import argparse
 import sys
 from prg32.utilities.env_variables import *
-from prg32.utilities.environment_check import doctor
+from prg32.utilities.environment_check import doctor, enable_ccache
 from prg32.utilities.runtime_handler import parse_cart_ram_kib, runtime
 from prg32.utilities.tests_runner import run_tests
 
 from prg32.cartridge.build_cartridge import build_cartridge_cli
 
-from prg32.esp32c6.build_esp32c6 import build_esp32c6, flash_esp32c6, build_and_flash_esp32c6, reset_esp32c6, erase_flash_esp32c6, list_pins_esp32c6
-from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6, upload_and_run_esp32c6
+from prg32.esp32c6.build_esp32c6 import build_esp32c6, flash_esp32c6, reset_esp32c6, erase_flash_esp32c6, list_pins_esp32c6
+from prg32.esp32c6.upload_esp32c6 import upload_esp32c6, run_esp32c6
 from prg32.esp32c6.prepare_firmware import prepare_firmware_esp32c6
 from prg32.esp32c6.flash_firmware import flash_firmware_esp32c6
 from prg32.esp32c6.memory_esp32c6 import memory_esp32c6
@@ -20,10 +20,11 @@ from prg32.esp32c6.screenshot_esp32c6 import screenshot_esp32c6
 from prg32.esp32c6.performance_esp32c6 import get_performance_esp32c6
 from prg32.esp32c6.wifi_esp32c6 import wifi_scan_esp32c6, wifi_set_esp32c6, wifi_forget_esp32c6
 from prg32.esp32c6.key_esp32c6 import key_esp32c6
+from prg32.esp32c6.find_port import list_ports_esp32c6
 
 from prg32.qemu.launch_qemu import launch_qemu
 from prg32.qemu.upload_qemu import upload_qemu
-from prg32.qemu.build_qemu import build_qemu, flash_qemu, build_and_flash_qemu, build_and_launch_qemu
+from prg32.qemu.build_qemu import build_qemu, flash_qemu, build_and_flash_qemu
 
 from prg32.store.metadata import attach_metadata, inspect_metadata
 from prg32.store.store_api import store_discover, store_list, store_download
@@ -86,43 +87,44 @@ def main(argv: list[str]) -> int:
         help="Skip setting target to ESP32C6 (it takes more time to build and it is useless if you have set the target before)"
     )
     p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
-        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+        help="Hardware pin configuration profile to use (e.g. 'breadboard1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.add_argument("-e", "--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
+    p.add_argument("-k", "--keep-sdkconfig", "--no-erase-sdkconfig", dest="no_erase_sdkconfig", action="store_true",
+        help="Do not erase sdkconfig files before building (preserves manual menuconfig adjustments)")
     p.set_defaults(func=build_esp32c6)
 
     p = esp32c6_sub.add_parser("flash", help="flash the ESP32C6 image. Does not do anything when a cartridge is running!")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
     p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
-        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+        help="Hardware pin configuration profile to use (e.g. 'breadboard1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
     p.set_defaults(func=flash_esp32c6)
 
-    p = esp32c6_sub.add_parser("build-and-flash", help="build and flash the ESP32C6. Does not do anything when a cartridge is running (?)")
-    p.add_argument("-s", "--skip-target", action="store_true", 
-        help="Skip setting target to ESP32C6 (it takes less time to build and it is useless if you have set the target before)"
-    )
-    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
-        help="Hardware pin configuration profile to use (e.g. 'prototype1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
-    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
-    p.add_argument("-e", "--enable-heap-tracking", action="store_true", help="Enable heap task tracking (CONFIG_HEAP_TASK_TRACKING)")
-    p.set_defaults(func=build_and_flash_esp32c6)
-
-    p = esp32c6_sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'prototype1')")
+    p = esp32c6_sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'breadboard1')")
     p.set_defaults(func=list_pins_esp32c6)
+
+    p = esp32c6_sub.add_parser("ports", help="list connected ESP32-C6 boards and the other serial ports")
+    p.set_defaults(func=list_ports_esp32c6)
 
     p = esp32c6_sub.add_parser("erase-flash", help=f"erase flash of ESP32C6 over USB")
     p.set_defaults(func=erase_flash_esp32c6)
 
     p = esp32c6_sub.add_parser("reset", help=f"erase flash and re-flash {ESP32C6_IMAGE} to ESP32C6 over USB")
+    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-p", "--pin-profile", "--pins", dest="pin_profile", default=DEFAULT_PIN_PROFILE,
+        help="Hardware pin configuration profile to use (e.g. 'breadboard1'). See available pin setup possibilities with 'python3 -m prg32 esp32c6 pins'.")
+    p.add_argument("-k", "--keep-sdkconfig", "--no-erase-sdkconfig", dest="no_erase_sdkconfig", action="store_true",
+        help="Do not erase sdkconfig files before resetting")
     p.set_defaults(func=reset_esp32c6)
 
     p = esp32c6_sub.add_parser("upload",
         help="upload a cartridge to the ESP32C6 over HTTP or USB serial",
         usage="%(prog)s CARTRIDGE [options]")
     p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
-    transport = p.add_mutually_exclusive_group(required=True)
+    transport = p.add_mutually_exclusive_group()
     transport.add_argument("--url", help="Device URL for HTTP upload (for example, http://192.168.4.1)")
-    transport.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator")
+    transport.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator "
+        "(default: the only connected ESP32-C6)")
     p.add_argument("--baud", default="115200", help="USB runtime protocol baud rate")
     p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout in seconds")
     p.add_argument("--chunk-size", type=int, default=1024, choices=range(256, 4097), metavar="BYTES",
@@ -137,25 +139,19 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=upload_esp32c6)
 
     p = esp32c6_sub.add_parser("run", help="run a stored cartridge over HTTP, USB, QEMU, or PRG32-Qt", usage="%(prog)s [options]")
-    transport = p.add_mutually_exclusive_group(required=True)
+    transport = p.add_mutually_exclusive_group()
     transport.add_argument("--url", help="Device HTTP URL")
-    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT")
+    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT (default: the only connected ESP32-C6)")
     p.add_argument("--baud", default="115200", help="Device protocol baud rate")
     p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
     p.add_argument("--debug", action="store_true", help="Request debugger execution when supported")
     p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to run")
     p.set_defaults(func=run_esp32c6)
 
-    p = esp32c6_sub.add_parser("upload-and-run", help="upload and run a cartridge on the ESP32C6 SoC over HTTP. Does not work when a cartridge is running!", usage="%(prog)s CARTRIDGE [options]")
-    p.add_argument("cartridge", help="Path to the compiled cartridge file (.prg32)")
-    p.add_argument("--url", required=True, help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
-    p.add_argument("--slot", default=DEFAULT_CART_SLOT, help="Partition slot to upload and run into")
-    p.set_defaults(func=upload_and_run_esp32c6)
-
-    p = esp32c6_sub.add_parser("performance", help="Get performance data over HTTP or the device protocol")
-    transport = p.add_mutually_exclusive_group(required=True)
-    transport.add_argument("--url", help="Device HTTP URL")
-    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT")
+    p = esp32c6_sub.add_parser("performance", help="Get performance data over HTTP or the device protocol. Must be used in Performance Test")
+    transport = p.add_mutually_exclusive_group()
+    transport.add_argument("--url", help="URL of the ESP32C6 device (must include scheme, e.g., http://192.168.4.1)")
+    transport.add_argument("--port", help="USB serial port or socket://HOST:PORT (default: the only connected ESP32-C6)")
     p.add_argument("--baud", default="115200", help="Device protocol baud rate")
     p.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
     p.add_argument("--out", default="prg32_performance.json", help="Path to save the performance data")
@@ -163,7 +159,7 @@ def main(argv: list[str]) -> int:
 
     # Wi-Fi networks stored on a running board (device protocol only).
     def add_wifi_transport(parser):
-        parser.add_argument("--port", required=True, help="Running-device USB serial port")
+        parser.add_argument("--port", help="Running-device USB serial port (default: the only connected ESP32-C6)")
         parser.add_argument("--baud", default="115200", help="Device protocol baud rate")
         parser.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
 
@@ -186,12 +182,13 @@ def main(argv: list[str]) -> int:
     # Key commands through the device protocol, shared by both targets.
     def add_key_command(parser, default_port):
         parser.add_argument("keys", nargs="*", metavar="KEY",
-                            help="Key to press: LEFT, RIGHT, UP, DOWN, A, B, START (or SELECT). "
+                            help="Key to press: LEFT, RIGHT, UP, DOWN, A, B, START (or SELECT), C, D, L, R. "
                                  "Several arguments are pressed in turn; A+B presses keys together")
         if default_port:
             parser.add_argument("--port", default=default_port, help="Device protocol endpoint of the running emulator")
         else:
-            parser.add_argument("--port", required=True, help="Running-device USB serial port, or socket://HOST:PORT for an emulator")
+            parser.add_argument("--port", help="Running-device USB serial port, or socket://HOST:PORT for an emulator "
+                                "(default: the only connected ESP32-C6)")
         parser.add_argument("--baud", default="115200", help="Device protocol baud rate")
         parser.add_argument("--timeout", type=float, default=10.0, help="Protocol response timeout")
         parser.add_argument("--hold-ms", type=int, default=KEY_HOLD_DEFAULT_MS,
@@ -215,6 +212,8 @@ def main(argv: list[str]) -> int:
     p.add_argument("--name", default="PRG32-legacy-esp32c6", help="Name of the output binary")
     p.add_argument("--skip-build", action="store_true", help="Skip the ESP-IDF build step")
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-k", "--keep-sdkconfig", "--no-erase-sdkconfig", dest="no_erase_sdkconfig", action="store_true",
+        help="Do not erase sdkconfig files before building")
     p.set_defaults(func=prepare_firmware_esp32c6)
 
     p = esp32c6_sub.add_parser("flash-firmware", help="flash a published single-file legacy PRG32 firmware image", usage="%(prog)s MANIFEST --port PORT [options]")
@@ -242,17 +241,12 @@ def main(argv: list[str]) -> int:
         help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
     )
     p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
+    p.add_argument("-k", "--keep-sdkconfig", "--no-erase-sdkconfig", dest="no_erase_sdkconfig", action="store_true",
+        help="Do not erase sdkconfig files before building (preserves manual menuconfig adjustments)")
     p.set_defaults(func=build_and_flash_qemu)
 
     p = qemu_sub.add_parser("run", help="run the QEMU emulator environment")
     p.set_defaults(func=launch_qemu)
-    
-    p =  qemu_sub.add_parser("build-and-run", help="build QEMU, generate flash image, and run the emulator")
-    p.add_argument("-s", "--skip-target", action="store_true", 
-        help="Skip setting target to ESP32C3 (it takes less time to build and it is useless if you have set the target before)"
-    )
-    p.add_argument("-d", "--debug", action="store_true", help="Enable the debug profile")
-    p.set_defaults(func=build_and_launch_qemu)
 
     p = qemu_sub.add_parser("upload", 
         help="stage a cartridge into QEMU flash",
@@ -450,6 +444,8 @@ def main(argv: list[str]) -> int:
     p.set_defaults(func=runtime)
 
     p = sub.add_parser("test", help="run unit tests and smoke tests", usage="%(prog)s [options]")
+    p.add_argument("--unit-only", action="store_true",
+                   help="Run only the Python unit tests and skip the QEMU smoke test, which builds the QEMU firmware")
     p.set_defaults(func=run_tests)
 
     p = sub.add_parser("debug", help="control the optional PRG32-QT cartridge debugger")
@@ -458,10 +454,11 @@ def main(argv: list[str]) -> int:
     p.add_argument("--speed", type=float, choices=SUPPORTED_SPEEDS, help="Playback multiplier for the speed command")
     p.set_defaults(func=debug_cli)
 
-    p = sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'prototype1')")
+    p = sub.add_parser("pins", help="list available pin setup possibilities (e.g. 'breadboard1')")
     p.set_defaults(func=list_pins_esp32c6)
 
     args = parser.parse_args(argv)
+    enable_ccache()
     args.func(args)
     return 0
 
