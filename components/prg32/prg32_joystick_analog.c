@@ -21,6 +21,39 @@ static adc_channel_t s_chan_x;
 static adc_channel_t s_chan_y;
 static int s_last_raw_x = 2048;
 static int s_last_raw_y = 2048;
+/* Rest position measured at boot. A KY-023 rests near 1650, not at the
+ * 2048 midpoint, so the axes are centred on what the stick really reads. */
+static int s_center_x = 2048;
+static int s_center_y = 2048;
+
+#define ADC_RAW_MAX 4095
+#define AXIS_FULL 127
+#define CENTER_SAMPLES 16
+/* A rest reading outside this window means the stick was held at boot. */
+#define CENTER_MIN 512
+#define CENTER_MAX 3584
+
+static void sample_axes(void);
+
+/* Average a few readings with the stick released to find its rest position. */
+static void calibrate_center(void) {
+    int sum_x = 0;
+    int sum_y = 0;
+    for (int i = 0; i < CENTER_SAMPLES; i++) {
+        sample_axes();
+        sum_x += s_last_raw_x;
+        sum_y += s_last_raw_y;
+    }
+    s_center_x = sum_x / CENTER_SAMPLES;
+    s_center_y = sum_y / CENTER_SAMPLES;
+    if (s_center_x < CENTER_MIN || s_center_x > CENTER_MAX ||
+        s_center_y < CENTER_MIN || s_center_y > CENTER_MAX) {
+        ESP_LOGW(TAG, "Stick not at rest during boot (X=%d Y=%d); using 2048",
+                 s_center_x, s_center_y);
+        s_center_x = 2048;
+        s_center_y = 2048;
+    }
+}
 
 void prg32_joystick_analog_init(void) {
     if (PRG32_PIN_JOYSTICK_X < 0 || PRG32_PIN_JOYSTICK_Y < 0) {
@@ -80,7 +113,9 @@ void prg32_joystick_analog_init(void) {
         return;
     }
 
-    ESP_LOGI(TAG, "ADC one-shot driver ready");
+    calibrate_center();
+    ESP_LOGI(TAG, "ADC one-shot driver ready, rest position X=%d Y=%d",
+             s_center_x, s_center_y);
 }
 
 /* Convert both axes now. A failed read (for example while another task holds
@@ -154,6 +189,54 @@ int prg32_joystick_analog_get_raw(int *out_x, int *out_y) {
     return s_adc_handle ? 0 : -1;
 }
 
+int prg32_joystick_analog_available(void) {
+    return s_adc_handle != NULL;
+}
+
+/* Map a raw reading to -127..127 around the rest point. Each side is scaled
+ * on its own because the rest point is off-centre, then the deadzone is cut
+ * out and the rest rescaled so full tilt still reads 127. */
+static int scale_axis(int raw, int center) {
+    int offset = raw - center;
+    int span = offset < 0 ? center : ADC_RAW_MAX - center;
+    int value = offset * AXIS_FULL / span;
+    int magnitude = value < 0 ? -value : value;
+    if (magnitude <= PRG32_JOYSTICK_AXIS_DEADZONE) {
+        return 0;
+    }
+    magnitude = (magnitude - PRG32_JOYSTICK_AXIS_DEADZONE) * AXIS_FULL /
+                (AXIS_FULL - PRG32_JOYSTICK_AXIS_DEADZONE);
+    if (magnitude > AXIS_FULL) {
+        magnitude = AXIS_FULL;
+    }
+    return value < 0 ? -magnitude : magnitude;
+}
+
+/* Fresh axis positions, -127 (left/up) to 127 (right/down). Swapped
+ * thresholds mark an inverted axis, the same rule the direction bits use. */
+int prg32_joystick_analog_get_axes(int *out_x, int *out_y) {
+    int x = 0;
+    int y = 0;
+    if (s_adc_handle) {
+        sample_axes();
+        x = scale_axis(s_last_raw_x, s_center_x);
+        y = scale_axis(s_last_raw_y, s_center_y);
+        if (PRG32_JOYSTICK_ADC_LEFT_THRESHOLD > PRG32_JOYSTICK_ADC_RIGHT_THRESHOLD) {
+            x = -x;
+        }
+        if (PRG32_JOYSTICK_ADC_UP_THRESHOLD > PRG32_JOYSTICK_ADC_DOWN_THRESHOLD) {
+            y = -y;
+        }
+    }
+    if (out_x) {
+        *out_x = x;
+    }
+    if (out_y) {
+        *out_y = y;
+    }
+    return s_adc_handle ? 0 : -1;
+}
+
 #else
 
 void prg32_joystick_analog_init(void) {
@@ -169,6 +252,20 @@ int prg32_joystick_analog_get_raw(int *out_x, int *out_y) {
     }
     if (out_y) {
         *out_y = 2048;
+    }
+    return -1;
+}
+
+int prg32_joystick_analog_available(void) {
+    return 0;
+}
+
+int prg32_joystick_analog_get_axes(int *out_x, int *out_y) {
+    if (out_x) {
+        *out_x = 0;
+    }
+    if (out_y) {
+        *out_y = 0;
     }
     return -1;
 }

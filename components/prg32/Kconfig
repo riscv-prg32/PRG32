@@ -410,6 +410,17 @@ config PRG32_JOYSTICK_ADC_DOWN_THRESHOLD
     help
         ADC raw reading above this value triggers DOWN (or below if inverted).
 
+config PRG32_JOYSTICK_AXIS_DEADZONE
+    int "Analog Joystick Axis Deadzone (0-100)"
+    depends on PRG32_JOYSTICK_ANALOG
+    range 0 100
+    default 12
+    help
+        Deadzone of prg32_input_axis_x() and prg32_input_axis_y(), in the same
+        -127..127 units they return. Positions closer than this to the rest
+        point read as 0, so a released stick does not drift. The remaining
+        travel is rescaled, so full tilt still reads +/-127.
+
 config PRG32_PIN_BTN_UP
     int "Joystick UP GPIO"
     depends on PRG32_JOYSTICK_DIGITAL

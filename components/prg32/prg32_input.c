@@ -70,6 +70,45 @@ uint32_t prg32_input_read_player(uint8_t player) {
     return prg32_input_read() & PRG32_INPUT_BUTTONS_MASK;
 }
 
+/* One axis from the digital directions: -127, 0, or 127. */
+static int32_t digital_axis(uint32_t negative, uint32_t positive) {
+    uint32_t input = prg32_input_read();
+    if ((input & negative) && !(input & positive)) {
+        return -127;
+    }
+    if ((input & positive) && !(input & negative)) {
+        return 127;
+    }
+    return 0;
+}
+
+int32_t prg32_input_axis_x(void) {
+    int x = 0;
+    prg32_joystick_analog_get_axes(&x, NULL);
+    /* A resting stick still lets remote and QEMU keys steer. */
+    if (x == 0) {
+        return digital_axis(PRG32_BTN_LEFT, PRG32_BTN_RIGHT);
+    }
+    return x;
+}
+
+int32_t prg32_input_axis_y(void) {
+    int y = 0;
+    prg32_joystick_analog_get_axes(NULL, &y);
+    if (y == 0) {
+        return digital_axis(PRG32_BTN_UP, PRG32_BTN_DOWN);
+    }
+    return y;
+}
+
+int prg32_input_axes_raw(int *out_x, int *out_y) {
+    return prg32_joystick_analog_get_raw(out_x, out_y);
+}
+
+int prg32_input_has_analog(void) {
+    return prg32_joystick_analog_available();
+}
+
 uint32_t prg32_input_read_menu(void) {
     return prg32_input_read() & PRG32_INPUT_BUTTONS_MASK;
 }

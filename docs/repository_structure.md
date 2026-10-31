@@ -71,7 +71,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   `-- prg32_config.h              Board pins, feature flags, and compile-time constants
 |-- managed_components/             External component dependencies managed by ESP-IDF (mDNS, WebSocket client)
 |-- prg32/                          Python module containing the core CLI tooling
-|   |-- abi/                        Cartridge ABI generator and JSON specification
+|   |-- abi/                        Cartridge ABI generator and JSON specification (real prototypes and notes for every entry)
 |   |-- cartridge/                  Cartridge packaging scripts
 |   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, verification, and USB Wi-Fi network and key commands
 |   |   `-- find_port.py            Finds a connected ESP32-C6 native USB port by USB ID, so device-protocol commands need no `--port`

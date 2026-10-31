@@ -325,6 +325,15 @@ uint32_t prg32_input_read_player(uint8_t player);
 uint32_t prg32_input_read_menu(void);
 void prg32_input_wait_released(uint32_t mask);
 uint32_t prg32_controller_read(void);
+/* Analog stick axes for axis-based games, -127 (left/up) to 127 (right/down)
+ * and 0 at rest. Without an analog stick, or while it rests, the directions of
+ * prg32_input_read() give -127/0/127, so the same code runs on digital
+ * joysticks, QEMU, and remote keys. axes_raw copies fresh 12-bit readings
+ * (0..4095) and returns -1 with 2048 when there is no analog stick. */
+int32_t prg32_input_axis_x(void);
+int32_t prg32_input_axis_y(void);
+int prg32_input_axes_raw(int *out_x, int *out_y);
+int prg32_input_has_analog(void);
 const char *prg32_controller_name(uint32_t bit);
 /* Remote keys sent through the device protocol KEY message. They join the
  * physical buttons in prg32_controller_read(). Firmware only, not cartridge
@@ -340,6 +349,8 @@ uint32_t prg32_joystick_digital_read(void);
 void prg32_joystick_analog_init(void);
 uint32_t prg32_joystick_analog_read(void);
 int prg32_joystick_analog_get_raw(int *out_x, int *out_y);
+int prg32_joystick_analog_get_axes(int *out_x, int *out_y);
+int prg32_joystick_analog_available(void);
 void prg32_diag_set_input_state(uint32_t input_state);
 void prg32_diag_increment_frame(void);
 uint32_t prg32_diag_input_state(void);

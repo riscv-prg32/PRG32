@@ -6,6 +6,11 @@
   `python3 -m prg32 abi gen` and `python3 -m prg32 abi check`.
 - ABI function indices are append-only. Never reorder, remove, or change
   existing function prototypes within the same ABI major version.
+- Every JSON entry records the function's real return and argument types, as
+  declared in the public headers, and a one-sentence `notes` description.
+  `tests/test_prg32_abi_gen.py` checks the types; the generator rejects missing
+  notes. Correcting recorded types changes the hash: list the previous hash in
+  `compatible_hashes` when the table entries themselves are unchanged.
 - Any incompatible ABI change requires increasing `PRG32_ABI_MAJOR`.
 - Additive functions or optional feature bits may increase `PRG32_ABI_MINOR`.
 - Portable cartridges must not link against firmware-specific symbol addresses.

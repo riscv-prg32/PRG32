@@ -155,5 +155,9 @@ const prg32_abi_table_t prg32_abi_table = {
         [PRG32_ABI_FN_PRG32_GFX_RECT_INDEXED] = (const void *)prg32_gfx_rect_indexed,
         [PRG32_ABI_FN_PRG32_GFX_CLEAR_INDEXED] = (const void *)prg32_gfx_clear_indexed,
         [PRG32_ABI_FN_PRG32_RANDOM_NUMBER] = (const void *)prg32_random_number,
+        [PRG32_ABI_FN_PRG32_INPUT_AXIS_X] = (const void *)prg32_input_axis_x,
+        [PRG32_ABI_FN_PRG32_INPUT_AXIS_Y] = (const void *)prg32_input_axis_y,
+        [PRG32_ABI_FN_PRG32_INPUT_AXES_RAW] = (const void *)prg32_input_axes_raw,
+        [PRG32_ABI_FN_PRG32_INPUT_HAS_ANALOG] = (const void *)prg32_input_has_analog,
     },
 };

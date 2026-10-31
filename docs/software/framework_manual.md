@@ -50,6 +50,41 @@ no change to receive them.
 Menu/setup helpers call `prg32_input_read_menu()` to read the local joystick in
 the same normalized low-bit mask.
 
+### Analog axes
+
+Axis-based games (steering, aiming, variable speed) read how far the stick is
+tilted instead of only which direction (ABI 1.7):
+
+| Call | Returns |
+|---|---|
+| `int32_t prg32_input_axis_x(void)` | `-127` (left) to `127` (right), `0` at rest |
+| `int32_t prg32_input_axis_y(void)` | `-127` (up) to `127` (down), `0` at rest |
+| `int prg32_input_has_analog(void)` | `1` when an analog stick is sampled, otherwise `0` |
+| `int prg32_input_axes_raw(int *x, int *y)` | fresh 12-bit readings, `0` to `4095`; returns `-1` and `2048` without an analog stick |
+
+Each call reads the stick at that moment. The firmware centres the axes on the
+stick's rest position, measured at boot, and ignores small movements around
+it (see [calibration and deadzone](../hardware/joystick.md#analog-axes-calibration-and-deadzone)).
+
+Without an analog stick (`breadboard1`, QEMU) the axes come from the
+directions of `prg32_input_read()`: LEFT gives `-127`, RIGHT `127`, neither
+`0`. The same applies while an analog stick rests, so
+[key commands](usb_protocol.md#key-messages) and QEMU keys still steer. Games
+written for the axes therefore run on every setup; call
+`prg32_input_has_analog()` only to adapt, for example to show "tilt to steer".
+
+±127 suits the hardware: each side of the stick spans about 1,650 to 2,400 ADC
+codes, and noise blurs neighbouring codes, so finer steps would mostly be
+noise. A power-of-two full scale also lets assembly scale an axis without
+division:
+
+```asm
+call prg32_input_axis_x   # a0 = -127..127
+li   t0, 3                # top speed 3 px/frame
+mul  a0, a0, t0
+srai a0, a0, 7            # a0 = -3..3
+```
+
 System hotkey:
 
 - A + B + DOWN on the local joystick, or sent as key commands: restart the

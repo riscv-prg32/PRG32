@@ -94,6 +94,30 @@ Used in the upgraded breadboard design ([Breadboard 2 Profile](profiles/breadboa
   - **Neutral Deadband**: Readings between low and high thresholds register as neutral (no directional bits set).
   - **Diagonals**: Simultaneous deflection in both axes asserts both directional bits (e.g. `PRG32_BTN_UP | PRG32_BTN_RIGHT`). Axis inversion is also automatically detected if low and high thresholds are swapped.
 
+### Analog Axes, Calibration and Deadzone
+
+The [analog axis API](../software/framework_manual.md#analog-axes)
+(`prg32_input_axis_x()`, `prg32_input_axis_y()`) turns readings into `-127`
+to `127`:
+
+1. **Rest position**: at boot the firmware averages 16 readings of each axis
+   and uses them as `0`. Keep the stick released while the board starts. A
+   rest reading below `512` or above `3584` means the stick was held; the
+   firmware then logs a warning and uses `2048`.
+2. **Two half-ranges**: the side from the rest position down to `0` and the
+   side up to `4095` are scaled separately, so both full tilts read `±127`
+   even though a KY-023 rests off-centre.
+3. **Deadzone**: values within `CONFIG_PRG32_JOYSTICK_AXIS_DEADZONE` (default
+   `12`, in the same `-127..127` units) of rest read `0`, so a released stick
+   does not drift. The remaining travel is rescaled to reach `±127`.
+4. **Orientation**: swapped thresholds invert the axis, the same rule as the
+   direction bits above.
+
+The direction bits and the axes are independent: the bits still use the raw
+thresholds. With the default thresholds and a rest point of `1650`, LEFT turns
+on near axis `-16` and RIGHT near `53`; the thresholds are fixed codes while
+the axes follow the measured rest point.
+
 ---
 
 ## Action Buttons (A, B, C, D) and Bumpers (L, R)

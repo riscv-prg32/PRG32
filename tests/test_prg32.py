@@ -127,12 +127,21 @@ not-a-symbol
 class PortableHeaderTests(unittest.TestCase):
     def test_compatible_hashes_describe_unchanged_abi_prefixes(self) -> None:
         abi = json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text())
-        for hash_value, count in ((0x006427C2, 133), (0x6BE6E8D0, 138)):
-            prior = {**abi, "minor": 5, "functions": abi["functions"][:count]}
+        # Before ABI 1.7 the JSON recorded the first 124 entries as void(void).
+        # Restoring that record must reproduce every compatible hash, which
+        # shows the names, order, and features of those prefixes are unchanged.
+        recorded = [
+            {**fn, "return": "void", "args": []} if index < 124 else fn
+            for index, fn in enumerate(abi["functions"])
+        ]
+        for hash_value, count, minor in (
+            (0x006427C2, 133, 5), (0x6BE6E8D0, 138, 5), (0x260F6136, 139, 6)
+        ):
+            prior = {**abi, "minor": minor, "functions": recorded[:count]}
             self.assertEqual(abi_hash(prior), hash_value)
 
     def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
-        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0])
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0, 0x260F6136])
         payload = b"\0\0\0\0"
         for old_hash in (0xEC21EFE2, 0x5626CB8A):
             header = env_variables.CART_HEADER_V2.pack(
