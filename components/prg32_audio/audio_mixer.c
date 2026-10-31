@@ -219,7 +219,7 @@ void prg32_audio_notes(uint8_t channel, uint8_t instrument, uint8_t volume,
     } else {
       prg32_audio_note_off(channel);
     }
-    vTaskDelay(pdMS_TO_TICKS(notes[i].duration_ms));
+    prg32_audio_wait_ms(notes[i].duration_ms);
   }
 }
 
