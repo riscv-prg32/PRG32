@@ -57,6 +57,15 @@ python -m prg32 doctor
 #### Notes
 - Use the ESP-IDF PowerShell or ESP-IDF Command Prompt, not a plain terminal
 where `idf.py` has not been exported.
+- Plug the ESP32-C6 into its connector labelled **USB** (not UART). Windows 10
+  and 11 install the driver for it automatically; it appears in Device Manager
+  under *Ports (COM & LPT)* as *USB Serial Device (COMx)*. Run
+  `python -m prg32 esp32c6 ports` to check that PRG32 sees it.
+- Cartridge uploads, `run`, `key`, and Wi-Fi commands find the board without
+  `--port` when only one is connected. With several boards, pass the one you
+  want, for example `--port COM5`.
+- If the board does not appear, try another USB-C cable: charge-only cables
+  power the board but carry no data.
 - If flashing fails, check Device Manager for the ESP32-C6 serial port and pass
   it explicitly with `-p COMx`.
 - If PlatformIO Monitor cannot open the port, close Arduino Serial Monitor,
@@ -104,8 +113,19 @@ sudo usermod -aG dialout "$USER"
 Log out and back in after changing group membership.
 
 #### Notes
-ESP32-C6 boards usually appear as `/dev/ttyACM0`; USB serial adapters may appear as `/dev/ttyUSB0`. If the board is visible but flashing fails, check `dialout` membership and
-reconnect the USB cable after logging in again.
+- **Serial permissions are required.** Without `dialout` membership (`uucp` on
+  Arch-based systems) PRG32 cannot open the board, and uploads report that no
+  ESP32-C6 was found. Check with `groups`; after `usermod`, log out and back in,
+  then reconnect the USB cable.
+- Plug the ESP32-C6 into its connector labelled **USB** (not UART). It appears
+  as `/dev/ttyACM0`; the UART connector appears as `/dev/ttyUSB0` or
+  `/dev/ttyACM1` and cannot receive cartridges. Run
+  `python3 -m prg32 esp32c6 ports` to check that PRG32 sees the board.
+- Cartridge uploads, `run`, `key`, and Wi-Fi commands find the board without
+  `--port` when only one is connected. With several boards, pass the one you
+  want, for example `--port /dev/ttyACM0`.
+- Close serial monitors (`idf.py monitor`, `screen`, `minicom`) before an
+  upload; only one program can use the port at a time.
 
 </details>
 

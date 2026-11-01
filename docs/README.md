@@ -27,7 +27,11 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 ## Hardware
 *Physical components, wiring, and hardware setup.*
 
-- [Hardware Reference](hardware/hardware.md)
+- [Hardware Overview & Guide](hardware/README.md)
+- [Display (ILI9341 SPI TFT)](hardware/ili9341.md)
+- [Audio (MAX98357A I2S)](hardware/audio.md)
+- [Joysticks & Controller Inputs](hardware/joystick.md)
+- [Hardware Pin Profiles](hardware/profiles/README.md)
 - [Bill of Materials and Where to Buy](hardware/where_to_buy.md)
 - [External Controllers](hardware/external_controllers.md)
 

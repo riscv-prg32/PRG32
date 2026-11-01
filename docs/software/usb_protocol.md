@@ -105,7 +105,8 @@ frame.
 ```json
 {"ok":true,"protocol":"prg32-io-1.0",
  "capabilities":["upload","run","performance","keys"],
- "keys":["LEFT","RIGHT","UP","DOWN","A","B","START"],"debug_supported":false,
+ "keys":["LEFT","RIGHT","UP","DOWN","A","B","START","C","D","L","R"],
+ "debug_supported":false,
  "firmware":"5202077","target":"esp32c6","slots":8,
  "max_chunk":4096,"max_payload":16384,
  "runtime":{"cart_ram_size":131072,"cart_max_size":131072,
@@ -279,7 +280,14 @@ hardware interface with OpenOCD, GDB, and the symbol ELF produced by
 
 ## SDK examples
 
+On ESP32-C6, `--port` can be left out when one board is connected: the SDK
+selects the only serial port with the Espressif USB Serial/JTAG ID
+`303A:1001`, the same ID the browser clients filter on. Listing ports does not
+open them, so detection cannot reset the board. See
+[tooling](../usage/tooling.md#upload--run-cartridges).
+
 ```bash
+python3 -m prg32 esp32c6 upload game.prg32 --slot cart0 --command run
 python3 -m prg32 esp32c6 upload game.prg32 \
   --port /dev/cu.usbmodem101 --slot cart0 --command run
 python3 -m prg32 esp32c6 upload game.prg32 \
@@ -472,6 +480,16 @@ The tests wrote only `cart7`, which was backed up with `esptool read_flash` and
 restored; all eight slots were compared with the backup and are identical. NVS
 listed the same 87 entries afterwards.
 
+### 2026-10-30: keys C, D, L and R
+
+The KEY message and HELLO `keys` gained `C` and `D` (buttons added earlier the
+same day, which had been left out of the table) and the new left and right
+bumpers `L` and `R` (`PRG32_BTN_L` = bit 9, `PRG32_BTN_R` = bit 10). The change
+is additive and keeps `prg32-io-1.0`. `tests/test_key_protocol.py`, which
+failed before because C and D were missing, passed, and the ESP32-C6
+(`breadboard2`) and QEMU firmware built. The new keys were not sent to a
+running board or emulator in this revision, and no cartridge slot was written.
+
 ### 2026-10-30: key commands
 
 The KEY message, the `keys` HELLO capability and field, and the `esp32c6 key`
@@ -545,7 +563,7 @@ to the USB Serial/JTAG FIFO, were inserted inside the 5,133-byte RESULT_DATA
 frame and broke its CRC. The prototype's setup menu logs an RMT flush timeout
 about every 140 ms, which made this frequent.
 
-Firmware built from this revision for ESP32-C6 (`prototype1`) and QEMU was
+Firmware built from this revision for ESP32-C6 (`breadboard1`) and QEMU was
 exercised with HELLO, `store`, `run`, and `performance` uploads, an image
 with a correct transport CRC but a corrupted payload, an oversize image, a
 frame with a bad CRC, repeated `RUN` switches, and reconnection.
@@ -565,7 +583,7 @@ frame with a bad CRC, repeated `RUN` switches, and reconnection.
 
 ### 2026-10-28: robustness and throughput revision
 
-Firmware built from this revision for ESP32-C6 (`prototype1`) and QEMU, then
+Firmware built from this revision for ESP32-C6 (`breadboard1`) and QEMU, then
 exercised with an end-to-end script covering HELLO, a corrupt frame, debug
 refusal, `store` and `run` uploads (including while a cartridge was running),
 a duplicated chunk, an out-of-order chunk, an abandoned upload, reconnection,

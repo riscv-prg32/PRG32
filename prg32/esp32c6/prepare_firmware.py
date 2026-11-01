@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 import sys
 from prg32.utilities.env_variables import ROOT_DIR, ESP32C6_BUILD_DIR
+from prg32.utilities.local_config import erase_sdkconfigs
 from prg32.utilities.runtime_handler import run
 
 def prepare_firmware_esp32c6(args: argparse.Namespace) -> None:
@@ -11,6 +12,8 @@ def prepare_firmware_esp32c6(args: argparse.Namespace) -> None:
     out_dir = ROOT_DIR / args.out_dir
     flasher_args = build_dir / "flasher_args.json"
     if not args.skip_build:
+        if not (getattr(args, 'no_erase_sdkconfig', False) or getattr(args, 'keep_sdkconfig', False)):
+            erase_sdkconfigs("esp32c6")
         defaults = "profiles/sdkconfig.defaults"
         if getattr(args, 'debug', False):
             defaults += ";profiles/sdkconfig.defaults.debug"

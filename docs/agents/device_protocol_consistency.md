@@ -54,10 +54,10 @@ new keys to newer firmware.
 
 ## Pin assignment
 
-The canonical source is `profiles/sdkconfig.pins.prototype1`. When a pin
+The canonical source is `profiles/sdkconfig.pins.breadboard1`. When a pin
 changes, update in the same change:
 
-1. [hardware.md](../hardware/hardware.md) wiring tables (follow the
+1. the [profile page](../hardware/profiles/README.md) wiring tables (follow the
    [hardware guidelines](hardware_guidelines.md));
 2. `docs/hardware/pcb/PRG32-PCB-0-1.fzz`: the schematic wire *and* its
    connection records, and the PCB copper, or the

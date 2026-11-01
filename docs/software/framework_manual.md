@@ -30,6 +30,10 @@ single local joystick:
 - `PRG32_BTN_A`
 - `PRG32_BTN_B`
 - `PRG32_BTN_SELECT` (`PRG32_BTN_START` is kept as an alias)
+- `PRG32_BTN_C` and `PRG32_BTN_D` (extra action buttons; always released on
+  profiles that do not wire them)
+- `PRG32_BTN_L` and `PRG32_BTN_R` (left and right bumpers; always released on
+  profiles that do not wire them)
 
 Games can use `prg32_input_read_player(1)` to get the same normalized low-bit
 mask. `prg32_input_read_player(2)` is kept as a source-compatible helper, but
@@ -45,6 +49,43 @@ no change to receive them.
 
 Menu/setup helpers call `prg32_input_read_menu()` to read the local joystick in
 the same normalized low-bit mask.
+
+### Analog axes
+
+Axis-based games (steering, aiming, variable speed) read how far the stick is
+tilted instead of only which direction (ABI 1.8):
+
+| Call | Returns |
+|---|---|
+| `int32_t prg32_input_axis_x(void)` | `-127` (left) to `127` (right), `0` at rest |
+| `int32_t prg32_input_axis_y(void)` | `-127` (up) to `127` (down), `0` at rest |
+| `int prg32_input_has_analog(void)` | `1` when an analog stick is sampled, otherwise `0` |
+| `int prg32_input_axes_raw(int *x, int *y)` | fresh 12-bit readings, `0` to `4095`; returns `-1` and `2048` without an analog stick |
+
+Each call reads the stick at that moment. The firmware centres the axes on the
+stick's rest position and scales them to its travel, both recorded once with
+**SETUP → JOYSTICK CALIBRATION** and kept in flash, and ignores small
+movements around rest (see
+[calibration and deadzone](../hardware/joystick.md#analog-axes-calibration-and-deadzone)).
+
+Without an analog stick (`breadboard1`, QEMU) the axes come from the
+directions of `prg32_input_read()`: LEFT gives `-127`, RIGHT `127`, neither
+`0`. The same applies while an analog stick rests, so
+[key commands](usb_protocol.md#key-messages) and QEMU keys still steer. Games
+written for the axes therefore run on every setup; call
+`prg32_input_has_analog()` only to adapt, for example to show "tilt to steer".
+
+±127 suits the hardware: each side of the stick spans about 1,650 to 2,400 ADC
+codes, and noise blurs neighbouring codes, so finer steps would mostly be
+noise. A power-of-two full scale also lets assembly scale an axis without
+division:
+
+```asm
+call prg32_input_axis_x   # a0 = -127..127
+li   t0, 3                # top speed 3 px/frame
+mul  a0, a0, t0
+srai a0, a0, 7            # a0 = -3..3
+```
 
 System hotkey:
 
@@ -133,7 +174,8 @@ idf.py -B build-qemu -D SDKCONFIG=build-qemu/sdkconfig -D SDKCONFIG_DEFAULTS="pr
 When the QEMU backend is selected, `main/prg32_config.h` disables physical GPIO
 buttons and the buzzer. QEMU builds keep player 1 usable through the UART
 console keyboard mapper: arrows or `W`/`A`/`S`/`D` for the joystick,
-`Enter`/`Space` for SELECT, `J`/`Z` for A, and `K`/`X` for B.
+`Enter`/`Space` for SELECT, `H`/`Z` for A, `J`/`X` for B, `K`/`C` for C,
+`L`/`V` for D, `Q` for the L bumper, and `E` for the R bumper.
 
 ## Splash Screens
 
@@ -645,7 +687,9 @@ PRG32 exposes a small addressable RGB LED API:
 The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
 boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
 to `-1` in `idf.py menuconfig`. Set it only when the LED pin is free on the
-chosen board wiring.
+chosen board wiring. On `breadboard1` and `pcb1` the firmware itself uses the shared LED
+for a boot flash; cartridges cannot drive it (see
+[Shared Boot Indication](../hardware/rgb_led.md#shared-boot-indication)).
 
 ## Development Guide
 

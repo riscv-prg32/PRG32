@@ -74,9 +74,9 @@ The last rows show the cost of the 128 KiB default.
 
 | Build | Static D/IRAM | Free heap | Largest free block |
 |---|---:|---:|---:|
-| ESP32-C6 `prototype1`, before | 307,385 B | 133,040 B | 106,496 B |
-| ESP32-C6 `prototype1`, after | 252,926 B | 187,904 B | 159,744 B |
-| ESP32-C6 `prototype1`, with stored Wi-Fi networks (2026-10-30) | - | 185,832 B | 159,744 B |
+| ESP32-C6 `breadboard1`, before | 307,385 B | 133,040 B | 106,496 B |
+| ESP32-C6 `breadboard1`, after | 252,926 B | 187,904 B | 159,744 B |
+| ESP32-C6 `breadboard1`, with stored Wi-Fi networks (2026-10-30) | - | 185,832 B | 159,744 B |
 | QEMU (ESP32-C3), before | 296,744 B | not reported | not reported |
 | QEMU (ESP32-C3), after | 143,152 B | 213,648 B | 114,688 B |
 | ESP32-C6 `prototype1`, 64 KiB window (2026-10-30) | 253,359 B | 185,856 B | 159,744 B |
@@ -210,7 +210,7 @@ After the static analysis, the tool makes an HTTP request to the running ESP32-C
 **Task Tracking:**
 By default, the tool shows total free and allocated heap space. If you want to see exactly which FreeRTOS tasks (e.g., `main`, `wifi`, `httpd`) are hoarding memory, you can enable Heap Task Tracking:
 1. If you have not built the project before, run `python3 -m prg32 esp32c6 build`.
-2. Run `python3 -m prg32 esp32c6 build-and-flash -e` (or `--enable-heap-tracking`).
+2. Run `python3 -m prg32 esp32c6 build -e` (or `--enable-heap-tracking`) and then `python3 -m prg32 esp32c6 flash` (or `python3 -m prg32 esp32c6 build -e && python3 -m prg32 esp32c6 flash`).
 
 When task tracking is compiled into the firmware, the memory command will automatically detect it and print a detailed table of memory consumption per task! Note that allocations made before the FreeRTOS scheduler starts (or by tasks that have been deleted) will be grouped under `System / Startup`.
 

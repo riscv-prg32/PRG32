@@ -31,44 +31,56 @@ elseif(DEFINED SDKCONFIG_DEFAULTS AND SDKCONFIG_DEFAULTS STREQUAL "sdkconfig.def
     set(SDKCONFIG_DEFAULTS "profiles/sdkconfig.defaults")
 endif()
 
-if(EXTRA_CONFIGS)
-    if(DEFINED ENV{SDKCONFIG_DEFAULTS})
-        set(SDKCONFIG_DEFAULTS "$ENV{SDKCONFIG_DEFAULTS};${EXTRA_CONFIGS}")
-    else()
-        set(SDKCONFIG_DEFAULTS "${SDKCONFIG_DEFAULTS};${EXTRA_CONFIGS}")
-    endif()
-endif()
-
 if(NOT SDKCONFIG_DEFAULTS MATCHES "sdkconfig\\.pins\\.")
-    set(PRG32_CANDIDATE_SDKCONFIG "")
+    set(PRG32_CANDIDATE_SDKCONFIGS "")
     if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/sdkconfig")
-        set(PRG32_CANDIDATE_SDKCONFIG "${CMAKE_CURRENT_BINARY_DIR}/sdkconfig")
+        list(APPEND PRG32_CANDIDATE_SDKCONFIGS "${CMAKE_CURRENT_BINARY_DIR}/sdkconfig")
     elseif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/build-esp32c6/sdkconfig")
-        set(PRG32_CANDIDATE_SDKCONFIG "${CMAKE_CURRENT_LIST_DIR}/build-esp32c6/sdkconfig")
+        list(APPEND PRG32_CANDIDATE_SDKCONFIGS "${CMAKE_CURRENT_LIST_DIR}/build-esp32c6/sdkconfig")
     elseif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig")
-        set(PRG32_CANDIDATE_SDKCONFIG "${CMAKE_CURRENT_LIST_DIR}/sdkconfig")
+        list(APPEND PRG32_CANDIDATE_SDKCONFIGS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig")
     endif()
 
-    if(PRG32_CANDIDATE_SDKCONFIG)
-        file(STRINGS "${PRG32_CANDIDATE_SDKCONFIG}" PRG32_SDK_LINES)
-        set(PRG32_IS_CUSTOM FALSE)
-        set(PRG32_AUTOPROFILE "")
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.defaults.local")
+        list(APPEND PRG32_CANDIDATE_SDKCONFIGS "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.defaults.local")
+    endif()
+
+    set(PRG32_IS_CUSTOM FALSE)
+    set(PRG32_AUTOPROFILE "")
+    foreach(PRG32_CANDIDATE_FILE ${PRG32_CANDIDATE_SDKCONFIGS})
+        file(STRINGS "${PRG32_CANDIDATE_FILE}" PRG32_SDK_LINES)
         foreach(PRG32_LINE ${PRG32_SDK_LINES})
             if(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_CUSTOM=y")
                 set(PRG32_IS_CUSTOM TRUE)
             elseif(PRG32_LINE MATCHES "^CONFIG_PRG32_DEFAULT_PIN_PROFILE=\"([^\"]+)\"")
                 set(PRG32_AUTOPROFILE "${CMAKE_MATCH_1}")
-            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y" AND NOT PRG32_AUTOPROFILE)
-                set(PRG32_AUTOPROFILE "prototype1")
+                set(PRG32_IS_CUSTOM FALSE)
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_BREADBOARD1=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "breadboard1")
+                set(PRG32_IS_CUSTOM FALSE)
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_BREADBOARD2=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "breadboard2")
+                set(PRG32_IS_CUSTOM FALSE)
+            elseif(PRG32_LINE STREQUAL "CONFIG_PRG32_PIN_PROFILE_PCB1=y" AND NOT PRG32_AUTOPROFILE)
+                set(PRG32_AUTOPROFILE "pcb1")
+                set(PRG32_IS_CUSTOM FALSE)
             endif()
         endforeach()
+    endforeach()
 
-        if(NOT PRG32_IS_CUSTOM AND PRG32_AUTOPROFILE AND NOT PRG32_AUTOPROFILE STREQUAL "none")
-            set(PRG32_PROFILE_FILE "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.pins.${PRG32_AUTOPROFILE}")
-            if(EXISTS "${PRG32_PROFILE_FILE}")
-                set(SDKCONFIG_DEFAULTS "${SDKCONFIG_DEFAULTS};${PRG32_PROFILE_FILE}")
-            endif()
+    if(NOT PRG32_IS_CUSTOM AND PRG32_AUTOPROFILE AND NOT PRG32_AUTOPROFILE STREQUAL "none")
+        set(PRG32_PROFILE_FILE "${CMAKE_CURRENT_LIST_DIR}/profiles/sdkconfig.pins.${PRG32_AUTOPROFILE}")
+        if(EXISTS "${PRG32_PROFILE_FILE}")
+            set(SDKCONFIG_DEFAULTS "${SDKCONFIG_DEFAULTS};${PRG32_PROFILE_FILE}")
         endif()
+    endif()
+endif()
+
+if(EXTRA_CONFIGS AND NOT SDKCONFIG_DEFAULTS MATCHES "sdkconfig\\.defaults\\.local")
+    if(DEFINED ENV{SDKCONFIG_DEFAULTS})
+        set(SDKCONFIG_DEFAULTS "$ENV{SDKCONFIG_DEFAULTS};${EXTRA_CONFIGS}")
+    else()
+        set(SDKCONFIG_DEFAULTS "${SDKCONFIG_DEFAULTS};${EXTRA_CONFIGS}")
     endif()
 endif()
 
@@ -87,9 +99,9 @@ if(IDF_TARGET STREQUAL "esp32c6" AND NOT CONFIG_PRG32_PINS_CONFIGURED)
         "ERROR: No PRG32 hardware pin profile configured!\n"
         "Pins are no longer defaulted in Kconfig.\n"
         "Specify a pin profile when building, e.g.:\n"
-        "  python3 -m prg32 esp32c6 build --pin-profile prototype1\n"
+        "  python3 -m prg32 esp32c6 build --pin-profile breadboard1\n"
         "Or include a pin profile in SDKCONFIG_DEFAULTS:\n"
-        "  -D SDKCONFIG_DEFAULTS=\"...;profiles/sdkconfig.pins.prototype1\"\n"
+        "  -D SDKCONFIG_DEFAULTS=\"...;profiles/sdkconfig.pins.breadboard1\"\n"
         "Or select Custom in idf.py menuconfig.\n"
         "=================================================================\n"
     )

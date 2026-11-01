@@ -35,9 +35,9 @@ alias get_idf=". $HOME/esp-idf/export.sh"
 alias prg="python -m prg32"
 ```
 ### Running PRG32 on the ESP32C6
-If you have the physical PRG32 hardware, after [configuring the hardware setup](/docs/hardware/hardware.md) you can build the project for the ESP32C6 and flash it to the SoC:
+If you have the physical PRG32 hardware, after [configuring the hardware setup](/docs/hardware/README.md) you can build the project for the ESP32C6 and flash it to the SoC:
 ```bash
-python -m prg32 esp32c6 build-and-flash
+python -m prg32 esp32c6 build && python -m prg32 esp32c6 flash
 ```
 ### Running PRG32 on QEMU
 If you don't have the physical hardware you can still use the PRG32 framework emulated on QEMU:
@@ -59,7 +59,9 @@ With one stored cartridge, PRG32 starts it automatically. With several stored
 cartridges, it starts the saved default. The startup menu appears when no
 cartridge can be selected, or when you hold A+B during boot. From that menu
 you can run a cartridge, set the default, configure Wi-Fi and CartridgeStore,
-open audio or developer settings, and view the about screen. The optional
+open audio or developer settings, calibrate an analog joystick
+([joystick calibration](../hardware/joystick.md#joystick-calibration)), and
+view the about screen. The optional
 performance-test cartridge runs matched RGB565 and full-indexed passes,
 displays an aggregate summary, and retains compact JSON at
 `/api/performance.json` until reboot or the next run. Poing can publish a

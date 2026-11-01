@@ -38,12 +38,18 @@ static int pin_conflicts(int gpio) {
            pin_matches(gpio, PRG32_PIN_LCD_DC) ||
            pin_matches(gpio, PRG32_PIN_LCD_RST) ||
            pin_matches(gpio, PRG32_PIN_LCD_BL) ||
+           pin_matches(gpio, PRG32_PIN_JOYSTICK_X) ||
+           pin_matches(gpio, PRG32_PIN_JOYSTICK_Y) ||
            pin_matches(gpio, PRG32_PIN_BTN_LEFT) ||
            pin_matches(gpio, PRG32_PIN_BTN_RIGHT) ||
            pin_matches(gpio, PRG32_PIN_BTN_UP) ||
            pin_matches(gpio, PRG32_PIN_BTN_DOWN) ||
            pin_matches(gpio, PRG32_PIN_BTN_A) ||
            pin_matches(gpio, PRG32_PIN_BTN_B) ||
+           pin_matches(gpio, PRG32_PIN_BTN_C) ||
+           pin_matches(gpio, PRG32_PIN_BTN_D) ||
+           pin_matches(gpio, PRG32_PIN_BTN_L) ||
+           pin_matches(gpio, PRG32_PIN_BTN_R) ||
            pin_matches(gpio, PRG32_PIN_BTN_SELECT) ||
            pin_matches(gpio, PRG32_PIN_BUZZER);
 }

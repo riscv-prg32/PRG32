@@ -42,7 +42,9 @@ no change; a virtual controller in the Construction-Kit or CartridgeStore would
 be an optional follow-up. PRG32-Qt must keep `keys` out of its HELLO
 capabilities until `src/qt/IoProtocolServer.cpp` implements the message; today
 it answers `unsupported message type`, and the SDK reports that it has no key
-commands.
+commands. Later the same day the key names `C`, `D`, `L` and `R` joined the
+list. A virtual controller or a PRG32-Qt implementation should take the names
+from the HELLO `keys` field instead of copying the list.
 
 Firmware from 2026-10-30 onward adds the WIFI_SCAN, WIFI_SET, and WIFI_FORGET
 messages behind a `wifi` HELLO capability
