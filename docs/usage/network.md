@@ -97,6 +97,13 @@ This saves `CONFIG_PRG32_MULTIPLAYER_SERVER_URL` in `profiles/sdkconfig.defaults
 
 Use `python3 -m prg32 multiplayer clear-url` to return to the defaults. Use `ws://` only on a local network you control, and `wss://` on a public one.
 
+A PRG32 Multiplayer Server and a running PRG32-Qt can share one computer, but both
+use port 8081: PRG32-Qt holds `127.0.0.1:8081` for its
+[device protocol](../software/usb_protocol.md), and the server holds the same port on
+every other address. Give clients on that computer its network address, such as
+`ws://192.168.1.10:8081`. Through `127.0.0.1` they reach PRG32-Qt, which never
+answers the WebSocket upgrade.
+
 ## Advanced: Pre-configuring Wi-Fi Credentials
 
 For advanced users or developers who frequently flash the firmware, it can be tedious to manually configure the network via the setup menu on every full wipe. 

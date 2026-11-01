@@ -437,6 +437,28 @@ Free heap did not fall when the same cartridges were loaded repeatedly. Some
 cartridges start firmware services on first use; on the board this lowered
 free heap once, by about 22 KiB across the whole series.
 
+## Whole-Store Check (2026-11-01)
+
+Every cartridge listed by `GET /api/games` (34 games, latest versions, SHA-256
+checked) on firmware `82b8925`. On the two firmware targets each was uploaded with
+`run` into one slot and given all 11 keys, with the serial log watched for faults.
+PRG32-Qt ran 900 frames with an input sweep in its headless runner; PRG32-iOS ran 300
+frames with an input sweep in its portable core. PRG32-Qt and PRG32-iOS were built
+from their `feat/firmware-abi-1.8-alignment` branches.
+
+| Result | ESP32-C6 `breadboard1` | QEMU | PRG32-Qt | PRG32-iOS |
+|---|---|---|---|---|
+| Portable cartridges (32) | all ran, no faults | all ran, no faults | all passed | all ran and drew |
+| `it.uniparthenope.space_invaders` 1.0.0 | accepted, then `Instruction access fault` | refused at upload | refused | refused |
+| `it.uniparthenope.terraforge` 1.0.0 | accepted, then `Load access fault` | refused at upload | refused | refused |
+
+The two failures are the legacy cartridges of the
+[compatibility check](#store-compatibility-check-2026-10-29). The board restarted and
+kept answering after each. This check shows that each cartridge starts, draws, and
+survives input. It does not judge each game's rules, and no audio was listened to.
+For the cartridges with rooms, see
+[real cartridges](../software/multiplayer_protocol.md#real-cartridges-2026-11-01).
+
 ## Store Key Check (2026-10-30)
 
 Every cartridge listed by `GET /api/games` (32 games, latest versions, SHA-256

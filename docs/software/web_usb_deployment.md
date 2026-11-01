@@ -39,12 +39,10 @@ person.
 Firmware from 2026-10-30 onward also adds the KEY message behind a `keys` HELLO
 capability ([Key messages](usb_protocol.md#key-messages)). The web client needs
 no change; a virtual controller in the Construction-Kit or CartridgeStore would
-be an optional follow-up. PRG32-Qt must keep `keys` out of its HELLO
-capabilities until `src/qt/IoProtocolServer.cpp` implements the message; today
-it answers `unsupported message type`, and the SDK reports that it has no key
-commands. Later the same day the key names `C`, `D`, `L` and `R` joined the
-list. A virtual controller or a PRG32-Qt implementation should take the names
-from the HELLO `keys` field instead of copying the list.
+be an optional follow-up. Later the same day the key names `C`, `D`, `L` and `R`
+joined the list. A virtual controller should take the names from the HELLO `keys`
+field instead of copying the list. PRG32-Qt implements the message on its
+`feat/firmware-abi-1.8-alignment` branch (2026-11-01, not yet merged).
 
 Firmware from 2026-10-30 onward adds the WIFI_SCAN, WIFI_SET, and WIFI_FORGET
 messages behind a `wifi` HELLO capability
@@ -55,9 +53,9 @@ optional follow-up. PRG32-Qt must keep `wifi` out of its HELLO capabilities.
 Firmware from 2026-10-30 onward defaults to a 128 KiB window and accepts
 packages up to 131,072 bytes. Existing packages keep working, and the web client
 reads the limits from HELLO. PRG32-Construction-Kit
-`tools/build_qemu_firmware.py` (`CART_MAX_SIZE = 64 * 1024`) and PRG32-Qt
-`src/qt/IoProtocolServer.cpp` (UPLOAD_BEGIN rejects more than 65,536 bytes) must
-still be raised before they can handle a package larger than 64 KiB.
+`tools/build_qemu_firmware.py` (`CART_MAX_SIZE = 64 * 1024`) must still be raised
+before it can handle a package larger than 64 KiB. PRG32-Qt accepts 131,072 bytes
+and eight slots on the same branch.
 
 Firmware from 2026-10-29 onward adds `runtime.heap_free` and
 `runtime.heap_largest` to HELLO ([HELLO response](usb_protocol.md#hello-response)).

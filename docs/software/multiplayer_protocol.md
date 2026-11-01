@@ -207,3 +207,46 @@ which stalled the relay for many seconds at a time: consoles saw 10 to 12 s of
 silence and failed upgrades, and dropped out together. The fix, in the server's
 `src/telemetry.js`, trims in batches. Recording an event at the limit then took
 about 0.05 ms, with a compaction of about 31 ms every 10,000 events.
+
+## Real Cartridges (2026-11-01)
+
+Firmware `82b8925` on ESP32-C6 `breadboard1` and Espressif QEMU, with PRG32-Qt and
+PRG32-iOS from their `feat/firmware-abi-1.8-alignment` branches, which implement this
+protocol. Each console walked the game's own menus with key commands (touch in the iOS
+Simulator). A silent observer recorded the room on a local server.
+
+| Cartridge | Room | Consoles | Result |
+|---|---|---|---|
+| OutBun 1.1.0 | `outbun-napoli97:v1` | 2 QEMU, board, Qt | All four raced; 0 errors |
+| OutBun 1.1.0 | `outbun-napoli97:v1` | QEMU, board, Qt, iOS Simulator (Release) | All four raced; 0 errors |
+| FairWind 4.2.0 | `fairwind-napoli97:v8-windward` | 2 QEMU, board, Qt | All four in the room and publishing the same flags; 0 errors |
+| Poing Wall | `poing-wall-v2` | 2 QEMU, board, Qt | All reported 4 screens, one authority; 0 errors |
+| Galleria 2007 0.1.0 | `galleria2007-v1` | 2 QEMU, Qt | All in the room; 0 errors |
+| Blackjack 1.0.0 | `blackjack-v1` | 2 QEMU, Qt | All in the room; 0 errors |
+| Drumfight 1.1.0 | `drumfight-napoli97-v1` | 2 QEMU, Qt | All in the room; 0 errors |
+
+Publish rates: 20 per second on QEMU and PRG32-Qt, 19.7 on the iOS Simulator (1.7 in a
+Debug build, whose interpreter is much slower), and 8.5 to 12.4 on the board, which
+follows each game's frame rate. Longest gap from any console in these runs: 0.26 s.
+
+`tools/multiplayer_wall_test.py` with 3 QEMU instances and the board for 120 s passed
+all its checks. On PRG32-Qt against a real server: with `MAX_ROOM_CLIENTS=2` it stayed out
+on `room_full` and joined 2.3 s after a place freed up; after the server stopped for
+4 s it rejoined; and leaving for another cartridge sent `leave`.
+
+Not exercised: `wss://`, `rate_limited`, `device_blocked` on PRG32-Qt or PRG32-iOS, and a
+physical iPhone. Reconnection and policy errors on PRG32-iOS are implemented but were not
+run against a server. A cartridge on the board or QEMU joining a room lowers free heap by
+about 212 B per closed socket for about two minutes: on the board six cycles took it from
+107,276 B to 105,988 B, and it was back at 107,284 B within 120 s. That timing matches
+TCP's TIME_WAIT; it is not a leak.
+
+**Still open: the emulator freeze.** One QEMU instance stopped during these tests
+after about 50 minutes and many uploads, with the signature described in
+[Why QEMU polls its Ethernet](#why-qemu-polls-its-ethernet): threshold register 4,
+critical nesting 0, spinning in `vPortYield`. The polled Ethernet therefore reduces this
+freeze but does not remove it. Another instance kept running. It has not been seen on the
+board. Restart the instance when it stops answering.
+
+The tests wrote `cart7` and `scores` was unchanged; `cart7` was restored from
+`esptool read_flash` and all eight slots compared with the backup.
