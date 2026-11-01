@@ -1,7 +1,7 @@
-# PRG32 Hardware Pin Profile: Prototype 1 (First Prototype Breadboard)
-CONFIG_PRG32_PIN_PROFILE_PROTOTYPE1=y
+# PRG32 Hardware Pin Profile: PCB 1 (original breadboard1 pinout, P1 DOWN on GPIO13)
+CONFIG_PRG32_PIN_PROFILE_PCB1=y
 CONFIG_PRG32_PINS_CONFIGURED=y
-CONFIG_PRG32_PIN_PROFILE_NAME="prototype1"
+CONFIG_PRG32_PIN_PROFILE_NAME="pcb1"
 
 # Display (ILI9341 SPI TFT)
 CONFIG_PRG32_PIN_LCD_MOSI=7
@@ -14,8 +14,7 @@ CONFIG_PRG32_PIN_LCD_BL=5
 
 # Joystick and Controls
 CONFIG_PRG32_PIN_BTN_UP=3
-# GPIO12/GPIO13 are reserved for the ESP32-C6 native USB D-/D+ pair.
-CONFIG_PRG32_PIN_BTN_DOWN=0
+CONFIG_PRG32_PIN_BTN_DOWN=13
 CONFIG_PRG32_PIN_BTN_LEFT=18
 CONFIG_PRG32_PIN_BTN_RIGHT=19
 CONFIG_PRG32_PIN_BTN_START=20
@@ -32,5 +31,7 @@ CONFIG_PRG32_AUDIO_I2S_SD_GPIO=-1
 # Optional Peripherals
 CONFIG_PRG32_PIN_BUZZER=-1
 CONFIG_PRG32_PIN_RGB_LED=-1
-# The fixed PCB also connects its onboard WS2812 data input to LCD D/C.
+# The ESP32-C6-DevKitC-1 hardwires its onboard WS2812 data input to GPIO8,
+# which this profile also uses for LCD D/C. The LED stays out of the public
+# RGB LED API and is used only for the boot flash and the post-frame off latch.
 CONFIG_PRG32_PIN_SHARED_RGB_LED=8

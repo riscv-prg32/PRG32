@@ -49,17 +49,19 @@ Stored networks can also be managed from a computer over USB with the
 [device protocol](../software/usb_protocol.md#wi-fi-messages):
 
 ```bash
-python3 -m prg32 esp32c6 wifi-scan --port /dev/cu.usbmodem101
+python3 -m prg32 esp32c6 wifi-scan
 ```
 
 ```bash
-python3 -m prg32 esp32c6 wifi-set --port /dev/cu.usbmodem101 --ssid LabNet
+python3 -m prg32 esp32c6 wifi-set --ssid LabNet
 ```
 
 ```bash
-python3 -m prg32 esp32c6 wifi-forget --port /dev/cu.usbmodem101 --ssid LabNet
+python3 -m prg32 esp32c6 wifi-forget --ssid LabNet
 ```
 
+Each command finds the connected board itself; add `--port` when several
+boards are connected (see [tooling](tooling.md#upload--run-cartridges)).
 `wifi-set` asks for the password at a hidden prompt; add `--password-stdin`
 to read it from standard input in scripts. The password is never accepted as
 a command-line argument, so it does not end up in shell history. Never put

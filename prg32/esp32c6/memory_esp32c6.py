@@ -176,7 +176,7 @@ def memory_esp32c6(args):
         print("\nNOTE: Detailed dynamic task breakdown and boot checkpoints are not available.")
         print("To see exact per-task memory usage, you must build the firmware with heap tracking enabled.")
         print("Run the following command, then re-run the memory analysis:")
-        print("  python3 -m prg32 esp32c6 build-and-flash --enable-heap-tracking")
+        print("  python3 -m prg32 esp32c6 build --enable-heap-tracking && python3 -m prg32 esp32c6 flash")
 
     print("\nNOTE: Detailed dynamic heap tracing (Call Stack Breakdown) is officially unsupported")
     print("on ESP32-C6 and all other RISC-V architectures in ESP-IDF v5.4 due to a limitation")

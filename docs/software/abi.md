@@ -106,6 +106,24 @@ cartridges with firmware-specific absolute imports are usable only when their
 addresses match the resident firmware; rebuild their source as portable
 cartridges before distributing them for other firmware images.
 
+ABI minor `7` appends index 139, `prg32_multiplayer_local_player_id`.
+
+ABI minor `8` appends indices 140 through 143 for analog axes:
+`prg32_input_axis_x`, `prg32_input_axis_y`, `prg32_input_axes_raw`, and
+`prg32_input_has_analog` (see [analog axes](framework_manual.md#analog-axes)).
+It also corrects `prg32_abi.json`: the first 124 entries had been recorded as
+`void` functions without arguments, and 122 entries had the same placeholder
+note. The JSON now carries each function's real prototype and a description.
+The prototypes are part of the hash, so the hash changes, but no table entry
+moved or changed its function; ABI 1.6 and 1.7 cartridges (hashes `0x260f6136`
+and `0xb3845925`) remain loadable alongside the earlier compatible hashes.
+Restoring the old `void` records reproduces all four compatible hashes exactly
+(`tests/test_prg32.py`).
+
+`python3 -m prg32 abi gen` and `abi check` reject a function without a note,
+and `tests/test_prg32_abi_gen.py` fails when a JSON signature differs from the
+declaration in the public headers.
+
 The performance broker lifecycle, descriptor layouts, failure semantics, and
 custom-cartridge tutorial are documented in the
 [Performance Test Guide](/docs/performance_test.md). The concise contract is

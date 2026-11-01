@@ -177,7 +177,7 @@ int prg32_multiplayer_set_input(uint32_t input) {
     if (!g_mp.member_requested) {
         return -1;
     }
-    g_mp.local.input = input & 0x7fu;
+    g_mp.local.input = input & PRG32_INPUT_BUTTONS_MASK;
     return 0;
 }
 
@@ -859,7 +859,7 @@ int prg32_multiplayer_set_input(uint32_t input) {
         unlock_mp();
         return -1;
     }
-    g_mp.local.input = input & 0x7fu;
+    g_mp.local.input = input & PRG32_INPUT_BUTTONS_MASK;
     unlock_mp();
     return 0;
 }

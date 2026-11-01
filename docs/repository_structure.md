@@ -25,11 +25,12 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_controller.c      Joins GPIO, QEMU keyboard, diagnostic, and remote input; the table of remote key names lives here
 |   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return)
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
-|   |   |-- prg32_led_internal.h    Firmware-only shared RGB/LCD boot-indicator helpers
+|   |   |-- prg32_led_internal.h    Firmware-only helpers for an RGB LED sharing LCD D/C (`PRG32_PIN_SHARED_RGB_LED`): boot flash and post-frame off latch
 |   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, peer table, identity, and QEMU's emulated Ethernet
 |   |   |-- prg32_multiplayer_wire.c  The protocol's JSON messages, validated, with no networking so that they can be tested on a computer
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
-|   |   |-- prg32_system.c          Boot sequence and setup menus, and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
+|   |   |-- prg32_joystick_analog.c Analog stick: ADC one-shot sampling, -127..127 axes, and the joystick calibration kept in NVS
+|   |   |-- prg32_system.c          Boot sequence and setup menus (including joystick calibration), and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, performance, Wi-Fi, and key-command protocol with upload timeout, failed-slot erase, HELLO heap reporting, and whole-frame writes that console logs cannot split
 |   |   |-- prg32_wifi.c            Wi-Fi modes, setup screens, the last four connected networks, and forgetting a stored network
 |   |   |-- prg32_random.c          Uniform bounded random-number API
@@ -41,8 +42,16 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   `-- python_language_consistency.md  Rules for keeping the SDK and Construction Kit PRG32 Python compilers identical
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
+|   |   |-- README.md               Central hardware directory guide, breadboard layout, and architecture index
+|   |   |-- audio.md                MAX98357A I2S DAC/Amp wiring, mono/stereo mode selection, and speaker safety
+|   |   |-- joystick.md             Digital 5-way joystick, analog KY-023 one-shot ADC thumbstick, buttons, and input API
+|   |   |-- rgb_led.md              WS2812 addressable onboard RGB LED driver and pin allocation
+|   |   |-- ili9341.md              ILI9341 2.8" SPI TFT display integration and backlight control
+|   |   |-- memory.md               ESP32-C6 memory layout (IRAM, DRAM, Flash, cartridge window) and profiling tools
+|   |   |-- external_controllers.md Local input architecture and Wi-Fi multiplayer frame exchange
 |   |   |-- AGENTS.md               Hardware and purchasing-document maintenance rules
-|   |   |-- images/                 Electrical schematic (Fritzing export) and breadboard prototype figures
+|   |   |-- images/                 Electrical schematics (Fritzing exports, including the pcb1 board) and breadboard prototype figures
+|   |   |-- profiles/               Self-contained pin profile documents (breadboard1, breadboard2, pcb1) and the rules for writing them
 |   |   |-- pcb/                    Fritzing PCB reference design, layout status, and fabrication notes
 |   |   `-- where_to_buy.md         Central bill of materials and country-specific supplier links
 |   |-- learn/                      Classroom tutorials, lab handouts, and educational material
@@ -67,10 +76,11 @@ This document outlines the high-level layout of the PRG32 repository.
 |   `-- prg32_config.h              Board pins, feature flags, and compile-time constants
 |-- managed_components/             External component dependencies managed by ESP-IDF (mDNS, WebSocket client)
 |-- prg32/                          Python module containing the core CLI tooling
-|   |-- abi/                        Cartridge ABI generator and JSON specification
+|   |-- abi/                        Cartridge ABI generator and JSON specification (real prototypes and notes for every entry)
 |   |-- cartridge/                  Cartridge packaging scripts
 |   |-- multiplayer/                Local multiplayer server address for builds
 |   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, verification, and USB Wi-Fi network and key commands
+|   |   `-- find_port.py            Finds a connected ESP32-C6 native USB port by USB ID, so device-protocol commands need no `--port`
 |   |-- python/                     PRG32 Python compiler shared with PRG32-Construction-Kit (game.py -> game IR -> C/assembly) and the `python` command
 |   |-- qemu/                       Emulator launch (including several independent instances), staging, key commands, and automated smoke testing
 |   |-- usb_protocol.py             Shared framed device-protocol client and stream decoder
@@ -79,8 +89,8 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- profiles/                       Default configuration files, pin profiles, and partition tables
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (128 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 64 KiB fragment, `sdkconfig.defaults.cart_64k`)
-|   `-- sdkconfig.pins.*            Hardware pin configuration profiles (e.g. prototype1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages), the multiplayer wire format and session rules, setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
+|   `-- sdkconfig.pins.*            Hardware pin configuration profiles (breadboard1, breadboard2, pcb1)
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), the multiplayer wire format and session rules, setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture, media validation, and the multiplayer wall test against a real server
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations

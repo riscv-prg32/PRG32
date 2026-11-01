@@ -127,14 +127,22 @@ not-a-symbol
 class PortableHeaderTests(unittest.TestCase):
     def test_compatible_hashes_describe_unchanged_abi_prefixes(self) -> None:
         abi = json.loads((ROOT / "prg32/abi/prg32_abi.json").read_text())
-        for hash_value, count in ((0x006427C2, 133), (0x6BE6E8D0, 138)):
-            prior = {**abi, "minor": 5, "functions": abi["functions"][:count]}
+        # Before ABI 1.8 the JSON recorded the first 124 entries as void(void).
+        # Restoring that record must reproduce every compatible hash, which
+        # shows the names, order, and features of those prefixes are unchanged.
+        recorded = [
+            {**fn, "return": "void", "args": []} if index < 124 else fn
+            for index, fn in enumerate(abi["functions"])
+        ]
+        for hash_value, count, minor in (
+            (0x006427C2, 133, 5), (0x6BE6E8D0, 138, 5), (0x260F6136, 139, 6),
+            (0xB3845925, 140, 7),
+        ):
+            prior = {**abi, "minor": minor, "functions": recorded[:count]}
             self.assertEqual(abi_hash(prior), hash_value)
-        prior = {**abi, "minor": 6, "functions": abi["functions"][:139]}
-        self.assertEqual(abi_hash(prior), 0x260F6136)
 
     def test_runtime_rejects_old_hashes_with_reassigned_audio_slots(self) -> None:
-        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0, 0x260F6136])
+        self.assertEqual(COMPATIBLE_ABI_HASHES, [0x006427C2, 0x6BE6E8D0, 0x260F6136, 0xB3845925])
         payload = b"\0\0\0\0"
         for old_hash in (0xEC21EFE2, 0x5626CB8A):
             header = env_variables.CART_HEADER_V2.pack(
@@ -391,9 +399,8 @@ class Esp32c6UsbUploadTests(unittest.TestCase):
         upload.assert_not_called()
         client.close.assert_called_once()
 
-    def test_upload_cli_requires_exactly_one_transport(self) -> None:
-        with self.assertRaises(SystemExit):
-            prg32_main(["esp32c6", "upload", "game.prg32"])
+    def test_upload_cli_accepts_at_most_one_transport(self) -> None:
+        # Without --url or --port the board is found by USB ID (test_find_port).
         with self.assertRaises(SystemExit):
             prg32_main([
                 "esp32c6", "upload", "game.prg32",
@@ -576,13 +583,30 @@ class DoctorTests(unittest.TestCase):
 
 
 class PinProfileTests(unittest.TestCase):
-    def test_discover_prototype1_pin_profile(self) -> None:
+    def test_discover_breadboard1_pin_profile(self) -> None:
         from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
         profiles = list_pin_profiles()
-        self.assertIn("prototype1", profiles)
-        path = resolve_pin_profile("prototype1")
+        self.assertIn("breadboard1", profiles)
+        path = resolve_pin_profile("breadboard1")
         self.assertTrue(path.exists())
-        self.assertTrue(path.name.endswith("prototype1"))
+        self.assertTrue(path.name.endswith("breadboard1"))
+
+    def test_discover_breadboard2_pin_profile(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        profiles = list_pin_profiles()
+        self.assertIn("breadboard2", profiles)
+        path = resolve_pin_profile("breadboard2")
+        self.assertTrue(path.exists())
+        self.assertTrue(path.name.endswith("breadboard2"))
+
+    def test_discover_pcb1_pin_profile(self) -> None:
+        from prg32.utilities.pin_profiles import list_pin_profiles, resolve_pin_profile
+        profiles = list_pin_profiles()
+        self.assertIn("pcb1", profiles)
+        path = resolve_pin_profile("pcb1")
+        self.assertTrue(path.exists())
+        self.assertTrue(path.name.endswith("pcb1"))
+        self.assertIn("CONFIG_PRG32_PIN_BTN_DOWN=13", path.read_text(encoding="utf-8"))
 
     def test_unknown_pin_profile_raises_value_error(self) -> None:
         from prg32.utilities.pin_profiles import resolve_pin_profile
@@ -602,9 +626,9 @@ class PinProfileTests(unittest.TestCase):
 
     def test_get_esp32c6_sdkconfig_defaults_includes_pin_profile(self) -> None:
         from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
-        args = argparse.Namespace(pin_profile="prototype1", debug=False)
+        args = argparse.Namespace(pin_profile="breadboard1", debug=False)
         defaults = get_esp32c6_sdkconfig_defaults(args)
-        self.assertIn("sdkconfig.pins.prototype1", defaults)
+        self.assertIn("sdkconfig.pins.breadboard1", defaults)
 
     def test_get_esp32c6_sdkconfig_defaults_without_pin_profile_fails(self) -> None:
         from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
@@ -621,24 +645,37 @@ class PinProfileTests(unittest.TestCase):
         with contextlib.redirect_stdout(buf):
             rc = prg32_main(["esp32c6", "pins"])
         self.assertEqual(rc, 0)
-        self.assertIn("prototype1", buf.getvalue())
+        self.assertIn("breadboard1", buf.getvalue())
+        self.assertIn("breadboard2", buf.getvalue())
 
     def test_cli_pins(self) -> None:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             rc = prg32_main(["pins"])
         self.assertEqual(rc, 0)
-        self.assertIn("prototype1", buf.getvalue())
+        self.assertIn("breadboard1", buf.getvalue())
+        self.assertIn("breadboard2", buf.getvalue())
 
     def test_get_esp32c6_sdkconfig_defaults_from_sdkconfig_profile(self) -> None:
         from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
         with tempfile.TemporaryDirectory() as tmp:
             tmp_sdk = Path(tmp) / "sdkconfig"
-            tmp_sdk.write_text("CONFIG_PRG32_DEFAULT_PIN_PROFILE=\"prototype1\"\n", encoding="utf-8")
+            tmp_sdk.write_text("CONFIG_PRG32_DEFAULT_PIN_PROFILE=\"breadboard1\"\n", encoding="utf-8")
             with mock.patch("prg32.esp32c6.build_esp32c6.ESP32C6_SDKCONFIG", str(tmp_sdk)):
                 args = argparse.Namespace(pin_profile="", debug=False)
                 defaults = get_esp32c6_sdkconfig_defaults(args)
-                self.assertIn("sdkconfig.pins.prototype1", defaults)
+                self.assertIn("sdkconfig.pins.breadboard1", defaults)
+
+    def test_get_esp32c6_sdkconfig_defaults_from_sdkconfig_pcb1_choice(self) -> None:
+        from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_sdk = Path(tmp) / "sdkconfig"
+            tmp_sdk.write_text("CONFIG_PRG32_PIN_PROFILE_PCB1=y\n", encoding="utf-8")
+            with mock.patch("prg32.esp32c6.build_esp32c6.ESP32C6_SDKCONFIG", str(tmp_sdk)):
+                with mock.patch("prg32.esp32c6.build_esp32c6.ROOT_DIR", Path(tmp)):
+                    args = argparse.Namespace(pin_profile="", debug=False)
+                    defaults = get_esp32c6_sdkconfig_defaults(args)
+                    self.assertIn("sdkconfig.pins.pcb1", defaults)
 
     def test_get_esp32c6_sdkconfig_defaults_custom_profile(self) -> None:
         from prg32.esp32c6.build_esp32c6 import get_esp32c6_sdkconfig_defaults
@@ -649,23 +686,128 @@ class PinProfileTests(unittest.TestCase):
                 args = argparse.Namespace(pin_profile="", debug=False)
                 defaults = get_esp32c6_sdkconfig_defaults(args)
                 self.assertNotIn("sdkconfig.pins.", defaults)
+    def test_cli_test_unit_only_skips_qemu_smoke_test(self) -> None:
+        from prg32.prg32 import main
+        with mock.patch("prg32.prg32.run_tests") as mock_run:
+            main(["test", "--unit-only"])
+            self.assertTrue(mock_run.call_args[0][0].unit_only)
+        with mock.patch("prg32.utilities.tests_runner.subprocess.check_call") as check_call, \
+             mock.patch("prg32.utilities.tests_runner.log_ok"), \
+             mock.patch("prg32.utilities.tests_runner.log_info"), \
+             mock.patch("prg32.utilities.tests_runner.step"):
+            from prg32.utilities.tests_runner import run_tests
+            run_tests(argparse.Namespace(unit_only=True))
+            self.assertEqual(check_call.call_count, 1)
+            self.assertIn("unittest", check_call.call_args[0][0])
+
+    def test_qemu_smoke_step_failure_stops_the_test(self) -> None:
+        import sys
+        from prg32.qemu import smoke_test
+        with mock.patch("prg32.qemu.smoke_test.die", side_effect=SystemExit(1)) as die:
+            with self.assertRaises(SystemExit):
+                smoke_test.run_step("failing", sys.executable, "-c", "raise SystemExit(3)")
+            self.assertIn("failing failed", die.call_args[0][0])
+
+    def test_qemu_smoke_stops_when_qemu_exits_during_boot(self) -> None:
+        from prg32.qemu import smoke_test
+        process = mock.Mock(returncode=1)
+        process.poll.return_value = 1
+        with mock.patch("prg32.qemu.smoke_test.die", side_effect=SystemExit(1)) as die:
+            with self.assertRaises(SystemExit):
+                smoke_test.wait_for_hello(process)
+            self.assertIn("QEMU exited with code 1", die.call_args[0][0])
+
+    def test_enable_ccache_respects_an_explicit_choice(self) -> None:
+        from prg32.utilities.environment_check import enable_ccache
+        with mock.patch.dict("os.environ", {"IDF_CCACHE_ENABLE": "0"}), \
+             mock.patch("prg32.utilities.environment_check.shutil.which", return_value="/usr/bin/ccache"):
+            enable_ccache()
+            import os
+            self.assertEqual(os.environ["IDF_CCACHE_ENABLE"], "0")
+        with mock.patch.dict("os.environ", {}, clear=True), \
+             mock.patch("prg32.utilities.environment_check.shutil.which", return_value=None):
+            enable_ccache()
+            import os
+            self.assertNotIn("IDF_CCACHE_ENABLE", os.environ)
+
     def test_cli_build_flags_and_order(self) -> None:
         from prg32.prg32 import main
         with mock.patch("prg32.prg32.build_esp32c6") as mock_build:
-            main(["esp32c6", "build", "-s", "-p", "prototype1", "-d", "-e"])
+            main(["esp32c6", "build", "-s", "-p", "breadboard1", "-d", "-e"])
             mock_build.assert_called_once()
             args = mock_build.call_args[0][0]
             self.assertTrue(args.skip_target)
-            self.assertEqual(args.pin_profile, "prototype1")
+            self.assertEqual(args.pin_profile, "breadboard1")
             self.assertTrue(args.debug)
             self.assertTrue(args.enable_heap_tracking)
 
-        with mock.patch("prg32.prg32.build_and_launch_qemu") as mock_qemu:
-            main(["qemu", "build-and-run", "-s", "-d"])
+        with mock.patch("prg32.prg32.build_and_flash_qemu") as mock_qemu:
+            main(["qemu", "build", "-s", "-d", "-k"])
             mock_qemu.assert_called_once()
             args = mock_qemu.call_args[0][0]
             self.assertTrue(args.skip_target)
             self.assertTrue(args.debug)
+            self.assertTrue(args.no_erase_sdkconfig)
+
+        with mock.patch("prg32.prg32.build_esp32c6") as mock_build:
+            main(["esp32c6", "build", "--keep-sdkconfig"])
+            mock_build.assert_called_once()
+            args = mock_build.call_args[0][0]
+            self.assertTrue(args.no_erase_sdkconfig)
+
+        with mock.patch("prg32.prg32.reset_esp32c6") as mock_reset:
+            main(["esp32c6", "reset", "--no-erase-sdkconfig"])
+            mock_reset.assert_called_once()
+            args = mock_reset.call_args[0][0]
+            self.assertTrue(args.no_erase_sdkconfig)
+
+        with mock.patch("prg32.prg32.prepare_firmware_esp32c6") as mock_prep:
+            main(["esp32c6", "prepare-firmware", "-k"])
+            mock_prep.assert_called_once()
+            args = mock_prep.call_args[0][0]
+            self.assertTrue(args.no_erase_sdkconfig)
+
+    def test_erase_sdkconfigs(self) -> None:
+        from prg32.utilities.local_config import erase_sdkconfigs
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            (tmp_root / "build-esp32c6").mkdir()
+            (tmp_root / "build-qemu").mkdir()
+
+            root_sdk = tmp_root / "sdkconfig"
+            c6_sdk = tmp_root / "build-esp32c6" / "sdkconfig"
+            qemu_sdk = tmp_root / "build-qemu" / "sdkconfig"
+
+            with mock.patch("prg32.utilities.local_config.ROOT_DIR", tmp_root):
+                root_sdk.write_text("test")
+                c6_sdk.write_text("test")
+                qemu_sdk.write_text("test")
+
+                erase_sdkconfigs("esp32c6")
+                self.assertFalse(root_sdk.exists())
+                self.assertFalse(c6_sdk.exists())
+                self.assertTrue(qemu_sdk.exists())
+
+                root_sdk.write_text("test")
+                erase_sdkconfigs("qemu")
+                self.assertFalse(root_sdk.exists())
+                self.assertFalse(qemu_sdk.exists())
+
+    def test_keep_sdkconfig_disables_erasure(self) -> None:
+        from prg32.qemu.build_qemu import build_qemu
+        import argparse
+        with mock.patch("prg32.qemu.build_qemu.erase_sdkconfigs") as mock_erase:
+            with mock.patch("prg32.qemu.build_qemu.set_target_qemu"):
+                with mock.patch("prg32.qemu.build_qemu.apply_local_config_to_sdkconfig"):
+                    with mock.patch("subprocess.check_call"):
+                        with mock.patch("pathlib.Path.exists", return_value=True):
+                            args = argparse.Namespace(skip_target=False, debug=False, no_erase_sdkconfig=True)
+                            build_qemu(args)
+                            mock_erase.assert_not_called()
+
+                            args_normal = argparse.Namespace(skip_target=False, debug=False, no_erase_sdkconfig=False)
+                            build_qemu(args_normal)
+                            mock_erase.assert_called_once_with("qemu")
 
 
 if __name__ == "__main__":

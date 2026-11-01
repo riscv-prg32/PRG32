@@ -23,7 +23,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install host test dependencies
-        run: python3 -m pip install pytest
+        run: python3 -m pip install pytest pyserial
 
       - name: Run host smoke test
         run: python3 -m prg32.esp32c6.ci_smoke_test
@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           . "$IDF_PATH/export.sh"
-          export SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.cicd;profiles/sdkconfig.pins.prototype1"
+          export SDKCONFIG_DEFAULTS="profiles/sdkconfig.defaults;profiles/sdkconfig.defaults.cicd;profiles/sdkconfig.pins.breadboard1"
           idf.py set-target esp32c6
           idf.py build
 

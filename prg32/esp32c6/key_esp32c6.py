@@ -16,6 +16,7 @@ from prg32.usb_protocol import (
     open_stream,
     require_keys,
 )
+from prg32.esp32c6.find_port import resolve_port
 from prg32.utilities.logging import *
 
 
@@ -24,7 +25,8 @@ def key_esp32c6(args: argparse.Namespace) -> None:
         raise SystemExit("name at least one key, or use --release")
     if args.gap_ms < 0:
         raise SystemExit("--gap-ms cannot be negative")
-    client = ProtocolClient(open_stream(args.port, int(args.baud), float(args.timeout)), float(args.timeout))
+    port = resolve_port(args.port)
+    client = ProtocolClient(open_stream(port, int(args.baud), float(args.timeout)), float(args.timeout))
     try:
         allowed = require_keys(client)
         steps = [normalize_keys(step.split("+"), allowed) for step in args.keys]

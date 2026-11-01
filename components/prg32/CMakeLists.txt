@@ -8,6 +8,7 @@ set(PRG32_PRIV_REQUIRES
     esp_event
     esp_netif
     esp_driver_uart
+    esp_adc
     nvs_flash
     json
     spi_flash
@@ -43,6 +44,8 @@ idf_component_register(
         "prg32_gfx_sync.c"
         ${PRG32_DISPLAY_SRC}
         "prg32_input.c"
+        "prg32_joystick_digital.c"
+        "prg32_joystick_analog.c"
         "prg32_keyboard.c"
         "prg32_led.c"
         "prg32_memory.c"
@@ -53,7 +56,6 @@ idf_component_register(
         "prg32_multiplayer.c"
         "prg32_multiplayer_wire.c"
         "prg32_qemu_input.c"
-        "prg32_random.c"
         "prg32_sprite.c"
         "prg32_setup_store.c"
         "prg32_splash.c"

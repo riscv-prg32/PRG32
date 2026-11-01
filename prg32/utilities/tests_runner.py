@@ -22,6 +22,10 @@ def run_tests(args) -> None:
         log_error("Unit tests failed")
         sys.exit(1)
 
+    if getattr(args, "unit_only", False):
+        log_info("Skipping the QEMU smoke test (--unit-only)")
+        return
+
     step("Running QEMU smoke test")
     smoke_test_path = Path("prg32/qemu/smoke_test.py")
     if smoke_test_path.exists():

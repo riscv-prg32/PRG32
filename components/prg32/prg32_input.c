@@ -37,23 +37,26 @@ static void pin_in(const char *name, int p) {
 }
 
 void prg32_input_init(void) {
-    printf("prg32_input_init START\n");
-    pin_in("LEFT", PRG32_PIN_BTN_LEFT);
-    pin_in("RIGHT", PRG32_PIN_BTN_RIGHT);
-    pin_in("UP", PRG32_PIN_BTN_UP);
-    pin_in("DOWN", PRG32_PIN_BTN_DOWN);
+    ESP_LOGI(TAG, "prg32_input_init START");
+#if defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
+    prg32_joystick_analog_init();
+#elif defined(CONFIG_PRG32_JOYSTICK_DIGITAL) && CONFIG_PRG32_JOYSTICK_DIGITAL
+    prg32_joystick_digital_init();
+#endif
+
     pin_in("A", PRG32_PIN_BTN_A);
     pin_in("B", PRG32_PIN_BTN_B);
-    printf("prg32_input_init PIN_BTN_START\n");
+    pin_in("C", PRG32_PIN_BTN_C);
+    pin_in("D", PRG32_PIN_BTN_D);
+    pin_in("L", PRG32_PIN_BTN_L);
+    pin_in("R", PRG32_PIN_BTN_R);
     pin_in("START", PRG32_PIN_BTN_START);
-    printf("prg32_input_init PIN_BTN_SELECT\n");
     if (PRG32_PIN_BTN_SELECT != PRG32_PIN_BTN_START) {
         pin_in("SELECT", PRG32_PIN_BTN_SELECT);
     }
 
     pin_in("SETUP", PRG32_PIN_SETUP);
-    printf("prg32_input_init END\n");
-    //vTaskDelay(pdMS_TO_TICKS(1));
+    ESP_LOGI(TAG, "prg32_input_init END");
 }
 
 uint32_t prg32_input_read(void) {
@@ -64,11 +67,50 @@ uint32_t prg32_input_read_player(uint8_t player) {
     if (player == 2) {
         return 0;
     }
-    return prg32_input_read() & 0x7fu;
+    return prg32_input_read() & PRG32_INPUT_BUTTONS_MASK;
+}
+
+/* One axis from the digital directions: -127, 0, or 127. */
+static int32_t digital_axis(uint32_t negative, uint32_t positive) {
+    uint32_t input = prg32_input_read();
+    if ((input & negative) && !(input & positive)) {
+        return -127;
+    }
+    if ((input & positive) && !(input & negative)) {
+        return 127;
+    }
+    return 0;
+}
+
+int32_t prg32_input_axis_x(void) {
+    int x = 0;
+    prg32_joystick_analog_get_axes(&x, NULL);
+    /* A resting stick still lets remote and QEMU keys steer. */
+    if (x == 0) {
+        return digital_axis(PRG32_BTN_LEFT, PRG32_BTN_RIGHT);
+    }
+    return x;
+}
+
+int32_t prg32_input_axis_y(void) {
+    int y = 0;
+    prg32_joystick_analog_get_axes(NULL, &y);
+    if (y == 0) {
+        return digital_axis(PRG32_BTN_UP, PRG32_BTN_DOWN);
+    }
+    return y;
+}
+
+int prg32_input_axes_raw(int *out_x, int *out_y) {
+    return prg32_joystick_analog_get_raw(out_x, out_y);
+}
+
+int prg32_input_has_analog(void) {
+    return prg32_joystick_analog_available();
 }
 
 uint32_t prg32_input_read_menu(void) {
-    return prg32_input_read() & 0x7fu;
+    return prg32_input_read() & PRG32_INPUT_BUTTONS_MASK;
 }
 
 void prg32_input_wait_released(uint32_t mask) {

@@ -1,874 +1,874 @@
 {
   "name": "prg32-cart-abi",
   "major": 1,
-  "minor": 7,
-  "compatible_hashes": ["0x006427c2", "0x6be6e8d0", "0x260f6136"],
+  "minor": 8,
+  "compatible_hashes": ["0x006427c2", "0x6be6e8d0", "0x260f6136", "0xb3845925"],
   "functions": [
     {
       "name": "prg32_ticks_ms",
-      "return": "void",
+      "return": "uint32_t",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the wrapping 32-bit millisecond clock; compare elapsed differences, not absolute deadlines."
     },
     {
       "name": "prg32_input_read",
-      "return": "void",
+      "return": "uint32_t",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the PRG32_BTN_* mask of every pressed input: physical buttons, QEMU keys, and remote device-protocol keys."
     },
     {
       "name": "prg32_input_read_player",
-      "return": "void",
-      "args": [],
+      "return": "uint32_t",
+      "args": ["uint8_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the button mask of one player; player 2 reads as 0 on a single-controller console."
     },
     {
       "name": "prg32_input_read_menu",
-      "return": "void",
+      "return": "uint32_t",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the button mask used by resident menus, limited to the defined PRG32_BTN_* bits."
     },
     {
       "name": "prg32_controller_read",
-      "return": "void",
+      "return": "uint32_t",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the raw combined controller mask before any per-player filtering."
     },
     {
       "name": "prg32_buzzer_tone",
       "return": "void",
-      "args": [],
+      "args": ["uint32_t", "uint32_t", "uint16_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play a PWM tone of hz for ms with the given duty cycle on the buzzer; QEMU uses the nearest MIDI note."
     },
     {
       "name": "prg32_audio_note",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t", "uint8_t", "uint8_t", "uint32_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play one note asynchronously on a channel with an instrument, volume, and duration in milliseconds."
     },
     {
       "name": "prg32_buzzer_play_notes",
       "return": "void",
-      "args": [],
+      "args": ["const prg32_note_t *", "size_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play a blocking sequence of frequency/duration notes on the buzzer."
     },
     {
       "name": "prg32_buzzer_sample_u8",
       "return": "void",
-      "args": [],
+      "args": ["const uint8_t *", "size_t", "uint32_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play unsigned 8-bit PCM centred on 128 at sample_rate; blocks for the duration of the call."
     },
     {
       "name": "prg32_audio_init",
-      "return": "void",
-      "args": [],
+      "return": "bool",
+      "args": ["const prg32_audio_config_t *"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Initialize the audio runtime; the resident firmware normally owns this call."
     },
     {
       "name": "prg32_audio_shutdown",
       "return": "void",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Stop the audio runtime and release its output."
     },
     {
       "name": "prg32_audio_get_mode",
-      "return": "void",
+      "return": "prg32_audio_mode_t",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return PRG32_AUDIO_MODE_MONO or PRG32_AUDIO_MODE_STEREO."
     },
     {
       "name": "prg32_audio_play_sample",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["uint16_t", "uint8_t", "uint16_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play a registered sample centred; return the voice channel or a negative error."
     },
     {
       "name": "prg32_audio_play_sample_pan",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["uint16_t", "uint8_t", "uint16_t", "int8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play a registered sample with a pan of -128 (left) to 127 (right); return the channel or a negative error."
     },
     {
       "name": "prg32_audio_stop_channel",
       "return": "void",
-      "args": [],
+      "args": ["int"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Stop one voice channel."
     },
     {
       "name": "prg32_audio_stop_all",
       "return": "void",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Stop every voice channel."
     },
     {
       "name": "prg32_audio_note_on",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t", "uint8_t", "uint8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Start a PCM or synth instrument note on a channel until note_off."
     },
     {
       "name": "prg32_audio_note_on_pan",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t", "uint8_t", "uint8_t", "int8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Start a PCM or synth instrument note with pan on a channel until note_off."
     },
     {
       "name": "prg32_audio_note_off",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Stop a PCM note or begin the release of a synth note on a channel."
     },
     {
       "name": "prg32_audio_notes",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t", "uint8_t", "const prg32_midi_note_t *", "size_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Play a blocking sequence of MIDI notes on one channel; use tracks for asynchronous music."
     },
     {
       "name": "prg32_audio_play_track",
       "return": "void",
-      "args": [],
+      "args": ["uint16_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Start a registered tracker stream."
     },
     {
       "name": "prg32_audio_stop_track",
       "return": "void",
       "args": [],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Stop the tracker stream."
     },
     {
       "name": "prg32_audio_set_tempo",
       "return": "void",
-      "args": [],
+      "args": ["uint16_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the tracker tempo in beats per minute."
     },
     {
       "name": "prg32_audio_set_master_volume",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the global audio volume."
     },
     {
       "name": "prg32_audio_set_channel_volume",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the volume of one voice channel."
     },
     {
       "name": "prg32_audio_set_channel_pan",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "int8_t"],
       "feature": "audio",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the pan of one voice channel, -128 (left) to 127 (right)."
     },
     {
       "name": "prg32_wifi_start_mode",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const prg32_wifi_config_t *"],
       "feature": "wifi",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Start Wi-Fi in the configured mode; return 0 on success. Cartridges must keep an offline path."
     },
     {
       "name": "prg32_wifi_current_mode",
-      "return": "void",
+      "return": "prg32_wifi_mode_t",
       "args": [],
       "feature": "wifi",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the active Wi-Fi mode."
     },
     {
       "name": "prg32_wifi_current_ip",
-      "return": "void",
+      "return": "const char *",
       "args": [],
       "feature": "wifi",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the current IP address as text, owned by the firmware."
     },
     {
       "name": "prg32_wifi_current_ssid",
-      "return": "void",
+      "return": "const char *",
       "args": [],
       "feature": "wifi",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the current network name, owned by the firmware."
     },
     {
       "name": "prg32_wifi_setup_requested",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "wifi",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return nonzero while the setup button is held; 0 when the profile has no setup button."
     },
     {
       "name": "prg32_wifi_setup_run",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "wifi",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Run the resident Wi-Fi setup screens; return 0 on success."
     },
     {
       "name": "prg32_multiplayer_init",
       "return": "void",
       "args": [],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Prepare the Wi-Fi multiplayer frame exchange."
     },
     {
       "name": "prg32_multiplayer_available",
-      "return": "void",
+      "return": "bool",
       "args": [],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return true when multiplayer networking can be used."
     },
     {
       "name": "prg32_multiplayer_join",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *", "uint32_t"],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Join a multiplayer room with a timeout in milliseconds; return 0 on success."
     },
     {
       "name": "prg32_multiplayer_leave",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Leave the current multiplayer room; return 0 on success."
     },
     {
       "name": "prg32_multiplayer_tick",
       "return": "void",
       "args": [],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Exchange pending multiplayer frames; call once per update."
     },
     {
       "name": "prg32_multiplayer_set_local_state",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["int16_t", "int16_t", "uint16_t", "uint16_t"],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Publish this player's position and two state words to peers; return 0 on success."
     },
     {
       "name": "prg32_multiplayer_set_input",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["uint32_t"],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Publish this player's input mask to peers; return 0 on success."
     },
     {
       "name": "prg32_multiplayer_get_peer_count",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the number of known peers."
     },
     {
       "name": "prg32_multiplayer_get_peer",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["int", "prg32_player_state_t *"],
       "feature": "multiplayer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Copy the state of peer index into caller storage; return 0 on success."
     },
     {
       "name": "prg32_cart_stored_count",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the number of valid cartridges stored in slots."
     },
     {
       "name": "prg32_cart_get_slot_info",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["uint8_t", "prg32_cart_info_t *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Copy the header information of one slot into caller storage; return 0 on success."
     },
     {
       "name": "prg32_cart_select_slot",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["uint8_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Request loading the cartridge in a slot; return 0 on success."
     },
     {
       "name": "prg32_cart_default_slot",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the saved default slot, or a negative value when none is saved."
     },
     {
       "name": "prg32_cart_set_default_slot",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["int"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Save the default slot; return 0 on success."
     },
     {
       "name": "prg32_cart_select_default",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Request loading the default slot; return 0 on success."
     },
     {
       "name": "prg32_console_clear",
       "return": "void",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Clear the 40x25 text console."
     },
     {
       "name": "prg32_console_putc",
       "return": "void",
-      "args": [],
+      "args": ["int"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Write one character to the text console."
     },
     {
       "name": "prg32_console_write",
       "return": "void",
-      "args": [],
+      "args": ["const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Write a NUL-terminated string to the text console."
     },
     {
       "name": "prg32_console_hex32",
       "return": "void",
-      "args": [],
+      "args": ["uint32_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Write a 32-bit value as hexadecimal to the text console."
     },
     {
       "name": "prg32_gfx_clear",
       "return": "void",
-      "args": [],
+      "args": ["uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Clear the viewport to an RGB565 color."
     },
     {
       "name": "prg32_gfx_present",
       "return": "void",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Publish the completed back buffer to the display."
     },
     {
       "name": "prg32_gfx_set_fullscreen",
       "return": "void",
-      "args": [],
+      "args": ["int"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Enable or disable fullscreen drawing; mainly a resident firmware service."
     },
     {
       "name": "prg32_gfx_fullscreen_enabled",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return nonzero when fullscreen drawing is enabled."
     },
     {
       "name": "prg32_gfx_pixel",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw one clipped RGB565 pixel."
     },
     {
       "name": "prg32_gfx_rect",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "int", "int", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Fill a clipped rectangle with an RGB565 color; non-positive sizes draw nothing."
     },
     {
       "name": "prg32_gfx_text8",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "const char *", "uint16_t", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw a string in the 8x8 font with RGB565 foreground and background colors."
     },
     {
       "name": "prg32_gfx_snapshot_row_rgb565",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["int", "uint16_t *", "size_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Copy one screen row of RGB565 pixels; return the count copied or a negative error."
     },
     {
       "name": "prg32_band_set_mode",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "prg32_band_mode_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set what a status band above or below the viewport shows."
     },
     {
       "name": "prg32_band_mode",
-      "return": "void",
-      "args": [],
+      "return": "prg32_band_mode_t",
+      "args": ["uint8_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the mode of a status band."
     },
     {
       "name": "prg32_band_mode_name",
-      "return": "void",
-      "args": [],
+      "return": "const char *",
+      "args": ["prg32_band_mode_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the display name of a band mode."
     },
     {
       "name": "prg32_band_set_text",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the text of a status band; the runtime copies it."
     },
     {
       "name": "prg32_band_set_game_info",
       "return": "void",
-      "args": [],
+      "args": ["const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the game information text shown in the bands."
     },
     {
       "name": "prg32_band_log",
       "return": "void",
-      "args": [],
+      "args": ["const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Append a message to the log band."
     },
     {
       "name": "prg32_band_set_colors",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint16_t", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the RGB565 foreground and background colors of a band."
     },
     {
       "name": "prg32_band_use_default_colors",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Restore the default colors of a band."
     },
     {
       "name": "prg32_band_load_config",
       "return": "void",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Load the saved band configuration; mainly a resident firmware service."
     },
     {
       "name": "prg32_band_save_config",
       "return": "void",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Save the band configuration to flash; mainly a resident firmware service."
     },
     {
       "name": "prg32_splash_draw",
       "return": "void",
-      "args": [],
+      "args": ["const char *", "const char *", "uint16_t", "uint16_t", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw a title and subtitle splash screen in the given colors."
     },
     {
       "name": "prg32_splash_show",
       "return": "void",
-      "args": [],
+      "args": ["const char *", "const char *", "uint32_t", "uint16_t", "uint16_t", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Show a splash screen for duration_ms, then return."
     },
     {
       "name": "prg32_splash_draw_game",
       "return": "void",
-      "args": [],
+      "args": ["const char *", "const char *", "uint16_t", "uint16_t", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw a game title splash screen in the given colors."
     },
     {
       "name": "prg32_splash_show_game",
       "return": "void",
-      "args": [],
+      "args": ["const char *", "const char *", "uint32_t", "uint16_t", "uint16_t", "uint16_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Show a game title splash screen for duration_ms, then return."
     },
     {
       "name": "prg32_splash_show_default",
       "return": "void",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Show the default PRG32 splash screen."
     },
     {
       "name": "prg32_debug_overlay_draw",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "int", "uint32_t", "uint32_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw the input and frame debug overlay at a position when enabled."
     },
     {
       "name": "prg32_input_wait_released",
       "return": "void",
-      "args": [],
+      "args": ["uint32_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Block until every button in mask has been released."
     },
     {
       "name": "prg32_keyboard_init",
       "return": "void",
-      "args": [],
+      "args": ["prg32_keyboard_t *", "char *", "size_t"],
       "feature": "keyboard",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Initialize an on-screen keyboard that edits caller-owned text storage."
     },
     {
       "name": "prg32_keyboard_update",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["prg32_keyboard_t *", "uint32_t"],
       "feature": "keyboard",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Apply one frame of input to the keyboard; return nonzero when editing completes."
     },
     {
       "name": "prg32_keyboard_draw",
       "return": "void",
-      "args": [],
+      "args": ["const prg32_keyboard_t *", "int", "int"],
       "feature": "keyboard",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw the on-screen keyboard at a position."
     },
     {
       "name": "prg32_text_input",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["char *", "size_t", "const char *"],
       "feature": "keyboard",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Run a modal on-screen text entry; return the text length, or -1 when cancelled."
     },
     {
       "name": "prg32_tile_clear",
       "return": "void",
-      "args": [],
+      "args": ["uint16_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Clear the tile screen to an RGB565 color."
     },
     {
       "name": "prg32_tile_define",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "const uint8_t *", "uint16_t", "uint16_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Define an 8x8 one-bit tile with RGB565 foreground and background colors."
     },
     {
       "name": "prg32_tile_put",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t", "uint8_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Place a tile ID at tile coordinates."
     },
     {
       "name": "prg32_tile_present",
       "return": "void",
       "args": [],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw the tile screen and publish it."
     },
     {
       "name": "prg32_playfield_clear",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Fill a playfield layer with one tile ID."
     },
     {
       "name": "prg32_playfield_put",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t", "uint8_t", "uint8_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Place a tile ID in a playfield layer."
     },
     {
       "name": "prg32_playfield_get",
-      "return": "void",
-      "args": [],
+      "return": "uint8_t",
+      "args": ["uint8_t", "uint8_t", "uint8_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the tile ID at a playfield position, or 0 outside the map."
     },
     {
       "name": "prg32_playfield_scroll",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "int", "int"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the scroll position of a layer in pixels."
     },
     {
       "name": "prg32_playfield_scroll_by",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "int", "int"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Move the scroll position of a layer by a pixel delta."
     },
     {
       "name": "prg32_playfield_parallax",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "int", "int"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the Q8 parallax factors of a layer; PRG32_PARALLAX_1X follows the camera exactly."
     },
     {
       "name": "prg32_playfield_camera",
       "return": "void",
-      "args": [],
+      "args": ["int", "int"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the camera position in pixels."
     },
     {
       "name": "prg32_playfield_camera_x",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the camera x position in pixels."
     },
     {
       "name": "prg32_playfield_camera_y",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the camera y position in pixels."
     },
     {
       "name": "prg32_playfield_draw",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "int"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw one layer; transparent_zero skips tile ID 0."
     },
     {
       "name": "prg32_playfield_draw_dual",
       "return": "void",
       "args": [],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw both playfield layers with parallax."
     },
     {
       "name": "prg32_playfield_present",
       "return": "void",
       "args": [],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw the configured playfield composition and publish it."
     },
     {
       "name": "prg32_platform_tile_flags",
       "return": "void",
-      "args": [],
+      "args": ["uint8_t", "uint8_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the collision flags of a tile ID."
     },
     {
       "name": "prg32_platform_tile_flags_get",
-      "return": "void",
-      "args": [],
+      "return": "uint8_t",
+      "args": ["uint8_t"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the collision flags of a tile ID."
     },
     {
       "name": "prg32_platform_tile_at",
-      "return": "void",
-      "args": [],
+      "return": "uint8_t",
+      "args": ["uint8_t", "int", "int"],
       "feature": "tilemap",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the tile ID under a pixel position in a layer."
     },
     {
       "name": "prg32_platform_solid_at",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["uint8_t", "int", "int"],
       "feature": "platformer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return nonzero when the pixel position in a layer is solid."
     },
     {
       "name": "prg32_platform_actor_init",
       "return": "void",
-      "args": [],
+      "args": ["prg32_platform_actor_t *", "uint8_t", "int", "int", "int", "int"],
       "feature": "platformer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Initialize a platform actor with a layer, position, and size."
     },
     {
       "name": "prg32_platform_actor_move",
-      "return": "void",
-      "args": [],
+      "return": "uint16_t",
+      "args": ["prg32_platform_actor_t *", "int", "int"],
       "feature": "platformer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Move an actor by a delta with collision; return PRG32_PLATFORM_* contacts."
     },
     {
       "name": "prg32_platform_actor_step",
-      "return": "void",
-      "args": [],
+      "return": "uint16_t",
+      "args": ["prg32_platform_actor_t *", "uint32_t", "int", "int", "int", "int"],
       "feature": "platformer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Move an actor from an input mask with jump and gravity; return PRG32_PLATFORM_* contacts."
     },
     {
       "name": "prg32_platform_camera_follow",
       "return": "void",
-      "args": [],
+      "args": ["const prg32_platform_actor_t *", "int", "int"],
       "feature": "platformer",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Move the camera to keep an actor inside a deadzone."
     },
     {
       "name": "prg32_sprite_hitbox",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["int", "int", "int", "int", "int", "int", "int", "int"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return nonzero when two half-open rectangles intersect."
     },
     {
       "name": "prg32_sprite_draw_8x8",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "const uint8_t *", "uint16_t", "uint16_t"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw an 8x8 one-bit sprite with RGB565 foreground and background colors."
     },
     {
       "name": "prg32_sprite_draw_16x16",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "const uint16_t *"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw a 16x16 RGB565 sprite."
     },
     {
       "name": "prg32_sprite_anim_frame",
-      "return": "void",
-      "args": [],
+      "return": "uint32_t",
+      "args": ["uint32_t", "uint32_t", "uint32_t"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the animation frame index for a time, frame count, and frame duration."
     },
     {
       "name": "prg32_sprite_draw_frame",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "int", "int", "const uint16_t *", "uint32_t", "uint16_t"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw one frame of an RGB565 sprite strip, skipping the transparent color."
     },
     {
       "name": "prg32_sprite_anim_init",
       "return": "void",
-      "args": [],
+      "args": ["prg32_anim_sprite_t *", "const uint16_t *", "uint16_t", "uint16_t", "uint16_t", "uint16_t", "uint16_t"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Initialize an animated RGB565 sprite descriptor."
     },
     {
       "name": "prg32_sprite_anim_update",
       "return": "void",
-      "args": [],
+      "args": ["prg32_anim_sprite_t *", "uint32_t"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Advance an animated sprite to the given time."
     },
     {
       "name": "prg32_sprite_anim_draw",
       "return": "void",
-      "args": [],
+      "args": ["const prg32_anim_sprite_t *", "int", "int"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw the current frame of an animated sprite."
     },
     {
       "name": "prg32_score_submit",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *", "const char *", "uint32_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Store a score for a game and player; return 0 on success."
     },
     {
       "name": "prg32_sprite_draw_24x24",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "const uint16_t *"],
       "feature": "sprites",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Draw a 24x24 RGB565 sprite."
     },
     {
       "name": "prg32_score_player_get",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["char *", "size_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Copy the current player name into caller storage; return 0 on success."
     },
     {
       "name": "prg32_score_player_set",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Set the current player name; return 0 on success."
     },
     {
       "name": "prg32_score_player_prompt",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Ask for the player name with the on-screen keyboard; return 0 on success."
     },
     {
       "name": "prg32_score_submit_current_player",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *", "uint32_t"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Store a score for the current player; return 0 on success."
     },
     {
       "name": "prg32_score_sync_remote",
-      "return": "void",
+      "return": "int",
       "args": [],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Send stored scores to the score server; return 0 on success."
     },
     {
       "name": "prg32_score_count",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Return the number of stored scores for a game."
     },
     {
       "name": "prg32_score_get",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *", "int", "prg32_score_t *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Copy one stored score of a game into caller storage; return 0 on success."
     },
     {
       "name": "prg32_scoreboard_show",
-      "return": "void",
-      "args": [],
+      "return": "int",
+      "args": ["const char *", "const char *"],
       "feature": "core",
-      "notes": "PRG32 cartridge ABI entry point."
+      "notes": "Show the scoreboard of a game with a title."
     },
     {
       "name": "prg32_sprite_draw_indexed",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "const prg32_indexed_sprite_t *", "uint32_t"],
       "feature": "sprites",
       "notes": "Draw a packed indexed-color frame without expanding it in cartridge memory."
     },
     {
       "name": "prg32_sprite_draw_bitplanes",
       "return": "void",
-      "args": [],
+      "args": ["int", "int", "const prg32_indexed_sprite_t *", "uint32_t"],
       "feature": "sprites",
       "notes": "Draw a planar indexed-color frame without expanding it in cartridge memory."
     },
@@ -983,6 +983,34 @@
       "args": [],
       "feature": "multiplayer",
       "notes": "Return the player ID the server confirmed for this session, or 0 before admission."
+    },
+    {
+      "name": "prg32_input_axis_x",
+      "return": "int32_t",
+      "args": [],
+      "feature": "core",
+      "notes": "Return the horizontal stick position, -127 (left) to 127 (right), 0 at rest; without an analog stick LEFT/RIGHT give -127/127."
+    },
+    {
+      "name": "prg32_input_axis_y",
+      "return": "int32_t",
+      "args": [],
+      "feature": "core",
+      "notes": "Return the vertical stick position, -127 (up) to 127 (down), 0 at rest; without an analog stick UP/DOWN give -127/127."
+    },
+    {
+      "name": "prg32_input_axes_raw",
+      "return": "int",
+      "args": ["int *", "int *"],
+      "feature": "core",
+      "notes": "Copy fresh 12-bit ADC readings (0 to 4095) of both axes; return 0, or -1 with 2048 when there is no analog stick."
+    },
+    {
+      "name": "prg32_input_has_analog",
+      "return": "int",
+      "args": [],
+      "feature": "core",
+      "notes": "Return 1 when an analog stick is sampled, 0 when axis values come from digital directions."
     }
   ]
 }

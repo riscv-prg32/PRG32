@@ -90,6 +90,18 @@ def find_idf_root() -> Path:
             return c
     raise FileNotFoundError("ESP-IDF root not found")
 
+def enable_ccache() -> None:
+    """Let every idf.py started by this process use ccache when it is installed.
+
+    idf.py stores the ccache choice in the CMake cache, so all calls on one
+    build directory must agree, or the next call recompiles everything.
+    Setting the environment once covers every idf.py the CLI starts. Set
+    IDF_CCACHE_ENABLE=0 to turn it off.
+    """
+    if shutil.which("ccache"):
+        os.environ.setdefault("IDF_CCACHE_ENABLE", "1")
+
+
 def ensure_idf_tools() -> bool:
     return shutil.which("idf.py") is not None and shutil.which("riscv32-esp-elf-gcc") is not None
 
@@ -160,6 +172,19 @@ def doctor(args: argparse.Namespace) -> None:
     else:
         failures += 1
         log_error(f"partitions file missing: {partitions_path}")
+
+    # A board is only needed for uploads, so its absence is not a failure.
+    from prg32.esp32c6.find_port import describe_port, find_esp32c6_ports
+    try:
+        boards = find_esp32c6_ports()
+    except SystemExit as exc:
+        log_info(str(exc))
+    else:
+        if boards:
+            for board in boards:
+                log_ok(f"ESP32-C6 connected on {describe_port(board)}")
+        else:
+            log_info("no ESP32-C6 connected on a native USB port (needed only for uploads)")
 
     if failures:
         raise SystemExit(1)
