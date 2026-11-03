@@ -115,6 +115,22 @@ Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a c
 
 - **Background Player**: `launch_qemu.py` automatically spawns `tools/qemu_audio_player.py` in the background to interface with PyAudio on the host. It includes a process polling loop to gracefully terminate QEMU if the audio player fails to start.
 - **Real-Time Pacing (Credit-Based Flow Control)**: QEMU instantly fast-forwards virtual time when the CPU is idle. To prevent audio from generating faster than the host can play it, the firmware's `audio_task` blocks on `uart_read_bytes` after sending each 20ms audio chunk. The Python script plays the audio natively (taking exactly 20ms) and sends a 1-byte `ACK` token back. This turns the host's physical audio hardware clock into the pacing mechanism for the entire QEMU virtual machine, guaranteeing flawless 1.0x real-time synchronization.
+- **Audio Frame Clock**: While a cartridge runs, its frames drive the audio
+  engine, so a QEMU recording is the same on every run. Frame N (counting from
+  0, which runs together with `init`) starts at N x `PRG32_FRAME_MS` (33 ms).
+  Every audio call made by `init` or by that frame takes effect at the frame's
+  start. After the frame, the audio task renders whole 20 ms buffers up to the
+  next frame's start while the cartridge waits, and the waits inside
+  `prg32_audio_notes` are rendered the same way. A sound started in frame N
+  therefore sounds from buffer floor(N x 33 / 20). `main/main.c` calls
+  `prg32_audio_cartridge_start()` before `init`,
+  `prg32_audio_cartridge_frame(PRG32_FRAME_MS)` after each frame, and
+  `prg32_audio_cartridge_stop()` when no cartridge runs; the rule is declared in
+  `components/prg32_audio/include/prg32_audio_frame_clock.h`. With no cartridge
+  running, the audio task advances the engine by 20 ms per rendered buffer and
+  keeps the buffer period on the emulated clock with `vTaskDelayUntil`. This
+  applies only to `PRG32_QEMU_AUDIO_REDIRECT`: on the ESP32-C6 the I2S DMA paces
+  the audio task and the three calls do nothing.
 - **Network Optimizations**: Sending 1-byte ACKs and 882-byte audio chunks frequently triggers Nagle's Algorithm on modern OS network stacks, causing artificial 200ms batching delays. The `nodelay` flag is applied to QEMU's `-serial` arguments and `socket.TCP_NODELAY` is used in the Python listener to ensure instant transmission and zero network-induced stutter.
 - **Linux ALSA/PulseAudio Compatibility**: The PyAudio stream uses a 10-credit (200ms) jitter buffer and pipelined credit generation to prevent PulseAudio from starving during OS scheduling spikes, resolving pitch-shifting and distortion on Linux backends. Furthermore, `OSError` underflow exceptions are caught and suppressed to prevent random crashes on Linux, ensuring QEMU is never starved of flow-control credits.
 

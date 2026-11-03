@@ -52,6 +52,13 @@ To use the advanced API, you must have instruments registered. The engine provid
 *   `void prg32_audio_set_channel_volume(uint8_t channel, uint8_t volume);`
 *   `void prg32_audio_set_channel_pan(uint8_t channel, int8_t pan);`
 
+Every cartridge starts with a fresh mixer. Loading a cartridge's audio block,
+or clearing the audio assets, stops every voice and the tracker, sets every
+channel volume to 255 and centres every pan. Starting a voice stores its volume
+as the channel volume, and tracker notes play at the channel volume, so without
+this reset the sounds of the setup menu or of the previous cartridge would
+change how the next cartridge's notes sound.
+
 ---
 
 ## 2. Legacy / Buzzer API (Synchronous)

@@ -35,7 +35,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_wifi.c            Wi-Fi modes, setup screens, the last four connected networks, and forgetting a stored network
 |   |   |-- prg32_random.c          Uniform bounded random-number API
 |   |   `-- Kconfig                 Firmware configuration options (menuconfig)
-|   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing
+|   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing; audio_assets.c resets the mixer for each cartridge; include/prg32_audio_frame_clock.h declares the QEMU audio frame clock
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |   |-- device_protocol_consistency.md  Rules for keeping firmware, SDK, web clients, and hardware docs aligned

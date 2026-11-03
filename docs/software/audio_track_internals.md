@@ -27,6 +27,11 @@ In every iteration of this loop:
 3. It mixes the active audio voices into a buffer (via `prg32_audio_mix_stereo` or `prg32_audio_mix_mono`).
 4. It writes the mixed buffer to the hardware I2S peripheral (or to QEMU's virtual audio output).
 
+On QEMU, the elapsed time is not measured with a timer: the engine advances by
+the 20 ms of each rendered buffer, and while a cartridge runs its frames decide
+when the buffers are rendered. See the
+[audio frame clock](../usage/qemu.md#qemu-audio-uart-redirection).
+
 ## 3. Advancing the Tracker (`prg32_audio_tracker_step`)
 
 This is where the actual track data is interpreted. Inside `audio_tracker.c`, `prg32_audio_tracker_step` receives the elapsed time and does the following:
