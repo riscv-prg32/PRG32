@@ -69,8 +69,22 @@ int prg32_audio_register_track(uint16_t track_id,
     return 0;
 }
 
+/* A cartridge starts with a silent mixer at full channel volume and centre pan,
+ * as after power-on: whatever played before (the setup menu, another cartridge)
+ * must not change how its notes sound. A started voice records its volume as the
+ * channel volume, and tracker notes use the channel volume. */
+static void reset_playback_locked(void) {
+    for (uint8_t i = 0; i < CONFIG_PRG32_AUDIO_MAX_VOICES; ++i) {
+        g_prg32_audio.voices[i].active = false;
+        g_prg32_audio.channel_volume[i] = 255;
+        g_prg32_audio.channel_pan[i] = PRG32_AUDIO_PAN_CENTER;
+    }
+    g_prg32_audio.tracker.active = false;
+}
+
 void prg32_audio_clear_assets(void) {
     prg32_audio_lock();
+    reset_playback_locked();
     memset(g_prg32_audio.samples, 0, sizeof(g_prg32_audio.samples));
     memset(g_prg32_audio.instruments, 0, sizeof(g_prg32_audio.instruments));
     memset(g_prg32_audio.tracks, 0, sizeof(g_prg32_audio.tracks));
@@ -123,6 +137,7 @@ int prg32_audio_load_block(const void *block, size_t block_size) {
     size_t sample_data_size = header->block_size - header->data_offset;
 
     prg32_audio_lock();
+    reset_playback_locked();
     memset(g_prg32_audio.samples, 0, sizeof(g_prg32_audio.samples));
     memset(g_prg32_audio.instruments, 0, sizeof(g_prg32_audio.instruments));
     memset(g_prg32_audio.tracks, 0, sizeof(g_prg32_audio.tracks));
