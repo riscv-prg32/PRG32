@@ -107,7 +107,13 @@ int prg32_audio_load_block(const void *block, size_t block_size) {
         !range_ok(header->block_size, header->instruments_offset, instrument_bytes) ||
         !range_ok(header->block_size, header->tracks_offset, track_bytes) ||
         header->data_offset > header->block_size ||
-        header->events_offset > header->block_size) {
+        header->events_offset > header->block_size ||
+        header->events_offset > header->data_offset) {
+        /* The event section ends where the sample data starts, so its
+         * capacity below is data_offset - events_offset. Requiring
+         * events_offset <= data_offset keeps that unsigned subtraction from
+         * wrapping into a huge capacity that lets a track's event_offset
+         * point outside the block. */
         return -1;
     }
 
