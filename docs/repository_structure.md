@@ -90,7 +90,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (128 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 64 KiB fragment, `sdkconfig.defaults.cart_64k`)
 |   `-- sdkconfig.pins.*            Hardware pin configuration profiles (breadboard1, breadboard2, pcb1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), the multiplayer wire format and session rules, setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), the multiplayer wire format and session rules, setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, firmware AUDIO block parsing, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture, media validation, and the multiplayer wall test against a real server
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations

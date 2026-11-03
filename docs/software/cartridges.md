@@ -228,6 +228,16 @@ The AUDIO block header stores offsets to:
 - tracker events
 - raw sample bytes
 
+The firmware (`prg32_audio_load_block` in
+`components/prg32_audio/audio_assets.c`) refuses to load a block whose tables
+or sample ranges fall outside `block_size`. Tracker events occupy the bytes
+from `events_offset` up to `data_offset`, so `events_offset` must not exceed
+`data_offset`; each track's `event_offset` and `event_count` must stay inside
+that section. A refused block stops the cartridge from loading with "failed to
+load cartridge AUDIO block". `tools/prg32audio_pack.py` always writes the
+sections in this order. `tests/test_prg32_audio_block.py` compiles the parser
+on the host and checks these rules.
+
 #### Sample Descriptor
 
 ```c
