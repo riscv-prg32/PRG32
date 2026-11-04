@@ -5,8 +5,9 @@ The test needs no terminal, so it also runs from scripts and agent shells.
 QEMU is started directly (not through ``idf.py qemu monitor``, whose monitor
 refuses to start without a terminal) with an SDL display, because the virtual
 display blocks the firmware when no display backend runs. The test then checks
-that the firmware answers HELLO on the device protocol and runs a cartridge
-uploaded through it. Every failed step stops the test with exit code 1.
+that the firmware answers HELLO on the device protocol, runs a cartridge
+uploaded through it, and keeps running that cartridge's frames. Every failed
+step stops the test with exit code 1.
 """
 import socket
 import subprocess
@@ -22,7 +23,7 @@ if str(ROOT) not in sys.path:
 from prg32.utilities.logging import log_ok, step, die
 from prg32.utilities.env_variables import QEMU_BUILD_DIR, QEMU_IMAGE, QEMU_EFUSE
 from prg32.utilities.environment_check import enable_ccache
-from prg32.usb_protocol import ProtocolClient, open_stream, hello, upload_cartridge
+from prg32.usb_protocol import ProtocolClient, open_stream, hello, key_press, upload_cartridge
 
 CARTRIDGE = f"{QEMU_BUILD_DIR}/pong.prg32"
 CARTRIDGE_SLOT = "cart0"
@@ -108,6 +109,23 @@ def wait_for_hello(process):
     die(f"firmware did not answer HELLO within {BOOT_TIMEOUT_S:.0f} s ({last_error}); see {QEMU_LOG}")
 
 
+def check_frames_advance(client):
+    """Check that the cartridge's frames run, not only the protocol task.
+
+    The device answers HELLO and uploads from its own task, so those replies
+    come back even when the main loop is stuck. A remote key is released only
+    after two controller reads, which the main loop makes once per frame: if
+    LEFT is still down a second later, no frame ran. This QEMU has no audio
+    port, the case that froze every cartridge in firmware c53c491.
+    """
+    key_press(client, ["LEFT"], 50)
+    time.sleep(1.0)
+    reply = key_press(client, ["RIGHT"], 50)
+    if "LEFT" in reply.get("active", []):
+        die(f"the cartridge's frames do not advance: LEFT was never read ({reply}); see {QEMU_LOG}")
+    log_ok("qemu-frames-advance")
+
+
 def check_running_firmware():
     """Boot QEMU, check HELLO, run the demo cartridge over the protocol."""
     if not protocol_port_is_free():
@@ -128,6 +146,7 @@ def check_running_firmware():
         if process.poll() is not None:
             die(f"QEMU exited with code {process.returncode} while the cartridge ran; see {QEMU_LOG}")
         log_ok(f"qemu-upload-run ({reply.get('name')} in {reply.get('slot')})")
+        check_frames_advance(client)
     finally:
         if client is not None:
             client.close()

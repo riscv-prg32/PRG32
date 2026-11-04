@@ -105,7 +105,8 @@ python3 -m prg32 qemu run --instance 1 --no-audio
 
 The copy is made once, from `build-qemu/qemu_flash.bin`. To give an instance new
 firmware, delete its directory, which also gives it a new identity. `--no-audio`
-keeps an instance from starting an audio player.
+keeps an instance from starting an audio player; its cartridges then run
+silently (see [No Audio Player](#qemu-audio-uart-redirection)).
 
 ## QEMU Audio (UART Redirection)
 
@@ -128,9 +129,24 @@ Because QEMU lacks native I2S emulation for the ESP32-C3 backend, PRG32 uses a c
   `prg32_audio_cartridge_stop()` when no cartridge runs; the rule is declared in
   `components/prg32_audio/include/prg32_audio_frame_clock.h`. With no cartridge
   running, the audio task advances the engine by 20 ms per rendered buffer and
-  keeps the buffer period on the emulated clock with `vTaskDelayUntil`. This
-  applies only to `PRG32_QEMU_AUDIO_REDIRECT`: on the ESP32-C6 the I2S DMA paces
-  the audio task and the three calls do nothing.
+  keeps the buffer period on the emulated clock with `vTaskDelayUntil`; when a
+  credit arrives later than the period, the period starts again from then
+  instead of rendering buffers back to back. That task holds the lock that
+  `prg32_audio_cartridge_start()` takes only while it mixes a buffer, never
+  while it waits for the player's credit, so a cartridge starts however late
+  the credits come. This applies only to `PRG32_QEMU_AUDIO_REDIRECT`: on the
+  ESP32-C6 the I2S DMA paces the audio task and the three calls do nothing.
+- **No Audio Player**: With `--no-audio`, or a QEMU started with the audio port
+  on `wait=off` and nothing connected, no credit ever arrives. The audio task
+  waits 500 ms for the first one (`PRG32_QEMU_AUDIO_HOST_WAIT_MS` in
+  `components/prg32_audio/audio.c`), logs `no QEMU audio player: audio is not
+  paced`, and stops waiting: cartridges run at their frame rate, silently. A
+  player that connects later sends its credits first, and the first one turns
+  pacing back on (`QEMU audio player connected`). Before 2026-11-04 the task
+  waited forever with that lock held, so every cartridge froze at its first
+  frame; see the [2026-11-04 Store check](../cartridge_store/cartridge_store.md#whole-store-check-2026-11-04).
+  Because of this wait, replacing the audio task takes up to 500 ms; see
+  [one task at a time](../software/audio_track_internals.md#keeping-the-i2s-queue-fed-on-esp32-c6).
 - **Network Optimizations**: Sending 1-byte ACKs and 882-byte audio chunks frequently triggers Nagle's Algorithm on modern OS network stacks, causing artificial 200ms batching delays. The `nodelay` flag is applied to QEMU's `-serial` arguments and `socket.TCP_NODELAY` is used in the Python listener to ensure instant transmission and zero network-induced stutter.
 - **Linux ALSA/PulseAudio Compatibility**: The PyAudio stream uses a 10-credit (200ms) jitter buffer and pipelined credit generation to prevent PulseAudio from starving during OS scheduling spikes, resolving pitch-shifting and distortion on Linux backends. Furthermore, `OSError` underflow exceptions are caught and suppressed to prevent random crashes on Linux, ensuring QEMU is never starved of flow-control credits.
 

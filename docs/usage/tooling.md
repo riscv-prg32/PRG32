@@ -149,7 +149,10 @@ Interactions with CartridgeStore (metadata attachment, discovery, publishing) ar
   (`prg32/qemu/smoke_test.py`). The smoke test runs `qemu build`, builds the
   pong demo cartridge and stages it in `cart0`, starts QEMU with an SDL window
   and no monitor, waits up to 60 s for the firmware to answer HELLO on
-  `socket://127.0.0.1:5555`, uploads pong again with `run`, and closes QEMU.
+  `socket://127.0.0.1:5555`, uploads pong again with `run`, checks that its
+  frames advance (a pressed LEFT must have been read and released a second
+  later, since HELLO and uploads are answered even when the main loop is
+  stuck), and closes QEMU.
   It needs no terminal, so it also runs from scripts, but it needs a desktop
   session for the SDL window (on a headless Linux machine, use `xvfb-run`; see
   [CI](../software/cartridges.md#continuous-integration-and-delivery-artifacts))

@@ -32,7 +32,8 @@ class PerformanceAbortTest(unittest.TestCase):
 
     def test_unload_aborts_with_the_lock_held(self) -> None:
         body = function_body(self.source, "prg32_cart_unload")
-        self.assertLess(body.index("lock_cart()"), body.index("prg32_perf_abort()"))
+        # The lock is taken through lock_cart_for_takeover(), see test_setup_takeover.py.
+        self.assertLess(body.index("lock_cart_for_takeover()"), body.index("prg32_perf_abort()"))
         self.assertLess(body.index("prg32_perf_abort()"), body.index("unlock_cart()"))
 
     def test_replacing_a_cartridge_aborts_before_its_code_is_overwritten(self) -> None:

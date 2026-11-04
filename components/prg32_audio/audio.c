@@ -1,12 +1,14 @@
 #include "audio_internal.h"
 #include "prg32_audio_frame_clock.h"
+#include "esp_log.h"
 #include "esp_timer.h"
+#include <stdbool.h>
 #include <string.h>
 
 #if PRG32_QEMU_AUDIO_REDIRECT
 extern void prg32_qemu_audio_write_pcm(const int16_t *buffer, size_t frames,
                                        int mode);
-extern void prg32_qemu_audio_read_ack(uint8_t *ack, size_t len);
+extern bool prg32_qemu_audio_read_ack(uint8_t *ack, uint32_t timeout_ms);
 extern void prg32_qemu_audio_init(void);
 #endif
 
@@ -22,11 +24,18 @@ void prg32_audio_set_default_master_volume(uint8_t volume) {
 /* The audio frame clock (prg32_audio_frame_clock.h). While a cartridge runs, its frames
  * tell the audio task how many 20 ms buffers to render (work_) and wait until it has
  * (done_); between frames the task renders nothing. render_lock_ is held while the task
- * renders on its own, so a cartridge starts between two buffers. These live outside
+ * mixes a buffer on its own, so a cartridge starts between two buffers. It is never held
+ * while the task waits for the host's credit: that wait can be long or endless, and a
+ * cartridge waiting for the lock would then never start. These live outside
  * g_prg32_audio because a cartridge may call prg32_audio_init, which clears that state. */
 static SemaphoreHandle_t render_lock_, work_, done_;
 static volatile bool cartridge_clock_;
 static uint32_t cartridge_pending_ms_;
+
+/* How long the task waits for one credit before it decides that no audio player is
+ * connected (`qemu run --no-audio`, or QEMU started with `wait=off` and no player). */
+#define PRG32_QEMU_AUDIO_HOST_WAIT_MS 500
+static bool host_absent_;
 
 static uint32_t buffer_ms(void) {
   return (uint32_t)(PRG32_AUDIO_MIX_FRAMES * 1000u /
@@ -34,7 +43,7 @@ static uint32_t buffer_ms(void) {
 }
 
 /* Advance the engine by one buffer, mix it and send it to the host (QEMU UART1). */
-static void render_buffer(int16_t *buffer) {
+static void mix_and_send_buffer(int16_t *buffer) {
   prg32_audio_tracker_step(buffer_ms());
   prg32_audio_voices_step(buffer_ms());
   if (prg32_audio_get_mode() == PRG32_AUDIO_MODE_STEREO) {
@@ -44,10 +53,32 @@ static void render_buffer(int16_t *buffer) {
   }
   prg32_qemu_audio_write_pcm(buffer, PRG32_AUDIO_MIX_FRAMES,
                              prg32_audio_get_mode());
-  // Block until the host sends a 1-byte ACK: QEMU fast-forwards when idle and
-  // would otherwise generate audio faster than real time.
+}
+
+/* Wait for the host's 1-byte credit for the buffer just sent: QEMU fast-forwards when
+ * idle and would otherwise generate audio faster than real time. With no player the
+ * credit never comes, so after one PRG32_QEMU_AUDIO_HOST_WAIT_MS timeout the task stops
+ * waiting and the cartridge keeps running silently. A player that connects later sends
+ * its credits first, and the first one found turns the wait back on. */
+static void wait_for_host_credit(void) {
   uint8_t ack;
-  prg32_qemu_audio_read_ack(&ack, 1);
+  if (host_absent_) {
+    if (prg32_qemu_audio_read_ack(&ack, 0)) {
+      host_absent_ = false;
+      ESP_LOGI("prg32_audio", "QEMU audio player connected");
+    }
+    return;
+  }
+  if (!prg32_qemu_audio_read_ack(&ack, PRG32_QEMU_AUDIO_HOST_WAIT_MS)) {
+    host_absent_ = true;
+    ESP_LOGW("prg32_audio", "no QEMU audio player: audio is not paced");
+  }
+}
+
+/* One buffer under the audio frame clock: mix it, send it, wait for its credit. */
+static void render_buffer(int16_t *buffer) {
+  mix_and_send_buffer(buffer);
+  wait_for_host_credit();
 }
 
 /* Cartridge time has moved on by `ms`: the audio task renders the whole buffers that
@@ -111,6 +142,10 @@ void prg32_audio_wait_ms(uint32_t ms) {
   vTaskDelay(pdMS_TO_TICKS(ms));
 }
 
+/* Given by the audio task just before it deletes itself. Created once and never
+ * freed, because prg32_audio_shutdown() clears g_prg32_audio after taking it. */
+static SemaphoreHandle_t task_exited_;
+
 static void audio_task(void *arg) {
   (void)arg;
   int16_t buffer[PRG32_AUDIO_MIX_FRAMES * 2];
@@ -138,14 +173,25 @@ static void audio_task(void *arg) {
       next_wake = xTaskGetTickCount();
       continue;
     }
+    bool sent = false;
     xSemaphoreTake(render_lock_, portMAX_DELAY);
     if (!cartridge_clock_) {
-      render_buffer(buffer);
+      mix_and_send_buffer(buffer);
+      sent = true;
     }
     xSemaphoreGive(render_lock_);
+    // Outside the lock, so that a cartridge can start while the host plays.
+    if (sent) {
+      wait_for_host_credit();
+    }
     // Wait for the rest of this buffer's 20 ms on the emulated clock (441
-    // frames at 22050 Hz), however long the acknowledgement took.
-    vTaskDelayUntil(&next_wake, pdMS_TO_TICKS(buffer_ms()));
+    // frames at 22050 Hz), however long the acknowledgement took. When the
+    // credit took longer than that, start the period again from now instead of
+    // trying to catch up: rendering back to back would never block, and the
+    // lower-priority main task would not run.
+    if (xTaskDelayUntil(&next_wake, pdMS_TO_TICKS(buffer_ms())) == pdFALSE) {
+      next_wake = xTaskGetTickCount();
+    }
   }
 #else
   int64_t last_us = esp_timer_get_time();
@@ -175,7 +221,9 @@ static void audio_task(void *arg) {
   }
 #endif
 
-  g_prg32_audio.task = NULL;
+  /* The last thing this task does: prg32_audio_shutdown() frees the lock and
+   * clears g_prg32_audio as soon as it takes this semaphore. */
+  xSemaphoreGive(task_exited_);
   vTaskDelete(NULL);
 }
 
@@ -275,19 +323,45 @@ bool prg32_audio_init(const prg32_audio_config_t *config) {
     done_ = xSemaphoreCreateCounting(1000, 0);
   }
 #endif
-  int priority = tskIDLE_PRIORITY + 2;
+  /* Above the tasks that can lend their priority to the main loop: the HTTP
+   * server (tskIDLE_PRIORITY + 5) and the device protocol task (5) wait for
+   * the cartridge and graphics locks that the main loop holds for a whole
+   * frame, and priority inheritance then runs that frame at their priority.
+   * At + 2 the audio task got no CPU for the rest of the frame (80-220 ms
+   * measured with /api/runtime and /api/screenshot.bmp requests) and the
+   * 23 ms I2S DMA queue ran dry: the speaker buzzed while frames slowed.
+   * Below lwIP and Wi-Fi. The task blocks on every buffer (I2S DMA on ESP32-C6,
+   * the host's credit or the frame clock on QEMU), so it cannot starve them. */
+  if (!task_exited_) {
+    task_exited_ = xSemaphoreCreateBinary();
+  }
+#if PRG32_QEMU_AUDIO_REDIRECT
+  // Frame-clock requests left over from the previous task belong to it.
+  while (xSemaphoreTake(work_, 0) == pdTRUE) {
+  }
+  while (xSemaphoreTake(done_, 0) == pdTRUE) {
+  }
+#endif
+  int priority = tskIDLE_PRIORITY + 6;
   xTaskCreate(audio_task, "prg32_audio", 4096, NULL, priority,
               &g_prg32_audio.task);
   return g_prg32_audio.i2s_ready;
 #endif
 }
 
+/* Stop the audio task and wait until it has really exited, without a time
+ * limit: every wait in the task is bounded (one I2S DMA buffer on ESP32-C6; the
+ * frame clock's 4 ms, the 20 ms period or the host's 500 ms credit on QEMU).
+ * A shorter cap let a task that was waiting for the QEMU audio player's credit
+ * outlive the wait. The lock was then freed under it, the memset below cleared
+ * its stop flag, and the old and the new task ran together: when the old one
+ * finally exited it cleared the new task's handle, and the kernel's lists were
+ * corrupted (QEMU hung in vListInsert while starting a cartridge). */
 void prg32_audio_shutdown(void) {
   if (g_prg32_audio.task) {
     g_prg32_audio.task_stop = true;
-    for (int i = 0; i < 20 && g_prg32_audio.task; ++i) {
-      vTaskDelay(pdMS_TO_TICKS(5));
-    }
+    xSemaphoreTake(task_exited_, portMAX_DELAY);
+    g_prg32_audio.task = NULL;
   }
   prg32_audio_i2s_stop();
   if (g_prg32_audio.lock) {

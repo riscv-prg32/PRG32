@@ -32,6 +32,48 @@ the 20 ms of each rendered buffer, and while a cartridge runs its frames decide
 when the buffers are rendered. See the
 [audio frame clock](../usage/qemu.md#qemu-audio-uart-redirection).
 
+### Keeping the I2S Queue Fed on ESP32-C6
+
+The I2S DMA queue holds 4 buffers of 128 frames, about 23 ms of sound. If the
+audio task does not write a buffer in that time, the MAX98357A repeats stale
+samples and the speaker buzzes. Three rules keep the task on time:
+
+- **Priority.** The task runs at `tskIDLE_PRIORITY + 6`. That is above the HTTP
+  server and the device protocol task (both + 5) and below lwIP and Wi-Fi. The
+  main loop holds the cartridge and graphics locks for a whole frame. When one of
+  those tasks waits for a lock, priority inheritance runs the main loop at + 5
+  until the frame ends. At the old + 2 the audio task got no CPU in that time.
+- **No console output in the loop.** `PRG32_AUDIO_TRACKER_TRACE`
+  (`audio_tracker.c`) is 0. When it is set to 1, every tracker event and every
+  60th step is printed for debugging a track. The USB Serial/JTAG console writes
+  one character at a time and waits up to 50 ms whenever the host is slow to read.
+  It does that inside the audio lock, so the cartridge's own audio calls wait as
+  well and frames slow down.
+- **One task at a time.** `prg32_audio_init()` replaces the task (the splash,
+  the setup screen and cartridges call it). `prg32_audio_shutdown()` waits,
+  without a time limit, for the semaphore that the old task gives as its very
+  last step. Only then does it free the lock and clear the engine state. Every
+  wait inside the task is bounded, so the shutdown always finishes. The old
+  100 ms limit was shorter than the 500 ms the QEMU task can spend waiting for
+  the audio player's credit. Two tasks then ran at once, and QEMU hung while it
+  started a cartridge.
+
+Measured on `breadboard1` on 2026-11-04 (`spiriti-napoli97`, `asteroids`,
+`bachdemo`, 20 s per case) with a test build, not part of the repository, that
+counted I2S underruns (`on_send_q_ovf`) and the longest gap between writes:
+
+| Firmware | Console port closed | `/api/runtime` requests | `/api/screenshot.bmp` requests |
+|---|---|---|---|
+| `c53c491` (tracing on, + 2) | 6 underruns, 51 ms gap | not measured | not measured |
+| tracing off, + 2 | 0 underruns, 3 ms gap | 1,600-2,000 underruns, 80-99 ms gaps | 2,400-2,600 underruns, 143-223 ms gaps |
+| tracing off, + 6 | 0 underruns | 0 underruns, gap ≤ 10 ms | 0 underruns, gap ≤ 10 ms |
+
+Requests for a missing page cost about the same network time as `/api/runtime`
+and caused few underruns, because they never wait for the main loop's locks. That
+points to priority inheritance as the cause. Heavy HTTP polling still lowers the
+frame rate (Bach: 231 to 38 frames per 20 s with back-to-back screenshots),
+because the network tasks use the CPU. The sound no longer breaks up.
+
 ## 3. Advancing the Tracker (`prg32_audio_tracker_step`)
 
 This is where the actual track data is interpreted. Inside `audio_tracker.c`, `prg32_audio_tracker_step` receives the elapsed time and does the following:

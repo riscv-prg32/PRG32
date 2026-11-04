@@ -459,6 +459,49 @@ survives input. It does not judge each game's rules, and no audio was listened t
 For the cartridges with rooms, see
 [real cartridges](../software/multiplayer_protocol.md#real-cartridges-2026-11-01).
 
+## Whole-Store Check (2026-11-04)
+
+The [2026-11-01 check](#whole-store-check-2026-11-01) was repeated on the
+`development-c6` firmware for both firmware targets (34 games, latest versions,
+SHA-256 checked). Each cartridge was uploaded with `run` into one slot and given all
+11 keys. Each key was checked to be released again, which shows the main loop kept
+running. The screen was compared before and after the keys, and the serial log was
+watched for faults. QEMU ran once with an audio player connected, as
+`prg32 qemu run` does, and once with the audio port left unconnected, as
+`prg32 qemu run --no-audio` does.
+
+The first run, on `c53c491`, found two bugs:
+
+- **QEMU froze at the first frame of every cartridge** when no audio player read
+  the audio port, and sometimes when the player fell behind. The audio task held
+  the lock that `prg32_audio_cartridge_start()` takes while it waited, with no
+  limit, for the player's credit. See
+  [No Audio Player](../usage/qemu.md#qemu-audio-uart-redirection).
+- **A cartridge's scoreboard stopped the device protocol** on both targets.
+  `org.riscv-prg32.spiriti-napoli97` opens `prg32_scoreboard_show()` on START.
+  That screen waited for a key while holding the cartridge, so the next `run`
+  upload waited for good. See the
+  [device protocol record](../software/usb_protocol.md#2026-11-04-a-cartridges-scoreboard-no-longer-stops-the-receiver).
+
+The fixed firmware also stops the audio task from being replaced while the old
+one still runs. That race hung QEMU while starting a cartridge; see
+[one task at a time](../software/audio_track_internals.md#keeping-the-i2s-queue-fed-on-esp32-c6).
+With all three fixes:
+
+| Result | ESP32-C6 `breadboard1` | QEMU with player | QEMU without player |
+|---|---|---|---|
+| Portable cartridges (32) | all ran, 11/11 keys, no faults | all ran, 11/11 keys, no faults | all ran, 11/11 keys, no faults |
+| `it.uniparthenope.space_invaders` 1.0.0 | accepted, then a panic; the board restarted | refused at upload | refused at upload |
+| `it.uniparthenope.terraforge` 1.0.0 | accepted, then a panic; the board restarted | refused at upload | refused at upload |
+
+The two failures are the legacy cartridges of the
+[compatibility check](#store-compatibility-check-2026-10-29). Free heap stayed
+between 105 and 120 KB on the board and between 93 and 138 KB on QEMU. The
+multiplayer cartridges logged WebSocket connection errors because no multiplayer
+server ran on the saved address. Blackjack, Input Tester, Platformer and
+Raycaster showed the same screen before and after the keys, on at least one
+target. This check does not judge each game's rules.
+
 ## Store Key Check (2026-10-30)
 
 Every cartridge listed by `GET /api/games` (32 games, latest versions, SHA-256

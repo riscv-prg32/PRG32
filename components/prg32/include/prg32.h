@@ -531,6 +531,9 @@ const char *prg32_cart_last_error(void);
 void prg32_setup_request(void);
 int prg32_setup_take_request(void);
 bool prg32_setup_interrupted(void);
+/** True while another task waits to unload or replace the running cartridge
+ * (an upload, RUN, or /api/games/select). */
+bool prg32_cart_takeover_pending(void);
 void prg32_setup_run(void);
 void prg32_usb_protocol_start(void);
 bool prg32_usb_protocol_busy(void);

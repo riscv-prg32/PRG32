@@ -366,6 +366,10 @@ int prg32_scoreboard_show(const char *game, const char *title) {
     scores_load_once();
     prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);
     while (1) {
+        /* An upload or RUN waiting to replace the calling cartridge. */
+        if (prg32_setup_interrupted()) {
+            return -1;
+        }
         uint32_t input = prg32_input_read_menu();
         if (input & (PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT)) {
             prg32_input_wait_released(PRG32_BTN_A | PRG32_BTN_B | PRG32_BTN_SELECT);

@@ -1,6 +1,7 @@
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "string.h"
+#include <stdbool.h>
 
 // Define the pins you want to use for UART1.
 // Change these depending on your board's wiring.
@@ -63,7 +64,17 @@ void prg32_qemu_audio_write_pcm(const int16_t *buffer, size_t frames,
   uart_write_bytes(uart_num, buffer, bytes);
 }
 
-void prg32_qemu_audio_read_ack(uint8_t *ack, size_t len) {
+/* Wait up to `timeout_ms` for one credit byte from the host audio player.
+ * Returns true when one arrived. A timeout of 0 only takes a byte that is
+ * already waiting. */
+bool prg32_qemu_audio_read_ack(uint8_t *ack, uint32_t timeout_ms) {
   const uart_port_t uart_num = UART_NUM_1;
-  uart_read_bytes(uart_num, ack, len, portMAX_DELAY);
+  if (!uart_is_driver_installed(uart_num)) {
+    return false;
+  }
+  TickType_t ticks = pdMS_TO_TICKS(timeout_ms);
+  if (timeout_ms > 0 && ticks == 0) {
+    ticks = 1;
+  }
+  return uart_read_bytes(uart_num, ack, 1, ticks) == 1;
 }

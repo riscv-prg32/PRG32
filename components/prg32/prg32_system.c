@@ -1209,8 +1209,16 @@ static void run_setup_menu(void) {
 
 /* Only setup_menu() itself handles an upload or a loaded cartridge. Every
  * setup screen that waits for input leaves when this is true, which brings
- * control back to it from any depth. */
+ * control back to it from any depth.
+ *
+ * A cartridge may open the same screens (keyboard, Wi-Fi setup, scoreboard)
+ * from its update call. They then ignore the loaded cartridge, which is the
+ * caller, but leave when an upload or RUN waits to replace it: that wait holds
+ * the device protocol until the cartridge's update returns. */
 bool prg32_setup_interrupted(void) {
+  if (prg32_cart_takeover_pending()) {
+    return true;
+  }
   return g_setup_open && (prg32_usb_protocol_busy() || prg32_cart_is_loaded());
 }
 

@@ -83,6 +83,11 @@ To show the local scoreboard from a game:
 prg32_scoreboard_show("breakout", "BREAKOUT SCORES");
 ```
 
+It waits for A, B, or SELECT and returns 0. It returns -1 without a button
+when an upload or `RUN` is waiting to replace the cartridge, like the other
+firmware screens a cartridge can open; see
+[device behavior](../software/usb_protocol.md#device-behavior).
+
 The lower-level helpers `prg32_score_player_get`,
 `prg32_score_player_set`, `prg32_score_count`, and `prg32_score_get` are also
 available to cartridges that want to draw their own scoreboard UI.

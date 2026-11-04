@@ -153,6 +153,30 @@ static void unlock_cart(void) {
     }
 }
 
+/* Tasks waiting for the lock in order to unload or replace the running
+ * cartridge (an upload, RUN, /api/games/select). The lock is held for a whole
+ * update or draw call, so a cartridge sitting in a modal firmware screen
+ * (scoreboard, keyboard, Wi-Fi setup) would make them wait for a button press,
+ * with the device protocol stopped meanwhile. Those screens leave while this is
+ * nonzero; see prg32_setup_interrupted(). */
+static volatile uint32_t g_takeover_waiters;
+static portMUX_TYPE g_takeover_mux = portMUX_INITIALIZER_UNLOCKED;
+
+static int lock_cart_for_takeover(void) {
+    portENTER_CRITICAL(&g_takeover_mux);
+    g_takeover_waiters++;
+    portEXIT_CRITICAL(&g_takeover_mux);
+    int rc = lock_cart();
+    portENTER_CRITICAL(&g_takeover_mux);
+    g_takeover_waiters--;
+    portEXIT_CRITICAL(&g_takeover_mux);
+    return rc;
+}
+
+bool prg32_cart_takeover_pending(void) {
+    return g_takeover_waiters > 0;
+}
+
 static const char *slot_name(uint8_t slot) {
     if (slot >= PRG32_CART_SLOT_COUNT) {
         return "cart?";
@@ -499,7 +523,7 @@ int prg32_cart_is_loaded(void) {
 }
 
 void prg32_cart_unload(void) {
-    if (lock_cart() != 0) {
+    if (lock_cart_for_takeover() != 0) {
         return;
     }
     /* A suite cannot outlive its cartridge, and only one may be active, so
@@ -551,7 +575,7 @@ int prg32_cart_load_stored(void) {
         return -1;
     }
 
-    if (lock_cart() != 0) {
+    if (lock_cart_for_takeover() != 0) {
         esp_partition_munmap(map);
         set_error("failed to lock cartridge runtime");
         return -1;
@@ -579,7 +603,7 @@ int prg32_cart_install(const void *image, size_t image_size, int persist) {
         set_error("missing cartridge image");
         return -1;
     }
-    if (lock_cart() != 0) {
+    if (lock_cart_for_takeover() != 0) {
         set_error("failed to lock cartridge runtime");
         return -1;
     }

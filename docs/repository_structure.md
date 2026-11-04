@@ -23,7 +23,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- prg32/                      ESP-IDF component implementing the core PRG32 API (indexed/RGB565 graphics, input, network, eight-slot cartridge loader)
 |   |   |-- prg32_bands.c           Status bands and the reset before each cartridge: saved developer-menu band choice, default palette, game viewport
 |   |   |-- prg32_controller.c      Joins GPIO, QEMU keyboard, diagnostic, and remote input; the table of remote key names lives here
-|   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return)
+|   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return), and counting the tasks waiting to unload or replace the running cartridge so modal screens it opened give way
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only helpers for an RGB LED sharing LCD D/C (`PRG32_PIN_SHARED_RGB_LED`): boot flash and post-frame off latch
 |   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, peer table, identity, and QEMU's emulated Ethernet
@@ -35,7 +35,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_wifi.c            Wi-Fi modes, setup screens, the last four connected networks, and forgetting a stored network
 |   |   |-- prg32_random.c          Uniform bounded random-number API
 |   |   `-- Kconfig                 Firmware configuration options (menuconfig)
-|   `-- prg32_audio/                ESP-IDF audio component; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing; audio_assets.c resets the mixer for each cartridge; include/prg32_audio_frame_clock.h declares the QEMU audio frame clock
+|   `-- prg32_audio/                ESP-IDF audio component; audio.c runs the audio task above the HTTP and device protocol tasks' priority, replaces it only after the old one has exited, and on QEMU waits for the player's credits outside the frame-clock lock and stops waiting when no player is connected; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing (its console trace is off by default); audio_assets.c resets the mixer for each cartridge; include/prg32_audio_frame_clock.h declares the QEMU audio frame clock
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |   |-- device_protocol_consistency.md  Rules for keeping firmware, SDK, web clients, and hardware docs aligned
@@ -90,7 +90,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (128 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 64 KiB fragment, `sdkconfig.defaults.cart_64k`)
 |   `-- sdkconfig.pins.*            Hardware pin configuration profiles (breadboard1, breadboard2, pcb1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), the multiplayer wire format and session rules, setup-screen takeover, performance suites stopping with their cartridge, cartridge switches and band reset, firmware AUDIO block parsing, and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), the multiplayer wire format and session rules, setup-screen takeover (including screens a cartridge opens), performance suites stopping with their cartridge, cartridge switches and band reset, firmware AUDIO block parsing, the QEMU audio task never blocking a cartridge start and audio shutdown waiting for the task to exit, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture, media validation, and the multiplayer wall test against a real server
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations

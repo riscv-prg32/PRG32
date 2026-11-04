@@ -3,6 +3,15 @@
 /* Upper bound on events executed by one tracker step without waiting. */
 #define PRG32_AUDIO_TRACKER_MAX_EVENTS_PER_STEP 256u
 
+/* Set to 1 to print every tracker event and every 60th step, for debugging a
+ * track. Leave it at 0: the steps run in the audio task with the audio lock
+ * held, and a console write waits up to 50 ms whenever the USB host is slow to
+ * read. On ESP32-C6 that starves the 23 ms I2S DMA queue (the speaker buzzes)
+ * and makes the cartridge's audio calls wait for the lock (frames slow down). */
+#ifndef PRG32_AUDIO_TRACKER_TRACE
+#define PRG32_AUDIO_TRACKER_TRACE 0
+#endif
+
 static uint32_t tick_ms(void) {
   uint16_t bpm = g_prg32_audio.tracker.tempo_bpm;
   if (bpm == 0) {
@@ -94,7 +103,7 @@ void prg32_audio_tracker_step(uint32_t elapsed_ms) {
   prg32_audio_track_slot_t *track = &g_prg32_audio.tracks[tracker->track_id];
   tracker->tick_accum += elapsed_ms;
 
-  // DEBUG LOG
+#if PRG32_AUDIO_TRACKER_TRACE
   static int log_div = 0;
   if (++log_div % 60 == 0) {
     printf("TRACKER TICK: active=%d accum=%lu next_delta=%lu index=%lu\n",
@@ -102,6 +111,7 @@ void prg32_audio_tracker_step(uint32_t elapsed_ms) {
            (unsigned long)tracker->next_delta,
            (unsigned long)tracker->event_index);
   }
+#endif
 
   /* Only waiting consumes ticks.  While next_delta is zero, events are
    * fetched and executed in the same tick, so delta-0 NOTE_ONs form a chord.
@@ -132,9 +142,11 @@ void prg32_audio_tracker_step(uint32_t elapsed_ms) {
     prg32_audio_event_t event = track->events[tracker->event_index++];
     tracker->next_delta = event.delta_ticks;
 
+#if PRG32_AUDIO_TRACKER_TRACE
     printf("TRACKER EVENT: idx=%lu delta=%u cmd=%u arg0=%u arg1=%u\n",
            (unsigned long)(tracker->event_index - 1), event.delta_ticks,
            event.command, event.arg0, event.arg1);
+#endif
     if (event.command == PRG32_AUDIO_CMD_JUMP) {
       uint32_t target = ((uint32_t)event.arg1 << 8) | event.arg0;
       if (target < track->event_count) {

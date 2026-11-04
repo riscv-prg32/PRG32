@@ -39,6 +39,8 @@ SETUP_SCREENS = {
         "prg32_wifi_setup_run",
     ),
     "prg32_keyboard.c": ("prg32_text_input",),
+    # Opened by cartridges only, through the ABI table.
+    "prg32_http_scores.c": ("prg32_scoreboard_show",),
 }
 
 
@@ -74,6 +76,20 @@ class SetupTakeoverTests(unittest.TestCase):
         body = function_body(source, "prg32_setup_interrupted")
         self.assertIn("g_setup_open &&", body)
         self.assertEqual(source.count("  setup_menu();"), 1, "open setup through run_setup_menu()")
+
+    def test_screens_opened_by_a_cartridge_give_way_to_a_takeover(self) -> None:
+        """An upload or RUN waits for the cartridge lock, which the cartridge holds
+        while it sits in a modal screen. In firmware c53c491 the scoreboard of
+        org.riscv-prg32.spiriti-napoli97 stopped the device protocol this way."""
+        system = (COMPONENT / "prg32_system.c").read_text(encoding="utf-8")
+        body = function_body(system, "prg32_setup_interrupted")
+        self.assertLess(body.index("prg32_cart_takeover_pending()"), body.index("g_setup_open &&"))
+        cart = (COMPONENT / "prg32_cart.c").read_text(encoding="utf-8")
+        for name in ("prg32_cart_unload", "prg32_cart_load_stored", "prg32_cart_install"):
+            with self.subTest(function=name):
+                code = function_body(cart, name)
+                self.assertIn("lock_cart_for_takeover()", code)
+                self.assertNotRegex(code, r"(?<![_a-z])lock_cart\(\)")
 
 
 if __name__ == "__main__":

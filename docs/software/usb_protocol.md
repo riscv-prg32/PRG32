@@ -265,6 +265,14 @@ with its cursor kept. The same applies to
 [`/api/games/select`](api.md). Settings already took effect when they were
 changed, but text being typed and a network not yet confirmed are discarded.
 
+A cartridge can open some of these screens itself from its `update` call: the
+keyboard (`prg32_text_input`, `prg32_score_player_prompt`), Wi-Fi setup, and
+`prg32_scoreboard_show`. The upload and `RUN` wait for that call to return,
+and while they wait the receiver answers nothing, not even HELLO. So these
+screens also leave, returning as if cancelled, whenever another task waits to
+unload or replace the running cartridge (`prg32_cart_takeover_pending()`).
+They ignore the loaded cartridge itself, which is their caller.
+
 Setup does not leave until the step in progress has finished: a physical button
 still held, a Wi-Fi scan, a Cartridge Store request or download, the audio test
 tune, or a timed message. Those steps can draw over the upload screen until
@@ -320,6 +328,29 @@ development uses the running-device protocol and does not require network
 connectivity.
 
 ## Validation record
+
+### 2026-11-04: a cartridge's scoreboard no longer stops the receiver
+
+In the [whole-Store check](../cartridge_store/cartridge_store.md#whole-store-check-2026-11-04)
+on firmware `c53c491`, START on the title of `org.riscv-prg32.spiriti-napoli97`
+opened `prg32_scoreboard_show()`, which waits for A, B, or SELECT. The next
+UPLOAD_BEGIN called `prg32_cart_unload()`, which waited for the cartridge lock
+held by that `update` call: no reply, then no reply to anything, until a
+physical button or a reset. The console kept printing, so the firmware had not
+crashed. Earlier records passed only because their keys happened to close the
+scoreboard first. `RUN` waited the same way in `prg32_cart_load_stored()`.
+
+The fix counts the tasks waiting for the lock to unload or replace a cartridge
+(`lock_cart_for_takeover()` in `prg32_cart.c`), `prg32_setup_interrupted()`
+reports them even when setup is not open, and the scoreboard checks it. The
+wire format did not change. On ESP32-C6 `breadboard1`, with the scoreboard
+open each time: a `run` upload was answered in 1.8 s and `RUN` in 0.2 s, and
+HELLO answered afterwards. `tests/test_setup_takeover.py` fails if a takeover
+path or the scoreboard loses its check. The test wrote `cart7`, later restored.
+
+Still open: while a cartridge sits in such a screen, HTTP requests that take
+the graphics or cartridge lock (`/api/screenshot.bmp`, `/api/runtime`) wait for
+it to leave; they are not answered until a button closes the screen.
 
 ### 2026-10-30: a connected console lists networks
 
