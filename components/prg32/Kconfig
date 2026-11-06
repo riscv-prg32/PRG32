@@ -605,6 +605,17 @@ config PRG32_MULTIPLAYER_SERVER_URL
         QEMU build also accepts a LAN address, and ws://10.0.2.2:PORT reaches
         a server on the computer running QEMU. Use wss:// on public networks.
 
+config PRG32_MULTIPLAYER_DISCOVERY_PORT
+    int "Multiplayer LAN discovery UDP port (0 = off)"
+    depends on PRG32_MULTIPLAYER_ENABLE
+    range 0 65535
+    default 8082
+    help
+        When the console cannot reach the Multiplayer Server URL for 3 s, it
+        broadcasts a discovery query on this UDP port, and connects to the
+        first PRG32 Multiplayer Server on the local network that answers. A
+        server that works is never replaced. 0 turns discovery off.
+
 config PRG32_MULTIPLAYER_OFFLINE_STUB
     bool "Replace the multiplayer network with an offline stub"
     depends on PRG32_MULTIPLAYER_ENABLE

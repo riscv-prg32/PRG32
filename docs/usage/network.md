@@ -97,6 +97,14 @@ This saves `CONFIG_PRG32_MULTIPLAYER_SERVER_URL` in `profiles/sdkconfig.defaults
 
 Use `python3 -m prg32 multiplayer clear-url` to return to the defaults. Use `ws://` only on a local network you control, and `wss://` on a public one.
 
+### Finding the Server on the Local Network
+
+A board does not need the exact address compiled in when the server is on its local network. If a cartridge has asked for a room and the board has had no connection to its server for 3 seconds, the firmware broadcasts a discovery query on UDP port 8082 every 2 seconds. A PRG32 Multiplayer Server answers with its WebSocket URL, and the board connects there and joins as usual. The server also announces itself every 2 seconds. A server that works is never replaced.
+
+This needs the server's discovery on (its default, except in production containers), UDP port 8082 open on the server's computer, and a network that passes broadcasts between Wi-Fi clients; many guest and enterprise networks do not. The answer is not authenticated, so on a network you do not control, compile the URL in. `CONFIG_PRG32_MULTIPLAYER_DISCOVERY_PORT=0` turns discovery off.
+
+QEMU's user-mode network does not carry broadcasts to the local network, so a QEMU console always uses its compiled address.
+
 A PRG32 Multiplayer Server and a running PRG32-Qt can share one computer, but both
 use port 8081: PRG32-Qt holds `127.0.0.1:8081` for its
 [device protocol](../software/usb_protocol.md), and the server holds the same port on

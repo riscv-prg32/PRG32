@@ -26,6 +26,11 @@
 #define PRG32_MULTIPLAYER_SERVER_URL "ws://192.168.4.2:8081"
 #endif
 
+/* UDP port of LAN discovery; 0 turns it off. */
+#ifndef PRG32_MULTIPLAYER_DISCOVERY_PORT
+#define PRG32_MULTIPLAYER_DISCOVERY_PORT 8082
+#endif
+
 #ifndef PRG32_MULTIPLAYER_SEND_PERIOD_MS
 #define PRG32_MULTIPLAYER_SEND_PERIOD_MS 50
 #endif
@@ -207,6 +212,7 @@ int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out) {
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "lwip/sockets.h"
 
 #if CONFIG_PRG32_DISPLAY_QEMU_RGB
 #include "esp_eth.h"
@@ -244,6 +250,18 @@ int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out) {
 
 static const char *TAG = "prg32_mp";
 static esp_websocket_client_handle_t g_ws;
+/* Guards creating, destroying and re-pointing g_ws: the cartridge's thread
+ * joins and leaves, and the discovery task may move the client to a server it
+ * found. Recursive, because switching destroys and creates under one hold. */
+static SemaphoreHandle_t g_client_lock;
+/* The server in use: PRG32_MULTIPLAYER_SERVER_URL until discovery finds one. */
+static char g_server_url[PRG32_MP_URL_LEN];
+/* When the link last became DISCONNECTED (prg32_ticks_ms). */
+static volatile uint32_t g_disconnected_ms;
+/* LAN discovery: ask after this long without a connection, and this often. */
+#define PRG32_MP_DISCOVERY_AFTER_MS 3000
+#define PRG32_MP_DISCOVERY_QUERY_MS 2000
+#define PRG32_MP_DISCOVERY_STACK 3072
 static SemaphoreHandle_t g_mp_lock;
 /* Set by the WebSocket task on `device_blocked`; acted on by the tick, because
  * the task cannot destroy its own client. */
@@ -484,6 +502,9 @@ static void send_join(void) {
 
 /* A new socket is a new session: the peers and the admission are gone. */
 static void forget_session(prg32_mp_link_t link) {
+    if (link == PRG32_MP_LINK_DISCONNECTED) {
+        g_disconnected_ms = prg32_ticks_ms();
+    }
     if (lock_mp() == 0) {
         g_mp.link = link;
         g_mp.player_id = 0;
@@ -649,13 +670,26 @@ static void websocket_event(void *handler_args,
     }
 }
 
+static void lock_client(void) {
+    xSemaphoreTakeRecursive(g_client_lock, portMAX_DELAY);
+}
+
+static void unlock_client(void) {
+    xSemaphoreGiveRecursive(g_client_lock);
+}
+
 static int ensure_client(void) {
+    lock_client();
     if (g_ws) {
+        unlock_client();
         return 0;
     }
-    bool secure = strncmp(PRG32_MULTIPLAYER_SERVER_URL, "wss:", 4) == 0;
+    if (!g_server_url[0]) {
+        copy_text(g_server_url, sizeof(g_server_url), PRG32_MULTIPLAYER_SERVER_URL);
+    }
+    bool secure = strncmp(g_server_url, "wss:", 4) == 0;
     esp_websocket_client_config_t cfg = {
-        .uri = PRG32_MULTIPLAYER_SERVER_URL,
+        .uri = g_server_url,
         .reconnect_timeout_ms = PRG32_MP_RECONNECT_MIN_MS,
         .network_timeout_ms = PRG32_MP_NETWORK_TIMEOUT_MS,
         /* Reconnect after the server closes cleanly too, for example after
@@ -668,6 +702,7 @@ static int ensure_client(void) {
     };
     g_ws = esp_websocket_client_init(&cfg);
     if (!g_ws) {
+        unlock_client();
         return -1;
     }
     ESP_ERROR_CHECK(esp_websocket_register_events(g_ws,
@@ -679,25 +714,131 @@ static int ensure_client(void) {
         ESP_LOGW(TAG, "WebSocket start failed: %s", esp_err_to_name(err));
         esp_websocket_client_destroy(g_ws);
         g_ws = NULL;
+        unlock_client();
         return -1;
     }
+    unlock_client();
     return 0;
 }
 
 /* Stops the transport and frees its memory for the next cartridge. Waits for
  * the WebSocket task to end, up to the network timeout if it is connecting. */
 static void destroy_client(void) {
+    lock_client();
     if (g_ws) {
         esp_websocket_client_destroy(g_ws);
         g_ws = NULL;
     }
     g_reconnect_delay_ms = 0;
     g_policy_stop = 0;
+    unlock_client();
 }
+
+#if PRG32_MULTIPLAYER_DISCOVERY_PORT
+
+/* True while the cartridge wants a room and has had no connection for a while. */
+static bool discovery_wanted(void) {
+    bool wanted = false;
+    if (lock_mp() == 0) {
+        wanted = g_mp.member_requested && g_mp.link == PRG32_MP_LINK_DISCONNECTED;
+        unlock_mp();
+    }
+    return wanted &&
+           (uint32_t)(prg32_ticks_ms() - g_disconnected_ms) >= PRG32_MP_DISCOVERY_AFTER_MS;
+}
+
+/* Moves the client to `url`. The CONNECTED event then sends the join. */
+static void switch_server(const char *url) {
+    lock_client();
+    if (discovery_wanted() && strcmp(url, g_server_url) != 0) {
+        ESP_LOGI(TAG, "found a server on the local network: %s", url);
+        bool had_client = g_ws != NULL;
+        destroy_client();
+        copy_text(g_server_url, sizeof(g_server_url), url);
+        g_disconnected_ms = prg32_ticks_ms();
+        if (had_client && ensure_client() != 0) {
+            ESP_LOGW(TAG, "could not start the client for %s", url);
+        }
+    }
+    unlock_client();
+}
+
+/* LAN discovery (the server's docs/protocol.md, "LAN discovery"). While the
+ * console wants a room and cannot reach its server, it broadcasts a query every
+ * 2 s on UDP PRG32_MULTIPLAYER_DISCOVERY_PORT, and listens on that port for the
+ * answer or for a server's beacon. It never replaces a server that works. */
+static void discovery_task(void *arg) {
+    (void)arg;
+    int sock = -1;
+    uint32_t last_query_ms = 0;
+    char buffer[256];
+    char url[PRG32_MP_URL_LEN];
+    for (;;) {
+        if (!discovery_wanted()) {
+            vTaskDelay(pdMS_TO_TICKS(500));
+            continue;
+        }
+        if (sock < 0) {
+            sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            int yes = 1;
+            struct timeval timeout = {.tv_sec = 0, .tv_usec = 500000};
+            struct sockaddr_in local = {
+                .sin_family = AF_INET,
+                .sin_port = htons(PRG32_MULTIPLAYER_DISCOVERY_PORT),
+                .sin_addr.s_addr = htonl(INADDR_ANY),
+            };
+            if (sock < 0 ||
+                setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes)) != 0 ||
+                setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) != 0 ||
+                setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != 0 ||
+                bind(sock, (struct sockaddr *)&local, sizeof(local)) != 0) {
+                if (sock >= 0) {
+                    close(sock);
+                    sock = -1;
+                }
+                vTaskDelay(pdMS_TO_TICKS(PRG32_MP_DISCOVERY_QUERY_MS));
+                continue;
+            }
+        }
+        uint32_t now = prg32_ticks_ms();
+        if ((uint32_t)(now - last_query_ms) >= PRG32_MP_DISCOVERY_QUERY_MS) {
+            struct sockaddr_in everyone = {
+                .sin_family = AF_INET,
+                .sin_port = htons(PRG32_MULTIPLAYER_DISCOVERY_PORT),
+                .sin_addr.s_addr = htonl(INADDR_BROADCAST),
+            };
+            sendto(sock, PRG32_MP_DISCOVER_JSON, strlen(PRG32_MP_DISCOVER_JSON), 0,
+                   (struct sockaddr *)&everyone, sizeof(everyone));
+            last_query_ms = now;
+        }
+        int n = recv(sock, buffer, sizeof(buffer), 0);
+        if (n > 0 && prg32_mp_parse_discovery(buffer, (size_t)n, url, sizeof(url)) == 0) {
+            switch_server(url);
+        }
+    }
+}
+
+static void start_discovery(void) {
+    static TaskHandle_t task;
+    if (!task && xTaskCreate(discovery_task, "prg32_mp_disc", PRG32_MP_DISCOVERY_STACK,
+                             NULL, 4, &task) != pdPASS) {
+        task = NULL;
+        ESP_LOGW(TAG, "could not start LAN discovery");
+    }
+}
+
+#else
+
+static void start_discovery(void) {}
+
+#endif
 
 void prg32_multiplayer_init(void) {
     if (!g_mp_lock) {
         g_mp_lock = xSemaphoreCreateMutex();
+    }
+    if (!g_client_lock) {
+        g_client_lock = xSemaphoreCreateRecursiveMutex();
     }
     if (!g_mp.initialized) {
         memset(&g_mp, 0, sizeof(g_mp));
@@ -735,7 +876,11 @@ int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags) {
     g_mp.flags = flags;
     copy_text(g_mp.signature, sizeof(g_mp.signature), cartridge_signature);
     clear_peers();
+    if (g_mp.link == PRG32_MP_LINK_DISCONNECTED) {
+        g_disconnected_ms = prg32_ticks_ms();
+    }
     unlock_mp();
+    start_discovery();
     if (ensure_client() != 0) {
         if (lock_mp() == 0) {
             g_mp.member_requested = 0;
