@@ -238,6 +238,39 @@ prg32_mp_msg_type_t prg32_mp_parse_message(const char *data,
     return out->type;
 }
 
+int prg32_mp_parse_discovery(const char *data, size_t len, char *url, size_t url_size) {
+    if (!data || len == 0 || !url || url_size == 0) {
+        return -1;
+    }
+    url[0] = '\0';
+    cJSON *root = cJSON_ParseWithLength(data, len);
+    const cJSON *type = cJSON_GetObjectItemCaseSensitive(root, "type");
+    const cJSON *protocol = cJSON_GetObjectItemCaseSensitive(root, "protocol");
+    const cJSON *found = cJSON_GetObjectItemCaseSensitive(root, "url");
+    int result = -1;
+    if (cJSON_IsObject(root) && cJSON_IsString(type) && cJSON_IsString(protocol) &&
+        cJSON_IsString(found) && strcmp(type->valuestring, "server") == 0 &&
+        strcmp(protocol->valuestring, PRG32_MP_PROTOCOL) == 0) {
+        const char *text = found->valuestring;
+        size_t n = strlen(text);
+        size_t scheme = strncmp(text, "ws://", 5) == 0    ? 5
+                        : strncmp(text, "wss://", 6) == 0 ? 6
+                                                          : 0;
+        bool printable = true;
+        for (size_t i = 0; i < n; ++i) {
+            if (text[i] <= ' ' || text[i] > '~') {
+                printable = false;
+            }
+        }
+        if (scheme && n > scheme && n < url_size && printable) {
+            memcpy(url, text, n + 1);
+            result = 0;
+        }
+    }
+    cJSON_Delete(root);
+    return result;
+}
+
 bool prg32_mp_frame_is_stale(uint32_t frame, uint32_t latest) {
     return (int32_t)(frame - latest) < 0;
 }

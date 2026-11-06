@@ -16,11 +16,11 @@ set(PRG32_PRIV_REQUIRES
 )
 
 if(IDF_TARGET STREQUAL "esp32c3")
-    list(APPEND PRG32_PRIV_REQUIRES esp_lcd esp_lcd_qemu_rgb esp_websocket_client esp_eth)
+    list(APPEND PRG32_PRIV_REQUIRES esp_lcd esp_lcd_qemu_rgb esp_websocket_client esp_eth lwip)
 endif()
 
 if(IDF_TARGET STREQUAL "esp32c6")
-    list(APPEND PRG32_PRIV_REQUIRES esp_websocket_client mdns esp_driver_usb_serial_jtag)
+    list(APPEND PRG32_PRIV_REQUIRES esp_websocket_client mdns esp_driver_usb_serial_jtag lwip)
 endif()
 
 if(CONFIG_PRG32_DISPLAY_QEMU_RGB)

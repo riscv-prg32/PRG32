@@ -184,6 +184,34 @@ static void test_frame_order(void) {
     assert(prg32_mp_frame_is_stale(4294967295u, 2));
 }
 
+static void test_discovery(void) {
+    char url[PRG32_MP_URL_LEN];
+#define DISC(text) prg32_mp_parse_discovery(text, strlen(text), url, sizeof(url))
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\","
+                "\"url\":\"ws://192.168.1.79:8081\"}") == 0);
+    assert(strcmp(url, "ws://192.168.1.79:8081") == 0);
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\","
+                "\"url\":\"wss://mp.example.org\"}") == 0);
+    assert(strcmp(url, "wss://mp.example.org") == 0);
+    /* Another protocol, another type, another scheme, no host, a space. */
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"other-2\",\"url\":\"ws://a:1\"}") == -1);
+    assert(DISC("{\"type\":\"discover\",\"protocol\":\"prg32-multiplayer-1.0\"}") == -1);
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\",\"url\":\"http://a:1\"}") == -1);
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\",\"url\":\"ws://\"}") == -1);
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\",\"url\":\"ws://a b:1\"}") == -1);
+    assert(DISC("{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\",\"url\":5}") == -1);
+    assert(DISC("not json") == -1 && url[0] == '\0');
+    /* A URL that does not fit is refused, not cut. */
+    char small[12];
+    const char *longer = "{\"type\":\"server\",\"protocol\":\"prg32-multiplayer-1.0\","
+                         "\"url\":\"ws://192.168.1.79:8081\"}";
+    assert(prg32_mp_parse_discovery(longer, strlen(longer), small, sizeof(small)) == -1);
+    /* The query is valid JSON with the protocol name. */
+    assert(strcmp(PRG32_MP_DISCOVER_JSON,
+                  "{\"type\":\"discover\",\"protocol\":\"prg32-multiplayer-1.0\"}") == 0);
+#undef DISC
+}
+
 int main(void) {
     test_join();
     test_signature();
@@ -193,6 +221,7 @@ int main(void) {
     test_other_messages();
     test_malformed();
     test_frame_order();
+    test_discovery();
     puts("multiplayer wire: PASS");
     return 0;
 }

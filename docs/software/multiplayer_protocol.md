@@ -87,6 +87,22 @@ Set the server with
 `wss://` verifies the server against the firmware's certificate bundle and uses a
 larger task stack.
 
+### LAN Discovery
+
+When the compiled address does not answer, a board can find a server on its local
+network, as the server's `docs/protocol.md` ("LAN discovery") describes. The task
+`prg32_mp_disc` sleeps until a cartridge wants a room and the link has been down
+for 3 s. It then broadcasts `{"type":"discover","protocol":"prg32-multiplayer-1.0"}`
+to `255.255.255.255:8082` every 2 s and listens on that port. The first valid
+`server` message, an answer or a beacon, moves the client to its URL:
+`switch_server()` destroys the client and starts a new one under the client lock,
+and the CONNECTED event sends `join`. `prg32_mp_parse_discovery()` in
+`prg32_multiplayer_wire.c` accepts only `type` `server`, this protocol, and a
+printable `ws://` or `wss://` URL of at most 127 characters with a host.
+
+The port is `CONFIG_PRG32_MULTIPLAYER_DISCOVERY_PORT` (8082; 0 builds without
+discovery). The URL found is kept until the firmware restarts.
+
 ### Why QEMU Polls Its Ethernet
 
 With the MAC's receive interrupt enabled, an emulated console under busy traffic
@@ -124,6 +140,8 @@ succeed locally and reports false, as the protocol requires.
 ## Limits
 
 - `wss://` is implemented but has not been tested against a TLS server.
+- LAN discovery is not authenticated: any host on the network can answer. It does
+  not work through QEMU's user-mode network, which carries no broadcast.
 - Messages from the server arriving in several WebSocket fragments are dropped.
   The reference server sends each one as a single frame.
 - The firmware does not show the public device ID on screen, or offer a QEMU
@@ -250,3 +268,23 @@ board. Restart the instance when it stops answering.
 
 The tests wrote `cart7` and `scores` was unchanged; `cart7` was restored from
 `esptool read_flash` and all eight slots compared with the backup.
+
+## LAN Discovery (2026-11-06)
+
+Firmware `1fa8474` with the LAN discovery change, built with
+`python3 -m prg32 esp32c6 build -p breadboard1` and flashed with `idf.py --ccache`
+after a backup of the whole flash. The board's compiled server address was
+`ws://192.168.1.155:8081`, where nothing answered. The PRG32 Multiplayer Server ran
+on another address of the same Wi-Fi network (`192.168.1.77:8081`), with discovery
+on UDP 8082.
+
+| Check | Result (observed) |
+|---|---|
+| Board opens a room with the compiled address dead | Joined the LAN server a few seconds later; the cartridge's lobby showed the room |
+| A game played through the discovered server | Azzurra's Pro Tennis Challenge 2.1.0, `azzurra-tennis:v2`: the board against a QEMU console, 1 vs 1 to the result screen on both; 0 input conflicts |
+| The QEMU firmware with the change | Still reaches its compiled address through QEMU's user network; discovery is not used there. Three two-console Azzurra matches all stalled after 18 to about 100 s with the scheduler stuck (`prg32_eth_poll` waiting in `vPortYield` for its cross-core interrupt) and `prg32_mp_disc` asleep in its 500 ms wait: the QEMU stall seen before this change, in 10 of 14 runs and with Poing Wall |
+| `tests/test_multiplayer_wire.py` | Passes, with `prg32_mp_parse_discovery()` against valid, foreign, malformed, non-printable and too-long answers |
+
+Not exercised: a network that drops broadcasts, two servers answering at once, and a
+server lost after discovery (the firmware keeps the discovered URL and queries again
+only after 3 s without a connection).

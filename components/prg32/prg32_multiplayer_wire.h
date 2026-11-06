@@ -38,6 +38,14 @@
 
 #define PRG32_MP_LEAVE_JSON "{\"type\":\"leave\"}"
 
+/* LAN discovery (the server's docs/protocol.md, "LAN discovery"): a console
+ * broadcasts this UDP datagram to PRG32_MULTIPLAYER_DISCOVERY_PORT, and a
+ * server answers, or beacons, {"type":"server","protocol":...,"url":"ws://..."}. */
+#define PRG32_MP_DISCOVER_JSON \
+    "{\"type\":\"discover\",\"protocol\":\"" PRG32_MP_PROTOCOL "\"}"
+/* A server URL, ws:// or wss://, plus the terminator. */
+#define PRG32_MP_URL_LEN 128
+
 typedef enum {
     PRG32_MP_MSG_INVALID = 0, /* Malformed, or a field failed validation. */
     PRG32_MP_MSG_UNKNOWN,     /* A valid object of a type this runtime ignores. */
@@ -72,6 +80,11 @@ typedef struct {
     char error_code[PRG32_MP_ERROR_CODE_LEN];
     prg32_mp_error_action_t error_action;
 } prg32_mp_message_t;
+
+/* Reads a discovery answer or beacon. Copies its URL into `url` and returns 0
+ * when the datagram is a `server` message of this protocol whose URL starts
+ * with ws:// or wss://, has a host, and fits; returns -1 otherwise. */
+int prg32_mp_parse_discovery(const char *data, size_t len, char *url, size_t url_size);
 
 /* Checks the signature grammar: 1 to 47 characters of A-Z a-z 0-9 _ - . : */
 int prg32_mp_valid_signature(const char *signature);
