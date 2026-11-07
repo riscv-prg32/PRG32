@@ -182,3 +182,11 @@ from their own origin. Their status is tracked in
   checksums, the offsets never touching NVS, and the flasher's selection and
   command line without network or board. The flasher's dry run from a local
   manifest was checked with no ESP-IDF or PRG32 SDK on the `PATH`.
+- 2026-11-07: release `v1.8.0` built by the workflow for all three profiles
+  (each reported exactly `v1.8.0`). In a clean environment (`env -i`, a fresh
+  `HOME`, `PATH=/usr/bin:/bin`, Apple's Python 3.9), the flasher downloaded from
+  the release itself listed `v1.8.0`, installed esptool into its private
+  environment, downloaded and verified the `breadboard1` parts, and flashed the
+  attached breadboard1 ESP32-C6. esptool erased only 0x0-0x5fff, 0x8000-0x8fff
+  and 0x10000-0x19dfff; HELLO then reported firmware `v1.8.0`. No cartridge slot
+  was written or erased.

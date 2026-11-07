@@ -281,8 +281,8 @@ Contract, shared with `tools/prg32_flash_release.py`:
 
 | Application | Firmware flashing state (2026-11-07) |
 |---|---|
-| PRG32-Construction-Kit | Requested 2026-11-07; not implemented yet |
-| CartridgeStore | Requested 2026-11-07; not implemented yet |
+| PRG32-Construction-Kit | In progress (2026-11-07) on a branch of the Kit repository |
+| CartridgeStore | Implemented on branch `feat/firmware-flashing` (2026-11-07): **Firmware** page, `cartridge_store/firmware.py`, `static/js/firmware_flash.js`, vendored `esptool-js` 0.6.1; see its `docs/firmware_flashing.md`. Release listing and in-browser part verification checked against `v1.8.0`; writing a board from the page still needs a person at Chrome's port chooser |
 
 ## Constants that must match
 
