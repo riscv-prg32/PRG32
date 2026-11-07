@@ -126,9 +126,13 @@ contributor, update:
 - `CONTRIBUTORS.md`
 - the README contributor section
 - `CITATION.cff` when authorship metadata changes
+- the firmware colophon (`about_menu()` in `components/prg32/prg32_system.c`)
+  and its screenshot `assets/screenshots/prg32_menu_about.png`
 
 Current named contributors:
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
-- Simone Boscaglia - UniParthenope - Computer Science student
-- Ivan Cafiero - UniParthenope - Computer Science student
+- Simone Boscaglia - UniParthenope - BSc in Computer Science student
+- Ivan Cafiero - UniParthenope - BSc in Computer Science student
+- Dario Caramiello - UniParthenope - MSc in Computer Science student
+- Giuseppe Coviello - contributor (bounded random-number ABI and examples)

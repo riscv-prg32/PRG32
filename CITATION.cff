@@ -12,6 +12,11 @@ authors:
   - family-names: "Cafiero"
     given-names: "Ivan"
     affiliation: "UniParthenope"
+  - family-names: "Caramiello"
+    given-names: "Dario"
+    affiliation: "UniParthenope"
+  - family-names: "Coviello"
+    given-names: "Giuseppe"
 keywords:
   - embedded-systems
   - riscv

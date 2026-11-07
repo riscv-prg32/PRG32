@@ -15,6 +15,55 @@ Serial API.
 
 PRG32 is **not** a CPU instruction emulator. Code runs natively on ESP32-C6 hardware, or on Espressif QEMU firmware target ESP32-C3 for desktop graphics/testing.
 
+> [!TIP]
+> **Ready to go, nothing to install:** open the hosted
+> [PRG32 Construction Kit at kit.prg32.uniparthenope.it](https://kit.prg32.uniparthenope.it)
+> in a Chromium-based browser. Write a game with Blocks, C, RISC-V assembly, or
+> PRG32 Python, build a real `.prg32` cartridge, play it in the simulator, and
+> send it to a PRG32 board over USB.
+
+## Featured Games
+
+Cartridges made with PRG32, each in its own repository and available from the
+[Cartridge Store](https://store.prg32.uniparthenope.it/). Screenshots are the
+store captures of the 320x200 game area.
+
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/riscv-prg32/Azzurra-s-Pro-Tennis-Challenge"><img src="assets/screenshots/featured/azzurra_pro_tennis_challenge.png" width="260" alt="Azzurra's Pro Tennis Challenge"></a><br><b>Azzurra's Pro Tennis Challenge</b></td>
+    <td align="center"><a href="https://github.com/riscv-prg32/Outbun-napoli97"><img src="assets/screenshots/featured/outbun_napoli97.png" width="260" alt="Outbun Napoli 97"></a><br><b>Outbun Napoli 97</b></td>
+    <td align="center"><a href="https://github.com/riscv-prg32/SensationalSoccer"><img src="assets/screenshots/featured/sensational_soccer.png" width="260" alt="Sensational Soccer"></a><br><b>Sensational Soccer</b></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/riscv-prg32/TheTrerroteConnection"><img src="assets/screenshots/featured/the_trerrote_connection.png" width="260" alt="The Trerrote Connection"></a><br><b>The Trerrote Connection</b></td>
+    <td align="center"><a href="https://github.com/riscv-prg32/EntomoTheParallelogramForce-napoli2010"><img src="assets/screenshots/featured/entomo_parallelogram_force.png" width="260" alt="Entomo: The Parallelogram Force"></a><br><b>Entomo: The Parallelogram Force</b></td>
+    <td align="center"><a href="https://github.com/riscv-prg32/Galleria2007"><img src="assets/screenshots/featured/galleria2007.png" width="260" alt="Galleria 2007"></a><br><b>Galleria 2007</b></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/riscv-prg32/Drumfight-napoli97"><img src="assets/screenshots/featured/drumfight_napoli97.png" width="260" alt="Drumfight Napoli 97"></a><br><b>Drumfight Napoli 97</b></td>
+    <td align="center"><a href="https://github.com/riscv-prg32/YouHaveGotPizza-DeluxeEdition"><img src="assets/screenshots/featured/you_have_got_pizza_deluxe.png" width="260" alt="You Have Got Pizza: Deluxe Edition"></a><br><b>You Have Got Pizza: Deluxe Edition</b></td>
+    <td align="center"><a href="https://github.com/riscv-prg32/spiriti-napoli97"><img src="assets/screenshots/featured/spiriti_napoli97.png" width="260" alt="Spiriti Napoli 97"></a><br><b>Spiriti Napoli 97</b></td>
+  </tr>
+</table>
+
+The in-tree cartridges ([Blackjack](cartridges/blackjack/README.md),
+[Poing](cartridges/poing/README.md), [Bach demo](cartridges/bachdemo/README.md),
+[DeviceDemo](cartridges/devicedemo/README.md)) are described in
+[Cartridges](docs/software/cartridges.md).
+
+## The PRG32 Ecosystem
+
+![PRG32 ecosystem: Construction Kit, PRG32, Cartridge Store, consoles, PRG32-QT, and Multiplayer Server](docs/images/prg32-ecosystem.svg)
+
+| Repository | Description |
+|---|---|
+| [PRG32-Construction-Kit](https://github.com/riscv-prg32/PRG32-Construction-Kit) | Classroom web IDE: Blocks, C, RISC-V assembly, and PRG32 Python projects compiled into real `.prg32` cartridges, a browser simulator, Web Serial deployment to a board, and teacher class views. Hosted at [kit.prg32.uniparthenope.it](https://kit.prg32.uniparthenope.it). |
+| [CartridgeStore](https://github.com/riscv-prg32/CartridgeStore) | App-store-style catalog and classroom service hub: cartridge downloads per architecture, scores, frame metrics, a multiplayer relay, and mDNS discovery for the firmware setup menu. Public instance at [store.prg32.uniparthenope.it](https://store.prg32.uniparthenope.it/). |
+| [PRG32-Multiplayer-Server](https://github.com/riscv-prg32/PRG32-Multiplayer-Server) | Small Node.js WebSocket relay for multiplayer cartridges: groups consoles by cartridge signature and relays bounded player snapshots with the `prg32-multiplayer-1.0` protocol. |
+| [PRG32-QT](https://github.com/riscv-prg32/PRG32-QT) | Portable Qt 6 host that runs `.prg32` cartridges on desktop, mobile, and TV systems through the same ABI. |
+
+See [The PRG32 Ecosystem](docs/ecosystem.md) for the protocols between the parts.
+
 ### Hardware
 
 The platform is designed around the **Espressif ESP32-C6** microcontroller and uses accessible, low-cost components for easy classroom assembly. The standard hardware setup includes:
@@ -24,14 +73,34 @@ The platform is designed around the **Espressif ESP32-C6** microcontroller and u
 
 Please refer to the [Hardware & Pinouts](docs/hardware/hardware.md) guide for further information about breadboard wiring diagrams, PCB references and the full bill of materials.
 
+### Hardware Availability
+
+You can build a PRG32 console from the
+[bill of materials](docs/hardware/where_to_buy.md) or fabricate the open
+[PCB reference design](docs/hardware/pcb/README.md). Some third-party boards may
+also fit the PRG32 specification, for example the
+[MAYPAD](https://madaboutyou.it/maker32/maypad/) ESP32-C6 board sold by Mad About
+You - MAY SRL. The list, what each seller states, and what has been verified are
+in [Hardware Availability](docs/hardware/availability.md).
+
+> [!IMPORTANT]
+> **No agreement, no affiliation.** PRG32 is a public, open-source,
+> open-hardware, non-profit research prototype project. There is **no agreement,
+> partnership, sponsorship, or connection of any kind** between the University
+> of Naples "Parthenope" and the companies that provide hardware which could fit
+> the PRG32 specifications. Products are mentioned only for convenience; they are
+> not endorsed, certified, or tested by the University or the PRG32 maintainers.
+
 ## Academic Profile
 
 - Project domain: Embedded Systems and Computer Architecture Education
 - Platform focus: ESP32-C6 (hardware) and ESP32-C3 QEMU path (desktop emulation)
 - Course style: first-year/early undergraduate assembly and systems labs
-- Academic supervisor / project lead: Raffaele Montella - UniParthenope
-- Contributor (student): Simone Boscaglia - UniParthenope - Computer Science student
-- Contributor (student): Ivan Cafiero - UniParthenope - Computer Science student
+- Academic supervisor / project lead: Raffaele Montella - UniParthenope - Associate Professor of Computer Science, head of the High-Performance Scientific Computing Laboratory (HPSC Lab)
+- Contributor (student): Simone Boscaglia - UniParthenope - BSC in Computer Science student
+- Contributor (student): Ivan Cafiero - UniParthenope - BSC in Computer Science student
+- Contributor (student): Dario Caramiello - UniParthenope - MSC in Computer Science student
+- Contributor: Giuseppe Coviello - bounded random-number ABI and examples
 
 ## Install & Setup
 
@@ -219,6 +288,8 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep us
 - [Web-to-USB Deployment](docs/software/web_usb_deployment.md): Browser deployment contract for the PRG32-Construction-Kit and CartridgeStore.
 - [Cartridge CI/CD](docs/software/cartridges.md#continuous-integration-and-delivery-artifacts): Automated Bach, Blackjack, DeviceDemo, and Poing packages with downloadable previews.
 - [Hardware & Pinouts](docs/hardware/hardware.md): Board, display, and input architecture.
+- [Hardware Availability](docs/hardware/availability.md): Building a console and third-party boards that may fit, with the no-affiliation notice.
+- [The PRG32 Ecosystem](docs/ecosystem.md): Companion repositories and the protocols between them.
 
 **Learning Materials:**
 - [Teaching with PRG32](docs/learn/teaching_with_prg32.md): Instructor notes and classroom setup.
@@ -241,8 +312,16 @@ The PlatformIO environment is for the physical ESP32-C6 classroom board. Keep us
 ## Contributors
 
 - Raffaele Montella - UniParthenope - academic supervisor / project lead
-- Simone Boscaglia - UniParthenope - Computer Science student
-- Ivan Cafiero - UniParthenope - Computer Science student
+- Simone Boscaglia - UniParthenope - BSc in Computer Science student
+- Ivan Cafiero - UniParthenope - BSc in Computer Science student
+- Dario Caramiello - UniParthenope - MSc in Computer Science student
+- Giuseppe Coviello - contributor (bounded random-number ABI and examples)
+
+The same list appears in the firmware's **ABOUT PRG32** setup screen.
+
+<p align="center">
+  <img src="assets/screenshots/prg32_menu_about.png" width="320" alt="The ABOUT PRG32 setup screen listing the authors and contributors">
+</p>
 
 See [CONTRIBUTORS.md](CONTRIBUTORS.md) for contributor metadata suitable for academic submissions.
 

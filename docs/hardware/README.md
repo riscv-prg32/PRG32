@@ -29,6 +29,7 @@ PRG32 hardware documentation is organized into modular guides covering each subs
 | **Multiplayer / External** | [**External Controllers & Multiplayer**](external_controllers.md) | Local single-player architecture, Wi-Fi multi-console multiplayer, and input packet synchronization. |
 | **Hardware Profiles** | [**Pin Profiles Directory**](profiles/README.md) | Complete comparison and wiring tables for [`breadboard1`](profiles/breadboard1.md) and [`breadboard2`](profiles/breadboard2.md). |
 | **Bill of Materials** | [**Where to Buy & Sourcing Guide**](where_to_buy.md) | Central parts list, component specifications, and direct Amazon search links across 23 countries. |
+| **Availability** | [**Hardware Availability**](availability.md) | What fits the PRG32 specification and third-party boards that may fit. The University of Naples "Parthenope" has no agreement with any seller. |
 
 ---
 

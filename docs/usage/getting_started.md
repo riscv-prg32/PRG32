@@ -61,7 +61,8 @@ cartridge can be selected, or when you hold A+B during boot. From that menu
 you can run a cartridge, set the default, configure Wi-Fi and CartridgeStore,
 open audio or developer settings, calibrate an analog joystick
 ([joystick calibration](../hardware/joystick.md#joystick-calibration)), and
-view the about screen. The optional
+view the about screen, the firmware colophon with the firmware version and the
+project's authors and contributors. The optional
 performance-test cartridge runs matched RGB565 and full-indexed passes,
 displays an aggregate summary, and retains compact JSON at
 `/api/performance.json` until reboot or the next run. Poing can publish a

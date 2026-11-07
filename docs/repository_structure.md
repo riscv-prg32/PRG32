@@ -30,19 +30,23 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_multiplayer_wire.c  The protocol's JSON messages and the discovery answer, validated, with no networking so that they can be tested on a computer
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
 |   |   |-- prg32_joystick_analog.c Analog stick: ADC one-shot sampling, -127..127 axes, and the joystick calibration kept in NVS
-|   |   |-- prg32_system.c          Boot sequence and setup menus (including joystick calibration), and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
+|   |   |-- prg32_system.c          Boot sequence and setup menus (including joystick calibration and the ABOUT PRG32 firmware colophon), and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
 |   |   |-- prg32_usb_protocol.c    Automatic framed USB/UART upload, run, performance, Wi-Fi, and key-command protocol with upload timeout, failed-slot erase, HELLO heap reporting, and whole-frame writes that console logs cannot split
 |   |   |-- prg32_wifi.c            Wi-Fi modes, setup screens, the last four connected networks, and forgetting a stored network
 |   |   |-- prg32_random.c          Uniform bounded random-number API
 |   |   `-- Kconfig                 Firmware configuration options (menuconfig)
 |   `-- prg32_audio/                ESP-IDF audio component; audio.c runs the audio task above the HTTP and device protocol tasks' priority, replaces it only after the old one has exited, and on QEMU waits for the player's credits outside the frame-clock lock and stops waiting when no player is connected; audio_synth.c holds the private SID-like oscillator, ADSR, noise, and filter core; audio_tracker.c runs tracker event timing (its console trace is off by default); audio_assets.c resets the mixer for each cartridge; include/prg32_audio_frame_clock.h declares the QEMU audio frame clock
+|-- assets/                         Logo and screenshots (menus, example games, and `featured/` store screenshots of cartridges in other repositories)
 |-- docs/                           Manuals, tutorials, hardware docs, and labs
 |   |-- agents/                     Guidelines for autonomous coding agents
 |   |   |-- device_protocol_consistency.md  Rules for keeping firmware, SDK, web clients, and hardware docs aligned
 |   |   `-- python_language_consistency.md  Rules for keeping the SDK and Construction Kit PRG32 Python compilers identical
+|   |-- ecosystem.md                Companion repositories, the hosted Construction Kit, and the protocols between them
+|   |-- images/                     Project-wide figures, such as the ecosystem diagram
 |   |-- cartridge_store/            CartridgeStore API and ScoreServer API documentation
 |   |-- hardware/                   Hardware integration guides (displays, controllers, memory, etc.)
 |   |   |-- README.md               Central hardware directory guide, breadboard layout, and architecture index
+|   |   |-- availability.md         What fits the PRG32 specification, third-party boards, and the no-affiliation notice
 |   |   |-- audio.md                MAX98357A I2S DAC/Amp wiring, mono/stereo mode selection, and speaker safety
 |   |   |-- joystick.md             Digital 5-way joystick, analog KY-023 one-shot ADC thumbstick, buttons, and input API
 |   |   |-- rgb_led.md              WS2812 addressable onboard RGB LED driver and pin allocation

@@ -12,6 +12,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 *Information about the repo itself.*
 
 - [Repository Structure](repository_structure.md)
+- [The PRG32 Ecosystem](ecosystem.md): companion repositories, the hosted Construction Kit, and the protocols between them
 
 ## Usage (Execution & Deployment)
 *Workflows for running the emulator, uploading cartridges, and flashing firmware.*
@@ -33,6 +34,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 - [Joysticks & Controller Inputs](hardware/joystick.md)
 - [Hardware Pin Profiles](hardware/profiles/README.md)
 - [Bill of Materials and Where to Buy](hardware/where_to_buy.md)
+- [Hardware Availability](hardware/availability.md): third-party boards that may fit, and the no-affiliation notice
 - [External Controllers](hardware/external_controllers.md)
 
 ## Software

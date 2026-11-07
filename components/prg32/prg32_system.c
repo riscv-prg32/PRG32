@@ -892,19 +892,30 @@ static void about_menu(void) {
       return;
     }
 
+    /* The firmware colophon. Keep this list in step with CONTRIBUTORS.md.
+     * Names start at x=8 and roles at x=152 (18 characters of 8 pixels). */
     prg32_gfx_clear(PRG32_COLOR_BLACK);
     prg32_gfx_text8(8, 8, "ABOUT PRG32", PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 32, "RETRO GAMING & CODING", PRG32_COLOR_CYAN, 0);
-    prg32_gfx_text8(8, 48, version_line, PRG32_COLOR_GREEN, 0);
-    prg32_gfx_text8(8, 64, "AUTHORS AND CONTRIBUTORS", PRG32_COLOR_YELLOW, 0);
-    prg32_gfx_text8(8, 88, "RAFFAELE MONTELLA", PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 104, "UNIPARTHENOPE", PRG32_COLOR_GREEN, 0);
-    prg32_gfx_text8(8, 120, "ACADEMIC SUPERVISOR / PROJECT LEAD",
+    prg32_gfx_text8(8, 24, "RETRO GAMING & CODING", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 40, version_line, PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(8, 60, "AUTHORS AND CONTRIBUTORS", PRG32_COLOR_YELLOW, 0);
+    prg32_gfx_text8(8, 80, "RAFFAELE MONTELLA", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 92, "ACADEMIC SUPERVISOR / PROJECT LEAD",
                     PRG32_COLOR_CYAN, 0);
-    prg32_gfx_text8(8, 152, "SIMONE BOSCAGLIA & IVAN CAFIERO",
-                    PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 168, "UNIPARTHENOPE", PRG32_COLOR_GREEN, 0);
-    prg32_gfx_text8(8, 184, "COMPUTER SCIENCE STUDENTS", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 112, "SIMONE BOSCAGLIA", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(152, 112, "BSC CS STUDENT", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 124, "IVAN CAFIERO", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(152, 124, "BSC CS STUDENT", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 136, "DARIO CARAMIELLO", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(152, 136, "MSC CS STUDENT", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 148, "GIUSEPPE COVIELLO", PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(152, 148, "CONTRIBUTOR", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 168, "UNIVERSITY OF NAPLES PARTHENOPE",
+                    PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(8, 180, "OPEN SOURCE - OPEN HARDWARE", PRG32_COLOR_GREEN,
+                    0);
+    prg32_gfx_text8(8, 192, "NON-PROFIT RESEARCH PROTOTYPE", PRG32_COLOR_GREEN,
+                    0);
     prg32_gfx_text8(8, 224, "A / SELECT / B BACK", PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     last = input;

@@ -49,6 +49,10 @@ are shared assembly tools rather than components of each unit.
 This list is not a claim that all linked modules are mechanically
 interchangeable; check each module against your breadboard layout.
 
+Ready-made third-party boards that may fit the PRG32 specification are listed
+separately in [hardware availability](availability.md), with the notice that
+the University of Naples "Parthenope" has no agreement with their sellers.
+
 ## Check before ordering
 
 - Compare the full development-board pinout with [PRG32 wiring](README.md#hardware-pin-profiles--software-selection).
