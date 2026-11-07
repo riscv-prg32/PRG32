@@ -182,6 +182,14 @@ Most of a validation run is spent compiling the firmware. Two things shorten it:
   and that build used the same pin profile; otherwise the kept sdkconfig does
   not match the source. Run a full build in every other case.
 
+## Stand-alone firmware flasher
+
+[`tools/prg32_flash_release.py`](../../tools/prg32_flash_release.py) downloads a
+firmware release from GitHub and flashes it without ESP-IDF or this SDK; it is
+a single file, also attached to every release. Release builds are packaged by
+[`tools/prg32_firmware_release.py`](../../tools/prg32_firmware_release.py) in
+`.github/workflows/release.yml`. See [Firmware Releases](firmware_releases.md).
+
 ## GitHub Actions artifacts
 
 The repository workflow builds all six in-tree cartridges with the same unified

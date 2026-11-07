@@ -10,6 +10,7 @@ This document outlines the high-level layout of the PRG32 repository.
 ```text
 .
 |-- .github/workflows/ci.yml        ESP32-C6 and QEMU firmware builds, host checks, and store-ready cartridge CI/CD artifacts
+|-- .github/workflows/release.yml   On a v* tag: builds the ESP32-C6 firmware for every pin profile and publishes a GitHub release (prg32-firmware.json, flash parts, SHA256SUMS, the flasher)
 |-- cartridges/                     In-tree portable cartridges and store-ready bundles
 |   |-- audiotest/                  Source-only audio pan diagnostic cartridge
 |   |-- bachdemo/                   Eight-voice procedural Bach audio showcase
@@ -94,9 +95,11 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |-- partitions_prg32.csv        Partition table defining resident firmware layout and eight cartridge slots
 |   |-- sdkconfig.defaults*         Default configuration files for ESP32-C6 hardware and QEMU emulator builds (128 KiB cartridge window; ESP32-C6 IRAM and Wi-Fi buffer trimming for free heap; optional 64 KiB fragment, `sdkconfig.defaults.cart_64k`)
 |   `-- sdkconfig.pins.*            Hardware pin configuration profiles (breadboard1, breadboard2, pcb1)
-|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), the multiplayer wire format and session rules, setup-screen takeover (including screens a cartridge opens), performance suites stopping with their cartridge, cartridge switches and band reset, firmware AUDIO block parsing, the QEMU audio task never blocking a cartridge start and audio shutdown waiting for the task to exit, and documentation validation
+|-- tests/                          Host-side unit tests for Python tooling, PRG32 Python, the device protocol (including Wi-Fi and key messages, and finding the board's port), firmware release packaging and the stand-alone flasher, the multiplayer wire format and session rules, setup-screen takeover (including screens a cartridge opens), performance suites stopping with their cartridge, cartridge switches and band reset, firmware AUDIO block parsing, the QEMU audio task never blocking a cartridge start and audio shutdown waiting for the task to exit, and documentation validation
 |   `-- key_gameplay/               Deterministic game and script that plays it with key commands on a running target
 |-- tools/                          Developer scripts, including real QEMU cartridge preview capture, media validation, and the multiplayer wall test against a real server
+|   |-- prg32_firmware_release.py   Packages one profile's flash parts and joins them into the prg32-firmware-release-1.0 manifest (used by the release workflow)
+|   `-- prg32_flash_release.py      Stand-alone flasher: lists GitHub firmware releases, downloads and verifies one, and flashes it with esptool, without ESP-IDF or the PRG32 SDK
 |-- .vscode/                        Student-ready VS Code tasks and debug configurations
 |-- AGENTS.md                       Rules and guidelines for autonomous coding agents
 |-- CMakeLists.txt                  Top-level CMake project definition

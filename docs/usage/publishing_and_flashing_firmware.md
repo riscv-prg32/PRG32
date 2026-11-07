@@ -1,5 +1,11 @@
 # Publishing And Flashing Legacy Firmware
 
+> [!TIP]
+> To flash an official release without ESP-IDF, see
+> [Firmware Releases](firmware_releases.md). Releases keep Wi-Fi settings and
+> cartridges; the merged image below fills 0x9000-0xffff with 0xFF and so
+> erases the NVS settings partition.
+
 This workflow publishes the resident ESP32-C6 firmware as one merged binary.
 It is useful for a classroom or release archive where students should flash one file instead of tracking the bootloader, partition table, and app offsets.
 

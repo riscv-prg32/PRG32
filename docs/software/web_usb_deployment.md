@@ -249,6 +249,41 @@ over Wi-Fi with HTTP and writes the slot with the same stream functions.
   against QEMU (`--port socket://127.0.0.1:5555`) or hardware; both use the
   same firmware receiver.
 
+## Firmware flashing
+
+Both web applications also flash the resident firmware itself from a
+[firmware release](../usage/firmware_releases.md): browse the releases, pick a
+release and a pin profile, download, and write it over Web Serial. This is a
+different conversation from cartridge deployment: the page talks to the chip's
+ROM bootloader with Espressif's `esptool-js`, not to the PRG32 firmware with
+`prg32-io-1.0`, so the console's cartridges are not involved.
+
+Contract, shared with `tools/prg32_flash_release.py`:
+
+- Read `prg32-firmware.json` (`prg32-firmware-release-1.0`) and follow its
+  [host rules](../usage/firmware_releases.md#manifest-format-prg32-firmware-release-10):
+  verify every part's SHA-256, write each part at its offset only, never erase
+  the `preserves` partitions without an explicit full-erase choice, and show the
+  profile `warning` (pcb1) before writing.
+- GitHub release downloads do not carry CORS headers, so the browser cannot
+  read them from another origin. The server fetches the GitHub releases API
+  (`/repos/riscv-prg32/PRG32/releases`), keeps the releases with a
+  `prg32-firmware.json` asset, and caches and serves the manifest and parts
+  from its own origin. A server can also be pointed at a local folder for
+  offline classrooms.
+- Open the port through `esptool-js`'s own reset sequence. Do not toggle DTR
+  and RTS one at a time from page code
+  ([modem-control lines](usb_protocol.md#modem-control-lines)).
+- Close any `prg32-io-1.0` session on the same port before flashing; only one
+  page can hold the port.
+- After flashing, a HELLO over `prg32-io-1.0` confirms the new `firmware`
+  version. Tell the user to press RESET once if HELLO does not answer.
+
+| Application | Firmware flashing state (2026-11-07) |
+|---|---|
+| PRG32-Construction-Kit | Requested 2026-11-07; not implemented yet |
+| CartridgeStore | Requested 2026-11-07; not implemented yet |
+
 ## Constants that must match
 
 | Constant | Value | Defined in |

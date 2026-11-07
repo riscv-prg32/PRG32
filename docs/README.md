@@ -21,6 +21,7 @@ Welcome to the documentation for PRG32! To make it easier to find what you need,
 - [Running Cartridges](software/cartridges.md)
 - [Cartridge Store](cartridge_store/cartridge_store.md)
 - [Setup Mode Cartridge Store](cartridge_store/cartridge_store.md)
+- [Firmware Releases](usage/firmware_releases.md): flash a GitHub release without ESP-IDF, the release format, and how releases are made
 - [Publishing and Flashing Firmware](usage/publishing_and_flashing_firmware.md)
 - [Deployment](usage/publishing_and_flashing_firmware.md)
 - [Troubleshooting](usage/troubleshooting.md)
