@@ -43,8 +43,9 @@ int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out);
  * part of the cartridge ABI. No address is built in: a console uses the one
  * saved here, else the compiled CONFIG_PRG32_MULTIPLAYER_SERVER_URL if one was
  * set, else the first server that mDNS or LAN discovery finds, else the public
- * server. Each returns 0
- * on success and -1 otherwise; `set` accepts only ws:// and wss:// URLs. */
+ * server. A saved address is used alone: the console never searches the local
+ * network while it is set. Each returns 0 on success and -1 otherwise; `set`
+ * accepts only ws:// and wss:// URLs. */
 int prg32_multiplayer_server_url_get(char *out_url, size_t max_len);
 int prg32_multiplayer_server_url_set(const char *url);
 void prg32_multiplayer_server_url_clear(void);
@@ -59,6 +60,21 @@ int prg32_multiplayer_server_url_public(char *out_url, size_t max_len);
 bool prg32_multiplayer_mdns_available(void);
 /* One mDNS query; writes ws://IP:PORT[/path] for the first server found. */
 int prg32_multiplayer_discover_mdns(char *out_url, size_t max_len);
+/* One LAN discovery search (UDP): a query, then up to `wait_ms` for an answer
+ * or a beacon. Writes the server's URL and returns 0 when one answered. */
+int prg32_multiplayer_discover_lan(char *out_url, size_t max_len, uint32_t wait_ms);
+/* True when the address in use was found by searching the local network; the
+ * setup screen shows it as LOCAL. */
+bool prg32_multiplayer_server_is_local(void);
+/* Uses `url`, found on the local network, as the server: clears any saved
+ * address, so the console is back to automatic discovery, and the next join
+ * connects there. Returns 0, or -1 for an invalid URL. */
+int prg32_multiplayer_use_local_server(const char *url);
+/* Called by the Wi-Fi code when the console gets a network address. With no
+ * saved or compiled address, it starts a short background search (mDNS, then
+ * LAN discovery, for up to 10 s) so that a local server is known before a game
+ * joins. Returns at once; otherwise it does nothing. */
+void prg32_multiplayer_network_up(void);
 /* SETUP > MULTIPLAYER SETUP, a resident modal screen. */
 void prg32_setup_multiplayer_run(void);
 

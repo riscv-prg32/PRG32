@@ -83,7 +83,7 @@ In Station mode (`PRG32_WIFI_MODE_STA`), the IP address will be assigned by the 
 
 QEMU builds have no Wi-Fi (`CONFIG_PRG32_DISPLAY_QEMU_RGB`), but games can still compile against the same API and exercise setup screens. mDNS, CartridgeStore downloads, and the HTTP API do not run on QEMU.
 
-Multiplayer does: the firmware starts QEMU's emulated OpenCores Ethernet the first time a cartridge joins a room, and gets an address from QEMU's user-mode network. The console reaches any address the computer can reach, without configuration on the computer. From inside QEMU, `10.0.2.2` means the computer running QEMU, so the default server address of a QEMU build is `ws://10.0.2.2:8081`.
+Multiplayer does: the firmware starts QEMU's emulated OpenCores Ethernet the first time a cartridge joins a room, and gets an address from QEMU's user-mode network. The console reaches any address the computer can reach, without configuration on the computer. A QEMU build follows the same order as the board, below, so with nothing saved or compiled in it uses the public server. From inside QEMU, `10.0.2.2` means the computer running QEMU: to play against a server running there, choose **MANUAL ENTRY** in the setup menu and type `10.0.2.2` (the port step offers 8081).
 
 ## Multiplayer Server Address
 
@@ -96,11 +96,18 @@ it has:
 | 1 | The address saved on the console | **SETUP > MULTIPLAYER SETUP** |
 | 2 | An address compiled into this firmware, if you chose one | `python3 -m prg32 multiplayer set-url` |
 | 3 | A server found on the local network | Nothing: mDNS, then LAN discovery, [below](#finding-the-server-on-the-local-network) |
-| 4 | The public server, `wss://multi.prg32.uniparthenope.it`, when rows 1 to 3 give nothing for 10 seconds | `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`; empty turns it off |
+| 4 | The public server, `ws://193.205.230.7:8099`, when rows 1 to 3 give nothing for 10 seconds | `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`; empty turns it off |
 
-If the console has an address but cannot reach it for 3 seconds, it also looks for
-a server on the local network, as in row 3. A server that works is never replaced,
-so a classroom server on the local network is always used before the public one.
+An address saved on the console is used alone: the console never searches the
+local network while one is saved. With a compiled address that cannot be reached
+for 3 seconds, or with the public server, the console also looks for a server on
+the local network, as in row 3. A server that works is never replaced, so a
+classroom server on the local network is always used before the public one.
+
+The public server is reached directly and **unencrypted** for now, so the identity a
+console sends when it joins crosses the internet in clear text. It moves to
+`wss://multi.prg32.uniparthenope.it` once that address forwards WebSocket
+connections ([hosted server](../software/multiplayer_protocol.md#hosted-server-as-the-public-fallback-2026-11-11)).
 
 ### Setting the Server on the Console
 
@@ -108,15 +115,20 @@ Open **SETUP > MULTIPLAYER SETUP**:
 
 | Item | What it does |
 |---|---|
-| SCAN NETWORK (MDNS) | Looks for a server with mDNS and shows the first one; SELECT saves it |
-| MANUAL ENTRY | Opens the keyboard. Type `ws://HOST:PORT` or `wss://HOST/PATH`. A bare host gets `ws://` and port 8081; `host:port` gets `ws://` |
+| SEARCH LOCAL NETWORK | Searches with mDNS, then LAN discovery, for up to 10 seconds (hold B to stop). A server found is shown as `FOUND: LOCAL`; SELECT uses it, clearing any saved address, and the screen then shows `SERVER: LOCAL` |
+| MANUAL ENTRY | Opens the keyboard. Type an IP address or host name such as `192.168.1.10`; a second keyboard then asks for the **SERVER PORT**, already filled in with `8081` (press `return` to keep it). Typing `host:port` or a full `ws://` or `wss://` URL skips the port step (`:` and `/` are on the keyboard's `ascii` page). Editing a saved `ws://` address offers its host and port again |
 | USE AUTOMATIC DISCOVERY | Clears the saved address, so the console uses the compiled one or finds a server by itself |
 
-The screen shows the saved address, the compiled one, or which discovery the console
-will use and the public server it turns to after 10 seconds. The address is kept in NVS (namespace `prg32`, key `mp_url`), survives
+The screen shows the saved address, `LOCAL` for a server found on the local
+network, the compiled address, or which discovery the console will use and the
+public server it turns to after 10 seconds. With no address saved or compiled in,
+the board also searches the local network in the background each time it connects
+to Wi-Fi, at boot and after a reconnection, so a local server is usually known
+before a game starts. A server found there is remembered until the console
+restarts, and a later search that finds another one replaces it. The address is kept in NVS (namespace `prg32`, key `mp_url`), survives
 firmware updates, and applies to the next cartridge that joins a room. Saving or
 clearing it while no cartridge runs takes effect at once. This works on QEMU too,
-except the mDNS scan.
+except the search, since QEMU has no mDNS and its network carries no broadcasts.
 
 ### Compiling an Address In (Optional)
 
@@ -130,11 +142,11 @@ This saves `CONFIG_PRG32_MULTIPLAYER_SERVER_URL` in `profiles/sdkconfig.defaults
 
 Use `python3 -m prg32 multiplayer clear-url` to compile in no address again. Use `ws://` only on a local network you control, and `wss://` on a public one.
 
-The QEMU defaults, `profiles/sdkconfig.defaults.qemu`, set `ws://10.0.2.2:8081`. That is not a server's address: inside QEMU's user-mode network `10.0.2.2` always means the computer running QEMU, so a server started there is reached without configuration.
+The QEMU defaults, `profiles/sdkconfig.defaults.qemu`, compile in no address either, so QEMU and the board behave the same. Inside QEMU's user-mode network `10.0.2.2` always means the computer running QEMU; save it with **MANUAL ENTRY**, or compile in `ws://10.0.2.2:8081`, to reach a server started there.
 
 ### Finding the Server on the Local Network
 
-A board finds a server on its local network in two ways, while a cartridge has asked for a room and the board has no address or has had no connection to it for 3 seconds. The first answer wins.
+A board finds a server on its local network in two ways, while a cartridge has asked for a room, no address is saved on the console, and the board has no address or has had no connection to it for 3 seconds. With no address saved or compiled in, it also searches when it connects to Wi-Fi. The first answer wins.
 
 **mDNS (DNS-SD).** Every 6 seconds the board asks for the service `_prg32mp._tcp`. The answer's address and SRV port give the URL; the optional TXT keys `scheme` (`ws` or `wss`, default `ws`) and `path` (default `/`) complete it. A computer can advertise a server it runs on port 8081 with:
 

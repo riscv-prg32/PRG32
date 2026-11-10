@@ -1,11 +1,14 @@
 /*
  * SETUP > MULTIPLAYER SETUP: choose the PRG32 Multiplayer Server.
  *
- * No server address is built into the firmware. This screen saves one in NVS,
- * finds one with mDNS, or clears the saved one so that the console finds a
- * server on the local network by itself when a cartridge joins a room, and
- * turns to the public server when it finds none. See
- * docs/usage/network.md#multiplayer-server-address.
+ * No server address is built into the firmware. This screen
+ * - searches the local network (mDNS, then LAN discovery) and uses the server it
+ *   finds, shown as LOCAL;
+ * - saves a typed address in NVS, asking for its port separately because ':'
+ *   is only on the keyboard's ascii page. A saved address is used alone;
+ * - clears the saved address, so that the console finds a server on the local
+ *   network by itself, and turns to the public server when it finds none.
+ * See docs/usage/network.md#multiplayer-server-address.
  */
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -15,10 +18,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef CONFIG_PRG32_DISPLAY_QEMU_RGB
+#define CONFIG_PRG32_DISPLAY_QEMU_RGB 0
+#endif
+
 #define MP_SETUP_TITLE "MULTIPLAYER SERVER"
 /* Characters of an 8-pixel font that fit between the 8-pixel margins. */
 #define MP_SETUP_LINE_CHARS 38
-#define MP_SETUP_DEFAULT_PORT 8081
+/* The search asks MP_SEARCH_TRIES times: mDNS, then LAN discovery listening
+ * MP_SEARCH_TRY_MS. A server's beacon comes every 2 s, so 10 s hears several.
+ * B is checked between tries. */
+#define MP_SEARCH_TRIES 5
+#define MP_SEARCH_TRY_MS 2000
 
 static void show_message(const char *line, uint32_t ms) {
   prg32_gfx_clear(PRG32_COLOR_BLACK);
@@ -42,21 +53,7 @@ static int draw_wrapped(int y, const char *text, uint16_t color) {
   return y;
 }
 
-/* A typed host gets ws:// and port 8081; a typed host:port keeps its port. */
-static void complete_url(char *url, size_t cap) {
-  if (!url[0] || strstr(url, "://")) {
-    return;
-  }
-  char typed[PRG32_MP_URL_LEN];
-  snprintf(typed, sizeof(typed), "%s", url);
-  if (strchr(typed, ':')) {
-    snprintf(url, cap, "ws://%s", typed);
-  } else {
-    snprintf(url, cap, "ws://%s:%d", typed, MP_SETUP_DEFAULT_PORT);
-  }
-}
-
-/* Shows a server that mDNS found and saves it on SELECT. */
+/* Shows that a server was found on the local network and uses it on SELECT. */
 static void offer_found_server(const char *found) {
   prg32_input_wait_released(MENU_ACCEPT | MENU_CANCEL);
   while (1) {
@@ -66,14 +63,14 @@ static void offer_found_server(const char *found) {
     uint32_t input = prg32_input_read_menu();
     prg32_gfx_clear(PRG32_COLOR_BLACK);
     prg32_gfx_text8(8, 8, MP_SETUP_TITLE, PRG32_COLOR_WHITE, 0);
-    prg32_gfx_text8(8, 40, "FOUND:", PRG32_COLOR_GREEN, 0);
-    draw_wrapped(58, found, PRG32_COLOR_WHITE);
-    prg32_gfx_text8(8, 216, "SELECT SAVE  B DISCARD", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 40, "FOUND: LOCAL", PRG32_COLOR_GREEN, 0);
+    prg32_gfx_text8(8, 216, "SELECT USE  B DISCARD", PRG32_COLOR_CYAN, 0);
     prg32_gfx_present();
     if (input & MENU_ACCEPT) {
       prg32_input_wait_released(MENU_ACCEPT);
-      show_message(prg32_multiplayer_server_url_set(found) == 0 ? "SAVED"
-                                                                : "SAVE FAILED",
+      show_message(prg32_multiplayer_use_local_server(found) == 0
+                       ? "USING THE LOCAL SERVER"
+                       : "NOT A SERVER ADDRESS",
                    1000);
       return;
     }
@@ -85,10 +82,84 @@ static void offer_found_server(const char *found) {
   }
 }
 
+/* SEARCH LOCAL NETWORK: mDNS, then LAN discovery, for up to 10 s. */
+static void search_local_network(void) {
+  if (CONFIG_PRG32_DISPLAY_QEMU_RGB) {
+    show_message("QEMU CANNOT SEARCH THE LAN", 2000);
+    return;
+  }
+  char found[PRG32_MP_URL_LEN];
+  int tries = 0;
+  while (tries < MP_SEARCH_TRIES) {
+    if (prg32_setup_interrupted()) {
+      return;
+    }
+    if (prg32_input_read_menu() & MENU_CANCEL) {
+      prg32_input_wait_released(MENU_CANCEL);
+      show_message("SEARCH STOPPED", 1000);
+      return;
+    }
+    char progress[MP_SETUP_LINE_CHARS + 1];
+    snprintf(progress, sizeof(progress), "SEARCHING THE LOCAL NETWORK %d/%d",
+             tries + 1, MP_SEARCH_TRIES);
+    prg32_gfx_clear(PRG32_COLOR_BLACK);
+    prg32_gfx_text8(8, 8, MP_SETUP_TITLE, PRG32_COLOR_WHITE, 0);
+    prg32_gfx_text8(8, 48, progress, PRG32_COLOR_CYAN, 0);
+    prg32_gfx_text8(8, 216, "HOLD B TO STOP", PRG32_COLOR_CYAN, 0);
+    prg32_gfx_present();
+    if (prg32_multiplayer_discover_mdns(found, sizeof(found)) == 0 ||
+        prg32_multiplayer_discover_lan(found, sizeof(found), MP_SEARCH_TRY_MS) == 0) {
+      offer_found_server(found);
+      return;
+    }
+    tries++;
+  }
+  show_message("NO SERVER FOUND", 2000);
+}
+
+/* MANUAL ENTRY: an address, then its port (8081 unless changed). Typing a full
+ * URL or host:port skips the port step. A saved ws://host:port is offered as
+ * its two parts, any other saved URL as a whole. */
+static void enter_server_url(void) {
+  char host[PRG32_MP_URL_LEN] = "";
+  char port[8];
+  snprintf(port, sizeof(port), "%d", PRG32_MP_DEFAULT_PORT);
+  char saved[PRG32_MP_URL_LEN];
+  if (prg32_multiplayer_server_url_get(saved, sizeof(saved)) == 0 &&
+      prg32_mp_split_server_url(saved, host, sizeof(host), port, sizeof(port)) != 0) {
+    snprintf(host, sizeof(host), "%s", saved);
+    snprintf(port, sizeof(port), "%d", PRG32_MP_DEFAULT_PORT);
+  }
+  if (prg32_text_input(host, sizeof(host), "SERVER IP OR URL") < 0 || !host[0]) {
+    return;
+  }
+  /* Room for host, ':' and port; normalizing refuses a URL that does not fit. */
+  char typed[PRG32_MP_URL_LEN + sizeof(port)];
+  if (strstr(host, "://") || strchr(host, ':')) {
+    snprintf(typed, sizeof(typed), "%s", host);
+  } else {
+    if (prg32_text_input(port, sizeof(port), "SERVER PORT") < 0) {
+      return;
+    }
+    if (!prg32_mp_valid_port(port)) {
+      show_message("NOT A PORT: USE 1 TO 65535", 2000);
+      return;
+    }
+    snprintf(typed, sizeof(typed), "%s:%s", host, port);
+  }
+  char url[PRG32_MP_URL_LEN];
+  if (prg32_mp_normalize_server_url(typed, url, sizeof(url)) == 0 &&
+      prg32_multiplayer_server_url_set(url) == 0) {
+    show_message("SAVED", 1000);
+  } else {
+    show_message("INVALID: USE IP, IP:PORT OR ws://", 2000);
+  }
+}
+
 void prg32_setup_multiplayer_run(void) {
-  enum { SCAN, MANUAL, AUTOMATIC, BACK, ITEM_COUNT };
+  enum { SEARCH, MANUAL, AUTOMATIC, BACK, ITEM_COUNT };
   static const char *const items[ITEM_COUNT] = {
-      "SCAN NETWORK (MDNS)",
+      "SEARCH LOCAL NETWORK",
       "MANUAL ENTRY",
       "USE AUTOMATIC DISCOVERY",
       "BACK",
@@ -99,8 +170,9 @@ void prg32_setup_multiplayer_run(void) {
     char saved[PRG32_MP_URL_LEN];
     char compiled[PRG32_MP_URL_LEN];
     int has_saved = prg32_multiplayer_server_url_get(saved, sizeof(saved)) == 0;
+    int is_local = !has_saved && prg32_multiplayer_server_is_local();
     int has_compiled =
-        !has_saved &&
+        !has_saved && !is_local &&
         prg32_multiplayer_server_url_configured(compiled, sizeof(compiled)) == 0;
     char public_url[PRG32_MP_URL_LEN];
     int has_public =
@@ -128,30 +200,10 @@ void prg32_setup_multiplayer_run(void) {
         if (choice == BACK) {
           return;
         }
-        if (choice == SCAN) {
-          char found[PRG32_MP_URL_LEN];
-          if (!prg32_multiplayer_mdns_available()) {
-            show_message("MDNS NOT AVAILABLE ON THIS BUILD", 2000);
-          } else {
-            show_message("SCANNING...", 10);
-            if (prg32_multiplayer_discover_mdns(found, sizeof(found)) == 0) {
-              offer_found_server(found);
-            } else {
-              show_message("NO SERVER FOUND", 2000);
-            }
-          }
+        if (choice == SEARCH) {
+          search_local_network();
         } else if (choice == MANUAL) {
-          char url[PRG32_MP_URL_LEN] = "";
-          if (has_saved) {
-            snprintf(url, sizeof(url), "%s", saved);
-          }
-          if (prg32_text_input(url, sizeof(url), "SERVER URL") >= 0 && url[0]) {
-            complete_url(url, sizeof(url));
-            show_message(prg32_multiplayer_server_url_set(url) == 0
-                             ? "SAVED"
-                             : "INVALID: USE ws://HOST:PORT",
-                         1500);
-          }
+          enter_server_url();
         } else if (choice == AUTOMATIC) {
           prg32_multiplayer_server_url_clear();
           show_message("SAVED ADDRESS CLEARED", 1000);
@@ -170,6 +222,9 @@ void prg32_setup_multiplayer_run(void) {
       if (has_saved) {
         prg32_gfx_text8(8, y, "SAVED:", PRG32_COLOR_YELLOW, 0);
         draw_wrapped(y + 14, saved, PRG32_COLOR_CYAN);
+      } else if (is_local) {
+        prg32_gfx_text8(8, y, "SERVER:", PRG32_COLOR_YELLOW, 0);
+        prg32_gfx_text8(8, y + 14, "LOCAL", PRG32_COLOR_GREEN, 0);
       } else if (has_compiled) {
         prg32_gfx_text8(8, y, "COMPILED IN:", PRG32_COLOR_YELLOW, 0);
         draw_wrapped(y + 14, compiled, PRG32_COLOR_CYAN);

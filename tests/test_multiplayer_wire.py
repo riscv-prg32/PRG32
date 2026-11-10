@@ -119,7 +119,8 @@ class ServerAddressTest(unittest.TestCase):
         kconfig = (COMPONENT / "Kconfig").read_text(encoding="utf-8")
         entry = kconfig[kconfig.index("config PRG32_MULTIPLAYER_PUBLIC_SERVER_URL"):]
         entry = entry[:entry.index("\nconfig ")]
-        self.assertIn('default "wss://multi.prg32.uniparthenope.it"', entry)
+        # The hosted server, reached directly until its proxy forwards WebSockets.
+        self.assertIn('default "ws://193.205.230.7:8099"', entry)
         task = SOURCE[SOURCE.index("static void discovery_task"):]
         fallback = task.index("prg32_multiplayer_server_url_public(url, sizeof(url))")
         # Only with no address known, and only after local discovery had its time.
@@ -129,6 +130,49 @@ class ServerAddressTest(unittest.TestCase):
         configured = SOURCE[SOURCE.index("int prg32_multiplayer_server_url_configured("):]
         configured = configured[:configured.index("\n}")]
         self.assertNotIn("PUBLIC", configured)
+
+    def test_a_saved_address_is_used_alone(self) -> None:
+        needed = SOURCE[SOURCE.index("static bool discovery_needed_locked(void)"):]
+        self.assertIn("!g_saved_url_in_use", needed[:needed.index("\n}\n")])
+        client = SOURCE[SOURCE.index("static int ensure_client(void)"):]
+        client = client[:client.index("\n}\n")]
+        self.assertIn("g_saved_url_in_use =\n            prg32_multiplayer_server_url_get(", client)
+        # The client is chosen before discovery starts, so the task sees the flag.
+        join = SOURCE[SOURCE.rindex("int prg32_multiplayer_join("):]
+        self.assertLess(join.index("int client = ensure_client();"), join.index("start_discovery();"))
+
+    def test_discovery_task_runs_only_while_needed(self) -> None:
+        body = SOURCE[SOURCE.index("static void discovery_task"):SOURCE.index("static void start_discovery(void) {")]
+        self.assertIn("if (discovery_finish()) {\n                break;", body)
+        self.assertIn("vTaskDelete(NULL);", body)
+        self.assertNotIn("for (;;) {\n        if (!discovery_wanted()) {", body)
+        # A lost connection asks for a task again.
+        self.assertIn("schedule_reconnect(data->client);\n            /* Does nothing unless a cartridge "
+                      "still wants a room. */\n            start_discovery();", SOURCE)
+
+    def test_a_search_shows_the_server_as_local(self) -> None:
+        switch = SOURCE[SOURCE.index("static void switch_server"):]
+        switch = switch[:switch.index("\n}\n")]
+        self.assertIn("g_server_is_local = local;", switch)
+        self.assertIn('switch_server(url, "public fallback", false);', SOURCE)
+        self.assertIn('switch_server(url, "mDNS", true);', SOURCE)
+        screen = (COMPONENT / "prg32_setup_multiplayer.c").read_text(encoding="utf-8")
+        self.assertIn('"FOUND: LOCAL"', screen)
+        self.assertIn("prg32_multiplayer_server_is_local()", screen)
+
+    def test_the_network_coming_up_starts_a_search(self) -> None:
+        wifi = (COMPONENT / "prg32_wifi.c").read_text(encoding="utf-8")
+        got_ip = wifi[wifi.index("id == IP_EVENT_STA_GOT_IP) {"):]
+        self.assertIn("prg32_multiplayer_network_up();", got_ip[:got_ip.index("\n    }\n")])
+        up = SOURCE[SOURCE.index("void prg32_multiplayer_network_up(void) {\n    /*"):]
+        up = up[:up.index("\n}\n")]
+        self.assertIn("if (!automatic_discovery_mode()) {\n        return;", up)
+        self.assertIn("!g_mp.member_requested", up)
+        self.assertIn("xTaskCreate(network_up_search_task", up)
+        task = SOURCE[SOURCE.index("static void network_up_search_task"):]
+        task = task[:task.index("\n}\n")]
+        self.assertIn("room_requested()", task)
+        self.assertIn("vTaskDelete(NULL);", task)
 
     def test_setup_menu_offers_the_server_screen(self) -> None:
         self.assertIn('"MULTIPLAYER SETUP"', SYSTEM_SOURCE)

@@ -45,6 +45,9 @@
     "{\"type\":\"discover\",\"protocol\":\"" PRG32_MP_PROTOCOL "\"}"
 /* A server URL, ws:// or wss://, plus the terminator. */
 #define PRG32_MP_URL_LEN 128
+/* The PRG32 Multiplayer Server's WebSocket port, added to an address typed
+ * without one. */
+#define PRG32_MP_DEFAULT_PORT 8081
 
 typedef enum {
     PRG32_MP_MSG_INVALID = 0, /* Malformed, or a field failed validation. */
@@ -105,6 +108,24 @@ int prg32_mp_format_server_url(char *out,
  * when the datagram is a `server` message of this protocol whose URL starts
  * with ws:// or wss://, has a host, and fits; returns -1 otherwise. */
 int prg32_mp_parse_discovery(const char *data, size_t len, char *url, size_t url_size);
+
+/* Turns an address typed in setup into a server URL. A full ws:// or wss://
+ * URL is kept; a bare host, such as 192.168.1.10, becomes
+ * ws://192.168.1.10:8081, and host:port becomes ws://host:port. Returns 0, or
+ * -1 for another scheme, an invalid port or URL, or one that does not fit. */
+int prg32_mp_normalize_server_url(const char *text, char *url, size_t url_size);
+
+/* True when `port` is a TCP port typed in setup: 1 to 65535, digits only. */
+bool prg32_mp_valid_port(const char *port);
+
+/* Splits ws://host:port, with nothing after the port, into its host and port,
+ * so that setup can offer them for editing. Returns 0, or -1 for wss://, a
+ * path, a missing or invalid port, or parts that do not fit. */
+int prg32_mp_split_server_url(const char *url,
+                              char *host,
+                              size_t host_size,
+                              char *port,
+                              size_t port_size);
 
 /* Checks the signature grammar: 1 to 47 characters of A-Z a-z 0-9 _ - . : */
 int prg32_mp_valid_signature(const char *signature);

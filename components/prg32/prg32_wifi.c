@@ -308,6 +308,9 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         snprintf(active_ip, sizeof(active_ip), IPSTR, IP2STR(&event->ip_info.ip));
         copy_cstr(active_status, sizeof(active_status), "CONNECTED");
         ESP_LOGI(TAG, "Wi-Fi connected ip=%s", active_ip);
+        /* In LAN DISCOVERY mode, find the local multiplayer server now, at boot
+         * and after every reconnection, rather than when a game first joins. */
+        prg32_multiplayer_network_up();
     }
 }
 

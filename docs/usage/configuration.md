@@ -50,6 +50,6 @@ python3 -m prg32 esp32c6 pins
 
 ## Runtime Configuration (NVS)
 
-While `menuconfig` and `profiles/sdkconfig.defaults` provide the baseline compile-time configuration, the PRG32 framework also allows certain system settings (such as master volume or audio output modes) to be configured dynamically by the user via the on-device Setup Menu.
+While `menuconfig` and `profiles/sdkconfig.defaults` provide the baseline compile-time configuration, the PRG32 framework also allows certain system settings (such as master volume, audio output modes, or the [multiplayer server](network.md#multiplayer-server-address), key `mp_url`) to be configured dynamically by the user via the on-device Setup Menu.
 
 These user preferences are stored in the ESP32-C6's Non-Volatile Storage (NVS) under the `prg32` namespace. At boot time, any valid setting found in NVS will take precedence and dynamically override the compile-time default. If you wipe the NVS flash or if a setting is unconfigured, the system automatically falls back to your `profiles/sdkconfig.defaults` values.
