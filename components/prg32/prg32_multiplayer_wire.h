@@ -81,6 +81,26 @@ typedef struct {
     prg32_mp_error_action_t error_action;
 } prg32_mp_message_t;
 
+/* mDNS discovery: a PRG32 Multiplayer Server on the local network advertises
+ * this DNS-SD service. Its SRV record gives the port; the optional TXT keys
+ * `scheme` (ws or wss, default ws) and `path` (default /) complete the URL. */
+#define PRG32_MP_MDNS_SERVICE "_prg32mp"
+#define PRG32_MP_MDNS_PROTO "_tcp"
+
+/* True when `url` starts with ws:// or wss://, has a host, contains only
+ * printable characters without spaces, and fits PRG32_MP_URL_LEN. */
+int prg32_mp_valid_server_url(const char *url);
+
+/* Builds "scheme://host:port/path" from an mDNS answer. A NULL or empty scheme
+ * means ws; a NULL, empty or "/" path adds nothing. Returns the URL length, or
+ * -1 when an argument is invalid or the URL does not fit `out`. */
+int prg32_mp_format_server_url(char *out,
+                               size_t out_size,
+                               const char *scheme,
+                               const char *host,
+                               uint16_t port,
+                               const char *path);
+
 /* Reads a discovery answer or beacon. Copies its URL into `url` and returns 0
  * when the datagram is a `server` message of this protocol whose URL starts
  * with ws:// or wss://, has a host, and fits; returns -1 otherwise. */

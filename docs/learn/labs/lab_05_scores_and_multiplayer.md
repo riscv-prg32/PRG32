@@ -36,7 +36,8 @@ npm install
 npm start
 ```
 
-6. Point the firmware at the server host, as described in
+6. Let the console find the server, or set its address in **SETUP >
+   MULTIPLAYER SETUP**, as described in
    [Multiplayer server address](../../usage/network.md#multiplayer-server-address).
 7. In a small C cartridge, call:
 

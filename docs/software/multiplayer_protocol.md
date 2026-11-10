@@ -15,7 +15,8 @@ a complete example, see [Poing Wall](../../cartridges/poingwall/README.md).
 | File | Holds |
 |---|---|
 | `components/prg32/prg32_multiplayer_wire.c` | The JSON messages: building, parsing, and validating them. No networking, so `tests/test_multiplayer_wire.py` can run it on a computer |
-| `components/prg32/prg32_multiplayer.c` | The session: WebSocket lifecycle, reconnection, peer table, device identity, and QEMU's Ethernet |
+| `components/prg32/prg32_multiplayer.c` | The session: WebSocket lifecycle, reconnection, peer table, device identity, the server address setting, mDNS and LAN discovery, and QEMU's Ethernet |
+| `components/prg32/prg32_setup_multiplayer.c` | **SETUP > MULTIPLAYER SETUP**: save, scan for, or clear the server address |
 | `tools/multiplayer_wall_test.py` | The test against real consoles and a real server |
 
 ## The session
@@ -82,26 +83,47 @@ erasing NVS in each copy it makes. If you clone images yourself, erase that key.
 | ESP32-C6 | Wi-Fi station mode. Set up the network as in [Network setup](../usage/network.md) |
 | QEMU | The emulated OpenCores Ethernet, through `-nic user,model=open_eth`, which the launcher already passes. It starts at the first join, and [receives by polling](#why-qemu-polls-its-ethernet) |
 
-Set the server with
-[`prg32 multiplayer set-url`](../usage/network.md#multiplayer-server-address).
+No server address is built in. The console uses the address saved in **SETUP >
+MULTIPLAYER SETUP**, else one compiled in with `prg32 multiplayer set-url`, else
+the first server that discovery finds; see
+[Multiplayer server address](../usage/network.md#multiplayer-server-address).
+`prg32_multiplayer_server_url_configured()` returns the first two in that order,
+and `prg32_multiplayer_server_url_current()` the one in use. These firmware calls,
+declared in `prg32_multiplayer.h`, are not part of the cartridge ABI.
 `wss://` verifies the server against the firmware's certificate bundle and uses a
 larger task stack.
 
-### LAN Discovery
+### Finding the Server
 
-When the compiled address does not answer, a board can find a server on its local
-network, as the server's `docs/protocol.md` ("LAN discovery") describes. The task
-`prg32_mp_disc` sleeps until a cartridge wants a room and the link has been down
-for 3 s. It then broadcasts `{"type":"discover","protocol":"prg32-multiplayer-1.0"}`
+When a cartridge joins with no address known, `ensure_client()` returns 1 instead of
+starting a client, and the join still succeeds: the request stands, as for any
+other disconnection, and discovery starts the client when it finds a server. With
+discovery compiled out, such a join fails.
+
+The task `prg32_mp_disc` sleeps until a cartridge wants a room and either no
+address is known or the link has been down for 3 s. It then asks in two ways, and
+the first answer wins.
+
+**mDNS.** On ESP32-C6, every 6 s, `prg32_multiplayer_discover_mdns()` queries
+the DNS-SD service `_prg32mp._tcp` for up to 1.5 s and takes the first IPv4
+answer. `prg32_mp_format_server_url()` in `prg32_multiplayer_wire.c` builds
+`scheme://IP:PORT/path` from the SRV port and the optional TXT keys `scheme` (`ws`
+or `wss`) and `path`, and refuses anything else. The same query backs the setup
+screen's scan. `CONFIG_PRG32_MULTIPLAYER_MDNS_DISCOVERY` (on; not on QEMU) builds it.
+
+**LAN discovery,** as the server's `docs/protocol.md` ("LAN discovery") describes.
+The task broadcasts `{"type":"discover","protocol":"prg32-multiplayer-1.0"}`
 to `255.255.255.255:8082` every 2 s and listens on that port. The first valid
 `server` message, an answer or a beacon, moves the client to its URL:
 `switch_server()` destroys the client and starts a new one under the client lock,
 and the CONNECTED event sends `join`. `prg32_mp_parse_discovery()` in
-`prg32_multiplayer_wire.c` accepts only `type` `server`, this protocol, and a
-printable `ws://` or `wss://` URL of at most 127 characters with a host.
+`prg32_multiplayer_wire.c` accepts only `type` `server`, this protocol, and a URL
+that `prg32_mp_valid_server_url()` accepts: printable `ws://` or `wss://`, at most
+127 characters, with a host.
 
-The port is `CONFIG_PRG32_MULTIPLAYER_DISCOVERY_PORT` (8082; 0 builds without
-discovery). The URL found is kept until the firmware restarts.
+The port is `CONFIG_PRG32_MULTIPLAYER_DISCOVERY_PORT` (8082; 0 builds without it).
+The URL found is kept until the firmware restarts or the setting changes in
+**SETUP > MULTIPLAYER SETUP**.
 
 ### Why QEMU Polls Its Ethernet
 
@@ -140,8 +162,13 @@ succeed locally and reports false, as the protocol requires.
 ## Limits
 
 - `wss://` is implemented but has not been tested against a TLS server.
-- LAN discovery is not authenticated: any host on the network can answer. It does
-  not work through QEMU's user-mode network, which carries no broadcast.
+- mDNS and LAN discovery are not authenticated: any host on the network can answer.
+  Neither works on QEMU: the build has no mDNS, and its user-mode network carries
+  no broadcast.
+- The PRG32 Multiplayer Server does not advertise `_prg32mp._tcp` itself yet, so
+  mDNS finds it only while the computer advertises it, for example with `dns-sd -R`
+  as in [Finding the server on the local network](../usage/network.md#finding-the-server-on-the-local-network).
+  Advertising from the server is a follow-up in that repository.
 - Messages from the server arriving in several WebSocket fragments are dropped.
   The reference server sends each one as a single frame.
 - The firmware does not show the public device ID on screen, or offer a QEMU
@@ -288,3 +315,25 @@ on UDP 8082.
 Not exercised: a network that drops broadcasts, two servers answering at once, and a
 server lost after discovery (the firmware keeps the discovered URL and queries again
 only after 3 s without a connection).
+
+## Server Address Without a Built-in Default (2026-11-10)
+
+The firmware no longer carries a default server address: `CONFIG_PRG32_MULTIPLAYER_SERVER_URL`
+defaults to empty, the user sets the server in **SETUP > MULTIPLAYER SETUP**, and an ESP32-C6
+looks for `_prg32mp._tcp` with mDNS before the UDP LAN discovery above.
+
+| Check | Result |
+|---|---|
+| `python3 -m prg32 esp32c6 build -p pcb1` | Built |
+| `python3 -m prg32 qemu build` | Built |
+| `python3 -m prg32 test` with the parity test skipped | 203 unit tests passed; QEMU smoke test passed (HELLO, `run` upload of `pong` into `cart0`, frames advance) |
+| `tests/test_multiplayer_wire.py` | Passes, with `prg32_mp_valid_server_url()` and `prg32_mp_format_server_url()` against valid, foreign-scheme, hostless, portless, relative-path, spaced and too-long input |
+| `tests/test_setup_takeover.py` | Passes with the new screen's two input loops |
+
+`test_prg32_python.ConstructionKitParityTests` failed against the sibling Construction Kit
+checkout with and without this change.
+
+Not exercised: the new screen and an mDNS answer on a running board (the attached board is
+`breadboard1`, so `pcb1` firmware was built but not flashed), a saved address on QEMU, and a
+join with no address while a server announces itself. No cartridge slot was written on a
+board; the QEMU smoke test wrote `cart0` of its own flash image only.

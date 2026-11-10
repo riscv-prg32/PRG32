@@ -27,8 +27,9 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return), and counting the tasks waiting to unload or replace the running cartridge so modal screens it opened give way
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only helpers for an RGB LED sharing LCD D/C (`PRG32_PIN_SHARED_RGB_LED`): boot flash and post-frame off latch
-|   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, LAN discovery, peer table, identity, and QEMU's emulated Ethernet
-|   |   |-- prg32_multiplayer_wire.c  The protocol's JSON messages and the discovery answer, validated, with no networking so that they can be tested on a computer
+|   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, the server address saved in NVS (no address built in), mDNS (`_prg32mp._tcp`) and LAN discovery, peer table, identity, and QEMU's emulated Ethernet
+|   |   |-- prg32_multiplayer_wire.c  The protocol's JSON messages the discovery answer, and server URL validation and formatting from an mDNS answer, with no networking so that they can be tested on a computer
+|   |   |-- prg32_setup_multiplayer.c  SETUP > MULTIPLAYER SETUP: save a server address, scan for one with mDNS, or return to automatic discovery
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization
 |   |   |-- prg32_joystick_analog.c Analog stick: ADC one-shot sampling, -127..127 axes, and the joystick calibration kept in NVS
 |   |   |-- prg32_system.c          Boot sequence and setup menus (including joystick calibration and the ABOUT PRG32 firmware colophon), and `prg32_setup_interrupted()`, which brings every setup screen back to the top-level menu when an upload starts or a cartridge is loaded
@@ -83,7 +84,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |-- prg32/                          Python module containing the core CLI tooling
 |   |-- abi/                        Cartridge ABI generator and JSON specification (real prototypes and notes for every entry)
 |   |-- cartridge/                  Cartridge packaging scripts
-|   |-- multiplayer/                Local multiplayer server address for builds
+|   |-- multiplayer/                Optional multiplayer server address compiled into local builds
 |   |-- esp32c6/                    Hardware build, HTTP/USB cartridge upload, firmware flashing, verification, and USB Wi-Fi network and key commands
 |   |   `-- find_port.py            Finds a connected ESP32-C6 native USB port by USB ID, so device-protocol commands need no `--port`
 |   |-- python/                     PRG32 Python compiler shared with PRG32-Construction-Kit (game.py -> game IR -> C/assembly) and the `python` command

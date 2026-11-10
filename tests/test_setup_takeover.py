@@ -30,6 +30,10 @@ SETUP_SCREENS = {
         "prg32_setup_store_run",
         "prg32_setup_store_browse_run",
     ),
+    "prg32_setup_multiplayer.c": (
+        "offer_found_server",
+        "prg32_setup_multiplayer_run",
+    ),
     "prg32_wifi.c": (
         "choose_mode",
         "confirm_sta_credentials",

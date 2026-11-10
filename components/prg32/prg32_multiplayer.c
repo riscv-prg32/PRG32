@@ -22,13 +22,31 @@
 #define PRG32_MULTIPLAYER_TRANSPORT_ENABLE PRG32_MULTIPLAYER_ENABLE
 #endif
 
+/* The compiled server address. Empty, the default, means none: the console
+ * uses the address saved in its setup menu, or finds a server on the local
+ * network. No server address is built into the firmware. */
 #ifndef PRG32_MULTIPLAYER_SERVER_URL
-#define PRG32_MULTIPLAYER_SERVER_URL "ws://192.168.4.2:8081"
+#define PRG32_MULTIPLAYER_SERVER_URL ""
 #endif
 
 /* UDP port of LAN discovery; 0 turns it off. */
 #ifndef PRG32_MULTIPLAYER_DISCOVERY_PORT
 #define PRG32_MULTIPLAYER_DISCOVERY_PORT 8082
+#endif
+
+/* mDNS discovery of the _prg32mp._tcp service. QEMU has no mDNS. */
+#ifndef PRG32_MULTIPLAYER_MDNS_DISCOVERY
+#define PRG32_MULTIPLAYER_MDNS_DISCOVERY 0
+#endif
+#if CONFIG_PRG32_DISPLAY_QEMU_RGB
+#undef PRG32_MULTIPLAYER_MDNS_DISCOVERY
+#define PRG32_MULTIPLAYER_MDNS_DISCOVERY 0
+#endif
+
+#include "esp_err.h"
+#include "nvs.h"
+#if PRG32_MULTIPLAYER_MDNS_DISCOVERY
+#include "mdns.h"
 #endif
 
 #ifndef PRG32_MULTIPLAYER_SEND_PERIOD_MS
@@ -69,6 +87,8 @@ typedef struct {
 static prg32_mp_state_t g_mp;
 
 static void ensure_mp_state(void);
+/* Forgets the address in use, so the next connection reads the setting again. */
+static void forget_server_url(void);
 
 static void copy_text(char *dst, size_t dst_size, const char *src) {
     if (!dst || dst_size == 0) {
@@ -98,6 +118,142 @@ static void prune_peers(uint32_t now_ms) {
     g_mp.peer_count = out;
 }
 
+/* The server address the user saved in the setup menu, kept in NVS. */
+#define PRG32_MP_SETTINGS_NAMESPACE "prg32"
+#define PRG32_MP_SETTINGS_URL_KEY "mp_url"
+/* How long one mDNS query waits for answers. */
+#define PRG32_MP_MDNS_TIMEOUT_MS 1500
+#define PRG32_MP_MDNS_MAX_RESULTS 4
+
+int prg32_multiplayer_server_url_get(char *out_url, size_t max_len) {
+    if (!out_url || max_len == 0) {
+        return -1;
+    }
+    out_url[0] = '\0';
+    nvs_handle_t handle;
+    if (nvs_open(PRG32_MP_SETTINGS_NAMESPACE, NVS_READONLY, &handle) != ESP_OK) {
+        return -1;
+    }
+    size_t required = max_len;
+    esp_err_t err = nvs_get_str(handle, PRG32_MP_SETTINGS_URL_KEY, out_url, &required);
+    nvs_close(handle);
+    if (err != ESP_OK || !prg32_mp_valid_server_url(out_url)) {
+        out_url[0] = '\0';
+        return -1;
+    }
+    return 0;
+}
+
+int prg32_multiplayer_server_url_set(const char *url) {
+    if (!prg32_mp_valid_server_url(url)) {
+        return -1;
+    }
+    nvs_handle_t handle;
+    if (nvs_open(PRG32_MP_SETTINGS_NAMESPACE, NVS_READWRITE, &handle) != ESP_OK) {
+        return -1;
+    }
+    esp_err_t err = nvs_set_str(handle, PRG32_MP_SETTINGS_URL_KEY, url);
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    forget_server_url();
+    return err == ESP_OK ? 0 : -1;
+}
+
+void prg32_multiplayer_server_url_clear(void) {
+    nvs_handle_t handle;
+    if (nvs_open(PRG32_MP_SETTINGS_NAMESPACE, NVS_READWRITE, &handle) == ESP_OK) {
+        nvs_erase_key(handle, PRG32_MP_SETTINGS_URL_KEY);
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+    forget_server_url();
+}
+
+/* The address chosen by the user: the saved one, then the compiled one. */
+int prg32_multiplayer_server_url_configured(char *out_url, size_t max_len) {
+    if (prg32_multiplayer_server_url_get(out_url, max_len) == 0) {
+        return 0;
+    }
+    if (!out_url || max_len == 0 ||
+        !prg32_mp_valid_server_url(PRG32_MULTIPLAYER_SERVER_URL) ||
+        strlen(PRG32_MULTIPLAYER_SERVER_URL) >= max_len) {
+        return -1;
+    }
+    copy_text(out_url, max_len, PRG32_MULTIPLAYER_SERVER_URL);
+    return 0;
+}
+
+bool prg32_multiplayer_mdns_available(void) {
+    return PRG32_MULTIPLAYER_MDNS_DISCOVERY != 0;
+}
+
+#if PRG32_MULTIPLAYER_MDNS_DISCOVERY
+
+/* Copies one TXT value of an mDNS answer; values need not end in NUL. */
+static void copy_txt_value(const mdns_result_t *r, const char *key, char *out, size_t size) {
+    out[0] = '\0';
+    for (size_t i = 0; i < r->txt_count; ++i) {
+        if (r->txt[i].key && strcmp(r->txt[i].key, key) == 0 && r->txt[i].value) {
+            size_t n = r->txt_value_len ? r->txt_value_len[i] : strlen(r->txt[i].value);
+            if (n >= size) {
+                return;
+            }
+            memcpy(out, r->txt[i].value, n);
+            out[n] = '\0';
+            return;
+        }
+    }
+}
+
+int prg32_multiplayer_discover_mdns(char *out_url, size_t max_len) {
+    if (!out_url || max_len == 0) {
+        return -1;
+    }
+    out_url[0] = '\0';
+    esp_err_t err = mdns_init();
+    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        return -1;
+    }
+    mdns_result_t *results = NULL;
+    err = mdns_query_ptr(PRG32_MP_MDNS_SERVICE, PRG32_MP_MDNS_PROTO,
+                         PRG32_MP_MDNS_TIMEOUT_MS, PRG32_MP_MDNS_MAX_RESULTS, &results);
+    if (err != ESP_OK || !results) {
+        return -1;
+    }
+    int rc = -1;
+    for (const mdns_result_t *r = results; r && rc != 0; r = r->next) {
+        char scheme[8];
+        char path[64];
+        copy_txt_value(r, "scheme", scheme, sizeof(scheme));
+        copy_txt_value(r, "path", path, sizeof(path));
+        for (const mdns_ip_addr_t *a = r->addr; a && rc != 0; a = a->next) {
+            if (a->addr.type != ESP_IPADDR_TYPE_V4) {
+                continue;
+            }
+            char ip[16];
+            snprintf(ip, sizeof(ip), IPSTR, IP2STR(&a->addr.u_addr.ip4));
+            if (prg32_mp_format_server_url(out_url, max_len, scheme, ip, r->port, path) > 0) {
+                rc = 0;
+            }
+        }
+    }
+    mdns_query_results_free(results);
+    return rc;
+}
+
+#else
+
+int prg32_multiplayer_discover_mdns(char *out_url, size_t max_len) {
+    if (out_url && max_len > 0) {
+        out_url[0] = '\0';
+    }
+    return -1;
+}
+
+#endif
+
 #if !PRG32_MULTIPLAYER_TRANSPORT_ENABLE
 
 /* No network. With CONFIG_PRG32_MULTIPLAYER_OFFLINE_STUB, join succeeds locally
@@ -114,6 +270,12 @@ void prg32_multiplayer_init(void) {
 
 static void ensure_mp_state(void) {
     prg32_multiplayer_init();
+}
+
+static void forget_server_url(void) {}
+
+int prg32_multiplayer_server_url_current(char *out_url, size_t max_len) {
+    return prg32_multiplayer_server_url_configured(out_url, max_len);
 }
 
 bool prg32_multiplayer_available(void) {
@@ -254,7 +416,8 @@ static esp_websocket_client_handle_t g_ws;
  * joins and leaves, and the discovery task may move the client to a server it
  * found. Recursive, because switching destroys and creates under one hold. */
 static SemaphoreHandle_t g_client_lock;
-/* The server in use: PRG32_MULTIPLAYER_SERVER_URL until discovery finds one. */
+/* The server in use: the saved or compiled address, or the one discovery
+ * found. Empty until a cartridge joins, and while no address is known. */
 static char g_server_url[PRG32_MP_URL_LEN];
 /* When the link last became DISCONNECTED (prg32_ticks_ms). */
 static volatile uint32_t g_disconnected_ms;
@@ -262,6 +425,8 @@ static volatile uint32_t g_disconnected_ms;
 #define PRG32_MP_DISCOVERY_AFTER_MS 3000
 #define PRG32_MP_DISCOVERY_QUERY_MS 2000
 #define PRG32_MP_DISCOVERY_STACK 3072
+/* mDNS discovery: query this often while no server answers. */
+#define PRG32_MP_MDNS_QUERY_MS 6000
 static SemaphoreHandle_t g_mp_lock;
 /* Set by the WebSocket task on `device_blocked`; acted on by the tick, because
  * the task cannot destroy its own client. */
@@ -678,14 +843,20 @@ static void unlock_client(void) {
     xSemaphoreGiveRecursive(g_client_lock);
 }
 
+/* Starts the WebSocket client. Returns 0 when it runs, 1 when no server
+ * address is known yet, and -1 on failure. */
 static int ensure_client(void) {
     lock_client();
     if (g_ws) {
         unlock_client();
         return 0;
     }
-    if (!g_server_url[0]) {
-        copy_text(g_server_url, sizeof(g_server_url), PRG32_MULTIPLAYER_SERVER_URL);
+    if (!g_server_url[0] &&
+        prg32_multiplayer_server_url_configured(g_server_url, sizeof(g_server_url)) != 0) {
+        /* No address yet: discovery starts the client when it finds one. */
+        g_server_url[0] = '\0';
+        unlock_client();
+        return 1;
     }
     bool secure = strncmp(g_server_url, "wss:", 4) == 0;
     esp_websocket_client_config_t cfg = {
@@ -734,9 +905,40 @@ static void destroy_client(void) {
     unlock_client();
 }
 
-#if PRG32_MULTIPLAYER_DISCOVERY_PORT
+static void forget_server_url(void) {
+    if (g_client_lock) {
+        lock_client();
+    }
+    g_server_url[0] = '\0';
+    if (g_client_lock) {
+        unlock_client();
+    }
+}
 
-/* True while the cartridge wants a room and has had no connection for a while. */
+int prg32_multiplayer_server_url_current(char *out_url, size_t max_len) {
+    if (!out_url || max_len == 0) {
+        return -1;
+    }
+    out_url[0] = '\0';
+    if (g_client_lock) {
+        lock_client();
+    }
+    if (g_server_url[0] && strlen(g_server_url) < max_len) {
+        copy_text(out_url, max_len, g_server_url);
+    }
+    if (g_client_lock) {
+        unlock_client();
+    }
+    return out_url[0] ? 0 : prg32_multiplayer_server_url_configured(out_url, max_len);
+}
+
+#define PRG32_MP_DISCOVERY_ENABLE \
+    (PRG32_MULTIPLAYER_DISCOVERY_PORT != 0 || PRG32_MULTIPLAYER_MDNS_DISCOVERY != 0)
+
+#if PRG32_MP_DISCOVERY_ENABLE
+
+/* True while the cartridge wants a room and either knows no server address or
+ * has had no connection to its server for a while. */
 static bool discovery_wanted(void) {
     bool wanted = false;
     if (lock_mp() == 0) {
@@ -744,40 +946,65 @@ static bool discovery_wanted(void) {
         unlock_mp();
     }
     return wanted &&
-           (uint32_t)(prg32_ticks_ms() - g_disconnected_ms) >= PRG32_MP_DISCOVERY_AFTER_MS;
+           (g_server_url[0] == '\0' ||
+            (uint32_t)(prg32_ticks_ms() - g_disconnected_ms) >= PRG32_MP_DISCOVERY_AFTER_MS);
 }
 
-/* Moves the client to `url`. The CONNECTED event then sends the join. */
-static void switch_server(const char *url) {
+/* Moves the client to `url`, starting it if no address was known. The
+ * CONNECTED event then sends the join. */
+static void switch_server(const char *url, const char *how) {
     lock_client();
     if (discovery_wanted() && strcmp(url, g_server_url) != 0) {
-        ESP_LOGI(TAG, "found a server on the local network: %s", url);
-        bool had_client = g_ws != NULL;
+        ESP_LOGI(TAG, "found a server by %s: %s", how, url);
         destroy_client();
         copy_text(g_server_url, sizeof(g_server_url), url);
         g_disconnected_ms = prg32_ticks_ms();
-        if (had_client && ensure_client() != 0) {
+        if (ensure_client() != 0) {
             ESP_LOGW(TAG, "could not start the client for %s", url);
         }
     }
     unlock_client();
 }
 
-/* LAN discovery (the server's docs/protocol.md, "LAN discovery"). While the
- * console wants a room and cannot reach its server, it broadcasts a query every
- * 2 s on UDP PRG32_MULTIPLAYER_DISCOVERY_PORT, and listens on that port for the
- * answer or for a server's beacon. It never replaces a server that works. */
+/* Discovery. While the console wants a room and has no working server, it asks
+ * in two ways, and the first answer wins:
+ *   - mDNS (ESP32-C6): a query for the _prg32mp._tcp service every 6 s;
+ *   - LAN discovery (the server's docs/protocol.md, "LAN discovery"): a UDP
+ *     broadcast every 2 s on PRG32_MULTIPLAYER_DISCOVERY_PORT, listening on
+ *     that port for the answer or for a server's beacon.
+ * It never replaces a server that works. */
 static void discovery_task(void *arg) {
     (void)arg;
+    char url[PRG32_MP_URL_LEN];
+#if PRG32_MULTIPLAYER_MDNS_DISCOVERY
+    bool mdns_asked = false;
+    uint32_t last_mdns_ms = 0;
+#endif
+#if PRG32_MULTIPLAYER_DISCOVERY_PORT
     int sock = -1;
     uint32_t last_query_ms = 0;
     char buffer[256];
-    char url[PRG32_MP_URL_LEN];
+#endif
     for (;;) {
         if (!discovery_wanted()) {
+#if PRG32_MULTIPLAYER_MDNS_DISCOVERY
+            mdns_asked = false;
+#endif
             vTaskDelay(pdMS_TO_TICKS(500));
             continue;
         }
+#if PRG32_MULTIPLAYER_MDNS_DISCOVERY
+        uint32_t now_mdns = prg32_ticks_ms();
+        if (!mdns_asked || (uint32_t)(now_mdns - last_mdns_ms) >= PRG32_MP_MDNS_QUERY_MS) {
+            mdns_asked = true;
+            last_mdns_ms = now_mdns;
+            if (prg32_multiplayer_discover_mdns(url, sizeof(url)) == 0) {
+                switch_server(url, "mDNS");
+                continue;
+            }
+        }
+#endif
+#if PRG32_MULTIPLAYER_DISCOVERY_PORT
         if (sock < 0) {
             sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             int yes = 1;
@@ -813,8 +1040,11 @@ static void discovery_task(void *arg) {
         }
         int n = recv(sock, buffer, sizeof(buffer), 0);
         if (n > 0 && prg32_mp_parse_discovery(buffer, (size_t)n, url, sizeof(url)) == 0) {
-            switch_server(url);
+            switch_server(url, "LAN discovery");
         }
+#else
+        vTaskDelay(pdMS_TO_TICKS(500));
+#endif
     }
 }
 
@@ -823,7 +1053,7 @@ static void start_discovery(void) {
     if (!task && xTaskCreate(discovery_task, "prg32_mp_disc", PRG32_MP_DISCOVERY_STACK,
                              NULL, 4, &task) != pdPASS) {
         task = NULL;
-        ESP_LOGW(TAG, "could not start LAN discovery");
+        ESP_LOGW(TAG, "could not start server discovery");
     }
 }
 
@@ -881,7 +1111,16 @@ int prg32_multiplayer_join(const char *cartridge_signature, uint32_t flags) {
     }
     unlock_mp();
     start_discovery();
-    if (ensure_client() != 0) {
+    int client = ensure_client();
+    if (client == 1 && PRG32_MP_DISCOVERY_ENABLE) {
+        /* The request stands; discovery connects when it finds a server. */
+        ESP_LOGI(TAG, "no server address set: looking for one on the local network");
+        return 0;
+    }
+    if (client != 0) {
+        if (client == 1) {
+            ESP_LOGW(TAG, "no server address set and discovery is off");
+        }
         if (lock_mp() == 0) {
             g_mp.member_requested = 0;
             unlock_mp();

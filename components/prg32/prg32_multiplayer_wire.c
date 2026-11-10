@@ -238,6 +238,72 @@ prg32_mp_msg_type_t prg32_mp_parse_message(const char *data,
     return out->type;
 }
 
+int prg32_mp_valid_server_url(const char *url) {
+    if (!url) {
+        return 0;
+    }
+    /* strnlen is POSIX, not C11; this file also builds on a computer. */
+    size_t n = 0;
+    while (n < PRG32_MP_URL_LEN && url[n] != '\0') {
+        ++n;
+    }
+    size_t scheme = strncmp(url, "ws://", 5) == 0    ? 5
+                    : strncmp(url, "wss://", 6) == 0 ? 6
+                                                     : 0;
+    if (scheme == 0 || n <= scheme || n >= PRG32_MP_URL_LEN) {
+        return 0;
+    }
+    /* A host must follow the scheme, before any port or path. */
+    if (url[scheme] == ':' || url[scheme] == '/') {
+        return 0;
+    }
+    for (size_t i = 0; i < n; ++i) {
+        if (url[i] <= ' ' || url[i] > '~') {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int prg32_mp_format_server_url(char *out,
+                               size_t out_size,
+                               const char *scheme,
+                               const char *host,
+                               uint16_t port,
+                               const char *path) {
+    if (!out || out_size == 0) {
+        return -1;
+    }
+    out[0] = '\0';
+    if (!scheme || !scheme[0]) {
+        scheme = "ws";
+    }
+    if (strcmp(scheme, "ws") != 0 && strcmp(scheme, "wss") != 0) {
+        return -1;
+    }
+    if (!host || !host[0] || port == 0) {
+        return -1;
+    }
+    if (!path) {
+        path = "";
+    }
+    if (path[0] && path[0] != '/') {
+        return -1;
+    }
+    /* "/" adds nothing to the address, so it is left out. */
+    if (strcmp(path, "/") == 0) {
+        path = "";
+    }
+    char url[PRG32_MP_URL_LEN];
+    int n = snprintf(url, sizeof(url), "%s://%s:%u%s", scheme, host, (unsigned)port, path);
+    if (n < 0 || (size_t)n >= sizeof(url) || (size_t)n >= out_size ||
+        !prg32_mp_valid_server_url(url)) {
+        return -1;
+    }
+    memcpy(out, url, (size_t)n + 1);
+    return n;
+}
+
 int prg32_mp_parse_discovery(const char *data, size_t len, char *url, size_t url_size) {
     if (!data || len == 0 || !url || url_size == 0) {
         return -1;
@@ -253,16 +319,7 @@ int prg32_mp_parse_discovery(const char *data, size_t len, char *url, size_t url
         strcmp(protocol->valuestring, PRG32_MP_PROTOCOL) == 0) {
         const char *text = found->valuestring;
         size_t n = strlen(text);
-        size_t scheme = strncmp(text, "ws://", 5) == 0    ? 5
-                        : strncmp(text, "wss://", 6) == 0 ? 6
-                                                          : 0;
-        bool printable = true;
-        for (size_t i = 0; i < n; ++i) {
-            if (text[i] <= ' ' || text[i] > '~') {
-                printable = false;
-            }
-        }
-        if (scheme && n > scheme && n < url_size && printable) {
+        if (prg32_mp_valid_server_url(text) && n < url_size) {
             memcpy(url, text, n + 1);
             result = 0;
         }

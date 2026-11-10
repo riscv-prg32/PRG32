@@ -12,8 +12,13 @@ def multiplayer_set_url(args: argparse.Namespace):
     log_ok(f"Saved multiplayer server address to {LOCAL_CONFIG_FILE}")
     log_info("It applies to the next build that generates a new sdkconfig. "
              "The address is compiled into the firmware, so flash it again afterwards.")
+    log_info("This is optional: without it, set the server on the console in "
+             "SETUP > MULTIPLAYER SETUP, or let it find one with mDNS or LAN discovery. "
+             "An address saved on the console takes precedence.")
 
 def multiplayer_clear_url(args: argparse.Namespace):
     step("Clearing local multiplayer server address...")
     remove_local_config(["CONFIG_PRG32_MULTIPLAYER_SERVER_URL"])
     log_ok("Cleared the multiplayer server address from local configuration.")
+    log_info("The next build compiles in no address: the console uses the one saved in "
+             "SETUP > MULTIPLAYER SETUP, or finds a server on the local network.")

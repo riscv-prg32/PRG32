@@ -87,23 +87,66 @@ Multiplayer does: the firmware starts QEMU's emulated OpenCores Ethernet the fir
 
 ## Multiplayer Server Address
 
-The address of the [multiplayer server](../software/multiplayer_protocol.md) is compiled into the firmware:
+No [multiplayer server](../software/multiplayer_protocol.md) address is built into the
+firmware. When a cartridge joins a room, the console uses the first of these that
+it has:
+
+| Order | Source | Set with |
+|---|---|---|
+| 1 | The address saved on the console | **SETUP > MULTIPLAYER SETUP** |
+| 2 | An address compiled into this firmware, if you chose one | `python3 -m prg32 multiplayer set-url` |
+| 3 | A server found on the local network | Nothing: mDNS, then LAN discovery, [below](#finding-the-server-on-the-local-network) |
+
+If the console has an address but cannot reach it for 3 seconds, it also looks for
+a server on the local network, as in row 3. A server that works is never replaced.
+
+### Setting the Server on the Console
+
+Open **SETUP > MULTIPLAYER SETUP**:
+
+| Item | What it does |
+|---|---|
+| SCAN NETWORK (MDNS) | Looks for a server with mDNS and shows the first one; SELECT saves it |
+| MANUAL ENTRY | Opens the keyboard. Type `ws://HOST:PORT` or `wss://HOST/PATH`. A bare host gets `ws://` and port 8081; `host:port` gets `ws://` |
+| USE AUTOMATIC DISCOVERY | Clears the saved address, so the console uses the compiled one or finds a server by itself |
+
+The screen shows the saved address, the compiled one, or which discovery the console
+will use. The address is kept in NVS (namespace `prg32`, key `mp_url`), survives
+firmware updates, and applies to the next cartridge that joins a room. Saving or
+clearing it while no cartridge runs takes effect at once. This works on QEMU too,
+except the mDNS scan.
+
+### Compiling an Address In (Optional)
+
+A classroom that always uses one server can compile its address in:
 
 ```bash
 python3 -m prg32 multiplayer set-url ws://192.168.1.10:8081
 ```
 
-This saves `CONFIG_PRG32_MULTIPLAYER_SERVER_URL` in `profiles/sdkconfig.defaults.local`, which is ignored by Git, and applies to both firmware targets. It takes effect when a new `sdkconfig` is generated. `python3 -m prg32 esp32c6 build` always generates one. A QEMU build keeps its `sdkconfig`, so delete `build-qemu/sdkconfig` first. Then flash the firmware again, or rebuild the QEMU flash image.
+This saves `CONFIG_PRG32_MULTIPLAYER_SERVER_URL` in `profiles/sdkconfig.defaults.local`, which is ignored by Git, and applies to both firmware targets. It takes effect when a new `sdkconfig` is generated. `python3 -m prg32 esp32c6 build` always generates one. A QEMU build keeps its `sdkconfig`, so delete `build-qemu/sdkconfig` first. Then flash the firmware again, or rebuild the QEMU flash image. An address saved on the console still takes precedence.
 
-Use `python3 -m prg32 multiplayer clear-url` to return to the defaults. Use `ws://` only on a local network you control, and `wss://` on a public one.
+Use `python3 -m prg32 multiplayer clear-url` to compile in no address again. Use `ws://` only on a local network you control, and `wss://` on a public one.
+
+The QEMU defaults, `profiles/sdkconfig.defaults.qemu`, set `ws://10.0.2.2:8081`. That is not a server's address: inside QEMU's user-mode network `10.0.2.2` always means the computer running QEMU, so a server started there is reached without configuration.
 
 ### Finding the Server on the Local Network
 
-A board does not need the exact address compiled in when the server is on its local network. If a cartridge has asked for a room and the board has had no connection to its server for 3 seconds, the firmware broadcasts a discovery query on UDP port 8082 every 2 seconds. A PRG32 Multiplayer Server answers with its WebSocket URL, and the board connects there and joins as usual. The server also announces itself every 2 seconds. A server that works is never replaced.
+A board finds a server on its local network in two ways, while a cartridge has asked for a room and the board has no address or has had no connection to it for 3 seconds. The first answer wins.
 
-This needs the server's discovery on (its default, except in production containers), UDP port 8082 open on the server's computer, and a network that passes broadcasts between Wi-Fi clients; many guest and enterprise networks do not. The answer is not authenticated, so on a network you do not control, compile the URL in. `CONFIG_PRG32_MULTIPLAYER_DISCOVERY_PORT=0` turns discovery off.
+**mDNS (DNS-SD).** Every 6 seconds the board asks for the service `_prg32mp._tcp`. The answer's address and SRV port give the URL; the optional TXT keys `scheme` (`ws` or `wss`, default `ws`) and `path` (default `/`) complete it. A computer can advertise a server it runs on port 8081 with:
 
-QEMU's user-mode network does not carry broadcasts to the local network, so a QEMU console always uses its compiled address.
+```bash
+dns-sd -R "PRG32 Multiplayer" _prg32mp._tcp local 8081
+```
+
+On Linux, `avahi-publish-service "PRG32 Multiplayer" _prg32mp._tcp 8081` does the same. Each keeps advertising while it runs. Add `scheme=wss path=/mp` after the port for a TLS server behind a path. `CONFIG_PRG32_MULTIPLAYER_MDNS_DISCOVERY=n` turns this off.
+
+**LAN discovery (UDP).** Every 2 seconds the board broadcasts a discovery query on UDP port 8082. A PRG32 Multiplayer Server answers with its WebSocket URL, and the board connects there and joins as usual. The server also announces itself every 2 seconds. This needs the server's discovery on (its default, except in production containers), UDP port 8082 open on the server's computer, and a network that passes broadcasts between Wi-Fi clients; many guest and enterprise networks do not. `CONFIG_PRG32_MULTIPLAYER_DISCOVERY_PORT=0` turns it off.
+
+Neither answer is authenticated: any host on the network can claim to be the server. On a network you do not control, save or compile the address instead.
+
+QEMU has no mDNS, and its user-mode network does not carry broadcasts to the local network, so a QEMU console uses its saved or compiled address.
 
 A PRG32 Multiplayer Server and a running PRG32-Qt can share one computer, but both
 use port 8081: PRG32-Qt holds `127.0.0.1:8081` for its

@@ -85,5 +85,40 @@ class MultiplayerLifecycleTest(unittest.TestCase):
         self.assertIn("prg32_multiplayer_leave();", SYSTEM_SOURCE)
 
 
+
+class ServerAddressTest(unittest.TestCase):
+    """No server address is built in: the user sets one, or mDNS finds it."""
+
+    def test_no_default_address_in_the_firmware(self) -> None:
+        self.assertIn('#define PRG32_MULTIPLAYER_SERVER_URL ""', SOURCE)
+        kconfig = (COMPONENT / "Kconfig").read_text(encoding="utf-8")
+        entry = kconfig[kconfig.index("config PRG32_MULTIPLAYER_SERVER_URL"):]
+        entry = entry[:entry.index("\nconfig ")]
+        self.assertIn('default ""', entry)
+        for name in ("prg32_multiplayer.c", "prg32_setup_multiplayer.c"):
+            text = (COMPONENT / name).read_text(encoding="utf-8")
+            self.assertNotRegex(text, r'"wss?://[0-9]', name)
+
+    def test_saved_address_comes_first(self) -> None:
+        body = SOURCE[SOURCE.index("int prg32_multiplayer_server_url_configured("):]
+        body = body[:body.index("\n}")]
+        self.assertLess(body.index("prg32_multiplayer_server_url_get"),
+                        body.index("PRG32_MULTIPLAYER_SERVER_URL"))
+
+    def test_join_without_an_address_waits_for_discovery(self) -> None:
+        join = SOURCE[SOURCE.rindex("int prg32_multiplayer_join("):]
+        self.assertIn("client == 1 && PRG32_MP_DISCOVERY_ENABLE", join)
+
+    def test_discovery_asks_mdns_for_the_service(self) -> None:
+        task = SOURCE[SOURCE.index("static void discovery_task"):]
+        self.assertIn("prg32_multiplayer_discover_mdns(url, sizeof(url))", task)
+        wire = (COMPONENT / "prg32_multiplayer_wire.h").read_text(encoding="utf-8")
+        self.assertIn('#define PRG32_MP_MDNS_SERVICE "_prg32mp"', wire)
+
+    def test_setup_menu_offers_the_server_screen(self) -> None:
+        self.assertIn('"MULTIPLAYER SETUP"', SYSTEM_SOURCE)
+        self.assertIn("prg32_setup_multiplayer_run();", SYSTEM_SOURCE)
+
+
 if __name__ == "__main__":
     unittest.main()

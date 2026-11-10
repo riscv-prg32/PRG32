@@ -1019,10 +1019,11 @@ static void joystick_calibration_menu(void) {
 static void settings_menu(void) {
   int choice = 0;
   /* Joystick calibration is listed only when an analog stick is sampled. */
-  const int option_count = prg32_joystick_analog_available() ? 5 : 4;
+  const int option_count = prg32_joystick_analog_available() ? 6 : 5;
   static const char *options[] = {
       "WIFI SETUP",
       "STORE SETUP",
+      "MULTIPLAYER SETUP",
       "AUDIO SETUP",
       "DEVELOPER SETTINGS",
       "JOYSTICK CALIBRATION",
@@ -1053,10 +1054,12 @@ static void settings_menu(void) {
       } else if (choice == 1) {
         prg32_setup_store_run();
       } else if (choice == 2) {
-        audio_menu();
+        prg32_setup_multiplayer_run();
       } else if (choice == 3) {
-        developer_menu();
+        audio_menu();
       } else if (choice == 4) {
+        developer_menu();
+      } else if (choice == 5) {
         joystick_calibration_menu();
       }
       prg32_input_wait_released(SETUP_KEYS);

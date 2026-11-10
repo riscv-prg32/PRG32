@@ -212,6 +212,42 @@ static void test_discovery(void) {
 #undef DISC
 }
 
+static void test_server_url(void) {
+    assert(prg32_mp_valid_server_url("ws://192.168.1.79:8081"));
+    assert(prg32_mp_valid_server_url("wss://mp.example.org/play"));
+    assert(!prg32_mp_valid_server_url(NULL));
+    assert(!prg32_mp_valid_server_url(""));
+    assert(!prg32_mp_valid_server_url("http://a:1"));
+    assert(!prg32_mp_valid_server_url("ws://"));
+    assert(!prg32_mp_valid_server_url("ws://:8081"));
+    assert(!prg32_mp_valid_server_url("ws:///path"));
+    assert(!prg32_mp_valid_server_url("ws://a b:1"));
+    char longest[PRG32_MP_URL_LEN + 1];
+    memset(longest, 'a', sizeof(longest) - 1);
+    memcpy(longest, "ws://", 5);
+    longest[sizeof(longest) - 1] = '\0';
+    assert(!prg32_mp_valid_server_url(longest));
+
+    char url[PRG32_MP_URL_LEN];
+    /* An mDNS answer with no TXT keys: ws and no path. */
+    assert(prg32_mp_format_server_url(url, sizeof(url), NULL, "192.168.1.79", 8081, NULL) > 0);
+    assert(strcmp(url, "ws://192.168.1.79:8081") == 0);
+    assert(prg32_mp_format_server_url(url, sizeof(url), "", "192.168.1.79", 8081, "/") > 0);
+    assert(strcmp(url, "ws://192.168.1.79:8081") == 0);
+    assert(prg32_mp_format_server_url(url, sizeof(url), "wss", "10.0.0.5", 443, "/mp") > 0);
+    assert(strcmp(url, "wss://10.0.0.5:443/mp") == 0);
+    /* Another scheme, no host, no port, a relative path, a space. */
+    assert(prg32_mp_format_server_url(url, sizeof(url), "http", "a", 1, NULL) == -1);
+    assert(prg32_mp_format_server_url(url, sizeof(url), "ws", "", 1, NULL) == -1);
+    assert(prg32_mp_format_server_url(url, sizeof(url), "ws", "a", 0, NULL) == -1);
+    assert(prg32_mp_format_server_url(url, sizeof(url), "ws", "a", 1, "mp") == -1);
+    assert(prg32_mp_format_server_url(url, sizeof(url), "ws", "a", 1, "/a b") == -1);
+    assert(url[0] == '\0');
+    /* A URL that does not fit is refused, not cut. */
+    char small[12];
+    assert(prg32_mp_format_server_url(small, sizeof(small), "ws", "192.168.1.79", 8081, NULL) == -1);
+}
+
 int main(void) {
     test_join();
     test_signature();
@@ -222,6 +258,7 @@ int main(void) {
     test_malformed();
     test_frame_order();
     test_discovery();
+    test_server_url();
     puts("multiplayer wire: PASS");
     return 0;
 }

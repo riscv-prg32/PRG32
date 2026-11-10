@@ -599,11 +599,15 @@ config PRG32_MULTIPLAYER_ENABLE
 config PRG32_MULTIPLAYER_SERVER_URL
     string "Multiplayer Server URL"
     depends on PRG32_MULTIPLAYER_ENABLE
-    default "ws://192.168.4.2:8081"
+    default ""
     help
-        WebSocket address of the PRG32 Multiplayer Server, ws:// or wss://. A
-        QEMU build also accepts a LAN address, and ws://10.0.2.2:PORT reaches
-        a server on the computer running QEMU. Use wss:// on public networks.
+        Optional WebSocket address of the PRG32 Multiplayer Server, ws:// or
+        wss://. Empty, the default, builds no address into the firmware: the
+        console uses the address saved in SETUP > MULTIPLAYER SETUP, or finds a
+        server on the local network with mDNS or LAN discovery. An address
+        saved on the console takes precedence over this one. QEMU has no
+        discovery, and ws://10.0.2.2:PORT reaches a server on the computer
+        running QEMU. Use wss:// on public networks.
 
 config PRG32_MULTIPLAYER_DISCOVERY_PORT
     int "Multiplayer LAN discovery UDP port (0 = off)"
@@ -615,6 +619,16 @@ config PRG32_MULTIPLAYER_DISCOVERY_PORT
         broadcasts a discovery query on this UDP port, and connects to the
         first PRG32 Multiplayer Server on the local network that answers. A
         server that works is never replaced. 0 turns discovery off.
+
+config PRG32_MULTIPLAYER_MDNS_DISCOVERY
+    bool "Find the Multiplayer Server with mDNS (_prg32mp._tcp)"
+    depends on PRG32_MULTIPLAYER_ENABLE && !PRG32_DISPLAY_QEMU_RGB
+    default y
+    help
+        When the console knows no server address, or cannot reach it for 3 s,
+        it looks for the DNS-SD service _prg32mp._tcp on the local network and
+        connects to the first answer. The SRV record gives the port; the
+        optional TXT keys scheme (ws or wss) and path complete the URL.
 
 config PRG32_MULTIPLAYER_OFFLINE_STUB
     bool "Replace the multiplayer network with an offline stub"
