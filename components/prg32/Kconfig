@@ -604,10 +604,21 @@ config PRG32_MULTIPLAYER_SERVER_URL
         Optional WebSocket address of the PRG32 Multiplayer Server, ws:// or
         wss://. Empty, the default, builds no address into the firmware: the
         console uses the address saved in SETUP > MULTIPLAYER SETUP, or finds a
-        server on the local network with mDNS or LAN discovery. An address
+        server on the local network with mDNS or LAN discovery, or at last uses
+        PRG32_MULTIPLAYER_PUBLIC_SERVER_URL. An address
         saved on the console takes precedence over this one. QEMU has no
         discovery, and ws://10.0.2.2:PORT reaches a server on the computer
         running QEMU. Use wss:// on public networks.
+
+config PRG32_MULTIPLAYER_PUBLIC_SERVER_URL
+    string "Public Multiplayer Server URL (last resort)"
+    depends on PRG32_MULTIPLAYER_ENABLE
+    default "wss://multi.prg32.uniparthenope.it"
+    help
+        Used only when the console has no saved or compiled address and finds
+        no server on the local network within 10 s. A server found on the
+        local network, or an address the user chose, always comes first.
+        Empty turns the fallback off.
 
 config PRG32_MULTIPLAYER_DISCOVERY_PORT
     int "Multiplayer LAN discovery UDP port (0 = off)"

@@ -96,9 +96,11 @@ it has:
 | 1 | The address saved on the console | **SETUP > MULTIPLAYER SETUP** |
 | 2 | An address compiled into this firmware, if you chose one | `python3 -m prg32 multiplayer set-url` |
 | 3 | A server found on the local network | Nothing: mDNS, then LAN discovery, [below](#finding-the-server-on-the-local-network) |
+| 4 | The public server, `wss://multi.prg32.uniparthenope.it`, when rows 1 to 3 give nothing for 10 seconds | `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`; empty turns it off |
 
 If the console has an address but cannot reach it for 3 seconds, it also looks for
-a server on the local network, as in row 3. A server that works is never replaced.
+a server on the local network, as in row 3. A server that works is never replaced,
+so a classroom server on the local network is always used before the public one.
 
 ### Setting the Server on the Console
 
@@ -111,7 +113,7 @@ Open **SETUP > MULTIPLAYER SETUP**:
 | USE AUTOMATIC DISCOVERY | Clears the saved address, so the console uses the compiled one or finds a server by itself |
 
 The screen shows the saved address, the compiled one, or which discovery the console
-will use. The address is kept in NVS (namespace `prg32`, key `mp_url`), survives
+will use and the public server it turns to after 10 seconds. The address is kept in NVS (namespace `prg32`, key `mp_url`), survives
 firmware updates, and applies to the next cartridge that joins a room. Saving or
 clearing it while no cartridge runs takes effect at once. This works on QEMU too,
 except the mDNS scan.

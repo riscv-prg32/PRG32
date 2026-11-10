@@ -27,7 +27,7 @@ This document outlines the high-level layout of the PRG32 repository.
 |   |   |-- prg32_cart.c            Cartridge slots and loader: execution window filled from a flash mapping, streamed-upload validation, aborting a running performance suite when its cartridge stops, a cartridge selecting another slot (the switch waits for its entry point to return), and counting the tasks waiting to unload or replace the running cartridge so modal screens it opened give way
 |   |   |-- prg32_display_ili9341.c Physical display backend and reference landscape orientation
 |   |   |-- prg32_led_internal.h    Firmware-only helpers for an RGB LED sharing LCD D/C (`PRG32_PIN_SHARED_RGB_LED`): boot flash and post-frame off latch
-|   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, the server address saved in NVS (no address built in), mDNS (`_prg32mp._tcp`) and LAN discovery, peer table, identity, and QEMU's emulated Ethernet
+|   |   |-- prg32_multiplayer.c     prg32-multiplayer-1.0 session: WebSocket lifecycle, reconnection, the server address saved in NVS (no local address built in), mDNS (`_prg32mp._tcp`) and LAN discovery, the public server as a last resort, peer table, identity, and QEMU's emulated Ethernet
 |   |   |-- prg32_multiplayer_wire.c  The protocol's JSON messages the discovery answer, and server URL validation and formatting from an mDNS answer, with no networking so that they can be tested on a computer
 |   |   |-- prg32_setup_multiplayer.c  SETUP > MULTIPLAYER SETUP: save a server address, scan for one with mDNS, or return to automatic discovery
 |   |   |-- prg32_performance.c     Bounded performance collection and streamed JSON result serialization

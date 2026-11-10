@@ -115,6 +115,21 @@ class ServerAddressTest(unittest.TestCase):
         wire = (COMPONENT / "prg32_multiplayer_wire.h").read_text(encoding="utf-8")
         self.assertIn('#define PRG32_MP_MDNS_SERVICE "_prg32mp"', wire)
 
+    def test_public_server_is_the_last_resort(self) -> None:
+        kconfig = (COMPONENT / "Kconfig").read_text(encoding="utf-8")
+        entry = kconfig[kconfig.index("config PRG32_MULTIPLAYER_PUBLIC_SERVER_URL"):]
+        entry = entry[:entry.index("\nconfig ")]
+        self.assertIn('default "wss://multi.prg32.uniparthenope.it"', entry)
+        task = SOURCE[SOURCE.index("static void discovery_task"):]
+        fallback = task.index("prg32_multiplayer_server_url_public(url, sizeof(url))")
+        # Only with no address known, and only after local discovery had its time.
+        self.assertIn("if (g_server_url[0] == '\\0')", task[:fallback])
+        self.assertIn("PRG32_MP_PUBLIC_FALLBACK_MS", task[:fallback])
+        self.assertIn("#define PRG32_MP_PUBLIC_FALLBACK_MS 10000", SOURCE)
+        configured = SOURCE[SOURCE.index("int prg32_multiplayer_server_url_configured("):]
+        configured = configured[:configured.index("\n}")]
+        self.assertNotIn("PUBLIC", configured)
+
     def test_setup_menu_offers_the_server_screen(self) -> None:
         self.assertIn('"MULTIPLAYER SETUP"', SYSTEM_SOURCE)
         self.assertIn("prg32_setup_multiplayer_run();", SYSTEM_SOURCE)

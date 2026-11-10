@@ -3,7 +3,8 @@
  *
  * No server address is built into the firmware. This screen saves one in NVS,
  * finds one with mDNS, or clears the saved one so that the console finds a
- * server on the local network by itself when a cartridge joins a room. See
+ * server on the local network by itself when a cartridge joins a room, and
+ * turns to the public server when it finds none. See
  * docs/usage/network.md#multiplayer-server-address.
  */
 #include "freertos/FreeRTOS.h"
@@ -101,6 +102,9 @@ void prg32_setup_multiplayer_run(void) {
     int has_compiled =
         !has_saved &&
         prg32_multiplayer_server_url_configured(compiled, sizeof(compiled)) == 0;
+    char public_url[PRG32_MP_URL_LEN];
+    int has_public =
+        prg32_multiplayer_server_url_public(public_url, sizeof(public_url)) == 0;
     uint32_t last = prg32_input_read_menu();
     int redraw_settings = 0;
     while (!redraw_settings) {
@@ -175,6 +179,10 @@ void prg32_setup_multiplayer_run(void) {
                         prg32_multiplayer_mdns_available() ? "MDNS, THEN LAN DISCOVERY"
                                                            : "LAN DISCOVERY",
                         PRG32_COLOR_CYAN, 0);
+        if (has_public) {
+          prg32_gfx_text8(8, y + 28, "ELSE AFTER 10 S:", PRG32_COLOR_YELLOW, 0);
+          draw_wrapped(y + 42, public_url, PRG32_COLOR_CYAN);
+        }
       }
       prg32_gfx_text8(8, 216, "UP/DOWN MOVE  SELECT/A OK  B BACK",
                       PRG32_COLOR_CYAN, 0);

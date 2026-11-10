@@ -29,6 +29,12 @@
 #define PRG32_MULTIPLAYER_SERVER_URL ""
 #endif
 
+/* The public server, tried only when the console knows no address and finds no
+ * server on the local network. Empty turns it off. */
+#ifndef PRG32_MULTIPLAYER_PUBLIC_SERVER_URL
+#define PRG32_MULTIPLAYER_PUBLIC_SERVER_URL ""
+#endif
+
 /* UDP port of LAN discovery; 0 turns it off. */
 #ifndef PRG32_MULTIPLAYER_DISCOVERY_PORT
 #define PRG32_MULTIPLAYER_DISCOVERY_PORT 8082
@@ -42,6 +48,9 @@
 #undef PRG32_MULTIPLAYER_MDNS_DISCOVERY
 #define PRG32_MULTIPLAYER_MDNS_DISCOVERY 0
 #endif
+
+#define PRG32_MP_DISCOVERY_ENABLE \
+    (PRG32_MULTIPLAYER_DISCOVERY_PORT != 0 || PRG32_MULTIPLAYER_MDNS_DISCOVERY != 0)
 
 #include "esp_err.h"
 #include "nvs.h"
@@ -182,6 +191,20 @@ int prg32_multiplayer_server_url_configured(char *out_url, size_t max_len) {
         return -1;
     }
     copy_text(out_url, max_len, PRG32_MULTIPLAYER_SERVER_URL);
+    return 0;
+}
+
+/* The public fallback server, or -1 when this build has none. */
+int prg32_multiplayer_server_url_public(char *out_url, size_t max_len) {
+    if (!out_url || max_len == 0) {
+        return -1;
+    }
+    out_url[0] = '\0';
+    if (!prg32_mp_valid_server_url(PRG32_MULTIPLAYER_PUBLIC_SERVER_URL) ||
+        strlen(PRG32_MULTIPLAYER_PUBLIC_SERVER_URL) >= max_len) {
+        return -1;
+    }
+    copy_text(out_url, max_len, PRG32_MULTIPLAYER_PUBLIC_SERVER_URL);
     return 0;
 }
 
@@ -427,6 +450,9 @@ static volatile uint32_t g_disconnected_ms;
 #define PRG32_MP_DISCOVERY_STACK 3072
 /* mDNS discovery: query this often while no server answers. */
 #define PRG32_MP_MDNS_QUERY_MS 6000
+/* With no address known, local discovery gets this long before the console
+ * turns to the public server. */
+#define PRG32_MP_PUBLIC_FALLBACK_MS 10000
 static SemaphoreHandle_t g_mp_lock;
 /* Set by the WebSocket task on `device_blocked`; acted on by the tick, because
  * the task cannot destroy its own client. */
@@ -852,8 +878,11 @@ static int ensure_client(void) {
         return 0;
     }
     if (!g_server_url[0] &&
-        prg32_multiplayer_server_url_configured(g_server_url, sizeof(g_server_url)) != 0) {
-        /* No address yet: discovery starts the client when it finds one. */
+        prg32_multiplayer_server_url_configured(g_server_url, sizeof(g_server_url)) != 0 &&
+        (PRG32_MP_DISCOVERY_ENABLE ||
+         prg32_multiplayer_server_url_public(g_server_url, sizeof(g_server_url)) != 0)) {
+        /* No address yet: discovery starts the client when it finds one, or
+         * turns to the public server. */
         g_server_url[0] = '\0';
         unlock_client();
         return 1;
@@ -932,9 +961,6 @@ int prg32_multiplayer_server_url_current(char *out_url, size_t max_len) {
     return out_url[0] ? 0 : prg32_multiplayer_server_url_configured(out_url, max_len);
 }
 
-#define PRG32_MP_DISCOVERY_ENABLE \
-    (PRG32_MULTIPLAYER_DISCOVERY_PORT != 0 || PRG32_MULTIPLAYER_MDNS_DISCOVERY != 0)
-
 #if PRG32_MP_DISCOVERY_ENABLE
 
 /* True while the cartridge wants a room and either knows no server address or
@@ -972,10 +998,14 @@ static void switch_server(const char *url, const char *how) {
  *   - LAN discovery (the server's docs/protocol.md, "LAN discovery"): a UDP
  *     broadcast every 2 s on PRG32_MULTIPLAYER_DISCOVERY_PORT, listening on
  *     that port for the answer or for a server's beacon.
- * It never replaces a server that works. */
+ * With no address known and nothing found for 10 s, it turns to the public
+ * server, PRG32_MULTIPLAYER_PUBLIC_SERVER_URL. It never replaces a server that
+ * works. */
 static void discovery_task(void *arg) {
     (void)arg;
     char url[PRG32_MP_URL_LEN];
+    /* When the search with no address known began; 0 while not searching. */
+    uint32_t searching_since_ms = 0;
 #if PRG32_MULTIPLAYER_MDNS_DISCOVERY
     bool mdns_asked = false;
     uint32_t last_mdns_ms = 0;
@@ -990,8 +1020,20 @@ static void discovery_task(void *arg) {
 #if PRG32_MULTIPLAYER_MDNS_DISCOVERY
             mdns_asked = false;
 #endif
+            searching_since_ms = 0;
             vTaskDelay(pdMS_TO_TICKS(500));
             continue;
+        }
+        if (g_server_url[0] == '\0') {
+            uint32_t now_search = prg32_ticks_ms();
+            if (searching_since_ms == 0) {
+                searching_since_ms = now_search ? now_search : 1;
+            } else if ((uint32_t)(now_search - searching_since_ms) >= PRG32_MP_PUBLIC_FALLBACK_MS &&
+                       prg32_multiplayer_server_url_public(url, sizeof(url)) == 0) {
+                searching_since_ms = 0;
+                switch_server(url, "public fallback");
+                continue;
+            }
         }
 #if PRG32_MULTIPLAYER_MDNS_DISCOVERY
         uint32_t now_mdns = prg32_ticks_ms();

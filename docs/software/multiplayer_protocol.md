@@ -83,9 +83,11 @@ erasing NVS in each copy it makes. If you clone images yourself, erase that key.
 | ESP32-C6 | Wi-Fi station mode. Set up the network as in [Network setup](../usage/network.md) |
 | QEMU | The emulated OpenCores Ethernet, through `-nic user,model=open_eth`, which the launcher already passes. It starts at the first join, and [receives by polling](#why-qemu-polls-its-ethernet) |
 
-No server address is built in. The console uses the address saved in **SETUP >
+No local server address is built in. The console uses the address saved in **SETUP >
 MULTIPLAYER SETUP**, else one compiled in with `prg32 multiplayer set-url`, else
-the first server that discovery finds; see
+the first server that discovery finds, else, after 10 s of finding nothing, the
+public server `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`
+(`wss://multi.prg32.uniparthenope.it`); see
 [Multiplayer server address](../usage/network.md#multiplayer-server-address).
 `prg32_multiplayer_server_url_configured()` returns the first two in that order,
 and `prg32_multiplayer_server_url_current()` the one in use. These firmware calls,
@@ -110,6 +112,13 @@ answer. `prg32_mp_format_server_url()` in `prg32_multiplayer_wire.c` builds
 `scheme://IP:PORT/path` from the SRV port and the optional TXT keys `scheme` (`ws`
 or `wss`) and `path`, and refuses anything else. The same query backs the setup
 screen's scan. `CONFIG_PRG32_MULTIPLAYER_MDNS_DISCOVERY` (on; not on QEMU) builds it.
+
+**Public fallback.** While no address is known, the task times its search. After
+`PRG32_MP_PUBLIC_FALLBACK_MS` (10 s) with no answer it calls `switch_server()` with
+`prg32_multiplayer_server_url_public()`. The public server then counts as the
+address in use, so if it stops answering for 3 s the search on the local network
+goes on and can still move the console to a classroom server. With mDNS and LAN
+discovery both compiled out, `ensure_client()` uses the public server at once.
 
 **LAN discovery,** as the server's `docs/protocol.md` ("LAN discovery") describes.
 The task broadcasts `{"type":"discover","protocol":"prg32-multiplayer-1.0"}`
@@ -165,6 +174,11 @@ succeed locally and reports false, as the protocol requires.
 - mDNS and LAN discovery are not authenticated: any host on the network can answer.
   Neither works on QEMU: the build has no mDNS, and its user-mode network carries
   no broadcast.
+- On 2026-11-10 `wss://multi.prg32.uniparthenope.it` answered `/healthz` but returned
+  its HTML status page (HTTP 200) to a WebSocket upgrade instead of 101 Switching
+  Protocols, so consoles cannot play there until the reverse proxy in front of it
+  forwards upgrades. The fallback itself has not been exercised against it, nor TLS
+  on the board, which uses the larger `wss://` task stack.
 - The PRG32 Multiplayer Server does not advertise `_prg32mp._tcp` itself yet, so
   mDNS finds it only while the computer advertises it, for example with `dns-sd -R`
   as in [Finding the server on the local network](../usage/network.md#finding-the-server-on-the-local-network).
@@ -337,3 +351,11 @@ Not exercised: the new screen and an mDNS answer on a running board (the attache
 `breadboard1`, so `pcb1` firmware was built but not flashed), a saved address on QEMU, and a
 join with no address while a server announces itself. No cartridge slot was written on a
 board; the QEMU smoke test wrote `cart0` of its own flash image only.
+
+**Public fallback, same day.** `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`
+(`wss://multi.prg32.uniparthenope.it`) is used only after 10 s with no address and no local
+answer. `python3 -m prg32 esp32c6 build -p pcb1` and `python3 -m prg32 qemu build` built
+with it in their `sdkconfig`; `python3 -m prg32 test` (205 unit tests, parity skipped) and
+the QEMU smoke test passed; the other CI checks passed. Not exercised: the fallback on a
+console, and a WebSocket session with the public server, which did not yet accept upgrades
+(see [Limits](#limits)).
