@@ -96,7 +96,8 @@ typedef struct {
 static prg32_mp_state_t g_mp;
 
 static void ensure_mp_state(void);
-/* Forgets the address in use, so the next connection reads the setting again. */
+/* Forgets the address in use, unless it was found on the local network, so
+ * the next connection reads the setting again. */
 static void forget_server_url(void);
 
 static void copy_text(char *dst, size_t dst_size, const char *src) {
@@ -127,13 +128,16 @@ static void prune_peers(uint32_t now_ms) {
     g_mp.peer_count = out;
 }
 
-/* The server address the user saved in the setup menu, kept in NVS. */
+/* The server settings chosen in the setup menu, kept in NVS:
+ *   mp_url    the server address the user typed, used when no local server is;
+ *   mp_local  0 when the user turned the local server off. Missing means on:
+ *             a server found on the local network comes first. */
 #define PRG32_MP_SETTINGS_NAMESPACE "prg32"
 #define PRG32_MP_SETTINGS_URL_KEY "mp_url"
+#define PRG32_MP_SETTINGS_LOCAL_KEY "mp_local"
 /* How long one mDNS query waits for answers. */
 #define PRG32_MP_MDNS_TIMEOUT_MS 1500
 #define PRG32_MP_MDNS_MAX_RESULTS 4
-
 int prg32_multiplayer_server_url_get(char *out_url, size_t max_len) {
     if (!out_url || max_len == 0) {
         return -1;
@@ -180,7 +184,50 @@ void prg32_multiplayer_server_url_clear(void) {
     forget_server_url();
 }
 
-/* The address chosen by the user: the saved one, then the compiled one. */
+/* Whether a local server comes first, read from NVS once and kept here; -1
+ * until read. */
+static int8_t g_local_server_enabled = -1;
+
+bool prg32_multiplayer_local_server_enabled(void) {
+    if (g_local_server_enabled < 0) {
+        uint8_t value = 1;
+        nvs_handle_t handle;
+        if (nvs_open(PRG32_MP_SETTINGS_NAMESPACE, NVS_READONLY, &handle) == ESP_OK) {
+            if (nvs_get_u8(handle, PRG32_MP_SETTINGS_LOCAL_KEY, &value) != ESP_OK) {
+                value = 1;
+            }
+            nvs_close(handle);
+        }
+        g_local_server_enabled = value ? 1 : 0;
+    }
+    return g_local_server_enabled == 1;
+}
+
+int prg32_multiplayer_set_local_server_enabled(bool enabled) {
+    nvs_handle_t handle;
+    if (nvs_open(PRG32_MP_SETTINGS_NAMESPACE, NVS_READWRITE, &handle) != ESP_OK) {
+        return -1;
+    }
+    /* On is the default, so it is stored as no key at all. */
+    esp_err_t err = enabled ? nvs_erase_key(handle, PRG32_MP_SETTINGS_LOCAL_KEY)
+                            : nvs_set_u8(handle, PRG32_MP_SETTINGS_LOCAL_KEY, 0);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        err = ESP_OK;
+    }
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+    nvs_close(handle);
+    if (err != ESP_OK) {
+        return -1;
+    }
+    g_local_server_enabled = enabled ? 1 : 0;
+    /* Turning it off also drops a local server already found. */
+    forget_server_url();
+    return 0;
+}
+
+/* The fallback chosen by the user: the saved address, then the compiled one. */
 int prg32_multiplayer_server_url_configured(char *out_url, size_t max_len) {
     if (prg32_multiplayer_server_url_get(out_url, max_len) == 0) {
         return 0;
@@ -462,9 +509,6 @@ static SemaphoreHandle_t g_client_lock;
 /* The server in use: the saved or compiled address, or the one discovery
  * found. Empty until a cartridge joins, and while no address is known. */
 static char g_server_url[PRG32_MP_URL_LEN];
-/* True when g_server_url is the address saved in setup. A saved address is the
- * user's choice and is used alone: discovery never runs then. */
-static volatile bool g_saved_url_in_use;
 /* True when g_server_url came from a search of the local network (mDNS or LAN
  * discovery). Setup shows such a server as LOCAL. */
 static volatile bool g_server_is_local;
@@ -476,8 +520,9 @@ static volatile uint32_t g_disconnected_ms;
 #define PRG32_MP_DISCOVERY_STACK 3072
 /* mDNS discovery: query this often while no server answers. */
 #define PRG32_MP_MDNS_QUERY_MS 6000
-/* With no address known, local discovery gets this long before the console
- * turns to the public server. */
+/* With no address known, or a local server that stopped answering, the search
+ * gets this long before the console turns to its fallback: the saved or
+ * compiled address, else the public server. */
 #define PRG32_MP_PUBLIC_FALLBACK_MS 10000
 static SemaphoreHandle_t g_mp_lock;
 /* Set by the WebSocket task on `device_blocked`; acted on by the tick, because
@@ -909,16 +954,15 @@ static int ensure_client(void) {
         return 0;
     }
     if (!g_server_url[0]) {
-        /* The saved address, then the compiled one. With neither, discovery
-         * starts the client when it finds a server, or turns to the public
-         * server; without discovery the public server is used at once. */
+        /* No local server known: the saved address, then the compiled one.
+         * With neither, discovery starts the client when it finds a server, or
+         * turns to the public server; with discovery off, or the local server
+         * turned off in setup, the public server is used at once. */
         g_server_is_local = false;
-        g_saved_url_in_use =
-            prg32_multiplayer_server_url_get(g_server_url, sizeof(g_server_url)) == 0;
-        bool known = g_saved_url_in_use ||
-                     prg32_multiplayer_server_url_configured(g_server_url,
+        bool known = prg32_multiplayer_server_url_configured(g_server_url,
                                                              sizeof(g_server_url)) == 0;
-        if (!known && !PRG32_MP_DISCOVERY_ENABLE) {
+        if (!known && (!PRG32_MP_DISCOVERY_ENABLE ||
+                       !prg32_multiplayer_local_server_enabled())) {
             known = prg32_multiplayer_server_url_public(g_server_url,
                                                         sizeof(g_server_url)) == 0;
         }
@@ -979,9 +1023,11 @@ static void forget_server_url(void) {
     if (g_client_lock) {
         lock_client();
     }
-    g_server_url[0] = '\0';
-    g_saved_url_in_use = false;
-    g_server_is_local = false;
+    /* A local server comes first, so it stays while the local server is on. */
+    if (!g_server_is_local || !prg32_multiplayer_local_server_enabled()) {
+        g_server_url[0] = '\0';
+        g_server_is_local = false;
+    }
     if (g_client_lock) {
         unlock_client();
     }
@@ -996,11 +1042,8 @@ int prg32_multiplayer_use_local_server(const char *url) {
     if (!prg32_mp_valid_server_url(url)) {
         return -1;
     }
-    /* A local server replaces a saved address: the user chose the search. */
-    prg32_multiplayer_server_url_clear();
     lock_client();
     copy_text(g_server_url, sizeof(g_server_url), url);
-    g_saved_url_in_use = false;
     g_server_is_local = true;
     unlock_client();
     return 0;
@@ -1031,11 +1074,10 @@ int prg32_multiplayer_server_url_current(char *out_url, size_t max_len) {
 static bool g_discovery_running;
 
 /* The task's reason to exist: a cartridge wants a room, has no connection, and
- * is not on an address the user saved, which is used alone. The caller holds
- * g_mp_lock. */
+ * the local server is on in setup. The caller holds g_mp_lock. */
 static bool discovery_needed_locked(void) {
     return g_mp.member_requested && g_mp.link == PRG32_MP_LINK_DISCONNECTED &&
-           !g_saved_url_in_use;
+           prg32_multiplayer_local_server_enabled();
 }
 
 static bool discovery_needed(void) {
@@ -1082,7 +1124,6 @@ static void switch_server(const char *url, const char *how, bool local) {
         ESP_LOGI(TAG, "found a server by %s: %s", how, url);
         destroy_client();
         copy_text(g_server_url, sizeof(g_server_url), url);
-        g_saved_url_in_use = false;
         g_server_is_local = local;
         g_disconnected_ms = prg32_ticks_ms();
         if (ensure_client() != 0) {
@@ -1179,14 +1220,18 @@ static void discovery_task(void *arg) {
             vTaskDelay(pdMS_TO_TICKS(PRG32_MP_DISCOVERY_AFTER_MS - down_ms));
             continue;
         }
-        if (g_server_url[0] == '\0') {
+        /* With no address, or a local server that stopped answering, the
+         * search gets 10 s; then the console turns to its fallback: the saved
+         * or compiled address, else the public server. */
+        if (g_server_url[0] == '\0' || g_server_is_local) {
             uint32_t now_search = prg32_ticks_ms();
             if (searching_since_ms == 0) {
                 searching_since_ms = now_search ? now_search : 1;
             } else if ((uint32_t)(now_search - searching_since_ms) >= PRG32_MP_PUBLIC_FALLBACK_MS &&
-                       prg32_multiplayer_server_url_public(url, sizeof(url)) == 0) {
+                       (prg32_multiplayer_server_url_configured(url, sizeof(url)) == 0 ||
+                        prg32_multiplayer_server_url_public(url, sizeof(url)) == 0)) {
                 searching_since_ms = 0;
-                switch_server(url, "public fallback", false);
+                switch_server(url, "fallback", false);
                 continue;
             }
         }
@@ -1317,30 +1362,23 @@ static bool room_requested(void) {
     return requested;
 }
 
-/* True when the console finds its server by searching: no address saved in
- * setup and none compiled in. */
-static bool automatic_discovery_mode(void) {
-    char url[PRG32_MP_URL_LEN];
-    return prg32_multiplayer_server_url_configured(url, sizeof(url)) != 0;
-}
 
 /* Searches until a server answers, the tries run out, a game opens a room, or
- * setup saves an address; then ends itself, freeing its stack. A server found
+ * setup turns the local server off; then ends itself, freeing its stack. A server found
  * replaces the one found before, since the console may be on another network
  * now; when none answers, the previous one is kept. */
 static void network_up_search_task(void *arg) {
     (void)arg;
     char url[PRG32_MP_URL_LEN];
     for (int tries = 0; tries < PRG32_MP_NETWORK_UP_TRIES; ++tries) {
-        if (!automatic_discovery_mode() || room_requested()) {
+        if (!prg32_multiplayer_local_server_enabled() || room_requested()) {
             break;
         }
         if (prg32_multiplayer_discover_mdns(url, sizeof(url)) == 0 ||
             prg32_multiplayer_discover_lan(url, sizeof(url), PRG32_MP_NETWORK_UP_TRY_MS) == 0) {
-            if (!room_requested() && automatic_discovery_mode()) {
+            if (!room_requested() && prg32_multiplayer_local_server_enabled()) {
                 lock_client();
                 copy_text(g_server_url, sizeof(g_server_url), url);
-                g_saved_url_in_use = false;
                 g_server_is_local = true;
                 unlock_client();
                 ESP_LOGI(TAG, "found a server on the local network: %s", url);
@@ -1358,7 +1396,7 @@ static void network_up_search_task(void *arg) {
 void prg32_multiplayer_network_up(void) {
     /* Runs on the system event task, so it only starts the search. */
     ensure_mp_state();
-    if (!automatic_discovery_mode()) {
+    if (!prg32_multiplayer_local_server_enabled()) {
         return;
     }
     bool start = false;

@@ -16,7 +16,7 @@ a complete example, see [Poing Wall](../../cartridges/poingwall/README.md).
 |---|---|
 | `components/prg32/prg32_multiplayer_wire.c` | The JSON messages: building, parsing, and validating them. No networking, so `tests/test_multiplayer_wire.py` can run it on a computer |
 | `components/prg32/prg32_multiplayer.c` | The session: WebSocket lifecycle, reconnection, peer table, device identity, the server address setting, mDNS and LAN discovery, and QEMU's Ethernet |
-| `components/prg32/prg32_setup_multiplayer.c` | **SETUP > MULTIPLAYER SETUP**: search the local network (shown as LOCAL), type an address and its port, or clear the saved address |
+| `components/prg32/prg32_setup_multiplayer.c` | **SETUP > MULTIPLAYER SETUP**: type an address and its port, search for a local server (shown as LOCAL), turn the local server on or off, or reset to the default |
 | `tools/multiplayer_wall_test.py` | The test against real consoles and a real server |
 
 ## The session
@@ -102,14 +102,17 @@ starting a client, and the join still succeeds: the request stands, as for any
 other disconnection, and discovery starts the client when it finds a server. With
 discovery compiled out, such a join fails.
 
-A saved address is the user's choice and is used alone. `ensure_client()` records
-in `g_saved_url_in_use` whether the address it starts with is the saved one, and
-`discovery_needed_locked()` is false while it is, so the console never searches
-then. `prg32_multiplayer_join()` therefore starts the client before discovery. A
-compiled address, the public server, or no address at all leave discovery on.
+A server found on the local network comes first, for latency. It stays in
+`g_server_url` with `g_server_is_local` set, and `forget_server_url()`, which runs
+when the typed address changes, keeps it. Otherwise `ensure_client()` fills
+`g_server_url` from `prg32_multiplayer_server_url_configured()`: the typed address
+(NVS `prg32/mp_url`), then the compiled one. The setting **LOCAL SERVER**, NVS
+`prg32/mp_local` (absent means on; 0 is off), turns the local server off:
+`discovery_needed_locked()` is then false, `forget_server_url()` drops a local
+server, and with no address `ensure_client()` uses the public server at once.
 
 The task `prg32_mp_disc` exists only while it is needed: a cartridge wants a room,
-the link is down, and no saved address is in use. `start_discovery()` creates it on
+the link is down, and the local server is on. `start_discovery()` creates it on
 `join` and on every lost connection (the WebSocket CLOSED and DISCONNECTED events),
 and does nothing when it is already running. A known address first gets 3 s to
 answer; with none, the task asks at once. When the console connects, or the
@@ -125,12 +128,14 @@ answer. `prg32_mp_format_server_url()` in `prg32_multiplayer_wire.c` builds
 or `wss`) and `path`, and refuses anything else. The same query backs the setup
 screen's scan. `CONFIG_PRG32_MULTIPLAYER_MDNS_DISCOVERY` (on; not on QEMU) builds it.
 
-**Public fallback.** While no address is known, the task times its search. After
+**Fallback.** While no address is known, or the address in use is a local server
+that has not answered for 3 s, the task times its search. After
 `PRG32_MP_PUBLIC_FALLBACK_MS` (10 s) with no answer it calls `switch_server()` with
-`prg32_multiplayer_server_url_public()`. The public server then counts as the
-address in use, so if it stops answering for 3 s the search on the local network
-goes on and can still move the console to a classroom server. With mDNS and LAN
-discovery both compiled out, `ensure_client()` uses the public server at once.
+the typed or compiled address, else `prg32_multiplayer_server_url_public()`. That
+server then counts as the address in use, so if it stops answering for 3 s the
+search on the local network goes on and can still move the console to a classroom
+server. With mDNS and LAN discovery both compiled out, `ensure_client()` uses the
+public server at once.
 
 **LAN discovery,** as the server's `docs/protocol.md` ("LAN discovery") describes.
 The task broadcasts `{"type":"discover","protocol":"prg32-multiplayer-1.0"}`
@@ -148,19 +153,20 @@ The URL found is kept until the firmware restarts or the setting changes in
 
 **Local servers.** A server found by mDNS or LAN discovery sets `g_server_is_local`
 (the public fallback does not), and the setup screen shows it as `LOCAL` instead of
-its address. The screen's SEARCH LOCAL NETWORK calls `prg32_multiplayer_discover_mdns()`
-and `prg32_multiplayer_discover_lan()` (one UDP query, then 2 s listening) up to
-five times, checking B between tries; SELECT on the result calls
-`prg32_multiplayer_use_local_server()`, which clears any saved address so that the
-console is back on automatic discovery, and makes the server the one in use.
+its address. The screen's SEARCH LOCAL SERVER turns the local server on, then calls
+`prg32_multiplayer_discover_mdns()` and `prg32_multiplayer_discover_lan()` (one
+UDP query, then 2 s listening) up to five times, checking B between tries, and
+hands a server found to `prg32_multiplayer_use_local_server()`, which makes it the
+one in use. RESET TO DEFAULT calls `prg32_multiplayer_server_url_clear()`: it forgets
+the typed address and leaves **LOCAL SERVER** as it is.
 
 **Search when Wi-Fi connects.** `prg32_wifi.c` calls `prg32_multiplayer_network_up()`
-on `IP_EVENT_STA_GOT_IP`, at boot and after every reconnection. With no address
-saved or compiled in, and no room requested, it creates `prg32_mp_netup` (3 KB
+on `IP_EVENT_STA_GOT_IP`, at boot and after every reconnection. With the local
+server on and no room requested, it creates `prg32_mp_netup` (3 KB
 stack); it runs on the system event task, so it does nothing else. The task tries
 mDNS and then 2 s of LAN discovery up to five times, and ends itself when a server
 answers, the tries run out, a game asks for a room (the session's `prg32_mp_disc`
-searches then), or setup saves an address. A server found replaces one found
+searches then), or setup turns the local server off. A server found replaces one found
 before, since the console may be on another network; when none answers, the
 previous one is kept.
 
@@ -390,11 +396,13 @@ console, and a WebSocket session with the public server, which did not yet accep
 
 ## Hosted Server as the Public Fallback (2026-11-11)
 
-This change was rebased onto the server-address work above. It keeps that design (no
-built-in address; saved, then compiled, then mDNS and LAN discovery, then the public
-server) and adds: a saved address used alone, the on-demand discovery task,
-SEARCH LOCAL NETWORK showing a found server as `LOCAL`, the search when Wi-Fi
-connects, and the SERVER PORT step in MANUAL ENTRY (`prg32_mp_normalize_server_url()`,
+This change was rebased onto the server-address work above. It keeps no built-in
+address, mDNS, and the public server, and puts a local server first: a server found
+on the local network, then the typed address, then the compiled one, then the
+public server, with **LOCAL SERVER: OFF** to skip the local one. It adds the
+on-demand discovery task, the search when Wi-Fi connects, SEARCH LOCAL SERVER
+showing a found server as `LOCAL`, a silent local server giving way to the
+fallback, and the SERVER PORT step in SERVER URL (`prg32_mp_normalize_server_url()`,
 `prg32_mp_valid_port()`, `prg32_mp_split_server_url()` in `prg32_multiplayer_wire.c`).
 The QEMU defaults no longer compile in `ws://10.0.2.2:8081`, so QEMU follows the
 same order as the board.
@@ -421,7 +429,7 @@ public fallback; once Apache forwards upgrades, the fallback moves back to `wss:
 
 | Check | Result |
 |---|---|
-| `tests/test_multiplayer_wire.py` | Passes: the host wire test with the typed-address and port helpers, and source checks that a saved address is used alone, the discovery task ends itself and restarts on a lost connection, a search marks the server LOCAL, and Wi-Fi coming up starts a search |
+| `tests/test_multiplayer_wire.py` | Passes: the host wire test with the typed-address and port helpers, and source checks that a local server comes first unless turned off, a silent local server gives way to the fallback, the discovery task ends itself and restarts on a lost connection, a search marks the server LOCAL, and Wi-Fi coming up starts a search |
 | `tests/test_setup_takeover.py` | Passes with the screen's three input loops |
 | `python3 -m prg32 esp32c6 build -p breadboard2` (full) | Builds; `sdkconfig` has no compiled address, the public fallback `ws://193.205.230.7:8099`, mDNS on; `prg32_cart_exec` stays at 0x408023a0 |
 | `python3 -m prg32 qemu build` (full) | Builds, with no compiled address |
@@ -430,3 +438,10 @@ public fallback; once Apache forwards upgrades, the fallback moves back to `wss:
 Not exercised: the board was not flashed, so the search on Wi-Fi, SEARCH LOCAL
 NETWORK, the port step on screen, and a saved address left alone by discovery are
 checked only by building, the source checks, and reading the code.
+
+The setup screen was checked on QEMU with `prg32 qemu key` and the framebuffer read
+through the monitor: it lists SERVER URL, SEARCH LOCAL SERVER, LOCAL SERVER: ON,
+RESET TO DEFAULT and BACK, and shows `SERVER: NO LOCAL SERVER YET` with the public
+server after 10 s; LOCAL SERVER switched to OFF and the fallback line to `USING:`;
+RESET TO DEFAULT left it OFF. One `prg32 test` run failed because the emulator never
+booted (no firmware output in `build-qemu/smoke_qemu.log`); the next run passed.

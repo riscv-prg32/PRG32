@@ -123,23 +123,37 @@ class ServerAddressTest(unittest.TestCase):
         self.assertIn('default "ws://193.205.230.7:8099"', entry)
         task = SOURCE[SOURCE.index("static void discovery_task"):]
         fallback = task.index("prg32_multiplayer_server_url_public(url, sizeof(url))")
-        # Only with no address known, and only after local discovery had its time.
-        self.assertIn("if (g_server_url[0] == '\\0')", task[:fallback])
+        # Only with no address known, or a silent local server, and only after
+        # local discovery had its time.
+        self.assertIn("if (g_server_url[0] == '\\0' || g_server_is_local)", task[:fallback])
         self.assertIn("PRG32_MP_PUBLIC_FALLBACK_MS", task[:fallback])
         self.assertIn("#define PRG32_MP_PUBLIC_FALLBACK_MS 10000", SOURCE)
         configured = SOURCE[SOURCE.index("int prg32_multiplayer_server_url_configured("):]
         configured = configured[:configured.index("\n}")]
         self.assertNotIn("PUBLIC", configured)
 
-    def test_a_saved_address_is_used_alone(self) -> None:
+    def test_a_local_server_comes_first_unless_turned_off(self) -> None:
+        # Discovery runs only while the local server is on in setup.
         needed = SOURCE[SOURCE.index("static bool discovery_needed_locked(void)"):]
-        self.assertIn("!g_saved_url_in_use", needed[:needed.index("\n}\n")])
+        self.assertIn("prg32_multiplayer_local_server_enabled()", needed[:needed.index("\n}\n")])
+        # Saving or clearing the typed address keeps a local server found.
+        forget = SOURCE[SOURCE.rindex("static void forget_server_url(void) {"):]
+        forget = forget[:forget.index("\n}\n")]
+        self.assertIn("if (!g_server_is_local || !prg32_multiplayer_local_server_enabled())", forget)
+        # With the local server off and no address, the public server is used at once.
         client = SOURCE[SOURCE.index("static int ensure_client(void)"):]
         client = client[:client.index("\n}\n")]
-        self.assertIn("g_saved_url_in_use =\n            prg32_multiplayer_server_url_get(", client)
-        # The client is chosen before discovery starts, so the task sees the flag.
-        join = SOURCE[SOURCE.rindex("int prg32_multiplayer_join("):]
-        self.assertLess(join.index("int client = ensure_client();"), join.index("start_discovery();"))
+        self.assertIn("!prg32_multiplayer_local_server_enabled()", client)
+        # On is the default: no key stored means on.
+        enabled = SOURCE[SOURCE.index("bool prg32_multiplayer_local_server_enabled(void)"):]
+        self.assertIn("uint8_t value = 1;", enabled[:enabled.index("\n}\n")])
+
+    def test_a_silent_local_server_gives_way_to_the_fallback(self) -> None:
+        task = SOURCE[SOURCE.index("static void discovery_task"):]
+        task = task[:task.index("\n}\n")]
+        fallback = task.index('switch_server(url, "fallback", false);')
+        self.assertIn("if (g_server_url[0] == '\\0' || g_server_is_local) {", task[:fallback])
+        self.assertIn("prg32_multiplayer_server_url_configured(url, sizeof(url)) == 0 ||", task[:fallback])
 
     def test_discovery_task_runs_only_while_needed(self) -> None:
         body = SOURCE[SOURCE.index("static void discovery_task"):SOURCE.index("static void start_discovery(void) {")]
@@ -154,10 +168,12 @@ class ServerAddressTest(unittest.TestCase):
         switch = SOURCE[SOURCE.index("static void switch_server"):]
         switch = switch[:switch.index("\n}\n")]
         self.assertIn("g_server_is_local = local;", switch)
-        self.assertIn('switch_server(url, "public fallback", false);', SOURCE)
+        self.assertIn('switch_server(url, "fallback", false);', SOURCE)
         self.assertIn('switch_server(url, "mDNS", true);', SOURCE)
         screen = (COMPONENT / "prg32_setup_multiplayer.c").read_text(encoding="utf-8")
         self.assertIn('"FOUND: LOCAL"', screen)
+        self.assertIn('"LOCAL SERVER: ON"', screen)
+        self.assertIn('"RESET TO DEFAULT"', screen)
         self.assertIn("prg32_multiplayer_server_is_local()", screen)
 
     def test_the_network_coming_up_starts_a_search(self) -> None:
@@ -166,7 +182,7 @@ class ServerAddressTest(unittest.TestCase):
         self.assertIn("prg32_multiplayer_network_up();", got_ip[:got_ip.index("\n    }\n")])
         up = SOURCE[SOURCE.index("void prg32_multiplayer_network_up(void) {\n    /*"):]
         up = up[:up.index("\n}\n")]
-        self.assertIn("if (!automatic_discovery_mode()) {\n        return;", up)
+        self.assertIn("if (!prg32_multiplayer_local_server_enabled()) {\n        return;", up)
         self.assertIn("!g_mp.member_requested", up)
         self.assertIn("xTaskCreate(network_up_search_task", up)
         task = SOURCE[SOURCE.index("static void network_up_search_task"):]
