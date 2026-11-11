@@ -296,14 +296,28 @@ int prg32_multiplayer_discover_mdns(char *out_url, size_t max_len) {
     for (const mdns_result_t *r = results; r && rc != 0; r = r->next) {
         char scheme[8];
         char path[64];
+        char ip[16];
+        bool has_ipv4 = false;
         copy_txt_value(r, "scheme", scheme, sizeof(scheme));
         copy_txt_value(r, "path", path, sizeof(path));
         for (const mdns_ip_addr_t *a = r->addr; a && rc != 0; a = a->next) {
             if (a->addr.type != ESP_IPADDR_TYPE_V4) {
                 continue;
             }
-            char ip[16];
+            has_ipv4 = true;
             snprintf(ip, sizeof(ip), IPSTR, IP2STR(&a->addr.u_addr.ip4));
+            if (prg32_mp_format_server_url(out_url, max_len, scheme, ip, r->port, path) > 0) {
+                rc = 0;
+            }
+        }
+        /* The answer can arrive without the host's address: DNS-SD only
+         * recommends sending it, and mdns 1.14 stops reading a packet at its
+         * first empty record, such as a TXT with no keys, so an address after
+         * it is lost. Ask for the SRV target's address then. */
+        esp_ip4_addr_t host_ip;
+        if (rc != 0 && !has_ipv4 && r->hostname && r->hostname[0] &&
+            mdns_query_a(r->hostname, PRG32_MP_MDNS_TIMEOUT_MS, &host_ip) == ESP_OK) {
+            snprintf(ip, sizeof(ip), IPSTR, IP2STR(&host_ip));
             if (prg32_mp_format_server_url(out_url, max_len, scheme, ip, r->port, path) > 0) {
                 rc = 0;
             }

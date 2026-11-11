@@ -115,6 +115,14 @@ class ServerAddressTest(unittest.TestCase):
         wire = (COMPONENT / "prg32_multiplayer_wire.h").read_text(encoding="utf-8")
         self.assertIn('#define PRG32_MP_MDNS_SERVICE "_prg32mp"', wire)
 
+    def test_mdns_answer_without_an_address_resolves_its_host(self) -> None:
+        """mdns 1.14 drops the A record after an empty TXT (seen on a board)."""
+        body = SOURCE[SOURCE.index("int prg32_multiplayer_discover_mdns("):]
+        body = body[:body.index("\n}")]
+        self.assertIn("mdns_query_a(r->hostname, PRG32_MP_MDNS_TIMEOUT_MS, &host_ip)", body)
+        self.assertLess(body.index("r->addr"), body.index("mdns_query_a("))
+        self.assertIn("!has_ipv4", body)
+
     def test_public_server_is_the_last_resort(self) -> None:
         kconfig = (COMPONENT / "Kconfig").read_text(encoding="utf-8")
         entry = kconfig[kconfig.index("config PRG32_MULTIPLAYER_PUBLIC_SERVER_URL"):]

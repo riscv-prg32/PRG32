@@ -127,6 +127,13 @@ answer. `prg32_mp_format_server_url()` in `prg32_multiplayer_wire.c` builds
 `scheme://IP:PORT/path` from the SRV port and the optional TXT keys `scheme` (`ws`
 or `wss`) and `path`, and refuses anything else. The same query backs the setup
 screen's scan. `CONFIG_PRG32_MULTIPLAYER_MDNS_DISCOVERY` (on; not on QEMU) builds it.
+An answer can reach the board with no address for the SRV target: DNS-SD only
+recommends sending it, and espressif/mdns 1.14 stops reading a packet at its first
+zero-length record (`mdns_receive.c`), so a TXT record with no keys hides the A
+record after it. The PRG32 Multiplayer Server sent such a TXT until its
+`mdns-nonempty-txt` branch, which always sends `scheme`. An answer with no IPv4
+address is completed with `mdns_query_a()` for the SRV host name, with the same
+1.5 s limit.
 
 **Fallback.** While no address is known, or the address in use is a local server
 that has not answered for 3 s, the task times its search. After
@@ -445,3 +452,33 @@ RESET TO DEFAULT and BACK, and shows `SERVER: NO LOCAL SERVER YET` with the publ
 server after 10 s; LOCAL SERVER switched to OFF and the fallback line to `USING:`;
 RESET TO DEFAULT left it OFF. One `prg32 test` run failed because the emulator never
 booted (no firmware output in `build-qemu/smoke_qemu.log`); the next run passed.
+
+## Board Test of Server Discovery and Real Cartridges (2026-11-11)
+
+Firmware `c9972be` plus the SRV-host lookup above, built for `breadboard1` with no
+server address compiled in (the public fallback `ws://193.205.230.7:8099` only),
+flashed after a backup of the whole flash. The PRG32 Multiplayer Server ran at
+`2e83d3b` on the Mac on the same Wi-Fi network, with its mDNS and UDP discovery
+switched on or off per row. "Found" is the board's log line after Wi-Fi connects.
+
+| Check | Result (observed) |
+|---|---|
+| **MULTIPLAYER SETUP** screen | Items, LOCAL SERVER: ON, `SERVER: LOCAL`, and the public fallback under ELSE as documented |
+| Server mDNS only, before the fix | Not found in any of 5 rounds: the answer reached the firmware with host `Mac`, port 8081 and no address, and was dropped. The server had sent the A record after an empty TXT, where mdns 1.14 stops reading |
+| `dns-sd -R` (macOS) only, before the fix | Found in one of two boots: macOS sends the address with the answer |
+| Server mDNS only, with the fix | Found `ws://192.168.1.191:8081` on 3 of 3 boots, 1.8 to 2.9 s after the board got its address |
+| Server from `mdns-nonempty-txt` (TXT `scheme=ws`), mDNS only, firmware without the fix (c9972be) | Found `ws://192.168.1.177:8081` on 3 of 3 boots, 1.6 s after the board got its address: with a non-empty TXT, mdns 1.14 reads the A record |
+| Same server, firmware with the fix | Found on 2 of 2 boots, 1.6 s: the answer carries the address, so `mdns_query_a()` is not needed |
+| Server UDP discovery only | Found on 2 of 2 boots; on one, another server on the same computer (port 18081, not started by this test) answered first and was taken, as the [limits](#limits) warn |
+| Poing Wall, `tools/multiplayer_wall_test.py`, 2 QEMU + board, 180 s | All 16 checks passed; board 13.4 snapshots per second, longest silence 380 ms, 0 errors, 0 leaves |
+| Azzurra's Pro Tennis Challenge 2.2.0 solo (World Tour), board `cart0` | 1,822 frames in 60 s (30 per second); points and games advanced with key presses |
+| Azzurra 2.2.0 online 1 vs 1, board against QEMU, its `scripts/qemu_netplay.py` | Played to the result on both (board won, QEMU lost); 1,624 and 1,218 snapshots; both at tick 1,725; 0 input conflicts |
+| Skipass Madness 1.1.0 solo, board `cart7` | Started from the slot and played on the Aremogna piste |
+
+The board found the server by itself in every game: nothing was typed or compiled in.
+The QEMU consoles used a compiled address, since QEMU cannot discover a server. The
+Poing Wall test wrote `cart3`; it was restored from the backup, and all eight slots
+were compared with it and are unchanged.
+
+Not exercised: **SERVER URL** typed on the board, **LOCAL SERVER: OFF**, the public
+fallback, and an mDNS advertiser that answers the SRV host's address query late.
