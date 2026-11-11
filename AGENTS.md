@@ -8,7 +8,7 @@ Markdown
 
 **MISSION CRITICAL: YOU MUST RUN THESE PHASES COMPLETELY, OTHERWISE THE OUTPUT WILL BE REJECTED**
 
-## [PHASE 0: IF AND WHAT TO BUILD]
+## [PHASE 1: IF AND WHAT TO BUILD]
 1. At the start of every sessions you must understand if the user is just asking a question about the codebase or if he wants to modify the codebase.
 
 2. If the user wants to modify the codebase, then at the start of every session you MUST ask the user a question:

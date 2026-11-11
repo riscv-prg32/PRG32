@@ -248,6 +248,67 @@ static void test_server_url(void) {
     assert(prg32_mp_format_server_url(small, sizeof(small), "ws", "192.168.1.79", 8081, NULL) == -1);
 }
 
+/* Addresses typed in SETUP -> MULTIPLAYER SETUP -> SERVER URL. */
+static void test_typed_server_url(void) {
+    char url[PRG32_MP_URL_LEN];
+    assert(prg32_mp_normalize_server_url("192.168.1.10", url, sizeof(url)) == 0);
+    assert(strcmp(url, "ws://192.168.1.10:8081") == 0);
+    assert(prg32_mp_normalize_server_url("192.168.1.10:9000", url, sizeof(url)) == 0);
+    assert(strcmp(url, "ws://192.168.1.10:9000") == 0);
+    assert(prg32_mp_normalize_server_url("wss://mp.example.org", url, sizeof(url)) == 0);
+    assert(strcmp(url, "wss://mp.example.org") == 0);
+    assert(prg32_mp_normalize_server_url("ws://10.0.2.2:8081", url, sizeof(url)) == 0);
+    assert(strcmp(url, "ws://10.0.2.2:8081") == 0);
+    /* Empty, another scheme, no host, a space: refused and left empty. */
+    assert(prg32_mp_normalize_server_url("", url, sizeof(url)) == -1 && url[0] == '\0');
+    assert(prg32_mp_normalize_server_url("http://a:1", url, sizeof(url)) == -1);
+    assert(prg32_mp_normalize_server_url("ws://", url, sizeof(url)) == -1);
+    assert(prg32_mp_normalize_server_url(":8081", url, sizeof(url)) == -1);
+    assert(prg32_mp_normalize_server_url("my host", url, sizeof(url)) == -1);
+    /* A URL that does not fit is refused, not cut. */
+    char small[16];
+    assert(prg32_mp_normalize_server_url("192.168.1.10", small, sizeof(small)) == -1);
+    assert(small[0] == '\0');
+    assert(prg32_mp_valid_server_url("ws://a"));
+    assert(!prg32_mp_valid_server_url("ws:///path"));
+    assert(!prg32_mp_valid_server_url(NULL));
+    /* host:port needs a real port. */
+    assert(prg32_mp_normalize_server_url("192.168.1.10:abc", url, sizeof(url)) == -1);
+    assert(prg32_mp_normalize_server_url("192.168.1.10:", url, sizeof(url)) == -1);
+    assert(prg32_mp_normalize_server_url("192.168.1.10:70000", url, sizeof(url)) == -1);
+}
+
+/* The separate SERVER PORT step, and offering a saved URL for editing. */
+static void test_server_port(void) {
+    assert(prg32_mp_valid_port("8081"));
+    assert(prg32_mp_valid_port("1"));
+    assert(prg32_mp_valid_port("65535"));
+    assert(!prg32_mp_valid_port("0"));
+    assert(!prg32_mp_valid_port("65536"));
+    assert(!prg32_mp_valid_port("080810"));
+    assert(!prg32_mp_valid_port("80a"));
+    assert(!prg32_mp_valid_port("-1"));
+    assert(!prg32_mp_valid_port(""));
+    assert(!prg32_mp_valid_port(NULL));
+
+    char host[PRG32_MP_URL_LEN];
+    char port[8];
+    assert(prg32_mp_split_server_url("ws://192.168.1.10:9000", host, sizeof(host),
+                                     port, sizeof(port)) == 0);
+    assert(strcmp(host, "192.168.1.10") == 0 && strcmp(port, "9000") == 0);
+    /* wss://, a path, or no port: edited as a whole URL instead. */
+    assert(prg32_mp_split_server_url("wss://mp.example.org:443", host, sizeof(host),
+                                     port, sizeof(port)) == -1);
+    assert(host[0] == '\0' && port[0] == '\0');
+    assert(prg32_mp_split_server_url("ws://a:1/room", host, sizeof(host),
+                                     port, sizeof(port)) == -1);
+    assert(prg32_mp_split_server_url("ws://a", host, sizeof(host),
+                                     port, sizeof(port)) == -1);
+    char small_host[4];
+    assert(prg32_mp_split_server_url("ws://192.168.1.10:9000", small_host,
+                                     sizeof(small_host), port, sizeof(port)) == -1);
+}
+
 int main(void) {
     test_join();
     test_signature();
@@ -259,6 +320,8 @@ int main(void) {
     test_frame_order();
     test_discovery();
     test_server_url();
+    test_typed_server_url();
+    test_server_port();
     puts("multiplayer wire: PASS");
     return 0;
 }

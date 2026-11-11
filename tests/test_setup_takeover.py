@@ -31,7 +31,7 @@ SETUP_SCREENS = {
         "prg32_setup_store_browse_run",
     ),
     "prg32_setup_multiplayer.c": (
-        "offer_found_server",
+        "search_local_network",
         "prg32_setup_multiplayer_run",
     ),
     "prg32_wifi.c": (

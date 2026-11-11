@@ -328,6 +328,74 @@ int prg32_mp_parse_discovery(const char *data, size_t len, char *url, size_t url
     return result;
 }
 
+int prg32_mp_normalize_server_url(const char *text, char *url, size_t url_size) {
+    if (!text || !url || url_size == 0) {
+        return -1;
+    }
+    url[0] = '\0';
+    int n;
+    if (strncmp(text, "ws://", 5) == 0 || strncmp(text, "wss://", 6) == 0) {
+        n = snprintf(url, url_size, "%s", text);
+    } else if (strstr(text, "://")) {
+        return -1; /* http://, https://, or another scheme. */
+    } else if (strchr(text, ':')) {
+        if (!prg32_mp_valid_port(strrchr(text, ':') + 1)) {
+            return -1;
+        }
+        n = snprintf(url, url_size, "ws://%s", text);
+    } else {
+        n = snprintf(url, url_size, "ws://%s:%d", text, PRG32_MP_DEFAULT_PORT);
+    }
+    if (n < 0 || (size_t)n >= url_size || !prg32_mp_valid_server_url(url)) {
+        url[0] = '\0';
+        return -1;
+    }
+    return 0;
+}
+
+bool prg32_mp_valid_port(const char *port) {
+    if (!port || port[0] == '\0' || strlen(port) > 5) {
+        return false;
+    }
+    unsigned long value = 0;
+    for (const char *p = port; *p; ++p) {
+        if (*p < '0' || *p > '9') {
+            return false;
+        }
+        value = value * 10 + (unsigned long)(*p - '0');
+    }
+    return value >= 1 && value <= 65535;
+}
+
+int prg32_mp_split_server_url(const char *url,
+                              char *host,
+                              size_t host_size,
+                              char *port,
+                              size_t port_size) {
+    if (!url || !host || host_size == 0 || !port || port_size == 0) {
+        return -1;
+    }
+    host[0] = '\0';
+    port[0] = '\0';
+    if (strncmp(url, "ws://", 5) != 0 || !prg32_mp_valid_server_url(url)) {
+        return -1;
+    }
+    const char *start = url + 5;
+    const char *colon = strrchr(start, ':');
+    if (!colon || strchr(start, '/') || !prg32_mp_valid_port(colon + 1)) {
+        return -1;
+    }
+    size_t host_len = (size_t)(colon - start);
+    size_t port_len = strlen(colon + 1);
+    if (host_len == 0 || host_len >= host_size || port_len >= port_size) {
+        return -1;
+    }
+    memcpy(host, start, host_len);
+    host[host_len] = '\0';
+    memcpy(port, colon + 1, port_len + 1);
+    return 0;
+}
+
 bool prg32_mp_frame_is_stale(uint32_t frame, uint32_t latest) {
     return (int32_t)(frame - latest) < 0;
 }

@@ -394,8 +394,10 @@ has been saved, that cartridge starts automatically even when multiple slots are
 filled.
 
 The setup main menu contains cartridge launch, default cartridge selection,
-Wi-Fi setup, Cartridge Store configuration and browsing, audio setup, the
-developer band menu, the performance test, the about screen, and exit. The Cartridge Store integration
+Wi-Fi setup, Cartridge Store configuration and browsing,
+[multiplayer server setup](../usage/network.md#multiplayer-server-address),
+audio setup, the developer band menu, the performance test, the about screen,
+and exit. The Cartridge Store integration
 contract adds manual/discovered store URL entry, browsing, colophon preview, and
 download-to-slot behavior for future firmware work. Use UP/DOWN to choose,
 SELECT or A to confirm, and B to cancel/back. A cartridge started from a
@@ -460,7 +462,9 @@ Useful calls:
 
 `prg32_multiplayer_join()` returning 0 means the request was accepted, not that
 the server has admitted the console: that takes a moment, and the connection can
-be lost and regained at any time. Call `prg32_multiplayer_tick()` every frame,
+be lost and regained at any time. Which server the console uses is the player's
+choice in [SETUP → MULTIPLAYER SETUP](../usage/network.md#multiplayer-server-address),
+not the cartridge's. Call `prg32_multiplayer_tick()` every frame,
 because it is what publishes state, and treat a local player ID of 0 as "not in
 the room yet". When a cartridge stops, its session ends with it.
 
