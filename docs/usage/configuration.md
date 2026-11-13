@@ -43,6 +43,24 @@ Under `Component config` -> `PRG32 Framework` -> `PRG32 Board Configuration`:
   - `pcb1 (Soldered PCB, DOWN on GPIO13)`: Designates the soldered PCB pin profile in `profiles/sdkconfig.pins.pcb1` (see [PCB 1](../hardware/profiles/pcb1.md)).
   - `Custom Profile (configure pins manually in menuconfig)`: If and only if Custom profile is activated, the build uses the GPIO pin numbers configured manually in `menuconfig` and saved in `sdkconfig`. No external profile file is appended.
 
+### L and R Bumper Buttons
+
+`Enable L and R bumper buttons` (`CONFIG_PRG32_ENABLE_LR_BUTTONS`) is off by
+default. Only when it is on does menuconfig show the
+`L (left bumper) Button GPIO` and `R (right bumper) Button GPIO` fields, and
+only then does the firmware read those GPIOs. When it is off,
+`PRG32_BTN_L` and `PRG32_BTN_R` never come from local buttons (QEMU keys and
+remote KEY messages can still press them). Each pin profile sets it:
+
+| Profile | `CONFIG_PRG32_ENABLE_LR_BUTTONS` |
+|---|---|
+| `breadboard1` | `n` |
+| `breadboard2` | `y` (L on GPIO21, R on GPIO22) |
+| `pcb1` | `n` |
+
+A custom board with bumpers turns the option on and sets both GPIOs, in
+menuconfig or in its profile file.
+
 You can also view available pin profiles from the CLI using:
 ```bash
 python3 -m prg32 esp32c6 pins
