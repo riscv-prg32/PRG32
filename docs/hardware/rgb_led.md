@@ -39,21 +39,18 @@ On official Espressif development boards (such as the **ESP32-C6-DevKitC-1-N8**)
 
 Because the onboard LED occupies GPIO8 on the DevKit, hardware pin profiles must account for this shared resource:
 
-- **Conflict in `breadboard1` (Display DC on GPIO8)**:
-  In the reference [`breadboard1`](profiles/breadboard1.md) profile, GPIO8 is allocated to the ILI9341 display's Data/Command (`DC`) line. During SPI rendering, the display driver toggles GPIO8 thousands of times per second. If the WS2812 driver were active on GPIO8 simultaneously:
+- **Conflict in `pcb1` (Display DC on GPIO8)**:
+  On the soldered [`pcb1`](profiles/pcb1.md) board, GPIO8 is allocated to the ILI9341 display's Data/Command (`DC`) line. During SPI rendering, the display driver toggles GPIO8 thousands of times per second. If the WS2812 driver were active on GPIO8 simultaneously:
   - High-speed display toggles cause the onboard LED to flash or emit random colors.
   - WS2812 RMT transmissions interrupt display command sequencing, causing severe graphical artifacts.
 
   To prevent hardware contention:
-  - `CONFIG_PRG32_PIN_RGB_LED` defaults to `-1` (disabled) in `profiles/sdkconfig.pins.breadboard1`.
+  - `CONFIG_PRG32_PIN_RGB_LED` is `-1` (disabled) in `profiles/sdkconfig.pins.pcb1`.
   - The resident setup audio menu automatically suppresses the RGB LED visualizer option when the pin is disabled.
   - `CONFIG_PRG32_PIN_SHARED_RGB_LED=8` tells the firmware where the shared LED is, so it can still give a boot indication (see [Shared Boot Indication](#shared-boot-indication)).
 
-- **Same conflict in `pcb1`**:
-  The soldered [`pcb1`](profiles/pcb1.md) board also puts LCD D/C on GPIO8, so it uses the same settings as `breadboard1`: `CONFIG_PRG32_PIN_RGB_LED=-1` and `CONFIG_PRG32_PIN_SHARED_RGB_LED=8`.
-
-- **Unconflicted Harness in `breadboard2` (Display DC on GPIO10, Audio LRCLK on GPIO15)**:
-  In the [`breadboard2`](profiles/breadboard2.md) profile, the ILI9341 display harness uses GPIO9 for `CS` and GPIO10 for `DC`, with `RST` wired to the ESP32-C6 EN pin (and GPIO15 assigned to I2S LRCLK). This completely frees GPIO8 from display obligations. While `breadboard2` defaults `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds, developers running `breadboard2` on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
+- **Unconflicted Harness in `breadboard1` and `breadboard2` (Display DC on GPIO10, Audio LRCLK on GPIO15)**:
+  In the [`breadboard1`](profiles/breadboard1.md) and [`breadboard2`](profiles/breadboard2.md) profiles, the ILI9341 display harness uses GPIO9 for `CS` and GPIO10 for `DC`, with `RST` wired to the ESP32-C6 EN pin (and GPIO15 assigned to I2S LRCLK). This completely frees GPIO8 from display obligations, so neither profile sets `CONFIG_PRG32_PIN_SHARED_RGB_LED`. Both default `CONFIG_PRG32_PIN_RGB_LED` to `-1` for minimal default builds; developers running them on an ESP32-C6-DevKitC-1 can set `CONFIG_PRG32_PIN_RGB_LED=8` in `menuconfig` or their profile fragment to safely use the onboard RGB LED as an audio visualizer without display conflicts.
 
 - **Custom Boards & External NeoPixels**:
   When building custom hardware or attaching external WS2812 addressable LED strips, any unused general-purpose GPIO can be assigned to the driver in Kconfig or profile fragment files.
@@ -75,7 +72,7 @@ Set the shared pin only when the LED and LCD D/C are on one wire, and keep `CONF
 1. flash the LED cyan three times early in `prg32_init()`, before the display is initialized (`prg32_shared_rgb_led_boot_flash()`);
 2. send an off frame at the end of every `prg32_gfx_present()`, wait for the WS2812 latch gap, and drive the line high again for the display (`prg32_shared_rgb_led_off()`).
 
-The display keeps toggling D/C during transfers, which the WS2812 can read as data, so brief green or white flashes are still expected. Software cannot make both devices independently controllable on one wire; a board that needs a usable LED must give it its own GPIO, as [`breadboard2`](profiles/breadboard2.md) does.
+The display keeps toggling D/C during transfers, which the WS2812 can read as data, so brief green or white flashes are still expected. Software cannot make both devices independently controllable on one wire; a board that needs a usable LED must give it its own GPIO, as [`breadboard1`](profiles/breadboard1.md) and [`breadboard2`](profiles/breadboard2.md) do.
 
 ### Cost of the Off Frame
 

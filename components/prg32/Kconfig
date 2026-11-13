@@ -460,12 +460,24 @@ config PRG32_PIN_BTN_D
     int "D Button GPIO"
     default -1
 
+config PRG32_ENABLE_LR_BUTTONS
+    bool "Enable L and R bumper buttons"
+    default n
+    help
+        Read the L and R bumper buttons from the GPIOs below. Turn it on only
+        for boards that wire both bumpers, such as the breadboard2 profile.
+        When it is off, the firmware configures no GPIO for them and
+        PRG32_BTN_L and PRG32_BTN_R read as released from the local buttons.
+        QEMU keys and remote KEY messages can still press them.
+
 config PRG32_PIN_BTN_L
     int "L (left bumper) Button GPIO"
+    depends on PRG32_ENABLE_LR_BUTTONS
     default -1
 
 config PRG32_PIN_BTN_R
     int "R (right bumper) Button GPIO"
+    depends on PRG32_ENABLE_LR_BUTTONS
     default -1
 
 config PRG32_ENABLE_SEPARATE_SELECT_PIN
@@ -516,9 +528,8 @@ config PRG32_PIN_SHARED_RGB_LED
     default -1
     help
         Set this only when the onboard addressable LED and LCD D/C are
-        electrically tied to one GPIO, as in the breadboard1 and pcb1 profiles
-        where the ESP32-C6-DevKitC-1 WS2812 and LCD D/C both use GPIO8. The
-        firmware
+        electrically tied to one GPIO, as in the pcb1 profile, where the
+        ESP32-C6-DevKitC-1 WS2812 and LCD D/C both use GPIO8. The firmware
         flashes it at boot and sends an off frame after LCD updates. LCD
         traffic can still cause brief incidental colors on shared hardware.
         Keep PRG32_PIN_RGB_LED at -1 for the same pin.
