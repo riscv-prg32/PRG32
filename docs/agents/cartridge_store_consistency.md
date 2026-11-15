@@ -27,6 +27,10 @@ Companion repository: https://github.com/riscv-prg32/CartridgeStore
 - When adding a new CartridgeStore API call in PRG32 firmware or tools,
   cross-check `docs/api.md` in CartridgeStore for the exact request and
   response shape.
+- The firmware sends a game's catalog `id` and `latest_version` back unchanged
+  in the download request. Do not give either a fixed maximum length in the
+  firmware: a cut id makes the store answer `400 game not found`
+  (`tests/test_store_catalog.py`).
 - The CartridgeStore `zeroconf` mDNS service name is the canonical source;
   `PRG32_STORE_MDNS_SERVICE` in `main/prg32_config.h` must mirror it.
 

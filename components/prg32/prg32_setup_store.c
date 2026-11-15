@@ -18,11 +18,17 @@
 #define STORE_MAX_GAMES 64
 #endif
 #define STORE_PAGE_SIZE 8
+/* GET /api/games/<id>/download, as the CartridgeStore API defines it. */
+#define STORE_DOWNLOAD_URL_FORMAT "%s/api/games/%s/download?architecture=%s&version=%s"
 
 typedef struct {
-  char id[48];
-  char title[32];
-  char version[16];
+  /* Exact copies of the catalog's id and version, allocated for each entry, so
+   * that a download asks the store for exactly the game it listed, however long
+   * its id. A fixed buffer cut long ids short, and the store answered 400. */
+  char *id;
+  char *version;
+  /* Shown on screen only, so a long title is cut to fit. */
+  char title[48];
   char summary[96];
   char arch[32];
   char tags[48];
@@ -45,7 +51,26 @@ static int store_buffers_alloc(char *status, size_t status_len) {
   return 0;
 }
 
+/* Frees one entry's id and version. */
+static void store_game_release(store_game_t *g) {
+  heap_caps_free(g->id);
+  heap_caps_free(g->version);
+  g->id = NULL;
+  g->version = NULL;
+}
+
+/* Empties the list, freeing each entry's strings. */
+static void store_games_clear(void) {
+  for (int i = 0; i < game_count; ++i) {
+    store_game_release(&games[i]);
+  }
+  game_count = 0;
+}
+
 static void store_buffers_free(void) {
+  if (games) {
+    store_games_clear();
+  }
   heap_caps_free(games);
   games = NULL;
   game_count = 0;
@@ -98,6 +123,48 @@ static int json_string_after(const char *start, const char *end,
     }
   }
   return -1;
+}
+
+/* Finds `key` as json_string_after() does and returns a heap copy of its whole
+ * string value, never cut, or NULL when it is missing or empty or memory runs
+ * out. The caller frees it with heap_caps_free(). */
+static char *json_string_dup(const char *start, const char *end,
+                             const char *key) {
+  char needle[24];
+  snprintf(needle, sizeof(needle), "\"%s\"", key);
+  const char *p = start;
+  while (p && p < end) {
+    p = strstr(p, needle);
+    if (!p || p >= end) {
+      return NULL;
+    }
+    p = strchr(p + strlen(needle), ':');
+    if (!p || p >= end) {
+      return NULL;
+    }
+    p++;
+    while (p < end && isspace((unsigned char)*p)) {
+      p++;
+    }
+    if (p < end && *p == '"') {
+      const char *value = ++p;
+      while (p < end && *p && *p != '"') {
+        p++;
+      }
+      if (p >= end || *p != '"' || p == value) {
+        return NULL;
+      }
+      size_t n = (size_t)(p - value);
+      char *copy = heap_caps_malloc(n + 1, MALLOC_CAP_8BIT);
+      if (!copy) {
+        return NULL;
+      }
+      memcpy(copy, value, n);
+      copy[n] = '\0';
+      return copy;
+    }
+  }
+  return NULL;
 }
 
 static int json_arches_after(const char *start, const char *end, char *out,
@@ -242,7 +309,7 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
     return -1;
   }
 
-  game_count = 0;
+  store_games_clear();
   bool found_games_array = false;
   bool games_array_closed = false;
   bool invalid_catalog = false;
@@ -328,9 +395,15 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
 
         store_game_t g;
         memset(&g, 0, sizeof(g));
-        if (json_string_after(p, end, "id", g.id, sizeof(g.id)) == 0 &&
+        g.id = json_string_dup(p, end, "id");
+        if (g.id &&
             json_string_after(p, end, "title", g.title, sizeof(g.title)) == 0) {
-          json_string_after(p, end, "version", g.version, sizeof(g.version));
+          /* The store names a game's newest version latest_version; version
+           * is the older name, read only when that is missing. */
+          g.version = json_string_dup(p, end, "latest_version");
+          if (!g.version) {
+            g.version = json_string_dup(p, end, "version");
+          }
           json_string_after(p, end, "summary", g.summary, sizeof(g.summary));
           json_arches_after(p, end, g.arch, sizeof(g.arch));
           json_array_strings_after(p, end, "tags", g.tags, sizeof(g.tags));
@@ -343,7 +416,11 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
           }
           if (matches) {
             games[game_count++] = g;
+          } else {
+            store_game_release(&g);
           }
+        } else {
+          store_game_release(&g);
         }
 
         last_parsed = end + 1;
@@ -387,7 +464,7 @@ static int fetch_catalog(const char *base_url, const char *query, char *status,
   heap_caps_free(window);
 
   if (invalid_catalog || (!truncated && (!found_games_array || !games_array_closed))) {
-    game_count = 0;
+    store_games_clear();
     snprintf(status, status_len, "INVALID CATALOG");
     return -1;
   }
@@ -467,11 +544,19 @@ static int validate_download_header(const uint8_t *data, size_t len,
 
 static int stream_download(const char *base_url, const store_game_t *game,
                            uint8_t slot, char *status, size_t status_len) {
-  char url[256];
-  snprintf(url, sizeof(url),
-           "%s/api/games/%s/download?architecture=%s&version=%s", base_url,
-           game->id, current_arch(),
-           game->version[0] ? game->version : "latest");
+  /* Sized to fit, so that a long id reaches the store whole. */
+  const char *version =
+      game->version && game->version[0] ? game->version : "latest";
+  int url_len = snprintf(NULL, 0, STORE_DOWNLOAD_URL_FORMAT, base_url, game->id, current_arch(),
+                         version);
+  char *url = url_len > 0 ? heap_caps_malloc((size_t)url_len + 1, MALLOC_CAP_8BIT)
+                          : NULL;
+  if (!url) {
+    snprintf(status, status_len, "NO MEM");
+    return -1;
+  }
+  snprintf(url, (size_t)url_len + 1, STORE_DOWNLOAD_URL_FORMAT, base_url, game->id, current_arch(),
+           version);
   esp_http_client_config_t config = {
       .url = url,
       .method = HTTP_METHOD_GET,
@@ -479,6 +564,8 @@ static int stream_download(const char *base_url, const store_game_t *game,
       .crt_bundle_attach = esp_crt_bundle_attach,
   };
   esp_http_client_handle_t client = esp_http_client_init(&config);
+  /* The client keeps its own copy of the URL. */
+  heap_caps_free(url);
   if (!client) {
     snprintf(status, status_len, "CLIENT");
     return -1;
@@ -592,8 +679,9 @@ static void draw_store_list(int selected, int page, const char *note) {
   for (int i = 0; i < STORE_PAGE_SIZE && start + i < game_count; ++i) {
     const store_game_t *g = &games[start + i];
     int idx = start + i;
-    snprintf(line, sizeof(line), "%c %-24s %.8s", idx == selected ? '>' : ' ',
-             g->title, g->version);
+    /* The row has room for 24 characters of title. */
+    snprintf(line, sizeof(line), "%c %-24.24s %.8s", idx == selected ? '>' : ' ',
+             g->title, g->version ? g->version : "");
     prg32_gfx_text8(
         8, 46 + i * 18, line,
         game_is_compatible(g) ? PRG32_COLOR_WHITE : PRG32_COLOR_YELLOW, 0);
@@ -618,7 +706,8 @@ static int run_detail(const char *base_url, int index) {
     uint16_t action_color =
         game_is_compatible(g) ? PRG32_COLOR_CYAN : PRG32_COLOR_YELLOW;
     prg32_gfx_clear(PRG32_COLOR_BLACK);
-    snprintf(line, sizeof(line), "%.24s  v%.10s", g->title, g->version);
+    snprintf(line, sizeof(line), "%.24s  v%.10s", g->title,
+             g->version ? g->version : "?");
     prg32_gfx_text8(8, 8, line, PRG32_COLOR_WHITE, 0);
     prg32_gfx_text8(8, 36, g->summary, PRG32_COLOR_CYAN, 0);
     snprintf(line, sizeof(line), "Architectures: %s",
