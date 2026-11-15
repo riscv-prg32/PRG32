@@ -474,6 +474,7 @@ int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out) {
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_random.h"
+#include "esp_task.h"
 #include "esp_websocket_client.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -513,6 +514,14 @@ int prg32_multiplayer_get_peer(int index, prg32_player_state_t *out) {
 /* TLS needs more stack than the plain socket path. */
 #define PRG32_MP_TASK_STACK_WS 4096
 #define PRG32_MP_TASK_STACK_WSS 8192
+/* The ESP32-C6 has one core, and the TLS handshake of a wss:// connection is a
+ * few seconds of computation. At the client's default priority (5) it starves
+ * the game loop, which runs in the main task at ESP_TASK_MAIN_PRIO (1): the
+ * game froze until the handshake ended. A wss:// client therefore runs at the
+ * game's priority, and FreeRTOS shares the core between them each tick. A plain
+ * ws:// client has no handshake and keeps the default (0 asks for it). */
+#define PRG32_MP_TASK_PRIO_WSS ESP_TASK_MAIN_PRIO
+#define PRG32_MP_TASK_PRIO_WS 0
 
 static const char *TAG = "prg32_mp";
 static esp_websocket_client_handle_t g_ws;
@@ -997,6 +1006,7 @@ static int ensure_client(void) {
         .ping_interval_sec = PRG32_MP_PING_INTERVAL_SEC,
         .pingpong_timeout_sec = PRG32_MP_PONG_TIMEOUT_SEC,
         .task_stack = secure ? PRG32_MP_TASK_STACK_WSS : PRG32_MP_TASK_STACK_WS,
+        .task_prio = secure ? PRG32_MP_TASK_PRIO_WSS : PRG32_MP_TASK_PRIO_WS,
         .crt_bundle_attach = secure ? esp_crt_bundle_attach : NULL,
     };
     g_ws = esp_websocket_client_init(&cfg);

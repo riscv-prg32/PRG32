@@ -96,7 +96,7 @@ it has:
 | 1 | A server found on the local network | Nothing: mDNS, then LAN discovery, [below](#finding-the-server-on-the-local-network). On by default; **LOCAL SERVER: OFF** skips it |
 | 2 | The address typed on the console | **SETUP > MULTIPLAYER SETUP > SERVER URL** |
 | 3 | An address compiled into this firmware, if you chose one | `python3 -m prg32 multiplayer set-url` |
-| 4 | The public server, `ws://193.205.230.7:8099` | `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`; empty turns it off |
+| 4 | The public server, `wss://multi.prg32.uniparthenope.it` | `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`; empty turns it off |
 
 A server on the local network comes first because it answers fastest, which
 matters in a classroom. The console searches for one each time it connects to Wi-Fi,
@@ -110,10 +110,10 @@ To skip the local server, for example to play with someone on another network,
 turn **LOCAL SERVER** off: the console then never searches, and goes straight to
 rows 2 to 4.
 
-The public server is reached directly and **unencrypted** for now, so the identity a
-console sends when it joins crosses the internet in clear text. It moves to
-`wss://multi.prg32.uniparthenope.it` once that address forwards WebSocket
-connections ([hosted server](../software/multiplayer_protocol.md#hosted-server-as-the-public-fallback-2026-11-11)).
+The public server is encrypted (`wss://`). Its first connection takes a few seconds
+for the TLS handshake; the game keeps running meanwhile. `ws://193.205.230.7:8099`
+reaches the same server unencrypted, typed in **SERVER URL** as `193.205.230.7` with
+port `8099` ([hosted server](../software/multiplayer_protocol.md#hosted-server-as-the-public-fallback-2026-11-11)).
 
 ### Setting the Server on the Console
 

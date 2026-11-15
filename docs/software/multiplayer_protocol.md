@@ -87,7 +87,7 @@ No local server address is built in. The console uses the address saved in **SET
 MULTIPLAYER SETUP**, else one compiled in with `prg32 multiplayer set-url`, else
 the first server that discovery finds, else, after 10 s of finding nothing, the
 public server `CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL`
-(`ws://193.205.230.7:8099` for now); see
+(`wss://multi.prg32.uniparthenope.it`); see
 [Multiplayer server address](../usage/network.md#multiplayer-server-address).
 `prg32_multiplayer_server_url_configured()` returns the first two in that order,
 and `prg32_multiplayer_server_url_current()` the one in use. These firmware calls,
@@ -213,13 +213,12 @@ succeed locally and reports false, as the protocol requires.
 
 ## Limits
 
-- `wss://` is implemented but has not been tested against a TLS server, which is
-  why the public fallback is plain `ws://` for now.
+- A `wss://` connection's TLS handshake takes a few seconds on the board. Its
+  client runs at the game loop's priority, `ESP_TASK_MAIN_PRIO`, so the game slows
+  for those seconds instead of stopping; see [TLS on the board](#tls-on-the-board-2026-11-15).
 - mDNS and LAN discovery are not authenticated: any host on the network can answer.
   Neither works on QEMU: the build has no mDNS, and its user-mode network carries
   no broadcast.
-- The hosted server does not accept consoles yet; see
-  [Hosted server as the public fallback](#hosted-server-as-the-public-fallback-2026-11-11).
 - The PRG32 Multiplayer Server advertises `_prg32mp._tcp` itself since its mDNS
   commit (on by default, off with `NODE_ENV=production`). An older server is found by
   mDNS only while its computer advertises it, for example with `dns-sd -R` as in
@@ -482,3 +481,41 @@ were compared with it and are unchanged.
 
 Not exercised: **SERVER URL** typed on the board, **LOCAL SERVER: OFF**, the public
 fallback, and an mDNS advertiser that answers the SRV host's address query late.
+
+## TLS on the Board (2026-11-15)
+
+Both hosted addresses now accept consoles. WebSocket upgrades without `Origin`, sent
+from a computer (no `join`):
+
+| Address | Console (no `Origin`) | Browser on another site |
+|---|---|---|
+| `ws://193.205.230.7:8099` | `101 Switching Protocols` | `403` |
+| `wss://multi.prg32.uniparthenope.it` (Apache) | `101 Switching Protocols` | `403` |
+
+An ESP32-C6 `breadboard2` board saved `wss://multi.prg32.uniparthenope.it` in SERVER
+URL and played a game on it smoothly, the first `wss://` session on a board, with
+117 KB of heap free. The game froze for a few seconds while the TLS handshake ran
+(reported by the user). The cause: the board has one core, and the WebSocket client
+task ran at the library's default priority, 5, above the game loop in the main task
+at `ESP_TASK_MAIN_PRIO`, 1, so the handshake's computation held the core. A `wss://`
+client now runs at `ESP_TASK_MAIN_PRIO` (`PRG32_MP_TASK_PRIO_WSS`), and FreeRTOS
+shares the core between it and the game each tick; `ws://` keeps the default.
+`CONFIG_PRG32_MULTIPLAYER_PUBLIC_SERVER_URL` is `wss://multi.prg32.uniparthenope.it`
+again.
+
+| Check | Result |
+|---|---|
+| `tests/test_multiplayer_wire.py` | Passes, with source checks of the `wss://` priority and the default |
+| `python3 -m prg32 esp32c6 build -p breadboard2` (full: Kconfig changed) | Builds in 104 s; `sdkconfig` has the `wss://` default; `prg32_cart_exec` stays at 0x408023a0 |
+| `python3 -m prg32 test` (full QEMU build, unit tests, smoke test) | Passes in 114 s |
+| The CI checks | Pass |
+
+The two firmware targets cannot build at the same time: they share
+`managed_components/` and `dependencies.lock`, and each target's component manager
+removes the other's components (`espressif__mdns` on QEMU,
+`espressif__esp_lcd_qemu_rgb` on ESP32-C6). Started together, the QEMU configure
+failed and left `build-qemu/` without a CMake cache, which `idf.py` then refused to
+clean; it had to be removed by hand.
+
+Not exercised yet: the handshake on the board with the new priority, which should
+leave the game running, more slowly, for those seconds.
