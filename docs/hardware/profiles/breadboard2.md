@@ -8,7 +8,7 @@ This document specifies the pinout and wiring for the **`breadboard2`** hardware
 - **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO9, DC on GPIO10, and RST wired to the ESP32-C6 EN (`RST`) header pin
 - **Input Type**: 2-Axis Analog Thumbstick (potentiometers read via ADC1 one-shot mode)
 - **Action Buttons**: Separate pushbuttons for A, B, C, D, and START/SELECT (C on GPIO11, D on GPIO3)
-- **Bumper Buttons**: L (left bumper) on GPIO21 and R (right bumper) on GPIO22
+- **Bumper Buttons**: L (left bumper) on GPIO21 and R (right bumper) on GPIO22, turned on by `CONFIG_PRG32_ENABLE_LR_BUTTONS=y` (off by default)
 - **Audio**: MAX98357A I2S DAC / amplifier (Mono or Stereo) with LRC/WS on GPIO15
 - **RGB LED**: Off by default (`CONFIG_PRG32_PIN_RGB_LED=-1`); GPIO8 is free, so the DevKitC-1 onboard WS2812 can be enabled
 - **Configuration Profile**: `profiles/sdkconfig.pins.breadboard2`

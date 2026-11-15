@@ -408,6 +408,13 @@ Firmware clients uses compact REST calls:
 | `GET`  | `/api/games/<id>/colophon`                                    | fetch compact colophon JSON                                                                                              |
 | `GET`  | `/api/games/<id>/download?architecture=esp32c6&version=1.0.0` | download `.prg32`. The firmware should request `architecture=esp32c6`. QEMU hosts should<br>request `architecture=qemu`. |
 
+From each catalog entry the setup screen reads `id`, `title`, `latest_version` (or
+`version` when that is missing), `summary`, `architectures`, and `tags`, and sends the
+`id` and version back unchanged in the download request. The console keeps the id
+and version at their full length, so a store may use ids of any length; only
+titles and summaries are cut to fit the screen. See
+[Long store ids](#long-store-ids-2026-11-15).
+
 ## Store Compatibility Check (2026-10-29)
 
 Every cartridge listed by `GET /api/games` on
@@ -536,6 +543,36 @@ Spiriti, and Wing Commander) animation hides the effect in this comparison, so
 they rely on the logged calls above. Neither check judges each game's rules. The [key gameplay check](../../tests/key_gameplay/README.md) does that for a
 purpose-built game.
 
+## Long Store Ids (2026-11-15)
+
+Downloading `org.riscv-prg32.pompeii-the-last-song-of-vesuvius` 2.1.0 from the setup
+screen failed with `FAILED: 400`. The firmware kept catalog ids in a 48-byte buffer,
+so this 49-character id reached the store cut to 47 characters. Requests from a
+computer to `https://store.prg32.uniparthenope.it`:
+
+| Request | Answer |
+|---|---|
+| Full id, `architecture=esp32c6&version=2.1.0` | `200`, 57,001 bytes of `application/vnd.prg32.cartridge` starting `PRG2` |
+| The id cut to 47 characters | `400 {"error":"game not found"}` |
+| Full id, `version=latest` | `400 {"error":"version not found"}` |
+
+The cartridge in the store was correct. The setup screen now keeps each entry's id
+and version as exact heap copies (`json_string_dup()` in
+`components/prg32/prg32_setup_store.c`), reads the version from `latest_version`,
+which the store sends, before `version`, which it does not, and sizes the download
+URL to fit. Titles may be 47 characters, and the list shows 24 of them. No entry
+is left out because of its length.
+
+| Check | Result |
+|---|---|
+| The catalog (38 games) read as the firmware now does, in Python | Every entry gives exactly the catalog's `id` and `latest_version`; Pompeii requests the full id |
+| `tests/test_store_catalog.py` | Passes: ids and versions are not fixed buffers, `latest_version` comes first, the URL is sized to fit, and entries are freed |
+| `python3 -m prg32 esp32c6 build -p breadboard2 -s -k`, `python3 -m prg32 qemu build -s -k` | Build; `prg32_cart_exec` stays at 0x408023a0 |
+| `python3 -m prg32 test` and the CI checks | Pass |
+
+Not exercised: a download on the board. Browsing now holds about 50 bytes per id
+instead of a fixed 48, freed when the store screen closes.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -546,6 +583,7 @@ purpose-built game.
 | `NOT FOUND` after `AUTO-DISCOVER` | mDNS unreachable across Wi-Fi | Use `MANUAL ENTRY` with the store IP address |
 | `NOT COMPATIBLE WITH THIS FIRMWARE` | No matching architecture in catalog | Publish the matching architecture variant first |
 | `TOO LARGE` during download | Cartridge exceeds slot partition | Re-flash with a larger partition, or use a smaller cartridge |
+| `FAILED: 400` during download | The store refused the request. Firmware before the [long ids fix](#long-store-ids-2026-11-15) cut ids over 47 characters, and the store answered `game not found` | Update the firmware. To see the store's answer, request `/api/games/<id>/download?architecture=esp32c6&version=<version>` with `curl`: its JSON body names the error |
 | `401` from `prg32_game.py publish` | Missing or invalid API token | Add `--token` or set `store_token` in `~/.prg32/config.json` |
 | Published game is not visible | Upload is pending editor review | Ask an editor to verify the submission in Cartridge Store |
 | QEMU build shows `NOT FOUND` for mDNS | Expected: mDNS is unavailable in QEMU | Set `CONFIG_PRG32_STORE_URL` in `profiles/sdkconfig.defaults.qemu` |

@@ -79,11 +79,10 @@ git diff --check
 # 2. Run Python linting/tooling
 python3 -m compileall prg32 tests tools
 python3 -m prg32 doctor
-python3 -m prg32 test            # when the edits target QEMU
-python3 -m prg32 test --unit-only  # when the edits target ESP32-C6 only
+python3 -m prg32 test              # when the edits can affect QEMU (see below)
+python3 -m prg32 test --unit-only  # in every other case
 
 # 3. Run CI Tests (from GitHub Actions)
-python3 -m prg32.esp32c6.ci_smoke_test
 python3 -m prg32 abi check
 cartridges/devicedemo/tests/check_source.sh
 cartridges/bachdemo/scripts/test.sh
@@ -94,19 +93,48 @@ cc -std=c11 -Wall -Wextra -Werror cartridges/blackjack/tests/test_rules.c cartri
 sha256sum --check cartridges/blackjack/SHA256SUMS
 ```
 
+**Builds only with the user's agreement.** Firmware builds and `python3 -m prg32
+test` (which builds QEMU in full) take minutes, so run them only when the user
+agreed in Phase 1 to let you build. Before starting one, tell the user which
+build you are about to run and wait for their agreement, unless they already
+asked for that build for the current change. If they did not agree, run only the
+fast checks (step 1, `--unit-only`, and step 3) and tell the user which builds
+they still need to run.
+
 If the user explicitly asked for you to do the builds after the edits, you should run one of these commands or both based on the architecture the edits are targeting. 
 
-`python3 -m prg32 test` builds the QEMU firmware for its smoke test, boots it in
-an SDL window, and checks HELLO and a `run` upload on `socket://127.0.0.1:5555`.
-It works from a non-interactive agent shell; close any running QEMU first so
-port 5555 is free. When the edits target only the ESP32-C6, `--unit-only` runs
-the same unit tests without that build.
+`python3 -m prg32 test` runs the unit tests, then does a **full** QEMU firmware
+build for its smoke test, boots it in an SDL window, and checks HELLO and a `run`
+upload on `socket://127.0.0.1:5555`. It works from a non-interactive agent shell;
+close any running QEMU first so port 5555 is free. Run it when the edits can
+affect the QEMU firmware: firmware C code shared by both targets, `Kconfig`,
+`profiles/*`, `main/`, or the QEMU tooling. In every other case (ESP32-C6-only
+code, other Python tooling, tests, docs) `--unit-only` runs the same unit tests
+in seconds without that build.
+
+Keep test runs light:
+
+- While iterating, run only the test files for the change, for example
+  `python3 -m unittest tests.test_multiplayer_wire` (well under a second). Run
+  the full list above once, before reporting.
+- `python3 -m prg32.esp32c6.ci_smoke_test` repeats steps 1 and 2 (`git diff
+  --check`, a compile, the whole unit-test suite, and `doctor --host-only`).
+  Do not run it after step 2; it is for CI.
+- After `python3 -m prg32 test`, do not build QEMU again: the firmware it built
+  is in `build-qemu/`.
+- Never start two firmware builds (or `prg32 test` and a build) at the same time:
+  the two targets share `managed_components/` and `dependencies.lock`, and each
+  deletes the other's components, which breaks the build directory. Build one
+  target after the other.
+- A QEMU build rewrites the tracked `dependencies.lock` for its target. Restore
+  it with `git checkout -- dependencies.lock` before committing, unless the
+  dependencies themselves changed.
 
 The PRG32 CLI turns on ccache for every `idf.py` it starts when `ccache` is
 installed (see [ESP-IDF build speed](docs/usage/tooling.md#esp-idf-build-speed)).
 
 If you are working on ESP32c6, Build the physical firmware with the pin profile
-chosen in Phase 0. If the edits since the last successful build changed
+chosen in Phase 1. If the edits since the last successful build changed
 `Kconfig`, `profiles/*` or any `sdkconfig*` file, or if `build-esp32c6/` does
 not exist yet or was built with another profile, run the full build:
 ```bash
@@ -126,9 +154,9 @@ Keep `--ccache`: an `idf.py` call without it switches ccache off in the build
 directory and recompiles the whole firmware.
 Flashing the application does not erase cartridge slots.
 
-If you are working on QEMU, Build the QEMU firmware. Under the same condition as
-the ESP32-C6 build (no `Kconfig`, `profiles/*` or `sdkconfig*` change, and an
-existing `build-qemu/`), add `-s -k`:
+If you are working on QEMU and did not run `python3 -m prg32 test`, build the QEMU
+firmware. Under the same condition as the ESP32-C6 build (no `Kconfig`,
+`profiles/*` or `sdkconfig*` change, and an existing `build-qemu/`), add `-s -k`:
 ```bash
 python3 -m prg32 qemu build        # full
 python3 -m prg32 qemu build -s -k  # incremental

@@ -103,9 +103,9 @@ Builds attempting to compile physical firmware without a pin profile are blocked
 
 ### Built-in Pin Profiles
 
-- **`breadboard1` (`profiles/sdkconfig.pins.breadboard1`)**: The first breadboard pinout using the ILI9341 SPI TFT display (DC: GPIO8, RST: GPIO9), 5-way digital navigation joystick (discrete GPIO switches), and MAX98357A I2S mono/stereo audio as documented in [Breadboard 1](../hardware/profiles/breadboard1.md).
+- **`breadboard1` (`profiles/sdkconfig.pins.breadboard1`)**: The first breadboard pinout using the ILI9341 SPI TFT display (CS: GPIO9, DC: GPIO10, RST wired to the ESP32-C6 EN pin), 5-way digital navigation joystick (discrete GPIO switches), buttons A, B, C, and D, no L/R bumpers, and MAX98357A I2S mono/stereo audio (LRCLK: GPIO15) as documented in [Breadboard 1](../hardware/profiles/breadboard1.md).
 - **`breadboard2` (`profiles/sdkconfig.pins.breadboard2`)**: The second breadboard pinout using a 2-axis analog thumbstick (read via ADC1 one-shot conversions on GPIO0 and GPIO1), updated display harness (CS: GPIO9, DC: GPIO10, RST wired to the ESP32-C6 EN pin), buttons A (GPIO18), B (GPIO19), C (GPIO11), D (GPIO3), L bumper (GPIO21), R bumper (GPIO22), and MAX98357A I2S audio (LRCLK: GPIO15) as documented in [Breadboard 2](../hardware/profiles/breadboard2.md).
-- **`pcb1` (`profiles/sdkconfig.pins.pcb1`)**: The soldered PCB pinout: the `breadboard1` display, control, and audio pins, but with P1 DOWN on GPIO13 (the native USB D+ line). Like `breadboard1`, it uses the GPIO8 RGB LED shared with LCD D/C only for the boot indication. Full pinout and schematic in [PCB 1](../hardware/profiles/pcb1.md).
+- **`pcb1` (`profiles/sdkconfig.pins.pcb1`)**: The soldered PCB pinout: the earlier `breadboard1` display, control, and audio pins (LCD D/C on GPIO8), with P1 DOWN on GPIO13 (the native USB D+ line) and no L/R bumpers. It uses the GPIO8 RGB LED shared with LCD D/C only for the boot indication. Full pinout and schematic in [PCB 1](../hardware/profiles/pcb1.md).
 - **`qemu`**: QEMU desktop builds configure virtual RGB panel and UART console input automatically via `profiles/sdkconfig.defaults.qemu`.
 
 ### Selecting a Pin Profile

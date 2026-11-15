@@ -151,13 +151,15 @@ calibration too, so menu navigation becomes even on all four sides.
 All PRG32 hardware setups use at least two tactile momentary pushbuttons:
 - **Button A (Action / Set)**: Confirms menu selections and performs primary in-game actions.
 - **Button B (Back / Reset)**: Cancels menu choices and triggers secondary in-game actions.
-- **Buttons C and D** (`breadboard2`): Extra in-game action buttons. The resident
+- **Buttons C and D** (`breadboard1`, `breadboard2`): Extra in-game action buttons. The resident
   menus do not use them. Profiles without them leave `CONFIG_PRG32_PIN_BTN_C`
   and `CONFIG_PRG32_PIN_BTN_D` at `-1`, and the bits always read as released.
 - **Bumpers L and R** (`breadboard2`): left and right shoulder buttons for
-  games. The resident menus do not use them. Profiles without them leave
-  `CONFIG_PRG32_PIN_BTN_L` and `CONFIG_PRG32_PIN_BTN_R` at `-1`, and the bits
-  always read as released. They are separate from the joystick directions
+  games. The resident menus do not use them. They are read only when
+  `CONFIG_PRG32_ENABLE_LR_BUTTONS` is on (off by default; see
+  [configuration](../usage/configuration.md#l-and-r-bumper-buttons)).
+  Otherwise the firmware configures no GPIO for them and the bits always read
+  as released. They are separate from the joystick directions
   `PRG32_BTN_LEFT` and `PRG32_BTN_RIGHT`.
 - **Wiring**: Normally-open switches connected directly between the assigned signal GPIO and GND. The internal pull-up holds the pin HIGH until pressed.
 

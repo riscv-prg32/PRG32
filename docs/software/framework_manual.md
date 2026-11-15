@@ -33,7 +33,8 @@ single local joystick:
 - `PRG32_BTN_C` and `PRG32_BTN_D` (extra action buttons; always released on
   profiles that do not wire them)
 - `PRG32_BTN_L` and `PRG32_BTN_R` (left and right bumpers; always released on
-  profiles that do not wire them)
+  profiles that do not turn on `CONFIG_PRG32_ENABLE_LR_BUTTONS`, which is only
+  `breadboard2` among the built-in profiles)
 
 Games can use `prg32_input_read_player(1)` to get the same normalized low-bit
 mask. `prg32_input_read_player(2)` is kept as a source-compatible helper, but
@@ -688,10 +689,10 @@ PRG32 exposes a small addressable RGB LED API:
 - `prg32_audio_led_vu_enable(enabled)`: let the audio test and PWM helpers
   drive the LED as a VU meter.
 
-The reference ILI9341 wiring uses GPIO8 for LCD D/C. Many ESP32-C6 development
-boards also use GPIO8 for the onboard RGB LED, so `PRG32_PIN_RGB_LED` defaults
-to `-1` in `idf.py menuconfig`. Set it only when the LED pin is free on the
-chosen board wiring. On `breadboard1` and `pcb1` the firmware itself uses the shared LED
+Many ESP32-C6 development boards use GPIO8 for the onboard RGB LED, and the
+`pcb1` board also uses GPIO8 for LCD D/C, so `PRG32_PIN_RGB_LED` defaults to
+`-1` in `idf.py menuconfig`. Set it only when the LED pin is free on the
+chosen board wiring. On `pcb1` the firmware itself uses the shared LED
 for a boot flash; cartridges cannot drive it (see
 [Shared Boot Indication](../hardware/rgb_led.md#shared-boot-indication)).
 

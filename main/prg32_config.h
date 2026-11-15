@@ -124,8 +124,15 @@
 #define PRG32_PIN_BTN_B CONFIG_PRG32_PIN_BTN_B
 #define PRG32_PIN_BTN_C CONFIG_PRG32_PIN_BTN_C
 #define PRG32_PIN_BTN_D CONFIG_PRG32_PIN_BTN_D
+
+/* L and R bumpers exist only when the profile turns them on. */
+#if defined(CONFIG_PRG32_ENABLE_LR_BUTTONS) && CONFIG_PRG32_ENABLE_LR_BUTTONS
 #define PRG32_PIN_BTN_L CONFIG_PRG32_PIN_BTN_L
 #define PRG32_PIN_BTN_R CONFIG_PRG32_PIN_BTN_R
+#else
+#define PRG32_PIN_BTN_L -1
+#define PRG32_PIN_BTN_R -1
+#endif
 
 #if defined(CONFIG_PRG32_JOYSTICK_ANALOG) && CONFIG_PRG32_JOYSTICK_ANALOG
 #ifdef CONFIG_PRG32_PIN_JOYSTICK_X
@@ -180,8 +187,9 @@
 #define PRG32_PIN_BUZZER CONFIG_PRG32_PIN_BUZZER
 
 /*
- * The board profile owns the RGB LED assignment. The reference configuration
- * disables it because GPIO8 is reserved for the ILI9341 D/C signal.
+ * The board profile owns the RGB LED assignment. Every built-in profile
+ * disables it; pcb1 also uses GPIO8 for the ILI9341 D/C signal, so its LED is
+ * only the firmware's shared boot indicator.
  */
 #define PRG32_PIN_RGB_LED CONFIG_PRG32_PIN_RGB_LED
 #define PRG32_PIN_SHARED_RGB_LED CONFIG_PRG32_PIN_SHARED_RGB_LED

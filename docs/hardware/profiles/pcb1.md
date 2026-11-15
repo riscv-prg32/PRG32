@@ -27,8 +27,8 @@ Fritzing project in the repository has since moved to the `breadboard1` pins
 > Wi-Fi with `python3 -m prg32 esp32c6 upload game.prg32 --url http://<board>`
 > (see [cartridges](../../software/cartridges.md#2-upload-to-board-esp32-c6)),
 > or download them from a CartridgeStore in the setup menu. Rebuilding the
-> hardware with DOWN on GPIO0, as in [`breadboard1`](breadboard1.md), restores
-> USB uploads.
+> hardware with DOWN on any GPIO other than GPIO12/GPIO13 restores USB
+> uploads.
 
 ## Overview
 
@@ -37,6 +37,7 @@ Fritzing project in the repository has since moved to the `breadboard1` pins
 - **Display**: ILI9341 2.8" SPI TFT (320x240) with CS on GPIO10, DC on GPIO8, and RST on GPIO9
 - **Input Type**: Digital 5-way navigation joystick (discrete GPIO switches with pull-ups), DOWN on GPIO13
 - **Action Buttons**: Separate pushbuttons for A and B; the joystick center press is START/SELECT
+- **Bumper Buttons**: None (`CONFIG_PRG32_ENABLE_LR_BUTTONS=n`)
 - **Audio**: MAX98357A I2S DAC / amplifier with LRC/WS on GPIO11; the board has positions for stereo, the firmware defaults to mono
 - **RGB LED**: DevKitC-1 onboard WS2812 shared with LCD D/C on GPIO8, boot indication only (`CONFIG_PRG32_PIN_SHARED_RGB_LED=8`, `CONFIG_PRG32_PIN_RGB_LED=-1`)
 - **Configuration Profile**: `profiles/sdkconfig.pins.pcb1`
@@ -203,6 +204,7 @@ CONFIG_PRG32_PIN_BTN_RIGHT=19
 CONFIG_PRG32_PIN_BTN_START=20
 CONFIG_PRG32_PIN_BTN_A=21
 CONFIG_PRG32_PIN_BTN_B=22
+CONFIG_PRG32_ENABLE_LR_BUTTONS=n
 CONFIG_PRG32_PIN_SETUP=-1
 
 CONFIG_PRG32_AUDIO_I2S_BCLK_GPIO=4
@@ -241,8 +243,11 @@ In `idf.py menuconfig` choose `Component config` -> `PRG32 Framework` ->
 The [`breadboard1`](breadboard1.md) profile later moved P1 DOWN from GPIO13 to
 GPIO0 to free the native USB pair (commit `b089e1e`) and added the shared RGB
 LED boot indication on GPIO8 (commit `c327403`). `pcb1` later adopted the same
-shared RGB LED setting, which changes no wiring. Use `pcb1` only for hardware
-wired with DOWN on GPIO13; new breadboard builds use `breadboard1`.
+shared RGB LED setting, which changes no wiring. In 2026-11 `breadboard1` moved
+LCD D/C to GPIO10 and dropped the shared LED; `pcb1` keeps both. The board has
+no L and R bumpers, so the profile sets `CONFIG_PRG32_ENABLE_LR_BUTTONS=n`.
+Use `pcb1` only for hardware wired with DOWN on GPIO13; new breadboard builds
+use `breadboard1`.
 
 ## Related Documentation
 

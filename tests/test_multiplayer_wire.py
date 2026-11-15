@@ -127,8 +127,7 @@ class ServerAddressTest(unittest.TestCase):
         kconfig = (COMPONENT / "Kconfig").read_text(encoding="utf-8")
         entry = kconfig[kconfig.index("config PRG32_MULTIPLAYER_PUBLIC_SERVER_URL"):]
         entry = entry[:entry.index("\nconfig ")]
-        # The hosted server, reached directly until its proxy forwards WebSockets.
-        self.assertIn('default "ws://193.205.230.7:8099"', entry)
+        self.assertIn('default "wss://multi.prg32.uniparthenope.it"', entry)
         task = SOURCE[SOURCE.index("static void discovery_task"):]
         fallback = task.index("prg32_multiplayer_server_url_public(url, sizeof(url))")
         # Only with no address known, or a silent local server, and only after
@@ -197,6 +196,11 @@ class ServerAddressTest(unittest.TestCase):
         task = task[:task.index("\n}\n")]
         self.assertIn("room_requested()", task)
         self.assertIn("vTaskDelete(NULL);", task)
+
+    def test_a_tls_handshake_does_not_freeze_the_game(self) -> None:
+        # A wss:// client shares the core with the game loop (ESP_TASK_MAIN_PRIO).
+        self.assertIn("#define PRG32_MP_TASK_PRIO_WSS ESP_TASK_MAIN_PRIO", SOURCE)
+        self.assertIn(".task_prio = secure ? PRG32_MP_TASK_PRIO_WSS : PRG32_MP_TASK_PRIO_WS,", SOURCE)
 
     def test_setup_menu_offers_the_server_screen(self) -> None:
         self.assertIn('"MULTIPLAYER SETUP"', SYSTEM_SOURCE)
