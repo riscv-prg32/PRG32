@@ -39,7 +39,7 @@ CHECKSUMS_NAME = "SHA256SUMS"
 # Short, user-facing descriptions shown by the flasher and the web pages.
 # The wiring itself is documented in docs/hardware/profiles/.
 PROFILE_DESCRIPTIONS = {
-    "breadboard1": "First breadboard: 5-way digital joystick, buttons A and B",
+    "breadboard1": "First breadboard: 5-way digital joystick, buttons A, B, C, D",
     "breadboard2": "Second breadboard: analog thumbstick, buttons A, B, C, D, L, R",
     "pcb1": "Soldered PRG32 PCB 0.1: 5-way digital joystick, buttons A and B",
 }

@@ -111,7 +111,7 @@ The parts are separate on purpose. A merged single image fills the gap from
   "profiles": [
     {
       "name": "breadboard1",
-      "description": "First breadboard: 5-way digital joystick, buttons A and B",
+      "description": "First breadboard: 5-way digital joystick, buttons A, B, C, D",
       "parts": [
         { "role": "bootloader", "offset": "0x0", "file": "...", "size": 21984, "sha256": "..." },
         { "role": "partition-table", "offset": "0x8000", "file": "...", "size": 3072, "sha256": "..." },
@@ -190,3 +190,13 @@ from their own origin. Their status is tracked in
   attached breadboard1 ESP32-C6. esptool erased only 0x0-0x5fff, 0x8000-0x8fff
   and 0x10000-0x19dfff; HELLO then reported firmware `v1.8.0`. No cartridge slot
   was written or erased.
+- 2026-11-15: release `v1.8.1` built by the workflow for all three profiles. The
+  `breadboard1` parts, downloaded from the release and checked against
+  `SHA256SUMS`, were flashed on the attached breadboard1 ESP32-C6 with
+  `prg32_flash_release.py --manifest` (a local copy, because the host Python
+  could not verify GitHub's certificate). esptool erased only 0x0-0x5fff,
+  0x8000-0x8fff and 0x10000-0x19efff; HELLO then reported firmware `v1.8.1`,
+  ABI 1.8, and 8 slots. No cartridge slot was written or erased. The `v1.8.1`
+  manifest still describes `breadboard1` as having "buttons A and B"; the
+  description in `tools/prg32_firmware_release.py` now lists A, B, C, D and
+  applies from the next release.
